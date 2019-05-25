@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMTOTALBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			costAmount, 
+			browseCount, 
+			storeCount, 
+			feedBackCount,
+			kfReceivedCount
+		FROM t_sum_total_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="applyCount != null and applyCount != ''">
+				and applyCount = #{applyCount}
+			</if>
+			<if test="seniorCount != null and seniorCount != ''">
+				and seniorCount = #{seniorCount}
+			</if>
+			<if test="notFillCount != null and notFillCount != ''">
+				and notFillCount = #{notFillCount}
+			</if>
+			<if test="costAmount != null and costAmount != ''">
+				and costAmount = #{costAmount}
+			</if>
+			<if test="browseCount != null and browseCount != ''">
+				and browseCount = #{browseCount}
+			</if>
+			<if test="storeCount != null and storeCount != ''">
+				and storeCount = #{storeCount}
+			</if>
+			<if test="kfReceivedCount != null and kfReceivedCount != ''">
+				and kfReceivedCount = #{kfReceivedCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="applyCount != null and applyCount != ''">
+			and applyCount = #{applyCount}
+		</if>
+		<if test="seniorCount != null and seniorCount != ''">
+			and seniorCount = #{seniorCount}
+		</if>
+		<if test="notFillCount != null and notFillCount != ''">
+			and notFillCount = #{notFillCount}
+		</if>
+		<if test="costAmount != null and costAmount != ''">
+			and costAmount = #{costAmount}
+		</if>
+		<if test="browseCount != null and browseCount != ''">
+			and browseCount = #{browseCount}
+		</if>
+		<if test="storeCount != null and storeCount != ''">
+			and storeCount = #{storeCount}
+		</if>
+		<if test="kfReceivedCount != null and kfReceivedCount != ''">
+			and kfReceivedCount = #{kfReceivedCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_total_base (
+			recordDate,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			costAmount,
+			browseCount,
+			storeCount,
+			storeBackCount,
+			feedBackCount,
+			kfReceivedCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="applyCount !=null ">
+			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyCount ==null ">
+			0 ,
+			</if>
+			<if test="seniorCount !=null ">
+			#{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="seniorCount ==null ">
+			0 ,
+			</if>
+			<if test="notFillCount !=null ">
+			#{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notFillCount ==null ">
+			0 ,
+			</if>
+			<if test="costAmount !=null ">
+			#{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="costAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="browseCount !=null ">
+			#{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="browseCount ==null ">
+			0 ,
+			</if>
+			<if test="storeCount !=null ">
+			#{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeCount ==null ">
+			0 ,
+			</if>
+			<if test="storeBackCount !=null ">
+			#{storeBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeBackCount ==null ">
+			0 ,
+			</if>
+			<if test="feedBackCount !=null ">
+			#{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feedBackCount ==null ">
+			0 ,
+			</if>
+			<if test="kfReceivedCount !=null ">
+			#{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="kfReceivedCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_total_base 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_total_base  
+		<set>
+			<if test="applyCount != null">
+				applyCount = #{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="seniorCount != null">
+				seniorCount = #{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notFillCount != null">
+				notFillCount = #{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeCount != null">
+				storeCount = #{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeBackCount != null">
+				storeBackCount = #{storeBackCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="kfReceivedCount != null">
+				kfReceivedCount = #{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_total_base 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_total_base  (
+			recordDate,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			costAmount,
+			browseCount,
+			storeCount,
+			storeBackCount,
+			feedBackCount,
+			kfReceivedCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.applyCount}, 
+		  #{item.seniorCount}, 
+		  #{item.notFillCount}, 
+		  #{item.costAmount}, 
+		  #{item.browseCount}, 
+		  #{item.storeCount},
+		  #{item.storeBackCount},
+		  #{item.feedBackCount},
+		  #{item.kfReceivedCount}
+		  )
+		</foreach>
+  </insert>
+  
+   <sql id="sqlQuery">
+   		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and t1.recordDate = #{recordDate}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+			 </if>
+ 		     <if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m')>= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+		</where>
+    </sql>
+  
+  <select id="queryDay" resultType="map" parameterType="map">
+		SELECT
+			t1.recordDate,
+			IFNULL(t1.applyCount, 0) AS applyCount,
+			IFNULL(t1.seniorCount, 0) AS seniorCount,
+			IFNULL(t1.notFillCount, 0) AS notFillCount,
+			IFNULL(t1.costAmount, 0) AS costAmount,
+			IFNULL(ROUND(t1.costAmount/t1.applyCount,2),0) as 'costMoney',
+			IFNULL(t1.browseCount, 0) AS browseCount,
+			IFNULL(t1.storeCount, 0) AS storeCount,
+			IFNULL(t1.storeBackCount, 0) AS storeBackCount,
+			IFNULL(t1.feedBackCount, 0) AS feedBackCount,
+			IFNULL(t1.kfReceivedCount, 0) AS kfReceivedCount,
+			IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+			IFNULL(t2.preBookCount, 0) AS preBookCount,
+			IFNULL(t2.failBookCount, 0) AS failBookCount,
+			IFNULL(t3.saleCount, 0) AS saleCount,
+			IFNULL(t3.saleAmount, 0) AS saleAmount,
+			IFNULL(t3.saleScore, 0) AS saleScore,
+			IFNULL(t3.failSaleCount, 0) AS failSaleCount,
+			IFNULL(t3.failSaleAmount, 0) AS failSaleAmount,
+			IFNULL(t3.failSaleScore, 0) AS failSaleScore,
+			IFNULL(t3.sucSaleCount, 0) AS sucSaleCount,
+			IFNULL(t3.sucSaleAmount, 0) AS sucSaleAmount,
+			IFNULL(t3.sucSaleScore, 0) AS sucSaleScore,
+			IFNULL(t4.signingCount, 0) AS signingCount,
+			IFNULL(t4.signingAmt, 0) AS signingAmt,
+			IFNULL(t4.sucSignCount, 0) AS sucSignCount,
+			IFNULL(t4.sucSignAmt, 0) AS sucSignAmt,
+			IFNULL(t4.failSignCount, 0) AS failSignCount,
+			IFNULL(t4.failSignAmt, 0) AS failSignAmt,
+			IFNULL(t4.totalSignCount, 0) AS totalSignCount,
+			IFNULL(t4.totalSignAmt, 0) AS totalSignAmt,
+			IFNULL(t4.treatyWill, 0) AS treatyWill,
+			IFNULL(t5.retCount, 0) AS retCount,
+			IFNULL(t5.retAmount, 0) AS retAmount,
+			IFNULL(t5.chkRetCount, 0) AS chkRetCount,
+			IFNULL(t5.chkRetAmount, 0) AS chkRetAmount,
+			IFNULL(t5.sucRetCount, 0) AS sucRetCount,
+			IFNULL(t5.sucRetAmount, 0) AS sucRetAmount
+		FROM
+			t_sum_total_base t1
+		LEFT JOIN t_sum_book_base t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_sale_base t3 ON t1.recordDate = t3.recordDate
+		LEFT JOIN t_sum_sign_base t4 ON t1.recordDate = t4.recordDate
+		LEFT JOIN t_sum_ret_base t5 ON t1.recordDate = t5.recordDate
+		<include refid="sqlQuery"/>
+		ORDER by recordDate DESC,costAmount DESC
+	</select>
+	<select id="queryDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_base t1
+		<include refid="sqlQuery"/>
+	</select>
+	
+	<select id="queryMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t1.recordDate,'%Y-%m') AS 'recordDate',
+			IFNULL(sum(t1.applyCount), 0) AS applyCount,
+			IFNULL(sum(t1.seniorCount), 0) AS seniorCount,
+			IFNULL(sum(t1.notFillCount), 0) AS notFillCount,
+			IFNULL(sum(t1.costAmount), 0) AS costAmount,
+			IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoney',
+			IFNULL(sum(t1.browseCount), 0) AS browseCount,
+			IFNULL(sum(t1.storeCount), 0) AS storeCount,
+			IFNULL(sum(t1.storeBackCount), 0) AS storeBackCount,
+			IFNULL(sum(t1.feedBackCount), 0) AS feedBackCount,
+			IFNULL(sum(t1.kfReceivedCount), 0) AS kfReceivedCount,
+			IFNULL(sum(t2.sucBookCount), 0) AS sucBookCount,
+			IFNULL(sum(t2.preBookCount), 0) AS preBookCount,
+			IFNULL(sum(t2.failBookCount), 0) AS failBookCount,
+			IFNULL(sum(t3.saleCount), 0) AS saleCount,
+			IFNULL(sum(t3.saleAmount), 0) AS saleAmount,
+			IFNULL(sum(t3.saleScore), 0) AS saleScore,
+			IFNULL(sum(t3.failSaleCount), 0) AS failSaleCount,
+			IFNULL(sum(t3.failSaleAmount), 0) AS failSaleAmount,
+			IFNULL(sum(t3.failSaleScore), 0) AS failSaleScore,
+			IFNULL(sum(t3.sucSaleCount), 0) AS sucSaleCount,
+			IFNULL(sum(t3.sucSaleAmount), 0) AS sucSaleAmount,
+			IFNULL(sum(t3.sucSaleScore), 0) AS sucSaleScore,
+			IFNULL(sum(t4.signingCount), 0) AS signingCount,
+			IFNULL(sum(t4.signingAmt), 0) AS signingAmt,
+			IFNULL(sum(t4.sucSignCount), 0) AS sucSignCount,
+			IFNULL(sum(t4.sucSignAmt), 0) AS sucSignAmt,
+			IFNULL(sum(t4.failSignCount), 0) AS failSignCount,
+			IFNULL(sum(t4.failSignAmt), 0) AS failSignAmt,
+			IFNULL(sum(t4.totalSignCount), 0) AS totalSignCount,
+			IFNULL(sum(t4.totalSignAmt), 0) AS totalSignAmt,
+			IFNULL(sum(t4.treatyWill), 0) AS treatyWill,
+			IFNULL(sum(t5.retCount), 0) AS retCount,
+			IFNULL(sum(t5.retAmount), 0) AS retAmount,
+			IFNULL(sum(t5.chkRetCount), 0) AS chkRetCount,
+			IFNULL(sum(t5.chkRetAmount), 0) AS chkRetAmount,
+			IFNULL(sum(t5.sucRetCount), 0) AS sucRetCount,
+			IFNULL(sum(t5.sucRetAmount), 0) AS sucRetAmount
+		FROM
+			t_sum_total_base t1
+		LEFT JOIN t_sum_book_base t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_sale_base t3 ON t1.recordDate = t3.recordDate
+		LEFT JOIN t_sum_sign_base t4 ON t1.recordDate = t4.recordDate
+		LEFT JOIN t_sum_ret_base t5 ON t1.recordDate = t5.recordDate
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t1.recordDate,'%Y-%m')
+		ORDER BY t1.recordDate DESC,t1.costAmount DESC
+	</select>
+	<select id="queryMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_total_base t1
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t1.recordDate,'%Y-%m')) tab1
+	</select>
+	
+	<!-- 更新花费  -->
+	<update id="updateTotalCost" parameterType="map">
+		UPDATE t_sum_total_base  
+		<set>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	 <select id="querySection" resultType="map" parameterType="map">
+		SELECT
+			CONCAT_WS('至',#{startRecordDate},#{endRecordDate}) AS recordDate,
+			SUM(IFNULL(t1.applyCount, 0)) AS applyCount,
+			SUM(IFNULL(t1.seniorCount, 0)) AS seniorCount,
+			SUM(IFNULL(t1.notFillCount, 0)) AS notFillCount,
+			SUM(IFNULL(t1.costAmount, 0)) AS costAmount,
+			SUM(IFNULL(ROUND(t1.costAmount/t1.applyCount,2),0)) as 'costMoney',
+			SUM(IFNULL(t1.browseCount, 0)) AS browseCount,
+			SUM(IFNULL(t1.storeCount, 0)) AS storeCount,
+			SUM(IFNULL(t1.storeBackCount, 0)) AS storeBackCount,
+			SUM(IFNULL(t1.feedBackCount, 0)) AS feedBackCount,
+			SUM(IFNULL(t1.kfReceivedCount, 0)) AS kfReceivedCount,
+			SUM(IFNULL(t2.sucBookCount, 0)) AS sucBookCount,
+			SUM(IFNULL(t2.preBookCount, 0)) AS preBookCount,
+			SUM(IFNULL(t2.failBookCount, 0)) AS failBookCount,
+			SUM(IFNULL(t3.saleCount, 0)) AS saleCount,
+			SUM(IFNULL(t3.saleAmount, 0)) AS saleAmount,
+			SUM(IFNULL(t3.saleScore, 0)) AS saleScore,
+			SUM(IFNULL(t3.failSaleCount, 0)) AS failSaleCount,
+			SUM(IFNULL(t3.failSaleAmount, 0)) AS failSaleAmount,
+			SUM(IFNULL(t3.failSaleScore, 0)) AS failSaleScore,
+			SUM(IFNULL(t3.sucSaleCount, 0)) AS sucSaleCount,
+			SUM(IFNULL(t3.sucSaleAmount, 0)) AS sucSaleAmount,
+			SUM(IFNULL(t3.sucSaleScore, 0)) AS sucSaleScore,
+			SUM(IFNULL(t4.signingCount, 0)) AS signingCount,
+			SUM(IFNULL(t4.signingAmt, 0)) AS signingAmt,
+			SUM(IFNULL(t4.sucSignCount, 0)) AS sucSignCount,
+			SUM(IFNULL(t4.sucSignAmt, 0)) AS sucSignAmt,
+			SUM(IFNULL(t4.failSignCount, 0)) AS failSignCount,
+			SUM(IFNULL(t4.failSignAmt, 0)) AS failSignAmt,
+			SUM(IFNULL(t4.totalSignCount, 0)) AS totalSignCount,
+			SUM(IFNULL(t4.totalSignAmt, 0)) AS totalSignAmt,
+			SUM(IFNULL(t4.treatyWill, 0)) AS treatyWill,
+			SUM(IFNULL(t5.retCount, 0)) AS retCount,
+			SUM(IFNULL(t5.retAmount, 0)) AS retAmount,
+			SUM(IFNULL(t5.chkRetCount, 0)) AS chkRetCount,
+			SUM(IFNULL(t5.chkRetAmount, 0)) AS chkRetAmount,
+			SUM(IFNULL(t5.sucRetCount, 0)) AS sucRetCount,
+			SUM(IFNULL(t5.sucRetAmount, 0)) AS sucRetAmount,
+			0 AS againAllto
+		FROM
+			t_sum_total_base t1
+		LEFT JOIN t_sum_book_base t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_sale_base t3 ON t1.recordDate = t3.recordDate
+		LEFT JOIN t_sum_sign_base t4 ON t1.recordDate = t4.recordDate
+		LEFT JOIN t_sum_ret_base t5 ON t1.recordDate = t5.recordDate
+		<include refid="sqlQuery"/>
+	</select>
+	<select id="queryDaySumTotal" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t1.applyCount),0) AS applyCountSum,
+			IFNULL(SUM(t1.seniorCount),0) AS seniorCountSum,
+			IFNULL(SUM(t1.notFillCount),0) AS notFillCountSum,
+			IFNULL(SUM(t1.costAmount),0) AS costAmountSum,
+			IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoneySum',
+			IFNULL(SUM(t1.browseCount),0) AS browseCountSum,
+			IFNULL(SUM(t1.storeCount),0) AS storeCountSum,
+			IFNULL(SUM(t1.storeBackCount),0) AS storeBackCountSum,
+			IFNULL(SUM(t1.feedBackCount),0) AS feedBackCountSum,
+			IFNULL(SUM(t1.kfReceivedCount),0) AS kfReceivedCountSum,
+			IFNULL(SUM(t2.sucBookCount),0) AS sucBookCountSum,
+			IFNULL(SUM(t2.preBookCount),0) AS preBookCountSum,
+			IFNULL(SUM(t2.failBookCount),0) AS failBookCountSum,
+			IFNULL(SUM(t3.saleCount),0) AS saleCountSum,
+			IFNULL(SUM(t3.saleAmount),0) AS saleAmountSum,
+			IFNULL(SUM(t3.saleScore),0) AS saleScoreSum,
+			IFNULL(SUM(t3.failSaleCount),0) AS failSaleCountSum,
+			IFNULL(SUM(t3.failSaleAmount),0) AS failSaleAmountSum,
+			IFNULL(SUM(t3.failSaleScore),0) AS failSaleScoreSum,
+			IFNULL(SUM(t3.sucSaleCount),0) AS sucSaleCountSum,
+			IFNULL(SUM(t3.sucSaleAmount),0) AS sucSaleAmountSum,
+			IFNULL(SUM(t3.sucSaleScore),0) AS sucSaleScoreSum,
+			IFNULL(SUM(t4.signingCount),0) AS signingCountSum,
+			IFNULL(SUM(t4.signingAmt),0) AS signingAmtSum,
+			IFNULL(SUM(t4.sucSignCount),0) AS sucSignCountSum,
+			IFNULL(SUM(t4.sucSignAmt),0) AS sucSignAmtSum,
+			IFNULL(SUM(t4.failSignCount),0) AS failSignCountSum,
+			IFNULL(SUM(t4.failSignAmt),0) AS failSignAmtSum,
+			IFNULL(SUM(t4.totalSignCount),0) AS totalSignCountSum,
+			IFNULL(SUM(t4.totalSignAmt),0) AS totalSignAmtSum,
+			IFNULL(SUM(t4.treatyWill),0) AS treatyWillSum,
+			IFNULL(SUM(t5.retCount),0) AS retCountSum,
+			IFNULL(SUM(t5.retAmount),0) AS retAmountSum,
+			IFNULL(SUM(t5.chkRetCount),0) AS chkRetCountSum,
+			IFNULL(SUM(t5.chkRetAmount),0) AS chkRetAmountSum,
+			IFNULL(SUM(t5.sucRetCount),0) AS sucRetCountSum,
+			IFNULL(SUM(t5.sucRetAmount),0) AS sucRetAmountSum
+		FROM
+			t_sum_total_base t1
+		LEFT JOIN t_sum_book_base t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_sale_base t3 ON t1.recordDate = t3.recordDate
+		LEFT JOIN t_sum_sign_base t4 ON t1.recordDate = t4.recordDate
+		LEFT JOIN t_sum_ret_base t5 ON t1.recordDate = t5.recordDate
+		<include refid="sqlQuery"/>
+	</select>
+</mapper>

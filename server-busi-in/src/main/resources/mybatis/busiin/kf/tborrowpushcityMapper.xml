@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWPUSHCITY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			cityName,
+			pushList,
+			cityCode
+		FROM t_borrow_push_city
+		<where>
+			<if test="cityName != null and cityName != ''">
+			  and cityName = #{cityName}
+			 </if>
+			<if test="pushList != null and pushList != ''">
+				and pushList = #{pushList}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_push_city 
+		<where>
+		<if test="cityName != null and cityName != ''">
+		    and cityName = #{cityName}
+		 </if>
+		<if test="pushList != null and pushList != ''">
+			and pushList = #{pushList}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="cityName">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_push_city (
+			cityName,
+			pushList
+		)
+		VALUES ( 
+			#{cityName, jdbcType=VARCHAR},
+			#{pushList, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_push_city 
+		<where> 
+			cityName = #{cityName}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_push_city  
+		<set>
+			<if test="pushList != null">
+				pushList = #{pushList, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  cityName = #{cityName}
+		</where>
+	</update>
+</mapper>

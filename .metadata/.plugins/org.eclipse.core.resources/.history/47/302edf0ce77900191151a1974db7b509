@@ -1,0 +1,98 @@
+package org.xxjr.mall.common;
+
+import java.util.Map;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.NumberUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.llw.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.xxjr.cust.util.CustConstant;
+import org.xxjr.cust.util.info.CustomerPwdUtil;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.mall.sys.CommonUtil;
+import org.xxjr.mall.util.AdminConstant;
+import org.xxjr.mall.util.AdminUtil;
+import org.xxjr.store.web.action.BaseController;
+import org.xxjr.store.web.action.account.know.KnowledgeAction;
+import org.xxjr.sys.util.ValidUtils;
+
+import lombok.extern.slf4j.Slf4j;
+@RestController
+@Slf4j
+public class LoginController extends BaseController{
+	/**
+	 * 密码登录
+	 * 
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("login")
+	public AppResult login() {
+		AppResult result = new AppResult();
+		try {
+			String telephone = request.getParameter("telephone");
+			String password = request.getParameter("password");
+			// 验证手机号
+			if (!ValidUtils.validateTelephone(telephone)) {
+				result.setSuccess(false);
+				result.setMessage("请输入正确的手机号码");
+				return result;
+			}
+			if (StringUtils.isEmpty(password)) {
+				result.setSuccess(false);
+				result.setMessage("密码不能为空");
+				return result;
+			}
+			// 判断是否超过3次密码错误
+			if(!AppProperties.isDebug() && CustomerPwdUtil.getCustLoginErrorCount(telephone)>=3){
+				result.setMessage("用户名或密码错误超过3次,请用其他方式登录！");
+				result.setSuccess(false);
+				result.putAttr("errorMore", "1");
+				return result; 
+			}
+			AppParam custPwdParam = new AppParam();
+			custPwdParam.addAttr("telephone", telephone);
+			custPwdParam.addAttr("password", password);
+			AppResult custInfoResult = CustomerUtil.verifyPass(custPwdParam);
+			if(!custInfoResult.isSuccess()){
+				return custInfoResult;
+			}
+			if(custInfoResult.getRows().size() <= 0){
+				// 缓存登录密码错误次数+1
+				CustomerPwdUtil.setCustLoginErrorCount(telephone);
+				result.setMessage("用户名或密码不正确");
+				result.setSuccess(false);
+				return result;
+			}
+			
+			Map<String, Object> custInfo = custInfoResult.getRow(0);
+			String errMsg = CustomerUtil.errStatus(NumberUtil.getInt(custInfo.get("status"),-1));
+			if (!StringUtils.isEmpty(errMsg)) {
+				return CustomerUtil.retErrorMsg(errMsg);
+			}
+			// 登录成功后，返回用户信息
+			String custId = StringUtil.getString(custInfo.get("customerId"));
+			String signId = CustomerUtil.setToken(CustConstant.ADMIN_PRE, custId,
+					CustConstant.ADMIN_SIGN_CACHE_TIME);
+			RedisUtils.getRedisService().set(CustConstant.ADMIN_PRE +custId, signId, CustConstant.ADMIN_SIGN_CACHE_TIME);
+			response.setHeader("signId", signId);
+			custInfo.remove("password");
+			result.setAttr(custInfo);
+			
+		} catch (Exception e) {
+			LogerUtil.error(LoginController.class,e, "登录错误");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+			CommonUtil.commException(this.getClass(), e, result, "登录错误");
+		}
+		return result;
+	}
+	
+}

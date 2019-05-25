@@ -1,0 +1,51 @@
+# tomcat config
+server.port=6123
+server.servlet.context-path=/job
+
+###rmi server config
+rmi.service.wx=rmiWxTest
+rmi.service.log=rmiLogTest
+rmi.service.shop=rmiShopTest
+rmi.service.col=rmiColTest
+rmi.service.summer=rmiSummaryTest
+rmi.service.sys=rmiSysTest
+rmi.service.cust=rmiCustTest
+rmi.service.busi=rmiBusiTest
+rmi.service.busiIn=rmiBusiInTest
+rmi.service.zx=rmiZxTest
+rmi.service.tools=rmiToolsTest
+rmi.service.xj=rmiXjTest
+rmi.service.mjb=rmiMjbTest
+
+### zook config
+zook.port=6123
+zook.nodeName=jobListenerClient
+zook.nodeType=client
+zook.nodeDesc=jobListenerClient
+
+
+# mq name config
+rabbit.exchange.name=testRabbitExchangeName
+rabbit.queue.custMessage=testcustMessage
+rabbit.queue.custActive=testcustActive
+rabbit.queue.wxMessage=testwxMessage
+rabbit.queue.wxReward=testwxReward
+rabbit.queue.storeTask=teststoreTask
+rabbit.queue.rmiService=testRmiService
+rabbit.queue.pushData=testPushData
+rabbit.queue.fxQueue=testFxQueue
+rabbit.queue.wzCard=testwzCard
+rabbit.queue.wxPosterMsg=testwxPosterMsg
+rabbit.queue.wzCardMessage=testWzCardMessage
+rabbit.queue.export=testExport
+rabbit.queue.transferSale=transferSaleTest
+rabbit.queue.resetJob=testResetJob
+
+# uplaod localùÄ
+upload.path=D:/file/test/goods
+
+logging.config=classpath:log4j2.xml
+
+
+## dev tools trigger
+spring.devtools.restart.trigger-file=trigger.txt

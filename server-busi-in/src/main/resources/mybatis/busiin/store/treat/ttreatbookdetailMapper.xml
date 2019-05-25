@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATBOOKDETAIL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			detailId,
+			applyId, 
+			DATE_FORMAT(bookTime,'%Y-%m-%d %H:%i:%s') as bookTime  ,
+			bookCustId, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			bookStatus,
+			upStatus,
+			errorMessage
+		FROM t_treat_book_detail
+		<where>
+			<if test="detailId != null and detailId != ''">
+			  and detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="bookTime != null and bookTime != ''">
+				and bookTime = #{bookTime}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and <![CDATA[ DATE_FORMAT(bookTime,'%Y-%m-%d')>= #{startTime}]]>
+			</if>
+			<if test="bookCustId != null and bookCustId != ''">
+				and bookCustId = #{bookCustId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="bookStatus != null and bookStatus != ''">
+				and bookStatus = #{bookStatus}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_book_detail 
+		<where>
+		<if test="detailId != null and detailId != ''">
+		    and detailId = #{detailId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="bookTime != null and bookTime != ''">
+			and bookTime = #{bookTime}
+		</if>
+		<if test="startTime != null and startTime != ''">
+			and <![CDATA[ DATE_FORMAT(bookTime,'%Y-%m-%d')>= #{startTime}]]>
+		</if>
+		<if test="bookCustId != null and bookCustId != ''">
+			and bookCustId = #{bookCustId}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="bookStatus != null and bookStatus != ''">
+			and bookStatus = #{bookStatus}
+		</if>
+		<if test="upStatus !=null and upStatus != ''">
+			and upStatus = #{upStatus}
+		</if>
+		<if test="errorMessage !=null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryBookRecord" resultType="map" parameterType="map">
+		SELECT
+			t.detailId,
+			t.applyId, 
+			DATE_FORMAT(t.bookTime,'%Y-%m-%d %H:%i:%s') as bookTime  ,
+			t.bookCustId,
+			t1.realName,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			bookStatus  
+		FROM t_treat_book_detail t
+		LEFT JOIN t_busi_cust t1 ON t.bookcustId = t1.customerId
+		<where>
+			<if test="detailId != null and detailId != ''">
+			  and t.detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="bookTime != null and bookTime != ''">
+				and t.bookTime = #{bookTime}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and <![CDATA[ DATE_FORMAT(t.bookTime,'%Y-%m-%d')>= #{startTime}]]>
+			</if>
+			<if test="bookCustId != null and bookCustId != ''">
+				and t.bookCustId = #{bookCustId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="bookStatus != null and bookStatus != ''">
+				and t.bookStatus = #{bookStatus}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and t.createTime >= #{applyTime} ]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="detailId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_book_detail (
+			applyId,
+			bookTime,
+			bookCustId,
+			createTime,
+			bookStatus,
+			upStatus,
+			errorMessage
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{bookTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{bookCustId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="bookStatus !=null ">
+			#{bookStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="bookStatus ==null ">
+			0,
+			</if>
+			<if test="upStatus ==null ">
+			1 ,
+			</if>
+			<if test="upStatus !=null ">
+			#{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			#{errorMessage, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_book_detail 
+		<where> 
+			detailId = #{detailId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_book_detail  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="bookTime != null">
+				bookTime = #{bookTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="bookCustId != null">
+				bookCustId = #{bookCustId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="bookStatus != null">
+				bookStatus = #{bookStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  detailId = #{detailId}
+		</where>
+	</update>
+	
+	<update id="updateBookStatus" parameterType="map">
+		UPDATE t_treat_book_detail  
+		<set>
+			<if test="bookStatus != null">
+				bookStatus = #{bookStatus, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  detailId = #{detailId}
+		</where>
+	</update>
+	<!-- 查询预约记录  -->
+	<select id="queryBookRecordList" resultType="map" parameterType="map">
+		SELECT
+			t.detailId,
+			DATE_FORMAT(t.bookTime,'%Y-%m-%d %H:%i:%s') as bookTime,
+			t1.applyName,
+			t1.telephone,
+			(CASE WHEN 
+				t2.`status` = 3 THEN
+				1
+				ELSE
+				0
+				END
+			) AS 'bookStatus',
+		   	t2.visitTime,
+		   	(CASE WHEN 
+		   		IFNULL(t3.applyId,'') != '' THEN
+				1
+				ELSE
+				0
+				END
+			) as 'signStatus',
+			t5.orgNo,
+			t4.realName,
+			t4.telephone AS clerkmobile,
+			(
+				CASE
+				WHEN t4.queryStatus = 1 THEN
+					t4.employeeNo
+				ELSE
+					NULL
+				END
+			) AS employeeNo
+		FROM t_treat_book_detail t
+		JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		JOIN t_treat_book t2 ON t.applyId = t2.applyId
+		LEFT JOIN t_treat_info t3 ON t.applyId = t3.applyId
+		JOIN t_busi_cust t4 ON t.bookCustId = t4.customerId
+		JOIN t_org t5 ON t4.orgId = t5.orgId
+		<include refid="queryBookWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<sql id="queryBookWhereSql">
+		<where>
+			<if test="bookStatus != null and bookStatus != ''">
+				and t.bookStatus = #{bookStatus}
+			</if>
+			<if test="upStatus != null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+		</where>
+	</sql>
+	<select id="queryBookRecordCount" resultType="int" parameterType="map">
+		SELECT
+			count(1)
+		FROM t_treat_book_detail t
+		JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		JOIN t_treat_book t2 ON t.applyId = t2.applyId
+		LEFT JOIN t_treat_info t3 ON t.applyId = t3.applyId
+		JOIN t_busi_cust t4 ON t.bookCustId = t4.customerId
+		JOIN t_org t5 ON t4.orgId = t5.orgId
+		<include refid="queryBookWhereSql"/>
+	</select>
+</mapper>

@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EXPORTRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			customerId, 
+			sysType, 
+			exportUrl, 
+			exportMan, 
+			fileName, 
+			parameter, 
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_export_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="sysType != null and sysType != ''">
+				and sysType = #{sysType}
+			</if>
+			<if test="exportUrl != null and exportUrl != ''">
+				and exportUrl = #{exportUrl}
+			</if>
+			<if test="exportMan != null and exportMan != ''">
+				and exportMan = CONCAT('%', #{exportMan} ,'%')
+			</if>
+			<if test="fileName != null and fileName != ''">
+				and fileName = CONCAT('%', #{fileName} ,'%')
+			</if>
+			<if test="parameter != null and parameter != ''">
+				and parameter = #{parameter}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+				 <![CDATA[and createTime >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+				<![CDATA[and createTime < DATE_ADD(#{endRecordDate},INTERVAL 1 day)]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_export_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="sysType != null and sysType != ''">
+			and sysType = #{sysType}
+		</if>
+		<if test="exportUrl != null and exportUrl != ''">
+			and exportUrl = #{exportUrl}
+		</if>
+		<if test="exportMan != null and exportMan != ''">
+			and exportMan = #{exportMan}
+		</if>
+		<if test="fileName != null and fileName != ''">
+				and fileName like '%${fileName}%'
+		</if>
+		<if test="parameter != null and parameter != ''">
+			and parameter = #{parameter}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="startRecordDate != null and startRecordDate != ''">
+			<![CDATA[and createTime >= #{startRecordDate}]]>
+		</if>
+		<if test="endRecordDate != null and endRecordDate != ''">
+			<![CDATA[and createTime < DATE_ADD(#{endRecordDate},INTERVAL 1 day)]]>
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_export_record (
+			customerId,
+			sysType,
+			exportUrl,
+			exportMan,
+			fileName,
+			parameter,
+			status,
+			createTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="sysType !=null ">
+			#{sysType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sysType ==null ">
+			1 ,
+			</if>
+			#{exportUrl, jdbcType=VARCHAR}, 
+			#{exportMan, jdbcType=VARCHAR}, 
+			#{fileName, jdbcType=VARCHAR}, 
+			#{parameter, jdbcType=VARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_export_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_export_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="sysType != null">
+				sysType = #{sysType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="exportUrl != null">
+				exportUrl = #{exportUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="exportMan != null">
+				exportMan = #{exportMan, jdbcType=VARCHAR},  
+			</if>
+			<if test="fileName != null">
+				fileName = #{fileName, jdbcType=VARCHAR},  
+			</if>
+			<if test="parameter != null">
+				parameter = #{parameter, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	<update id="updateExpireStatus" parameterType="map">
+		UPDATE t_export_record  
+		<set>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			 <if test="deleteDateStr != null and deleteDateStr != ''">
+			  and DATE_FORMAT(createTime,'%Y-%m-%d') = #{deleteDateStr}
+			 </if>
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,433 @@
+package org.xxjr.fx.util;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+public class FxProdUtil {
+	
+	/** 产品条件类型信息缓存  **/
+	public final static String KEY_PROD_CONDITION_TYPE_LIST = "key_prod_condition_type_list";
+	
+	/** 分销产品详情信息 **/
+	public final static String KEY_FX_PROD_DETAIL = "key_fx_prod_detail_";
+	
+	/** 分销产品所有信息 **/
+	public final static String KEY_ALL_FX_PROD_LIST = "key_all_fx_prod_list";
+	
+	/** 缓存保留时长为7天 **/
+	public static Integer FXPROD_CACHE_TIME = 7*24*60*60;
+	
+	/** 产品海报生成配置 **/
+	public final static String KEY_PROD_POSTER_CONFIG = "key_prod_poster_config";
+	
+	/** 产品详情界面图片  **/
+	public final static String KEY_PROD_DTL_IMAGES = "key_prod_dtlimages";
+	
+	/**
+	 * 获取产品条件类型列表
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getProdCondTypeList(){
+		List<Map<String, Object>> prodTypeList = (List<Map<String, Object>>) RedisUtils
+			.getRedisService().get(KEY_PROD_CONDITION_TYPE_LIST);
+		if(prodTypeList == null){
+			prodTypeList = refreshProdCondTypeList();
+		}
+		return prodTypeList;
+	}
+	
+	/**
+	 * 根据prodId获取产品基本信息
+	 * @param prodId
+	 * @return
+	 */
+	public static Map<String, Object> getProdBaseInfo(String prodId) {
+		Map<String,Object> prodInfo = new HashMap<String, Object>();
+		if(StringUtils.isEmpty(prodId)){
+			return prodInfo;
+		}
+		List<Map<String, Object>> prodlist = getFxProdList(null);
+		for(Map<String, Object> row : prodlist){
+			if(prodId.equals(StringUtil.getString(row.get("prodId")))){
+				return row;
+			}
+		}
+		return prodInfo;
+	}
+	
+	/**
+	 * 获取分销产品所有信息
+	 * @param reqProdType 产品类型 1-信用卡 2-保险 3-贷款
+	 * @return
+	 */
+	public static List<Map<String, Object>> getFxProdList(String reqProdType) {
+		List<Map<String, Object>> enableList = new ArrayList<Map<String,Object>>();
+		List<Map<String, Object>> alllist = getAllFxProdList();
+		for(Map<String, Object> row : alllist){
+			String enable = StringUtil.getString(row.get("enable"));
+			String prodType = StringUtil.getString(row.get("prodType"));// 产品类型 1-信用卡 2-保险  3-贷款
+			if("1".equals(enable)){
+				if(StringUtils.isEmpty(reqProdType)){
+					enableList.add(row);
+				}else{
+					if(reqProdType.equals(prodType)){
+						enableList.add(row);
+					}
+				}
+			}
+		}
+		return enableList;
+	}
+	
+	/**
+	 * 刷新所有分销产品
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getAllFxProdList() {
+		List<Map<String, Object>> alllist = (List<Map<String, Object>>) RedisUtils
+				.getRedisService().get(KEY_ALL_FX_PROD_LIST);
+		if (alllist == null || alllist.size() <= 0) {
+			alllist = refreshAllFxProdList();
+		}
+		return alllist;
+	}
+	
+	/**
+	 * 刷新产品所有信息
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshAllFxProdList() {
+		AppResult result = new AppResult();
+		// 查询产品基本信息
+		AppParam param = new AppParam();
+		param.setService("fxProdService");
+		param.setMethod("query");
+		param.setOrderBy("indexNum");// 产品序号
+		param.setOrderValue("ASC");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		if (SpringAppContext.getBean("fxProdService") == null) {
+			result =  RemoteInvoke.getInstance().callNoTx(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		List<Map<String, Object>> list = result.getRows();
+		RedisUtils.getRedisService().set(KEY_ALL_FX_PROD_LIST, (Serializable) list, FXPROD_CACHE_TIME);
+		return list;
+	}
+	
+	
+	/**
+	 * 获取分销产品详情
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getFxProdDetail(String prodId){
+		Map<String, Object> prodDetail = (Map<String, Object>) RedisUtils
+			.getRedisService().get(KEY_FX_PROD_DETAIL + prodId);
+		if(prodDetail == null || prodDetail.isEmpty()){
+			prodDetail = refreshFxProdDetail(prodId);
+		}
+		return prodDetail;
+	}
+	
+	
+	/**
+	 * 刷新指定产品信息
+	 * @return
+	 */
+	public static Map<String, Object> refreshFxProdDetail(String prodId){
+		Map<String, Object> prodDetail = new HashMap<String, Object>();
+		if(StringUtils.isEmpty(prodId)){
+			return prodDetail;
+		}
+		AppResult result = new AppResult();
+		// 查询产品基本信息
+		AppParam param = new AppParam();
+		param.setService("fxProdService");
+		param.setMethod("query");
+		param.addAttr("prodId",prodId);
+		param.addAttr("enable","1");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		if (SpringAppContext.getBean("fxProdService") == null) {
+			result = RemoteInvoke.getInstance().call(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		if (result.getRows().size() == 0) {
+			return prodDetail;
+		}
+		prodDetail = result.getRow(0);
+		// 查询产品其他信息
+		AppParam otherParam = new AppParam();
+		otherParam.setService("fxProdOtherService");
+		otherParam.setMethod("queryProdOtherInfo");
+		otherParam.addAttr("prodId",prodId);
+		otherParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		AppResult otherResult = new AppResult();
+		if (SpringAppContext.getBean("fxProdOtherService") == null) {
+			otherResult = RemoteInvoke.getInstance().call(otherParam);
+		}else{
+			otherResult = SoaManager.getInstance().invoke(otherParam);
+		}
+		List<Map<String, Object>> prodOtherList = otherResult.getRows();
+		if (prodOtherList.size() > 0) {
+			prodDetail.put("prodOtherList", prodOtherList);
+		}
+		RedisUtils.getRedisService().set(KEY_FX_PROD_DETAIL + prodId, (Serializable)prodDetail, FXPROD_CACHE_TIME);
+		return prodDetail;
+	}
+	
+	
+	/**
+	 * 刷新产品条件类型列表
+	 * @return
+	 */
+	private static List<Map<String, Object>> refreshProdCondTypeList(){
+		AppResult result = new AppResult();
+		AppParam param = new AppParam();
+		param.setService("fxCondTypeService");
+		param.setMethod("query");
+		param.addAttr("enable","1");
+		param.setOrderBy("typeId");
+		param.setOrderValue("ASC");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		if (SpringAppContext.getBean("fxCondTypeService") == null) {
+			result = RemoteInvoke.getInstance().call(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		List<Map<String, Object>> typeList = result.getRows();
+		RedisUtils.getRedisService().set(KEY_PROD_CONDITION_TYPE_LIST, (Serializable)typeList, 3600 * 24 * 7);
+		return typeList;
+	}
+	
+	
+	/******************** 产品海报生成配置  ***************************/
+	/**
+	 * 获取海报配置
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getPosterConfigList() {
+		List<Map<String, Object>> list = (List<Map<String, Object>>) RedisUtils
+				.getRedisService().get(KEY_PROD_POSTER_CONFIG);
+		if (list == null || list.size() <= 0) {
+			list = refreshPosterConfigList();
+		}
+		return list;
+	}
+	
+	
+	/**
+	 * 获取指定的海报配置信息
+	 * @return
+	 */
+	public static Map<String, Object> getPosterConfig(String configId) {
+		List<Map<String, Object>> configs = getPosterConfigList();
+		for(Map<String, Object> row : configs){
+			if(configId.equals(row.get("configId").toString())){
+				return row;
+			}
+		}
+		return new HashMap<String,Object>();
+	}
+	
+	/**
+	 * 获取指定的海报配置信息
+	 * @return
+	 */
+	public static List<Map<String, Object>> getPosterConfigByType(String type) {
+		List<Map<String, Object>> typeConfigs = new ArrayList<Map<String,Object>>();
+		if(StringUtils.isEmpty(type)){
+			return typeConfigs;
+		}
+		List<Map<String, Object>> configs = getPosterConfigList();
+		for(Map<String, Object> row : configs){
+			if(type.equals(StringUtil.getString(row.get("type")))){
+				typeConfigs.add(row);
+			}
+		}
+		return typeConfigs;
+	}
+	
+	/**
+	 * 根据产品获取指定的海报配置信息
+	 * @return
+	 */
+	public static List<Map<String, Object>> getPosterConfigByProdId(String type, String prodId) {
+		List<Map<String, Object>> prodConfigs = new ArrayList<Map<String,Object>>();
+		if(StringUtils.isEmpty(prodId)){
+			return prodConfigs;
+		}
+		List<Map<String, Object>> configs = getPosterConfigList();
+		for(Map<String, Object> row : configs){
+			if(prodId.equals(StringUtil.getString(row.get("prodId")))){
+				if(StringUtils.isEmpty(type)){
+					prodConfigs.add(row);
+				}else{
+					if(type.equals(StringUtil.getString(row.get("type")))){
+						prodConfigs.add(row);
+					}
+				}
+			}
+		}
+		return prodConfigs;
+	}
+	
+	/**
+	 * 获取产品详情界面那张海报
+	 * @param posterType 海报类型1-信用卡海报 6-贷款海报
+	 * @param prodId 产品ID
+	 * @return
+	 */
+	public static Map<String, Object> getDtlPosterConfig(String posterType, String prodId) {
+		Map<String, Object> prodConfig = new HashMap<String, Object>();
+		if(StringUtils.isEmpty(prodId)){
+			return prodConfig;
+		}
+		List<Map<String, Object>> configs = getPosterConfigByProdId(posterType, prodId);
+		for(Map<String, Object> row : configs){
+			if("1".equals(StringUtil.getString(row.get("isDtlImage")))){
+				prodConfig = row;
+			}
+		}
+		// 为空，则取第一张
+		if(prodConfig.isEmpty() && configs.size() > 0){
+			prodConfig = configs.get(0);
+		}
+		return prodConfig;
+	}
+	
+	/**
+	 * 根据海报类型，随机获取推广海报
+	 * @param type 海报类型
+	 * @return
+	 */
+	public static Map<String, Object> getRandomTgPoster(String type) {
+		List<Map<String, Object>> prodConfigs = getPosterConfigByProdId(type,"0");
+		if(prodConfigs.size() > 0){
+			Random random = new Random();
+			return prodConfigs.get(random.nextInt(prodConfigs.size()));
+		}
+		return null;
+	}
+	
+	/**
+	 * 通过configId获取指定的海报配置信息
+	 * @return
+	 */
+	public static Map<String, Object> getPosterConfigById(String configId) {
+		List<Map<String, Object>> configs = getPosterConfigList();
+		for(Map<String, Object> row : configs){
+			if(configId.equals(StringUtil.getString(row.get("configId")))){
+				return row;
+			}
+		}
+		return new HashMap<String,Object>();
+	}
+	
+	/**
+	 * 刷下海报配置缓存
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshPosterConfigList(){
+		AppResult result = new AppResult();
+		AppParam param = new AppParam();
+		param.setService("fxPosterConfigService");
+		param.setMethod("query");
+		param.addAttr("enable", "1");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		if (SpringAppContext.getBean("fxPosterConfigService") == null) {
+			result = RemoteInvoke.getInstance().call(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		List<Map<String, Object>> list = result.getRows();
+		RedisUtils.getRedisService().set(KEY_PROD_POSTER_CONFIG, (Serializable)list, 3600 * 24 * 7);
+		return list;
+	}
+	
+	
+	/**
+	 * 获取产品详情页图片列表
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getProdDtlimgList(String prodId){
+		List<Map<String, Object>> prodImages = new ArrayList<Map<String,Object>>();
+		if(StringUtils.isEmpty(prodId)){
+			return prodImages;
+		}
+		List<Map<String, Object>> prodDtlimgList = (List<Map<String, Object>>) RedisUtils
+			.getRedisService().get(KEY_PROD_DTL_IMAGES);
+		if(prodDtlimgList == null){
+			prodDtlimgList = refreshProdDtlimgList();
+		}
+		for(Map<String,Object> row : prodDtlimgList){
+			if(prodId.equals(StringUtil.getString(row.get("prodId")))){
+				prodImages.add(row);
+			}
+		}
+		return prodImages;
+	}
+	
+	/**
+	 * 刷新产品详情页图片列表
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshProdDtlimgList(){
+		AppResult result = new AppResult();
+		AppParam param = new AppParam();
+		param.setService("fxProdDtlimgService");
+		param.setMethod("query");
+		param.addAttr("enable", "1");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sho));
+		if (SpringAppContext.getBean("fxProdDtlimgService") == null) {
+			result = RemoteInvoke.getInstance().call(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		List<Map<String, Object>> list = result.getRows();
+		RedisUtils.getRedisService().set(KEY_PROD_DTL_IMAGES, (Serializable)list, 3600 * 24 * 7);
+		return list;
+	}
+	
+	
+	/**
+	 * 获取分销产品信息(包括已下架的产品)
+	 * @return
+	 */
+	public static Map<String, Object> getFxProdDetailByCache(String prodId){
+		List<Map<String, Object>> list = getAllFxProdList();
+		for (Map<String,Object> map : list) {
+			if(StringUtil.getString(map.get("prodId")).equals(prodId)){
+				return map;
+			}
+		}
+		return new HashMap<String,Object>();
+	}
+}

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREONLINERECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			customerId, 
+			loginStatus, 
+			statusDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_store_online_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="loginStatus != null and loginStatus != ''">
+				and loginStatus = #{loginStatus}
+			</if>
+			<if test="statusDesc != null and statusDesc != ''">
+				and statusDesc = #{statusDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and createTime >= #{startDate}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_online_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="loginStatus != null and loginStatus != ''">
+			and loginStatus = #{loginStatus}
+		</if>
+		<if test="statusDesc != null and statusDesc != ''">
+			and statusDesc = #{statusDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			and createTime >= #{startDate}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_online_record (
+			customerId,
+			loginStatus,
+			statusDesc,
+			createTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{loginStatus, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{statusDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_online_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_online_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="loginStatus != null">
+				loginStatus = #{loginStatus, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="statusDesc != null">
+				statusDesc = #{statusDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

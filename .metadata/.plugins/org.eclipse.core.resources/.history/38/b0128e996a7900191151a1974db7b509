@@ -1,0 +1,251 @@
+package org.xxjr.job.listener.busi.store;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+@Slf4j
+public class LendAutoOrderUtils {
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static AppResult lendAllotStart(Object processId){
+		AppResult result = new AppResult();
+		try {
+			int autoAllotStatus = SysParamsUtil.getIntParamByKey("lendAutoAllotStatus", 0);
+			if(autoAllotStatus == 0){
+				result.setMessage("kf 分配信贷经理功能未开启!");
+				result.setSuccess(false);
+				return result;
+			}
+			LogerUtil.log("LendAutoOrderUtils >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+			AppParam queryParams = new AppParam("custRightService", "queryLendKf");
+			queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_cust));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParams);
+			//可分配客服列表
+			List<Map<String,Object>> kfList = queryResult.getRows();
+			// 所有登录客服列表
+			List<Map<String,Object>> loginkfList = new ArrayList<Map<String,Object>>();
+			//专属客服列表
+			List<Map<String,Object>> kfExclusiveList = new ArrayList<Map<String,Object>>();
+            for (Map<String,Object> map : kfList) {
+				if(!StringUtils.isEmpty(map.get("serveCity"))){//专属客服判断其服务城市是否为空
+					kfExclusiveList.add(map);
+				}
+				if(map.get("isLogin").toString().equals("1")){//所有登录客服列表
+					loginkfList.add(map);
+				}
+			}
+            log.info("kfList------------>" + kfList);
+            log.info("kfExclusiveList------------>" + kfExclusiveList);
+            log.info("loginkfList------------>" + loginkfList);
+            
+			String today = DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			updateLendAllotRecord(kfList,today);
+			// 所有要分的单
+			List<Map<String,Object>> lendList = new ArrayList<Map<String,Object>>();
+			
+			// 1.查询3天后未分配的信贷经理
+			int exceedDays = SysParamsUtil.getIntParamByKey("lendAllotExceeDays", 3);// 超过3天
+			AppParam lendParam = new AppParam("busiLendService", "getAllotLends");
+			lendParam.addAttr("exceedDays", exceedDays);
+			lendParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi));
+			AppResult allotResult = RemoteInvoke.getInstance().callNoTx(lendParam);
+			if (allotResult.getRows().size() > 0) {
+				lendList.addAll(allotResult.getRows());
+			}
+			
+			// 2.查询隔天未工作认证的信贷经理
+			AppParam noPassParam = new AppParam("busiLendService", "queryNoPassCardLends");
+			noPassParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi));
+			AppResult noPassResult = RemoteInvoke.getInstance().callNoTx(noPassParam);
+			if (noPassResult.getRows().size() > 0) {
+				lendList.addAll(noPassResult.getRows());
+			}
+			// 根据lendId去除重复数据
+			lendList = removeRepeatMapByKey(lendList, "lendId");
+			
+			// 3.遍历
+			if(lendList !=null && lendList.size() > 0){
+			    int kfCount = kfList.size();
+			    if(kfCount > 0){					
+					//匹配信贷经理的城市信息匹配对应的客服
+					List<Map<String, Object>> kfCustList = new ArrayList<Map<String, Object>>();
+					for (Map<String, Object> kfMap : kfExclusiveList) {
+						Iterator it = lendList.iterator();
+						while (it.hasNext()) {
+							Map<String, Object> lendMap = (Map<String, Object>) it.next();
+							//匹配城市
+							if (lendMap.get("cityName") != null
+									&& kfMap.get("serveCity").toString()
+											.contains(
+													lendMap.get("cityName").toString())) {
+								Map<String, Object> map = new HashMap<String, Object>();
+								map.put("kf", kfMap.get("customerId"));
+								map.put("kfName", kfMap.get("realName"));
+								map.put("customerId", lendMap.get("customerId"));
+								map.put("lendId", lendMap.get("lendId"));
+								kfCustList.add(map);
+								it.remove();
+							}
+						}
+					}
+					//未被匹配kf的信贷经理平均分配
+					for (int i = 0; i < lendList.size(); i++) {
+						if(loginkfList.size() ==0){
+							break;
+						}
+						int mod = i % loginkfList.size();
+						Map<String,Object> kfMap = loginkfList.get(mod);
+						int count = Integer.parseInt(kfMap.get("maxAllotCount").toString()) -1;
+						if(SysParamsUtil.getBoleanByKey("kfMaxAllotCount", false) && count < 0){
+							loginkfList.remove(mod);
+							i--;
+							continue;
+						}
+						kfMap.put("maxAllotCount", count);
+						Map<String,Object> map = new HashMap<String,Object>();
+						map.put("customerId", lendList.get(i).get("customerId"));
+						map.put("lendId", lendList.get(i).get("lendId"));
+						map.put("kf", kfMap.get("customerId"));
+						map.put("kfName",  kfMap.get("realName"));
+						kfCustList.add(map);
+					}
+					//批量修改绑定客服
+					if(kfCustList.size() > 0){
+						AppParam bindParam = new AppParam("busiLendService","batchAllotLend");
+						bindParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_busi));
+						bindParam.addAttr("list", kfCustList);
+						AppResult bindResult = RemoteInvoke.getInstance().call(bindParam);
+						if(bindResult.isSuccess()){
+							//清理customerId为空的数据
+							Iterator it = kfCustList.iterator();
+							while (it.hasNext()) {
+								Map<String,Object> kfMap = (Map<String, Object>) it.next();
+								if(StringUtils.isEmpty(kfMap.get("customerId"))){
+									it.remove();
+								}
+							}
+							AppParam kfCustParams = new AppParam("kfCustService", "batchReplaceInsert");
+							kfCustParams.addAttr("list", kfCustList);
+							kfCustParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_cust));
+							RemoteInvoke.getInstance().call(kfCustParams);
+							//修改kf分配数量
+							AppParam recordParam = new AppParam("lendAllotRecordService","updateTotalCount");
+							recordParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_busi));
+							recordParam.addAttr("recordDate", today);
+							RemoteInvoke.getInstance().call(recordParam);
+						}
+					}
+					
+			    }
+			}
+			JobUtil.addProcessExecute(processId, " kf 分配信贷经理分单 LendAutoOrderUtils msg:" + result.getMessage());
+			LogerUtil.log(" kf 分配信贷经理分单 LendAutoOrderUtils end >>>>>>>>>>>>>>>>>>msg:" + result.getMessage());
+		} catch (Exception e) {
+			LogerUtil.error(LendAutoOrderUtils.class, e, "LendAutoOrderUtils >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "kf 分配信贷经理分单 报错：" + e.getMessage() );
+		}
+		
+		return result;
+	}
+
+	/**
+	 * 查询kf 待处理个数
+	 * @param kf
+	 * @return
+	 */
+	private static int queryKfDealCount(Object kf){
+		AppParam dealCountParams = new AppParam("busiLendService", "queryCount");
+		dealCountParams.addAttr("kf", kf);
+		dealCountParams.addAttr("status", "0");
+		dealCountParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi));
+		 AppResult dealCountResult = RemoteInvoke.getInstance().call(dealCountParams);
+		 
+		 int count = 0;
+		 if(dealCountResult.isSuccess()){
+			 count =  (Integer)dealCountResult.getAttr(DuoduoConstant.TOTAL_SIZE);
+		 }
+		 
+		 dealCountParams = null;
+		 dealCountResult = null;
+		 return count;
+	}
+	
+	/**
+	 * 更新分单记录信息
+	 */
+	private static void updateLendAllotRecord(List<Map<String,Object>> kfList,String today){
+		AppParam updateParams = new AppParam("lendAllotRecordService", "updateNotLogin");
+		updateParams.addAttr("recordDate", today);
+		updateParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+		RemoteInvoke.getInstance().call(updateParams);
+		
+		AppParam kfParams = new AppParam("lendAllotRecordService", "saveOrUpdate");
+		kfParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+		for(Map<String,Object> kfMap : kfList){
+			kfParams.addAttrs(kfMap);
+			kfParams.addAttr("recordDate", today);
+			kfParams.addAttr("dealCount", queryKfDealCount(kfMap.get("customerId")));
+			RemoteInvoke.getInstance().call(kfParams);
+		}
+	}
+	
+	/**
+     * 根据map中的某个key 去除List中重复的map
+     * @param list
+     * @param mapKey
+     * @return
+     */
+	@SuppressWarnings("unchecked")
+    public static List<Map<String, Object>> removeRepeatMapByKey(List<Map<String, Object>> 
+           list, String mapKey){
+        if (list == null || list.isEmpty()) return null;
+ 
+        //把list中的数据转换成msp,去掉同一id值多余数据，保留查找到第一个id值对应的数据
+        List<Map<String, Object>> listMap = new ArrayList<>();
+        
+		@SuppressWarnings("rawtypes")
+		Map<String, Map> msp = new HashMap<>();
+        for(int i = list.size()-1 ; i>=0; i--){
+        	Map<String, Object> map = list.get(i);
+            String id = String.valueOf(map.get(mapKey));
+            map.remove(mapKey);
+            msp.put(id, map);
+        }
+        //把msp再转换成list,就会得到根据某一字段去掉重复的数据的List<Map>
+        Set<String> mspKey = msp.keySet();
+        for(String key: mspKey){
+			Map<String, Object> newMap = msp.get(key);
+            newMap.put(mapKey, key);
+            listMap.add(newMap);
+        }
+        return listMap;
+
+    }
+	
+	
+}

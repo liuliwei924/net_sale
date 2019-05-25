@@ -1,0 +1,139 @@
+package org.xxjr.cust.util.info;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+
+/**
+ * 用户资质工具类
+ * @author liulw 2016-08-31
+ *
+ */
+public class CustJoinUtil {
+
+	
+	/**
+	 * 查询信贷圈
+	 * @param customerId
+	 * @return
+	 */
+	public static  AppResult queryCircleList(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("queryCircleList");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+	
+	/**
+	 * 查询我的关注列表
+	 * @param customerId
+	 * @return
+	 */
+	public static  AppResult queryMyJoinList(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("queryMyJoinList");
+		params.setOrderBy("joinTime");
+		params.setOrderValue("DESC");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+
+	
+	
+	public static int queryCustJoinCount(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("queryCount");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		int count = (Integer)result.getAttr(DuoduoConstant.TOTAL_SIZE);
+		result = null;
+		return count;
+	}
+	
+	
+	/**
+	 * 信贷圈增加关注
+	 * @param customerId
+	 * @return
+	 */
+	public static  AppResult addCustJoin(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("insert");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 信贷圈取消关注
+	 * @param customerId
+	 * @return
+	 */
+	public static  AppResult delCustJoin(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("delete");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 信贷圈取消关注
+	 * @param customerId
+	 * @return
+	 */
+	public static  AppResult updateCustJoin(AppParam params){
+		params.setService("custJoinService");
+		params.setMethod("update");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 效验是否已存在粉丝数据
+	 * @param gzhId
+	 * @param openid
+	 * @return
+	 */
+	public static AppResult checkFansInfo(Object gzhId,Object openid){
+		AppParam checkParam = new AppParam();
+		checkParam.setService("custWxinfoService");
+		checkParam.setMethod("checkFansInfo");
+		checkParam.addAttr("gzhId", gzhId);
+		checkParam.addAttr("openid", openid);
+		checkParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"wx"));
+		return RemoteInvoke.getInstance().call(checkParam);
+	}
+	
+	/**
+	 * 根据wxId查询微信信息
+	 * @param gzhId
+	 * @param wxId
+	 * @return
+	 */
+	public static Map<String,Object> queryInfoByWxId(Object gzhId,Object wxId){
+		AppParam checkParam = new AppParam();
+		checkParam.setService("custWxinfoService");
+		checkParam.setMethod("query");
+		checkParam.addAttr("gzhId", gzhId);
+		checkParam.addAttr("wxId", wxId);
+		checkParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"wx"));
+		AppResult result = RemoteInvoke.getInstance().call(checkParam);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return new HashMap<String, Object>();
+	}
+	
+}

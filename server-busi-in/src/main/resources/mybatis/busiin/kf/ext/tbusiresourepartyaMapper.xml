@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BUSIRESOUREPARTYA">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			busiId,
+			productName, 
+			companyName, 
+			takeOverUs, 
+			takeOverOther, 
+			contactWay, 
+			address, 
+			accountsPrice, 
+			accountsType, 
+			cooperationMode, 
+			DATE_FORMAT(lineTime,'%Y-%m-%d') as lineTime,
+			custId,
+			prodCode,
+			userName
+		FROM t_busi_resoure_party_a
+		<where>
+			<if test="busiId != null and busiId != ''">
+			  and busiId = #{busiId}
+			 </if>
+			<if test="productName != null and productName != ''">
+				and productName like CONCAT('%',#{productName},'%')
+			</if>
+			<if test="companyName != null and companyName != ''">
+				and companyName like CONCAT('%',#{companyName},'%')
+			</if>
+			<if test="prodCode != null and prodCode != ''">
+				and prodCode = #{prodCode}
+			</if>
+			<if test="takeOverUs != null and takeOverUs != ''">
+				and takeOverUs = #{takeOverUs}
+			</if>
+			<if test="takeOverOther != null and takeOverOther != ''">
+				and takeOverOther = #{takeOverOther}
+			</if>
+			<if test="contactWay != null and contactWay != ''">
+				and contactWay = #{contactWay}
+			</if>
+			<if test="address != null and address != ''">
+				and address = #{address}
+			</if>
+			<if test="accountsPrice != null and accountsPrice != ''">
+				and accountsPrice = #{accountsPrice}
+			</if>
+			<if test="accountsType != null and accountsType != ''">
+				and accountsType = #{accountsType}
+			</if>
+			<if test="cooperationMode != null and cooperationMode != ''">
+				and cooperationMode = #{cooperationMode}
+			</if>
+			<if test="lineTime != null and lineTime != ''">
+				and lineTime = #{lineTime}
+			</if>
+			<if test="custId != null and custId != ''">
+				and custId = #{custId}
+			</if>
+			<if test="userName != null and userName != ''">
+				and userName = #{userName}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_busi_resoure_party_a 
+		<where>
+		<if test="busiId != null and busiId != ''">
+		    and busiId = #{busiId}
+		 </if>
+		<if test="productName != null and productName != ''">
+			and productName = #{productName}
+		</if>
+		<if test="companyName != null and companyName != ''">
+			and companyName = #{companyName}
+		</if>
+		<if test="takeOverUs != null and takeOverUs != ''">
+			and takeOverUs = #{takeOverUs}
+		</if>
+		<if test="takeOverOther != null and takeOverOther != ''">
+			and takeOverOther = #{takeOverOther}
+		</if>
+		<if test="contactWay != null and contactWay != ''">
+			and contactWay = #{contactWay}
+		</if>
+		<if test="prodCode != null and prodCode != ''">
+			and prodCode = #{prodCode}
+		</if>
+		<if test="address != null and address != ''">
+			and address = #{address}
+		</if>
+		<if test="accountsPrice != null and accountsPrice != ''">
+			and accountsPrice = #{accountsPrice}
+		</if>
+		<if test="accountsType != null and accountsType != ''">
+			and accountsType = #{accountsType}
+		</if>
+		<if test="cooperationMode != null and cooperationMode != ''">
+			and cooperationMode = #{cooperationMode}
+		</if>
+		<if test="lineTime != null and lineTime != ''">
+			and lineTime = #{lineTime}
+		</if>
+		<if test="custId != null and custId != ''">
+			and custId = #{custId}
+		</if>
+		<if test="userName != null and userName != ''">
+			and userName = #{userName}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="busiId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_busi_resoure_party_a (
+			productName,
+			companyName,
+			takeOverUs,
+			takeOverOther,
+			contactWay,
+			address,
+			accountsPrice,
+			accountsType,
+			cooperationMode,
+			lineTime,
+			custId,
+			userName,
+			prodCode
+		)
+		VALUES ( 
+			#{productName, jdbcType=VARCHAR}, 
+			#{companyName, jdbcType=VARCHAR}, 
+			#{takeOverUs, jdbcType=VARCHAR}, 
+			#{takeOverOther, jdbcType=VARCHAR}, 
+			#{contactWay, jdbcType=VARCHAR}, 
+			#{address, jdbcType=VARCHAR}, 
+			#{accountsPrice, jdbcType=VARCHAR}, 
+			#{accountsType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{cooperationMode, jdbcType=VARCHAR}, 
+			#{lineTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{custId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{userName, jdbcType=VARCHAR},
+			#{prodCode, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_busi_resoure_party_a 
+		<where> 
+			busiId = #{busiId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_busi_resoure_party_a  
+		<set>
+			<if test="productName != null">
+				productName = #{productName, jdbcType=VARCHAR},  
+			</if>
+			<if test="companyName != null">
+				companyName = #{companyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="takeOverUs != null">
+				takeOverUs = #{takeOverUs, jdbcType=VARCHAR},  
+			</if>
+			<if test="takeOverOther != null">
+				takeOverOther = #{takeOverOther, jdbcType=VARCHAR},  
+			</if>
+			<if test="contactWay != null">
+				contactWay = #{contactWay, jdbcType=VARCHAR},  
+			</if>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR},  
+			</if>
+			<if test="prodCode != null">
+				prodCode = #{prodCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="accountsPrice != null">
+				accountsPrice = #{accountsPrice, jdbcType=VARCHAR},  
+			</if>
+			<if test="accountsType != null">
+				accountsType = #{accountsType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="cooperationMode != null">
+				cooperationMode = #{cooperationMode, jdbcType=VARCHAR},  
+			</if>
+			<if test="lineTime != null">
+				lineTime = #{lineTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  busiId = #{busiId}
+		</where>
+	</update>
+</mapper>

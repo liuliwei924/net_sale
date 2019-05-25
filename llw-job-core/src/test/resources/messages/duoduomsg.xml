@@ -1,0 +1,61 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+	<entry key="message.0">系统出错，请联系相应的客户员</entry>
+	
+	<!-- 系统core相关的错误 0-500之间 -->
+	<entry key="message.100">数据库访问出错！</entry>
+	<entry key="message.101">资源文件:{0}读取失败！</entry>
+	<entry key="message.102">XML文件:{0}读取失败！</entry>
+	<entry key="message.103">缓存读取失败！</entry>
+	<entry key="message.104">文件上传时，内存溢出！</entry>
+	<entry key="message.105">上传的文件类型不正确，当前应该上传的文件类型有:{0}</entry>
+	<entry key="message.106">上传的文件内容是空的，请选择其他文件！</entry>
+	
+	<!-- 用户以及用户登录相关 500-600 -->
+	<entry key="message.501">用户登录成功！</entry>
+	<entry key="message.502">用户名:{0}已经在其他地方系统登录.</entry>
+	<entry key="message.503">用户状态不正确！</entry>
+	<entry key="message.504">用户名或密码不正确！</entry>
+	<entry key="message.505">验证码不正确</entry>
+	<entry key="message.506">用户名:{0} 已经存在，请使用其他用户名！</entry>
+	<entry key="message.507">用户删除时，admin用户不允许删除！</entry>
+	<entry key="message.508">修改密码时，原密码不正确！</entry>
+	<entry key="message.509">修改用户信息时，当前登录用户不存在！</entry>
+	<entry key="message.510">两次输入密码不一致!</entry>
+	<!-- 用户以及用户登录相关 900-1000 -->
+	<entry key="message.900">获取详细信息时，创建时间字段参数不正确！</entry>
+	<entry key="message.901">获取详细信息时，报告序号不存在！</entry>
+	<entry key="message.902">报告诉信息，报告ID为:{0}在系统中不存在！</entry>
+	<entry key="message.903">报告相关的用户系统不存在！</entry>
+	<!-- 系统相关  -->
+	<entry key="message.1001">对不起，当前请求的URL:{0},您没有权限!</entry>
+	<entry key="message.1002">对不起，当前请求的服务信息:{0},您没有权限!</entry>
+	
+	<entry key="message.1003">获取相应的表单信息时，表单：{0}不存在！</entry>
+	<entry key="message.1004">获取相应的表格信息时，表格：{0}不存在！</entry>
+	
+	<entry key="message.1005">数据保存失败！</entry>
+	<entry key="message.1006">删除时相应的参数没有值，无法删除！</entry>
+	<entry key="message.1007">数据处理时，缺少参数，字段名：{0} 不允许为空！</entry>
+	<entry key="message.1008">数据修改时，缺少参数:{0}!</entry>
+	<entry key="message.1009">数据修改时，相应的数据已经不存在!</entry>
+	<entry key="message.1010">该数据为内置数据，系统不允许修改!</entry>
+	
+	<entry key="message.1011">角色名为：{0}已经有关联用户，无法删除！</entry>
+	<entry key="message.1012">该角色没有添加相应的菜单，至少需要一个菜椫信息！</entry>
+	
+	<entry key="message.1013">相应角色没添加任何权限，无法修改！</entry>
+	<entry key="message.1014">权限修改时，没有设置方法!</entry>
+	<entry key="message.1015">用户组无法删除时，因组名:{0}存在用户!</entry>
+	<entry key="message.1016">角色无法删除时，角色:{0}存在用户!</entry>
+	<!-- 业务相关-报告信息 -->
+	<entry key="message.2002">文件解析时，文件未找到！</entry>
+	<entry key="message.2003">报告编号:{0}已经在系统中存在！</entry>
+	<entry key="message.2004">用户证件类型或证件号码不存在，无法处理！</entry>
+	<entry key="message.2005">文件无法解析，请确保该文件的内容符合要求！</entry>
+	<entry key="message.2006">文件名为:{0} 系统解析不支持.</entry>
+	<entry key="message.2007">要删除的客户存在报告信息，无法删除.</entry>
+	<entry key="message.2008">身份证号码:{0}不正确，请录入正确的身份证号码</entry>
+</properties>
+	

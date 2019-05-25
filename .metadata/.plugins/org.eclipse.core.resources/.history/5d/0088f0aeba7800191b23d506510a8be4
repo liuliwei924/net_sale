@@ -1,0 +1,201 @@
+package org.xxjr.cust.info;
+
+import java.util.Date;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.fund.CustAmountUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.zk.service.RemoteInvoke;
+
+
+/***
+ * openId和customerId联系
+ * @author qinxcb
+ *
+ */
+@Lazy
+@Service
+@Slf4j
+public class OpenidRelationService extends BaseService {
+	private static final String NAMESPACE = "OPENIDRELATION";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("updateTime", new Date());
+		Object gzhId = params.getAttr("gzhId");
+		Object openidO = params.getAttr("openid");
+		AppResult result = super.insert(params, NAMESPACE);
+		//当用户ID不为空时
+		if (params.getAttr("customerId") != null && openidO != null &&
+			SysParamsUtil.getStringParamByKey("xxjrGzh", "11").equals(
+					gzhId==null?"":gzhId.toString())){
+			String customerId = params.getAttr("customerId").toString();
+			String openid = openidO.toString();
+			//CustAmountService
+			//根据openid 获取custAmount
+			AppParam amountParam = new AppParam();
+			amountParam.addAttr("openid", openid);
+			amountParam.setService("custAmountService");
+			amountParam.setMethod("query");
+			AppResult openidAmounts = SoaManager.getInstance().invoke(amountParam);
+			Map<String,Object> openidAmount = null;
+			if(openidAmounts.getRows().size()==1){
+				openidAmount = openidAmounts.getRow(0);
+			}
+			//根据openid 获取custAmount
+			amountParam = new AppParam();
+			amountParam.addAttr("customerId", customerId);
+			amountParam.setService("custAmountService");
+			amountParam.setMethod("query");
+			AppResult custAmounts = SoaManager.getInstance().invoke(amountParam);
+			Map<String,Object> custAmount = null;
+			if(custAmounts.getRows().size()==1){
+				custAmount = custAmounts.getRow(0);
+			}
+			boolean havaUpdate = false;
+			//都不存在
+			if(custAmount !=null && ((openidAmount!=null && 
+					openidAmount.get("customerId").equals(custAmount.get("customerId")))|| (openidAmount==null ))){ //两个用户都成立时才修改
+				if(custAmount.get("openid")==null){
+					amountParam = new AppParam();
+					//原数据的customerId
+					amountParam.addAttr("newCustomerId", customerId);
+					amountParam.addAttr("openid", openid);
+					amountParam.addAttr("gzhId", gzhId);
+					amountParam.setService("custScoreService");
+					amountParam.setMethod("updateNewScore");
+					SoaManager.getInstance().invoke(amountParam);
+					//修改总积分
+					amountParam.addAttr("customerId", customerId);
+					amountParam.setService("custAmountService");
+					amountParam.setMethod("updateNewScore");
+					SoaManager.getInstance().invoke(amountParam);
+					havaUpdate = true;
+				}
+			}
+			if(havaUpdate){
+				//修改其他平台总积分
+				AppParam scoreAmount = new AppParam();
+				scoreAmount.setService("custWxinfoService");
+				scoreAmount.setMethod("updateTotalScore");
+				scoreAmount.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + "wx"));
+				scoreAmount.addAttr("openid", params.getAttr("openid"));
+				scoreAmount.addAttr("gzhId", params.getAttr("gzhId"));
+				scoreAmount.addAttr("score", CustAmountUtil.custTotalScore(customerId));
+				try{
+					RemoteInvoke.getInstance().call(scoreAmount);
+				}catch(Exception e){
+					log.error("updateTotalScore custWxinfoService error", e);
+				}
+			}
+			
+		}
+		return result;
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		params.addAttr("updateTime", new Date());
+		return super.update(params, NAMESPACE);
+	}
+	/**
+	 * updateNew 
+	 * updateBycustomer
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateNew(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "updateNew", params.getAttr(),  params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 登出后解除绑定
+	 * @param params
+	 * @return
+	 */
+	public AppResult unbind(AppParam params){
+		AppResult result = new AppResult();
+		int size = this.getDao().update(NAMESPACE, "unbind", params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("openid", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("openid"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+}

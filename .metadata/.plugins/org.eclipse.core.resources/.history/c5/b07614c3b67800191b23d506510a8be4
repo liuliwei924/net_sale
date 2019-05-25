@@ -1,0 +1,61 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.util.NumberUtil;
+import org.ddq.common.util.StringUtil;
+import org.xxjr.busi.util.CountGradeUtil;
+import org.xxjr.busi.util.push.AbstractAllotLoanUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.SysParamsUtil;
+
+@PushCode(40)
+public class PushElephant4Util extends AbstractAllotLoanUtil{
+
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		Map<String, Object> response = new HashMap<String, Object>();
+		Object msg = null;
+		int status = 2;
+		String url = SysParamsUtil.getStringParamByKey("push_elephant40_cfg_url", "https://szdxjf.com/Admin/WaibaoApi/addUser");
+		Map<String, Object> resMap = PushPlatformUtils.httpPost(url, formData(row), true);
+		if (NumberUtil.getInt(resMap.get("status"), -1) == 0) {
+			status = 1;
+		}
+		msg = URLDecoder.decode(StringUtil.objectToStr(resMap.get("mes")), "utf-8");
+		response.put("message", msg);
+		response.put("status", status);
+		return response;
+	}
+	
+	public Map<String, String> formData (Map<String, Object> row) {
+		Map<String, String> connParam = new HashMap<String, String>();
+		String applyName = StringUtil.objectToStr(row.get("applyName"));
+		if (PushPlatformUtils.isPushTest()) {
+			applyName = "测试";
+		}
+		connParam.put("name", applyName);
+		connParam.put("phone", StringUtil.objectToStr(row.get("telephone")));
+		connParam.put("city", StringUtil.objectToStr(row.get("cityName")));
+		connParam.put("source", SysParamsUtil.getStringParamByKey("push_elephant40_cfg_source", "xxjr01"));
+		connParam.put("price", StringUtil.objectToStr(NumberUtil.getDouble(row.get("loanAmount"), 1) * 10000));
+		
+		int houseType = NumberUtil.getInt(row.get("houseType"), 2);
+		int carType = NumberUtil.getInt(row.get("carType"), 2);
+		int insurType = NumberUtil.getInt(row.get("insurType"), 0);
+		int socialType = NumberUtil.getInt(row.get("socialType"), 2);
+		int fundType = NumberUtil.getInt(row.get("fundType"), 2);
+		
+		connParam.put("house", CountGradeUtil.judgeHouse(houseType) ? "1" : "0");
+		connParam.put("car", CountGradeUtil.judgeCar(carType) ? "1" : "0");
+		connParam.put("insurance", CountGradeUtil.judgeInsurType(insurType) ? "1" : "0");
+		connParam.put("social", CountGradeUtil.judgeSocialType(socialType) ? "1" : "0");
+		connParam.put("fund", CountGradeUtil.judgeFundType(fundType) ? "1" : "0");
+		return connParam;
+	}
+
+}

@@ -1,0 +1,613 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATSUCCESS">
+    
+    <sql id="querySql">
+	    <where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="loanOrg != null and loanOrg != ''">
+				and loanOrg = #{loanOrg}
+			</if>
+			<if test="status != null and status != ''">
+				and `status` = #{status}
+			</if>
+			<if test="loanType != null and loanType != ''">
+				and `loanType` = #{loanType}
+			</if>
+			<if test="inStatus != null and inStatus != ''">
+				and `status` in(${inStatus})
+			</if>
+			<if test="loanDate != null and loanDate != ''">
+				and loanDate = #{loanDate}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and orgId in (${userOrgs})
+			</if>
+			<if test="backType != null and backType != ''">
+				and `backType` = #{backType}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and queryStatus = #{queryStatus}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+				<![CDATA[and feeAmountDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+				<![CDATA[and feeAmountDate < DATE_ADD(#{endRecordDate},INTERVAL 1 day)]]>
+			</if>
+		</where>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			customerId,
+			backType,
+			(CASE backType
+			 WHEN 1 THEN '手动添加'
+			 WHEN 2 THEN '查CFS回款'
+			 END) as 'backTypeText',
+			payType,
+			(CASE payType
+			 WHEN 1 THEN '现金'
+			 WHEN 2 THEN '转账'
+			 WHEN 3 THEN '代扣'
+			 WHEN 4 THEN '金账户'
+			 END) as 'payTypeText',
+			recType,
+			(CASE recType
+			 WHEN 3 THEN '订金收入'
+			 WHEN 4 THEN '客户回款'
+			 WHEN 5 THEN '客户尾款'
+			 WHEN 6 THEN '客户返点'
+			 WHEN 7 THEN '客户退款'
+			 WHEN 8 THEN '转总部入账'
+			 WHEN 10 THEN '退订金'
+			 WHEN 16 THEN '定金转回款'
+			 WHEN 17 THEN '提前回款退款'
+			 WHEN 18 THEN '投诉退款'
+			 END) as 'recTypeText',
+			recStatus, 
+			(CASE recStatus
+			 WHEN 0 THEN '未审核'
+			 WHEN 1 THEN '审核通过'
+			 WHEN 2 THEN '审核拒绝'
+			 END) as 'recStatusText',
+			loanOrg, 
+			orgId,
+			applyAmount, 
+			loanAmount, 
+			loanType,
+			(CASE loanType
+			 WHEN 1 THEN '信用贷'
+			 WHEN 2 THEN '抵押贷'
+			 END) as 'loanTypeText',
+			anjiePerson,
+			loanDeadline, 
+			loanDate, 
+			nextRetDate, 
+			feeAmountDate,
+			nextRetAmount, 
+			status,
+			(CASE `status` 
+				WHEN 1 THEN '未核算'
+				WHEN 2 THEN '已核算'
+				WHEN 3 THEN '审核失败'
+			END) statusText, 
+			feeAmount, 
+			rewardAmount,
+			recordDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			updateBy, 
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			queryStatus,
+			(CASE queryStatus
+			 WHEN 1 THEN '未查询'
+			 WHEN 2 THEN '查询成功'
+			 WHEN 3 THEN '查询失败'
+			 END) as 'queryStatusText',
+			errorMessage,
+			reContractId
+		FROM t_treat_success 
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_success 
+		<include refid="querySql"/>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.applyId, 
+			t.customerId, 
+			t1.realName,
+			t4.orgName,
+			t1.telephone,
+			t.loanOrg, 
+			t.anjiePerson,
+			t2.loanAmount as 'applyAmount', 
+			t.loanAmount, 
+			t.loanDeadline, 
+			t.loanDate, 
+			t.nextRetDate, 
+			t.feeAmountDate,
+			t.nextRetAmount, 
+			t.`status`,
+			(CASE t.`status` 
+				WHEN 1 THEN '未核算'
+				WHEN 2 THEN '已核算'
+				WHEN 3 THEN '审核失败'
+			END) statusText, 
+			(CASE t.`loanType` 
+				WHEN 1 THEN '信用贷'
+				WHEN 2 THEN '抵押贷'
+			END
+			) loanType, 
+			t.feeAmount, 
+			t.rewardAmount,
+			t.recordDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			t.updateBy, 
+			t3.applyName,
+			f_hide_phone(t3.telephone) as borrowerTel,
+			IFNULL(t2.cityName,t3.cityName) as 'cityName',
+			t.channelDetail,
+			CONCAT_WS('-',team.teamName,ch.channelName) as 'channelName',
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d') as applyTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_treat_success_history t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_borrow_base t2  ON t.applyId = t2.applyId
+		JOIN t_borrow_apply t3 ON t.applyId = t3.applyId
+		LEFT JOIN t_org t4 ON t4.orgId = t1.orgId
+		LEFT JOIN t_borrow_channel ch ON t.channelCode = ch.channelCode
+		LEFT JOIN t_borrow_team team ON ch.teamNo = team.teamNo
+		<include refid="showWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM t_treat_success_history t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_borrow_base t2  ON t.applyId = t2.applyId
+		JOIN t_borrow_apply t3 ON t.applyId = t3.applyId
+		LEFT JOIN t_org t4 ON t4.orgId = t1.orgId
+		LEFT JOIN t_borrow_channel ch ON t.channelCode = ch.channelCode
+		LEFT JOIN t_borrow_team team ON ch.teamNo = team.teamNo
+		<include refid="showWhereSql"/>
+	</select>
+	<sql id="showWhereSql">
+		<where>
+			<if test="recordId != null and recordId != ''">
+			   	and t.recordId = #{recordId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="realName != null and realName != ''">
+				and (t3.telephone=#{realName} OR t3.applyName like CONCAT(#{realName},'%'))
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				and (t1.telephone =#{storeRealName} OR t1.realName like CONCAT(#{storeRealName},'%'))
+			</if>
+			<if test="orgId != null and orgId != ''">
+				 and t4.orgId = #{orgId}
+			</if>		
+			<if test="channelDetail != null and channelDetail != ''">
+				and t.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			<if test="startFeeDate != null and startFeeDate != ''">
+				<![CDATA[ and t.feeAmountDate >= #{startFeeDate} ]]>
+			</if>
+			<if test="endFeeDate != null and endFeeDate != ''">
+				<![CDATA[ and t.feeAmountDate <= #{endFeeDate} ]]>
+			</if>
+			<if test="startApplyTime != null and startApplyTime != ''">
+				<![CDATA[ and t.applyTime >= #{startApplyTime} ]]>
+			</if>
+			<if test="endApplyTime != null and endApplyTime != ''">
+				<![CDATA[ and DATE_FORMAT(t.applyTime,'%Y-%m-%d') <= #{endApplyTime} ]]>
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and ch.channelName like CONCAT('%', #{channelName},'%') 
+			</if>
+			<if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t.channelCode,#{fixChannels})
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				and ch.type IN(${queryChannelType})
+			</if>
+		</where>
+	</sql>
+	
+	<select id="querySimpleInfo" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			loanOrg, 
+			loanAmount, 
+			feeAmount, 
+			rewardAmount,
+			DATE_FORMAT(feeAmountDate,'%Y-%m-%d') as feeAmountDate ,
+			(CASE 
+				WHEN status =1 THEN '未核算'
+				WHEN status =2 THEN '已核算'
+				WHEN status =3 THEN '审核失败'
+				ELSE ''
+			END) as 'statusText', 
+			status
+		FROM t_treat_success 
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryRetBackInfo" resultType="map" parameterType="map">
+		SELECT
+			(select customerId  from t_busi_cust where telephone=#{loanTelephone}) as 'customerId',
+			(select applyId  from t_borrow_apply where telephone=#{borrowTelephone}) as 'applyId'
+		FROM dual 
+	</select>
+	
+	<!-- 查询放款成功信息 -->
+	<select id="querySuccessInfo" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.applyId, 
+			t.customerId, 
+			t1.realName,
+			t.loanOrg, 
+			t.anjiePerson,
+			t.applyAmount, 
+			t.loanAmount, 
+			t.loanDeadline, 
+			DATE_FORMAT(t.loanDate,'%Y-%m-%d') as loanDate , 
+			DATE_FORMAT(t.nextRetDate,'%Y-%m-%d') as nextRetDate , 
+			DATE_FORMAT(t.feeAmountDate,'%Y-%m-%d') as feeAmountDate ,
+			t.nextRetAmount, 
+			t.`status`, 
+			t.loanType,
+			t.feeAmount,
+			t.rewardAmount, 
+			t.recordDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			t.updateBy, 
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_treat_success t
+		LEFT JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		WHERE t.applyId = #{applyId}
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_success (
+			applyId,
+			customerId,
+			loanOrg,
+			anjiePerson,
+			applyAmount,
+			loanAmount,
+			loanDeadline,
+			loanDate,
+			nextRetDate,
+			feeAmountDate,
+			nextRetAmount,
+			status,
+			loanType,
+			feeAmount,
+			rewardAmount,
+			recordDesc,
+			createTime,
+			updateBy,
+			updateTime,
+			orgId,
+			backType,
+			payType,
+			recType,
+			recStatus,
+			queryStatus,
+			errorMessage,
+			loanNo,
+			reContractId
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{loanOrg, jdbcType=VARCHAR}, 
+			#{anjiePerson, jdbcType=VARCHAR}, 
+			<if test="applyAmount !=null ">
+			#{applyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="loanAmount !=null ">
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="loanDeadline !=null ">
+			#{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanDeadline ==null ">
+			0 ,
+			</if>
+			#{loanDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{nextRetDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{feeAmountDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			<if test="nextRetAmount !=null ">
+			#{nextRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="nextRetAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			<if test="loanType !=null ">
+			#{loanType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanType ==null ">
+			1 ,
+			</if>
+			<if test="feeAmount !=null ">
+			#{feeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feeAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="rewardAmount !=null ">
+			#{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rewardAmount ==null ">
+			0.00 ,
+			</if>
+			#{recordDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			<if test="backType !=null ">
+			#{backType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backType ==null ">
+			1 ,
+			</if>
+			#{payType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{recType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="queryStatus !=null ">
+			#{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="queryStatus ==null ">
+			1 ,
+			</if>
+			#{errorMessage, jdbcType=VARCHAR},
+			#{loanNo, jdbcType=VARCHAR},
+			#{reContractId, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_success 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	
+	<delete id="deleteBack" parameterType="map">
+		DELETE FROM t_treat_success 
+		<where> 
+			applyId = #{applyId}
+		    <if test="customerId != null">
+				AND customerId = #{customerId}
+			</if>
+			<if test="backType != null">
+				AND backType = #{backType}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				AND reContractId = #{reContractId}
+			</if>
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_treat_success  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanOrg != null">
+				loanOrg = #{loanOrg, jdbcType=VARCHAR},  
+			</if>
+			<if test="anjiePerson != null">
+				anjiePerson = #{anjiePerson, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanType != null">
+				loanType = #{loanType, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyAmount != null">
+				applyAmount = #{applyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDeadline != null">
+				loanDeadline = #{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDate != null">
+				loanDate = #{loanDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetDate != null">
+				nextRetDate = #{nextRetDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="feeAmountDate != null">
+				feeAmountDate = #{feeAmountDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetAmount != null">
+				nextRetAmount = #{nextRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmount != null">
+				feeAmount = #{feeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardAmount != null">
+				rewardAmount = #{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="recordDesc != null">
+				recordDesc = #{recordDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="backType != null">
+				backType = #{backType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="payType != null">
+				payType = #{payType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recType != null">
+				recType = #{recType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recStatus != null">
+				recStatus = #{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+			  <if test="fromStatus != null">
+			  	AND status = #{fromStatus}
+			  </if>
+			  <if test="customerId != null">
+			  	AND customerId = #{customerId}
+			  </if>
+		</where>
+	</update>
+	
+	<update id="updateBackLoan" parameterType="map">
+		UPDATE t_treat_success  
+		<set>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDate != null">
+				loanDate = #{loanDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="backType != null">
+				backType = #{backType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="payType != null">
+				payType = #{payType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recType != null">
+				recType = #{recType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recStatus != null">
+				recStatus = #{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+			  <if test="customerId != null">
+			  	AND customerId = #{customerId}
+			  </if>
+			  <if test="backType != null">
+				AND backType = #{backType}
+			  </if>
+		</where>
+	</update>
+	
+	<update id="updateBackLoanCust" parameterType="map">
+		UPDATE t_treat_success
+		<set>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  <if test="applyId != null">
+			  	applyId = #{applyId} 
+			  </if>
+			  <if test="oldCustomerId != null">
+			  	AND customerId = #{oldCustomerId}
+			  </if>
+		</where>
+	</update>
+</mapper>

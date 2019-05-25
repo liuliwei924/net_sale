@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RULEREWARD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			rewardId,
+			rewardName,
+			rewardService,
+			rewardMethod,
+			rewardRmi,
+			rewardDesc,
+			createBy ,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime"
+		FROM t_rule_reward
+		<where>
+			<if test="rewardId != null and rewardId != ''">
+			  and rewardId = #{rewardId}
+			 </if>
+			<if test="rewardName != null and rewardName != ''">
+				and rewardName = #{rewardName}
+			</if>
+			<if test="rewardService != null and rewardService != ''">
+				and rewardService = #{rewardService}
+			</if>
+			<if test="rewardMethod != null and rewardMethod != ''">
+				and rewardMethod = #{rewardMethod}
+			</if>
+			<if test="rewardDesc != null and rewardDesc != ''">
+				and rewardDesc = #{rewardDesc}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_rule_reward 
+		<where>
+		<if test="rewardId != null and rewardId != ''">
+		    and rewardId = #{rewardId}
+		 </if>
+		<if test="rewardName != null and rewardName != ''">
+			and rewardName = #{rewardName}
+		</if>
+		<if test="rewardService != null and rewardService != ''">
+			and rewardService = #{rewardService}
+		</if>
+		<if test="rewardMethod != null and rewardMethod != ''">
+			and rewardMethod = #{rewardMethod}
+		</if>
+		<if test="rewardDesc != null and rewardDesc != ''">
+			and rewardDesc = #{rewardDesc}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="rewardId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_rule_reward (
+			rewardName,
+			rewardRmi,
+			rewardService,
+			rewardMethod,
+			rewardDesc,
+			createBy,
+			createTime
+		)
+		VALUES ( 
+			#{rewardName, jdbcType=VARCHAR}, 
+			#{rewardRmi, jdbcType=VARCHAR},
+			#{rewardService, jdbcType=VARCHAR}, 
+			#{rewardMethod, jdbcType=VARCHAR}, 
+			#{rewardDesc, jdbcType=VARCHAR}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_rule_reward 
+		<where> 
+			rewardId = #{rewardId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_rule_reward  
+		<set>
+			<if test="rewardName != null">
+				rewardName = #{rewardName, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardRmi != null">
+				rewardRmi = #{rewardRmi, jdbcType=VARCHAR},
+			</if>
+			<if test="rewardService != null">
+				rewardService = #{rewardService, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardMethod != null">
+				rewardMethod = #{rewardMethod, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardDesc != null">
+				rewardDesc = #{rewardDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  rewardId = #{rewardId}
+		</where>
+	</update>
+</mapper>

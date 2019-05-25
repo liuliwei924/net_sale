@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ACTIVITY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			activeId as "activeId",
+			activeCode as "activeCode",  <!-- 活动代号 -->
+			activeImg as "activeImg",  
+			activeType as "activeType",  <!-- 活动类型0 内置活动 1 系统活动 2 外部活动 -->
+			content as "content",  
+			activeUrl as "activeUrl",  
+			acitveResult as "acitveResult",  <!-- 活动结果展示 -->
+			activeName as "activeName",  <!-- 活动名称 -->
+			activeDesc as "activeDesc",  
+			DATE_FORMAT(startDate,'%Y-%m-%d %H:%i:%s') as "startDate", <!-- 开始时间 -->
+			DATE_FORMAT(endDate,'%Y-%m-%d %H:%i:%s') as "endDate", <!-- 结束时间 -->
+			activeStatus as "activeStatus",  <!-- 0待发布 1正在使用 2 已经完成 -->
+			createBy as "createBy",  <!-- 创建人 -->
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime", <!-- 创建时间 -->
+			updateBy as "updateBy",  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime", 
+			auditBy as "auditBy",  <!-- 审核人 -->
+			DATE_FORMAT(auditTime,'%Y-%m-%d %H:%i:%s') as "auditTime" <!-- 审核时间 -->
+		FROM t_activity
+		<where>
+			<if test="activeId != null and activeId != ''">
+			  and activeId = #{activeId}
+			 </if>
+			<if test="activeCode != null and activeCode != ''">
+				and activeCode = #{activeCode}
+			</if>
+			<if test="activeImg != null and activeImg != ''">
+				and activeImg = #{activeImg}
+			</if>
+			<if test="activeType != null and activeType != ''">
+				and activeType = #{activeType}
+			</if>
+			<if test="content != null and content != ''">
+				and content = #{content}
+			</if>
+			<if test="activeUrl != null and activeUrl != ''">
+				and activeUrl = #{activeUrl}
+			</if>
+			<if test="acitveResult != null and acitveResult != ''">
+				and acitveResult = #{acitveResult}
+			</if>
+			<if test="activeName != null and activeName != ''">
+				and activeName = #{activeName}
+			</if>
+			<if test="activeDesc != null and activeDesc != ''">
+				and activeDesc = #{activeDesc}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				and startDate = #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				and endDate = #{endDate}
+			</if>
+			<if test="activeStatus != null and activeStatus != ''">
+				and activeStatus = #{activeStatus}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="auditBy != null and auditBy != ''">
+				and auditBy = #{auditBy}
+			</if>
+			<if test="auditTime != null and auditTime != ''">
+				and auditTime = #{auditTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_activity 
+		<where>
+		<if test="activeId != null and activeId != ''">
+		    and activeId = #{activeId}
+		 </if>
+		<if test="activeCode != null and activeCode != ''">
+			and activeCode = #{activeCode}
+		</if>
+		<if test="activeImg != null and activeImg != ''">
+			and activeImg = #{activeImg}
+		</if>
+		<if test="activeType != null and activeType != ''">
+			and activeType = #{activeType}
+		</if>
+		<if test="content != null and content != ''">
+			and content = #{content}
+		</if>
+		<if test="activeUrl != null and activeUrl != ''">
+			and activeUrl = #{activeUrl}
+		</if>
+		<if test="acitveResult != null and acitveResult != ''">
+			and acitveResult = #{acitveResult}
+		</if>
+		<if test="activeName != null and activeName != ''">
+			and activeName = #{activeName}
+		</if>
+		<if test="activeDesc != null and activeDesc != ''">
+			and activeDesc = #{activeDesc}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			and startDate = #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			and endDate = #{endDate}
+		</if>
+		<if test="activeStatus != null and activeStatus != ''">
+			and activeStatus = #{activeStatus}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="auditBy != null and auditBy != ''">
+			and auditBy = #{auditBy}
+		</if>
+		<if test="auditTime != null and auditTime != ''">
+			and auditTime = #{auditTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="activeId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_activity (
+			activeCode,
+			activeImg,
+			activeType,
+			content,
+			activeUrl,
+			acitveResult,
+			activeName,
+			activeDesc,
+			startDate,
+			endDate,
+			activeStatus,
+			createBy,
+			createTime,
+			updateBy,
+			updateTime,
+			auditBy,
+			auditTime
+		)
+		VALUES ( 
+			#{activeCode, jdbcType=VARCHAR}, 
+			#{activeImg, jdbcType=VARCHAR}, 
+			<if test="activeType !=null ">
+			#{activeType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="activeType ==null ">
+			0 ,
+			</if>
+			#{content, jdbcType=NVARCHAR}, 
+			#{activeUrl, jdbcType=VARCHAR}, 
+			#{acitveResult, jdbcType=VARCHAR}, 
+			#{activeName, jdbcType=VARCHAR}, 
+			#{activeDesc, jdbcType=VARCHAR}, 
+			#{startDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{endDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{activeStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{auditBy, jdbcType=VARCHAR}, 
+			#{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_activity 
+		<where> 
+			activeId = #{activeId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_activity  
+		<set>
+			<if test="activeCode != null">
+				activeCode = #{activeCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="activeImg != null">
+				activeImg = #{activeImg, jdbcType=VARCHAR},  
+			</if>
+			<if test="activeType != null">
+				activeType = #{activeType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="content != null">
+				content = #{content, jdbcType=NVARCHAR},  
+			</if>
+			<if test="activeUrl != null">
+				activeUrl = #{activeUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="acitveResult != null">
+				acitveResult = #{acitveResult, jdbcType=VARCHAR},  
+			</if>
+			<if test="activeName != null">
+				activeName = #{activeName, jdbcType=VARCHAR},  
+			</if>
+			<if test="activeDesc != null">
+				activeDesc = #{activeDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="startDate != null">
+				startDate = #{startDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="endDate != null">
+				endDate = #{endDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="activeStatus != null">
+				activeStatus = #{activeStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  activeId = #{activeId}
+		</where>
+	</update>
+</mapper>

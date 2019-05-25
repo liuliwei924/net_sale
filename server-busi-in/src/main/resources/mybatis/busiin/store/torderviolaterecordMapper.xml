@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ORDERVIOLATERECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			lastStore,
+			custLabel, 
+			orderStatus, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_order_violate_record
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="lastStore != null and lastStore != ''">
+			  and lastStore = #{lastStore}
+			 </if>
+			<if test="custLabel != null and custLabel != ''">
+				and custLabel = #{custLabel}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and orderStatus = #{orderStatus}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_order_violate_record 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="lastStore != null and lastStore != ''">
+		    and lastStore = #{lastStore}
+		 </if>
+		<if test="custLabel != null and custLabel != ''">
+			and custLabel = #{custLabel}
+		</if>
+		<if test="orderStatus != null and orderStatus != ''">
+			and orderStatus = #{orderStatus}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.`orderStatus`,
+			(
+				CASE t.`orderStatus`
+				WHEN - 1 THEN
+					'待跟进'
+				WHEN 0 THEN
+					'跟进中'
+				WHEN 1 THEN
+					'未上门待签约'
+				WHEN 2 THEN
+					'已上门待签约'
+				WHEN 3 THEN
+					'已上门签约'
+				WHEN 4 THEN
+					'进件审核中'
+				WHEN 5 THEN
+					'银行已放款'
+				WHEN 6 THEN
+					'银行已拒绝'
+				WHEN 7 THEN
+					'无可贷点'
+				WHEN 8 THEN
+					'空号/错号'
+				ELSE
+					'未知'
+				END
+			) AS 'orderStatusText',
+			t.custLabel,
+			(
+				CASE t.custLabel
+				WHEN 0 THEN
+					'0星：默认未了解的客户'
+				WHEN 1 THEN
+					'1星：无条件无可贷点'
+				WHEN 2 THEN
+					'2星：有条件暂时不能进件的'
+				WHEN 3 THEN
+					'2星+：有需求要约上门客户'
+				WHEN 4 THEN
+					'3星：可做小贷的客户'
+				WHEN 5 THEN
+					'4星：可做银行的客户'
+				ELSE
+					'未知'
+				END
+			) AS custLabelText,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.applyName,
+			f_hide_phone (t1.telephone) AS telephone,
+			t2.realName AS currentName,
+			concat(t3.orgNo,'-',t3.orgName) as orgName
+		FROM
+			t_order_violate_record t
+		LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		JOIN t_busi_cust t2 ON t.lastStore = t2.customerId
+		JOIN t_org t3 ON t2.orgId = t3.orgId
+		<include refid="showWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(1)
+		FROM t_order_violate_record t
+		LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		JOIN t_busi_cust t2 ON t.lastStore = t2.customerId
+		JOIN t_org t3 ON t2.orgId = t3.orgId
+		<include refid="showWhereSql"></include>
+	</select>
+
+	<sql id="showWhereSql">
+		<where>
+			<if test="applyId != null and applyId != ''">
+			    and t.applyId = #{applyId}
+			 </if>
+			<if test="applyName != null and applyName != ''">
+				and t1.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone=#{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone=#{mobile}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore = #{lastStore}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t.custLabel = #{custLabel}
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName like CONCAT(#{realName},'%')
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t3.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t3.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and DATE_FORMAT(t.createTime,'%Y-%m-%d') >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and DATE_FORMAT(t.createTime,'%Y-%m-%d') <= #{endTime} ]]>
+			</if>
+		</where>
+	</sql>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_order_violate_record (
+			applyId,
+			lastStore,
+			custLabel,
+			orderStatus,
+			createTime
+		)
+		VALUES ( 
+			<if test="applyId !=null ">
+			#{applyId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="lastStore !=null ">
+			#{lastStore, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="custLabel !=null ">
+			#{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="custLabel ==null ">
+			0 ,
+			</if>
+			<if test="orderStatus !=null ">
+			#{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderStatus ==null ">
+			-1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_order_violate_record 
+		<where> 
+			applyId = #{applyId} AND 
+			lastStore = #{lastStore}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_order_violate_record  
+		<set>
+			<if test="custLabel != null">
+				custLabel = #{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderStatus != null">
+				orderStatus = #{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId} AND 
+			  lastStore = #{lastStore}
+		</where>
+	</update>
+</mapper>

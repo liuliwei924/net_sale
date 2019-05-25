@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUGGESTRECORD">
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			custName,
+			custTelephone,
+			type, 
+			busiName,
+			busiTelephone,
+			customerId,
+			applyId,			 
+			detailDesc, 
+			status, 
+			complaintGrade,
+			DATE_FORMAT(serviceTime,'%Y-%m-%d %H:%i:%s') as "serviceTime",
+			serviceName, 
+			serviceDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_suggest_record
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(1) 
+		FROM t_suggest_record 
+		<include refid="queryWhereSql"></include>
+	</select>
+	
+	<sql id="queryWhereSql">
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		 <if test="custName != null and custName != ''">
+			and custName = #{custName}
+		</if>
+		<if test="custTelephone != null and custTelephone != ''">
+			and custTelephone = #{custTelephone}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="type != null and type != ''">
+			and type = #{type}
+		</if>
+		<if test="busiName != null and busiName != ''">
+			and busiName = #{busiName}
+		</if>
+		<if test="busiTelephone != null and busiTelephone != ''">
+			and busiTelephone = #{busiTelephone}
+		</if>
+		<if test="detailDesc != null and detailDesc != ''">
+			and detailDesc = #{detailDesc}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="complaintGrade != null and complaintGrade != ''">
+			and complaintGrade = #{complaintGrade}
+		</if>
+		<if test="serviceTime != null and serviceTime != ''">
+			and serviceTime = #{serviceTime}
+		</if>
+		<if test="serviceDesc != null and serviceDesc != ''">
+			and serviceDesc = #{serviceDesc}
+		</if>
+		<if test="serviceName != null and serviceName != ''">
+			and serviceName = #{serviceName}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="createTimeStart != null and createTimeStart != ''">
+			<![CDATA[ and createTime >= #{createTimeStart} ]]>
+		</if>
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+			<![CDATA[ and createTime <= #{createTimeEnd} ]]>
+		</if>
+		<if test="serviceTimeStart != null and serviceTimeStart != ''">
+			<![CDATA[ and serviceTime >= #{serviceTimeStart} ]]>
+		</if>
+		<if test="serviceTimeEnd != null and serviceTimeEnd != ''">
+			<![CDATA[ and serviceTime <= #{serviceTimeEnd} ]]>
+		</if>
+		<if test="searchKey !=null and searchKey !='' ">
+			and (custName like concat('%',#{searchKey},'%') or custTelephone like concat('%',#{searchKey},'%'))
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			<![CDATA[ and createTime >= #{applyTime} ]]>
+		</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_suggest_record (
+			custName,
+			custTelephone,
+			type, 
+			busiName,
+			busiTelephone,
+			customerId,
+			applyId,		 
+			detailDesc, 
+			status, 
+			createTime,
+			complaintGrade, 
+			serviceTime, 
+			serviceName, 
+			serviceDesc
+		)
+		VALUES ( 
+			#{custName, jdbcType=VARCHAR}, 
+			#{custTelephone, jdbcType=VARCHAR}, 
+			<if test="type !=null ">
+			#{type, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="type ==null ">
+			1 ,
+			</if>
+			#{busiName, jdbcType=VARCHAR}, 
+			#{busiTelephone, jdbcType=VARCHAR},
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{detailDesc, jdbcType=VARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="complaintGrade !=null">
+			#{complaintGrade, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="complaintGrade ==null ">
+			1 ,
+			</if>
+			#{serviceTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{serviceName, jdbcType=VARCHAR}, 
+			#{serviceDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_suggest_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_suggest_record  
+		<set>
+			<if test="custName != null">
+				custName = #{custName, jdbcType=VARCHAR},  
+			</if>
+			<if test="custTelephone != null">
+				custTelephone = #{custTelephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="type != null">
+				type = #{type, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="busiName != null">
+				busiName = #{busiName, jdbcType=VARCHAR},  
+			</if>
+			<if test="busiTelephone != null">
+				busiTelephone = #{busiTelephone, jdbcType=VARCHAR},   
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="detailDesc != null">
+				detailDesc = #{detailDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="complaintGrade != null">
+				complaintGrade = #{complaintGrade, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="serviceTime != null">
+				serviceTime = #{serviceTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="serviceName != null">
+				serviceName = #{serviceName, jdbcType=VARCHAR}, 
+			</if>
+			<if test="serviceDesc != null">
+				serviceDesc = #{serviceDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	<!-- 查询投诉建议列表 -->
+	<select id="querySuggestList" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.custName,
+			t.custTelephone,
+			t.type, 
+			t.busiName,
+			t.busiTelephone,
+			t.customerId,
+			t.applyId,			 
+			t.detailDesc, 
+			t.status, 
+			t.complaintGrade,
+			DATE_FORMAT(t.serviceTime,'%Y-%m-%d %H:%i:%s') as "serviceTime",
+			t.serviceName, 
+			t.serviceDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t2.realName,
+			t2.groupName,
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName
+		FROM t_suggest_record t
+		LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+		<include refid="querySuggestSql"></include>
+		ORDER by t.createTime desc
+	</select>
+	
+	<select id="querySuggestCount" resultType="int" parameterType="map">
+		SELECT count(1) FROM t_suggest_record t
+		LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+		<include refid="querySuggestSql"></include>
+	</select>
+	
+	<sql id="querySuggestSql">
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and t.recordId = #{recordId}
+		 </if>
+		 <if test="custName != null and custName != ''">
+			and t.custName = #{custName}
+		</if>
+		<if test="custTelephone != null and custTelephone != ''">
+			and t.custTelephone = #{custTelephone}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t3.orgId in (${userOrgs})
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and t3.orgId = #{orgId}
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t2.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t2.teamName = #{teamName}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and t.customerId = #{customerId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and t.applyId = #{applyId}
+		</if>
+		<if test="type != null and type != ''">
+			and t.type = #{type}
+		</if>
+		<if test="busiName != null and busiName != ''">
+			and t.busiName = #{busiName}
+		</if>
+		<if test="busiTelephone != null and busiTelephone != ''">
+			and t.busiTelephone = #{busiTelephone}
+		</if>
+		<if test="detailDesc != null and detailDesc != ''">
+			and t.detailDesc = #{detailDesc}
+		</if>
+		<if test="status != null and status != ''">
+			and t.status = #{status}
+		</if>
+		<if test="complaintGrade != null and complaintGrade != ''">
+			and t.complaintGrade = #{complaintGrade}
+		</if>
+		<if test="serviceTime != null and serviceTime != ''">
+			and t.serviceTime = #{serviceTime}
+		</if>
+		<if test="serviceDesc != null and serviceDesc != ''">
+			and t.serviceDesc = #{serviceDesc}
+		</if>
+		<if test="serviceName != null and serviceName != ''">
+			and t.serviceName = #{serviceName}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="createTimeStart != null and createTimeStart != ''">
+			<![CDATA[ and t.createTime >= #{createTimeStart} ]]>
+		</if>
+		<if test="createTimeEnd != null and createTimeEnd != ''">
+			<![CDATA[ and t.createTime <= #{createTimeEnd} ]]>
+		</if>
+		<if test="serviceTimeStart != null and serviceTimeStart != ''">
+			<![CDATA[ and t.serviceTime >= #{serviceTimeStart} ]]>
+		</if>
+		<if test="serviceTimeEnd != null and serviceTimeEnd != ''">
+			<![CDATA[ and t.serviceTime <= #{serviceTimeEnd} ]]>
+		</if>
+		<if test="searchKey !=null and searchKey !='' ">
+			and (t.custName like concat('%',#{searchKey},'%') or t.custTelephone like concat('%',#{searchKey},'%'))
+		</if>
+		</where>
+	</sql>
+	
+</mapper>

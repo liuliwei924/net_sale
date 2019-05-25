@@ -1,0 +1,82 @@
+package org.xxjr.cust.util.info;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+
+/**
+ * 用户资质工具类
+ * @author liulw 2016-08-31
+ *
+ */
+public class CustQualUtil {
+
+	/**
+	 * 查询用户资质信息
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> queryCustQualified(String custId){
+		AppParam params = new AppParam("custQualifiedService", "query");
+		params.addAttr("customerId", custId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		Map<String,Object> map = new HashMap<String, Object>();
+		if(result.getRows().size() > 0){
+			map = result.getRow(0);
+		}
+		return map;
+	}
+	
+	/**
+	 * 是否存在用户资质信息
+	 * @param custId
+	 * @return
+	 */
+	public static boolean isExistCustQual(String custId){
+		AppParam params = new AppParam("custQualifiedService", "queryCount");
+		params.addAttr("customerId", custId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		int count  = (Integer)result.getAttr(DuoduoConstant.TOTAL_SIZE);
+		return count > 0;
+	}
+	
+	/**
+	 * 根据手机号查询用户资质信息
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> queryQualiyByTel(String telephone){
+		AppParam params = new AppParam("custQualifiedService", "queryByTel");
+		params.addAttr("telephone", telephone);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		Map<String,Object> map = new HashMap<String, Object>();
+		if(result.getRows().size() > 0){
+			map = result.getRow(0);
+		}
+		return map;
+	}
+	
+	/**
+	 * 保存用户资质信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult editCustQualified(AppParam params){
+		params.setService("custQualifiedService");
+		params.setMethod("saveQualify");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+}

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCAR">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			carYears, 
+			carPrice, 
+			carUsed, 
+			carMortgage, 
+			carBrand, 
+			carModel, 
+			carLocal,
+			carMonthPay,
+			carMonth
+		FROM T_BORROW_CAR
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="carYears != null and carYears != ''">
+				and carYears = #{carYears}
+			</if>
+			<if test="carPrice != null and carPrice != ''">
+				and carPrice = #{carPrice}
+			</if>
+			<if test="carUsed != null and carUsed != ''">
+				and carUsed = #{carUsed}
+			</if>
+			<if test="carMortgage != null and carMortgage != ''">
+				and carMortgage = #{carMortgage}
+			</if>
+			<if test="carBrand != null and carBrand != ''">
+				and carBrand = #{carBrand}
+			</if>
+			<if test="carModel != null and carModel != ''">
+				and carModel = #{carModel}
+			</if>
+			<if test="carLocal != null and carLocal != ''">
+				and carLocal = #{carLocal}
+			</if>
+			<if test="carMonthPay != null and carMonthPay != ''">
+				and carMonthPay = #{carMonthPay}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryText" resultType="map" parameterType="map">
+		SELECT 
+			carPrice,
+			carBrand, 
+			carModel,
+			carMonthPay,  
+			(CASE 
+				WHEN carYears =1 THEN '3年以内'
+				WHEN carYears =2 THEN '3-5年'
+				WHEN carYears =3 THEN '5-10年'
+				WHEN carYears =4 THEN '10年以上'
+				ELSE '未知'
+			END) as 'carYearsText', 
+			(CASE 
+				WHEN carUsed =1 THEN '家用'
+				WHEN carUsed =2 THEN '营运'
+				ELSE '未知'
+			END) as 'carUsedText', 
+			(CASE 
+				WHEN carMortgage =1 THEN '车已被抵押'
+				WHEN carMortgage =2 THEN '按揭车还款中'
+				WHEN carMortgage =3 THEN '按揭车已还完'
+				WHEN carMortgage =4 THEN '全款车未抵押'
+				ELSE '未知'
+			END) as 'carMortgageText', 
+			(CASE
+				WHEN carLocal =1 THEN '未上牌'
+				WHEN carLocal =2 THEN ' 本地 '
+				WHEN carLocal =3 THEN '外地'
+				ELSE '未知'
+			END) as 'carLocalText' 
+		FROM T_BORROW_CAR
+		<where>
+			applyId=#{applyId}
+		</where>
+	</select>
+	
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_CAR 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="carYears != null and carYears != ''">
+			and carYears = #{carYears}
+		</if>
+		<if test="carPrice != null and carPrice != ''">
+			and carPrice = #{carPrice}
+		</if>
+		<if test="carUsed != null and carUsed != ''">
+			and carUsed = #{carUsed}
+		</if>
+		<if test="carMortgage != null and carMortgage != ''">
+			and carMortgage = #{carMortgage}
+		</if>
+		<if test="carBrand != null and carBrand != ''">
+			and carBrand = #{carBrand}
+		</if>
+		<if test="carModel != null and carModel != ''">
+			and carModel = #{carModel}
+		</if>
+		<if test="carLocal != null and carLocal != ''">
+			and carLocal = #{carLocal}
+		</if>
+		<if test="carMonthPay != null and carMonthPay != ''">
+			and carMonthPay = #{carMonthPay}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO T_BORROW_CAR (
+			applyId,
+			carYears,
+			carPrice,
+			carUsed,
+			carMortgage,
+			carBrand,
+			carModel,
+			carLocal,
+			carMonthPay,
+			carMonth
+		)
+		VALUES ( 
+		   #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="carYears !=null ">
+			#{carYears, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carYears ==null ">
+			0 ,
+			</if>
+			<if test="carPrice !=null ">
+			#{carPrice, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carPrice ==null ">
+			0.0000 ,
+			</if>
+			<if test="carUsed !=null ">
+			#{carUsed, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carUsed ==null ">
+			0 ,
+			</if>
+			<if test="carMortgage !=null ">
+			#{carMortgage, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carMortgage ==null ">
+			0 ,
+			</if>
+			#{carBrand, jdbcType=VARCHAR}, 
+			#{carModel, jdbcType=VARCHAR}, 
+			<if test="carLocal !=null ">
+			#{carLocal, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="carLocal ==null ">
+			0,
+			</if>
+			<if test="carMonthPay !=null ">
+			#{carMonthPay, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="carMonthPay ==null ">
+			0.00,
+			</if>
+			<if test="carMonth !=null ">
+			#{carMonth, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="carMonth ==null ">
+			0
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_BORROW_CAR 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE T_BORROW_CAR  
+		<set>
+			<if test="carYears != null">
+				carYears = #{carYears, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carPrice != null">
+				carPrice = #{carPrice, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="carUsed != null">
+				carUsed = #{carUsed, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carMortgage != null">
+				carMortgage = #{carMortgage, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carBrand != null">
+				carBrand = #{carBrand, jdbcType=VARCHAR},  
+			</if>
+			<if test="carModel != null">
+				carModel = #{carModel, jdbcType=VARCHAR},  
+			</if>
+			<if test="carLocal != null">
+				carLocal = #{carLocal, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="carMonth != null">
+				carMonth = #{carMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carMonthPay != null">
+				carMonthPay = #{carMonthPay, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

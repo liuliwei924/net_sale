@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMORGDEALORDER">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			orgId,
+			groupName,
+			noCondition, 
+			smallLoansCount, 
+			carCount, 
+			insuranceCount, 
+			replaceCount, 
+			houseCount, 
+			rejectCallCount, 
+			notOneselfCount, 
+			emptyCount, 
+			noneedCount, 
+			notDealCount, 
+			taxesEntLoanCount, 
+			accumulationFundCount, 
+			totalCount,
+			otherHouseCount
+		FROM t_sum_orgdealorder
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+			  and orgId = #{orgId}
+			 </if>
+			<if test="groupName != null and groupName != ''">
+			  and groupName = #{groupName}
+			 </if>
+			<if test="noCondition != null and noCondition != ''">
+				and noCondition = #{noCondition}
+			</if>
+			<if test="smallLoansCount != null and smallLoansCount != ''">
+				and smallLoansCount = #{smallLoansCount}
+			</if>
+			<if test="carCount != null and carCount != ''">
+				and carCount = #{carCount}
+			</if>
+			<if test="insuranceCount != null and insuranceCount != ''">
+				and insuranceCount = #{insuranceCount}
+			</if>
+			<if test="replaceCount != null and replaceCount != ''">
+				and replaceCount = #{replaceCount}
+			</if>
+			<if test="houseCount != null and houseCount != ''">
+				and houseCount = #{houseCount}
+			</if>
+			<if test="rejectCallCount != null and rejectCallCount != ''">
+				and rejectCallCount = #{rejectCallCount}
+			</if>
+			<if test="notOneselfCount != null and notOneselfCount != ''">
+				and notOneselfCount = #{notOneselfCount}
+			</if>
+			<if test="emptyCount != null and emptyCount != ''">
+				and emptyCount = #{emptyCount}
+			</if>
+			<if test="noneedCount != null and noneedCount != ''">
+				and noneedCount = #{noneedCount}
+			</if>
+			<if test="notDealCount != null and notDealCount != ''">
+				and notDealCount = #{notDealCount}
+			</if>
+			<if test="taxesEntLoanCount != null and taxesEntLoanCount != ''">
+				and taxesEntLoanCount = #{taxesEntLoanCount}
+			</if>
+			<if test="accumulationFundCount != null and accumulationFundCount != ''">
+				and accumulationFundCount = #{accumulationFundCount}
+			</if>
+			<if test="totalCount != null and totalCount != ''">
+				and totalCount = #{totalCount}
+			</if>
+			<if test="otherHouseCount != null and otherHouseCount != ''">
+				and otherHouseCount = #{otherHouseCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_orgdealorder 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+		    and orgId = #{orgId}
+		 </if>
+		<if test="groupName != null and groupName != ''">
+		    and groupName = #{groupName}
+		 </if>
+		<if test="noCondition != null and noCondition != ''">
+			and noCondition = #{noCondition}
+		</if>
+		<if test="smallLoansCount != null and smallLoansCount != ''">
+			and smallLoansCount = #{smallLoansCount}
+		</if>
+		<if test="carCount != null and carCount != ''">
+			and carCount = #{carCount}
+		</if>
+		<if test="insuranceCount != null and insuranceCount != ''">
+			and insuranceCount = #{insuranceCount}
+		</if>
+		<if test="replaceCount != null and replaceCount != ''">
+			and replaceCount = #{replaceCount}
+		</if>
+		<if test="houseCount != null and houseCount != ''">
+			and houseCount = #{houseCount}
+		</if>
+		<if test="rejectCallCount != null and rejectCallCount != ''">
+			and rejectCallCount = #{rejectCallCount}
+		</if>
+		<if test="notOneselfCount != null and notOneselfCount != ''">
+			and notOneselfCount = #{notOneselfCount}
+		</if>
+		<if test="emptyCount != null and emptyCount != ''">
+			and emptyCount = #{emptyCount}
+		</if>
+		<if test="noneedCount != null and noneedCount != ''">
+			and noneedCount = #{noneedCount}
+		</if>
+		<if test="notDealCount != null and notDealCount != ''">
+			and notDealCount = #{notDealCount}
+		</if>
+		<if test="taxesEntLoanCount != null and taxesEntLoanCount != ''">
+			and taxesEntLoanCount = #{taxesEntLoanCount}
+		</if>
+		<if test="accumulationFundCount != null and accumulationFundCount != ''">
+			and accumulationFundCount = #{accumulationFundCount}
+		</if>
+		<if test="totalCount != null and totalCount != ''">
+			and totalCount = #{totalCount}
+		</if>
+		<if test="otherHouseCount != null and otherHouseCount != ''">
+			and otherHouseCount = #{otherHouseCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_orgdealorder (
+			recordDate,
+			noCondition,
+			smallLoansCount,
+			carCount,
+			insuranceCount,
+			replaceCount,
+			houseCount,
+			rejectCallCount,
+			notOneselfCount,
+			emptyCount,
+			noneedCount,
+			notDealCount,
+			taxesEntLoanCount,
+			accumulationFundCount,
+			totalCount,
+			otherHouseCount
+		)
+		VALUES (
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler},
+			<if test="noCondition !=null ">
+			#{noCondition, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="noCondition ==null ">
+			0 ,
+			</if>
+			<if test="smallLoansCount !=null ">
+			#{smallLoansCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="smallLoansCount ==null ">
+			0 ,
+			</if>
+			<if test="carCount !=null ">
+			#{carCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carCount ==null ">
+			0 ,
+			</if>
+			<if test="insuranceCount !=null ">
+			#{insuranceCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insuranceCount ==null ">
+			0 ,
+			</if>
+			<if test="replaceCount !=null ">
+			#{replaceCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="replaceCount ==null ">
+			0 ,
+			</if>
+			<if test="houseCount !=null ">
+			#{houseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseCount ==null ">
+			0 ,
+			</if>
+			<if test="rejectCallCount !=null ">
+			#{rejectCallCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rejectCallCount ==null ">
+			0 ,
+			</if>
+			<if test="notOneselfCount !=null ">
+			#{notOneselfCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notOneselfCount ==null ">
+			0 ,
+			</if>
+			<if test="emptyCount !=null ">
+			#{emptyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="emptyCount ==null ">
+			0 ,
+			</if>
+			<if test="noneedCount !=null ">
+			#{noneedCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="noneedCount ==null ">
+			0 ,
+			</if>
+			#{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{taxesEntLoanCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{accumulationFundCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="totalCount ==null ">
+			0 ,
+			</if>
+			<if test="otherHouseCount !=null ">
+			#{otherHouseCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="otherHouseCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_orgdealorder 
+		<where> 
+			recordDate = #{recordDate} AND 
+			orgId = #{orgId} AND 
+			groupName = #{groupName}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_orgdealorder  
+		<set>
+			<if test="noCondition != null">
+				noCondition = #{noCondition, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="smallLoansCount != null">
+				smallLoansCount = #{smallLoansCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carCount != null">
+				carCount = #{carCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insuranceCount != null">
+				insuranceCount = #{insuranceCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="replaceCount != null">
+				replaceCount = #{replaceCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseCount != null">
+				houseCount = #{houseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rejectCallCount != null">
+				rejectCallCount = #{rejectCallCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notOneselfCount != null">
+				notOneselfCount = #{notOneselfCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="emptyCount != null">
+				emptyCount = #{emptyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="noneedCount != null">
+				noneedCount = #{noneedCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notDealCount != null">
+				notDealCount = #{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="taxesEntLoanCount != null">
+				taxesEntLoanCount = #{taxesEntLoanCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="accumulationFundCount != null">
+				accumulationFundCount = #{accumulationFundCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="otherHouseCount != null">
+				otherHouseCount = #{otherHouseCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  orgId = #{orgId} AND 
+			  groupName = #{groupName}
+		</where>
+	</update>
+		<!-- 批量插入 -->
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_orgdealorder (
+			recordDate,
+		  	orgId,
+		  	groupName, 
+			noCondition,
+			smallLoansCount,
+			carCount,
+			insuranceCount,
+			replaceCount,
+			houseCount,
+			rejectCallCount,
+			notOneselfCount,
+			emptyCount,
+			noneedCount,
+			notDealCount,
+			taxesEntLoanCount,
+			accumulationFundCount,	
+			totalCount,
+			otherHouseCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.orgId},  
+		  #{item.groupName}, 
+		  #{item.noCondition}, 
+		  #{item.smallLoansCount}, 
+		  #{item.carCount}, 
+		  #{item.insuranceCount}, 
+		  #{item.replaceCount}, 
+		  #{item.houseCount},
+		  #{item.rejectCallCount}, 
+		  #{item.notOneselfCount},
+		  #{item.emptyCount},
+		  #{item.noneedCount},
+		  #{item.notDealCount},
+		  #{item.taxesEntLoanCount},
+		  #{item.accumulationFundCount},
+		  #{item.totalCount},
+		  #{item.otherHouseCount}
+		  )
+		</foreach>
+ 	</insert>
+	<select id="queryOrgDealOrderDay" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.groupName,
+			CONCAT(t1.orgNo,'-',t1.orgName) as orgName,
+			IFNULL(t.noCondition, 0) AS noCondition,
+			IFNULL(t.smallLoansCount, 0) AS smallLoansCount,
+			IFNULL(t.carCount, 0) AS carCount,
+			IFNULL(t.insuranceCount, 0) AS insuranceCount,
+			IFNULL(t.replaceCount, 0) AS replaceCount,
+			IFNULL(t.houseCount, 0) AS houseCount,
+			IFNULL(t.rejectCallCount, 0) AS rejectCallCount,
+			IFNULL(t.notOneselfCount, 0) AS notOneselfCount,
+			IFNULL(t.emptyCount, 0) AS emptyCount,
+			IFNULL(t.noneedCount, 0) AS noneedCount,
+			IFNULL(t.notDealCount, 0) AS notDealCount,
+			IFNULL(t.taxesEntLoanCount, 0) AS taxesEntLoanCount,
+			IFNULL(t.accumulationFundCount, 0) AS accumulationFundCount,
+			IFNULL(t.otherHouseCount, 0) AS otherHouseCount,
+			IFNULL(t.totalCount, 0) AS totalCount
+		FROM
+			t_sum_orgdealorder t
+			JOIN t_org t1 on t.orgId = t1.orgId
+			<include refid="sqlQuery"/>
+			ORDER by t.recordDate DESC
+	</select>
+	<select id="queryOrgDealOrderDayCount" resultType="int" parameterType="map">
+		SELECT
+			count(*)
+		FROM
+			t_sum_orgdealorder t JOIN t_org t1 on t.orgId = t1.orgId
+		<include refid="sqlQuery"/>
+	</select>
+	<sql id="sqlQuery">
+   		<where>
+			 <if test="recordDate != null and recordDate != ''">
+			  	and t.recordDate = #{recordDate}
+			 </if>
+			 <if test="orgId != null and orgId != ''">
+			  	and t.orgId = #{orgId}
+			 </if>
+			 <if test="groupName != null and groupName != ''">
+			  	and t.groupName = #{groupName}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			 </if>
+ 		     <if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+		</where>
+    </sql>
+    <select id="queryOrgDealOrderDaySum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.noCondition),0) AS noConditionSum,
+			IFNULL(SUM(t.smallLoansCount),0) AS smallLoansCountSum,
+			IFNULL(SUM(t.carCount),0) AS carCountSum,
+			IFNULL(SUM(t.insuranceCount),0) AS insuranceCountSum,
+			IFNULL(SUM(t.replaceCount),0) AS replaceCountSum,
+			IFNULL(SUM(t.houseCount),0) AS houseCountSum,
+			IFNULL(SUM(t.rejectCallCount),0) AS rejectCallCountSum,
+			IFNULL(SUM(t.notOneselfCount),0) AS notOneselfCountSum,
+			IFNULL(SUM(t.emptyCount),0) AS emptyCountSum,
+			IFNULL(SUM(t.noneedCount),0) AS noneedCountSum,
+			IFNULL(SUM(t.notDealCount),0) AS notDealCountSum,
+			IFNULL(SUM(t.taxesEntLoanCount),0) AS taxesEntLoanCountSum,
+			IFNULL(SUM(t.accumulationFundCount),0) AS accumulationFundCountSum,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_orgdealorder t
+			JOIN t_org t1 on t.orgId = t1.orgId
+		<include refid="sqlQuery"/>
+	</select>
+	 <select id="queryOrgDealOrderMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') as recordDate,
+			t.groupName,
+			t.orgId,
+			CONCAT(t1.orgNo,'-',t1.orgName) as orgName,
+			IFNULL(sum(t.noCondition), 0) AS noCondition,
+			IFNULL(sum(t.smallLoansCount), 0) AS smallLoansCount,
+			IFNULL(sum(t.carCount), 0) AS carCount,
+			IFNULL(sum(t.insuranceCount), 0) AS insuranceCount,
+			IFNULL(sum(t.replaceCount), 0) AS replaceCount,
+			IFNULL(sum(t.houseCount), 0) AS houseCount,
+			IFNULL(sum(t.rejectCallCount), 0) AS rejectCallCount,
+			IFNULL(sum(t.notOneselfCount), 0) AS notOneselfCount,
+			IFNULL(sum(t.emptyCount), 0) AS emptyCount,
+			IFNULL(sum(t.noneedCount), 0) AS noneedCount,
+			IFNULL(sum(t.notDealCount), 0) AS notDealCount,
+			IFNULL(sum(t.taxesEntLoanCount), 0) AS taxesEntLoanCount,
+			IFNULL(sum(t.accumulationFundCount), 0) AS accumulationFundCount,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCount,
+			IFNULL(sum(t.totalCount), 0) AS totalCount
+		FROM
+			t_sum_orgdealorder t 
+			JOIN t_org t1 on t.orgId = t1.orgId
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),t.orgId,t.groupName
+		ORDER by t.recordDate DESC
+	</select>
+	<select id="queryOrgDealOrderMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (SELECT COUNT(1) FROM t_sum_orgdealorder t JOIN t_org t1 on t.orgId = t1.orgId
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),t.orgId,t.groupName) tab1
+	</select>
+	<select id="queryOrgDealOrderMonthSum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.noCondition),0) AS noConditionSum,
+			IFNULL(SUM(t.smallLoansCount),0) AS smallLoansCountSum,
+			IFNULL(SUM(t.carCount),0) AS carCountSum,
+			IFNULL(SUM(t.insuranceCount),0) AS insuranceCountSum,
+			IFNULL(SUM(t.replaceCount),0) AS replaceCountSum,
+			IFNULL(SUM(t.houseCount),0) AS houseCountSum,
+			IFNULL(SUM(t.rejectCallCount),0) AS rejectCallCountSum,
+			IFNULL(SUM(t.notOneselfCount),0) AS notOneselfCountSum,
+			IFNULL(SUM(t.emptyCount),0) AS emptyCountSum,
+			IFNULL(SUM(t.noneedCount),0) AS noneedCountSum,
+			IFNULL(SUM(t.notDealCount),0) AS notDealCountSum,
+			IFNULL(SUM(t.taxesEntLoanCount),0) AS taxesEntLoanCountSum,
+			IFNULL(SUM(t.accumulationFundCount),0) AS accumulationFundCountSum,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_orgdealorder t JOIN t_org t1 on t.orgId = t1.orgId
+		<include refid="sqlQuery"/>
+	</select>
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_orgdealorder 
+		<where> 
+			recordDate = #{recordDate}
+			<if test="orgId !=null">
+			 	AND orgId= #{orgId}
+			</if>
+			<if test="groupName !=null">
+			 	AND groupName= #{groupName}
+			</if>
+		</where>
+	</delete>
+</mapper>

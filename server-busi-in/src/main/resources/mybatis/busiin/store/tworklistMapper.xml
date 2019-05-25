@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="WORKLIST">
+    
+    <sql id="queryWhereSql">
+    	<where>
+			<if test="workId != null and workId != ''">
+			  and workId = #{workId}
+			 </if>
+			<if test="extraId != null and extraId != ''">
+				and extraId = #{extraId}
+			</if>
+			<if test="workType != null and workType != ''">
+				and workType = #{workType}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and custTel = #{custTel}
+			</if>
+			<if test="custName != null and custName != ''">
+				and custName = #{custName}
+			</if>
+		</where>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			workId,
+			extraId, 
+			workType, 
+			customerId, 
+			custTel, 
+			custName, 
+			DATE_FORMAT(allotTime,'%Y-%m-%d %H:%i:%s') as allotTime  ,
+			allotBy, 
+			allotDesc, 
+			remark
+		FROM t_work_list
+		<include refid="queryWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_work_list 
+		<include refid="queryWhereSql"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="workId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_work_list (
+			extraId,
+			workType,
+			customerId,
+			custTel,
+			custName,
+			allotTime,
+			allotBy,
+			allotDesc,
+			remark
+		)
+		VALUES ( 
+			#{extraId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="workType !=null ">
+			#{workType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="workType ==null ">
+			0 ,
+			</if>
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{custTel, jdbcType=VARCHAR}, 
+			<if test="custName !=null ">
+			#{custName, jdbcType=VARCHAR}, 
+			</if>
+			<if test="custName ==null ">
+			0 ,
+			</if>
+			#{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{allotBy, jdbcType=VARCHAR}, 
+			#{allotDesc, jdbcType=VARCHAR},
+			#{remark, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_work_list 
+		<where> 
+			workId = #{workId}
+		</where>
+	</delete>
+	
+    <delete id="deleteInfo" parameterType="map">
+		DELETE FROM t_work_list 
+		<where> 
+			extraId = #{extraId}
+			<if test="customerId != null">
+				and customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}  
+			</if>
+		</where>
+	</delete>
+	
+	<delete id="deleteByExtraId" parameterType="map">
+		DELETE FROM t_work_list 
+		<where> 
+			extraId = #{extraId}
+			<if test="workType != null and workType != ''">
+				and workType = #{workType}
+			</if>
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_work_list  
+		<set>
+			<if test="extraId != null">
+				extraId = #{extraId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="workType != null">
+				workType = #{workType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="custTel != null">
+				custTel = #{custTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="custName != null">
+				custName = #{custName, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotTime != null">
+				allotTime = #{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="allotBy != null">
+				allotBy = #{allotBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotDesc != null">
+				allotDesc = #{allotDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="remark != null">
+				remark = #{remark, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  workId = #{workId}
+		</where>
+	</update>
+	
+	<select id="queryMsgNotice" resultType="map" parameterType="map">
+		SELECT
+			t.customerId, 
+			t1.realName,
+			count(1) as 'workCount'
+		FROM t_work_list t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+    	GROUP BY t.customerId
+	</select>
+	
+	
+	<insert id="batchInsertWork" parameterType="map">
+		INSERT INTO t_work_list (
+				extraId,
+				workType,
+				customerId,
+				custTel,
+				custName,
+				allotTime,
+				allotBy,
+				allotDesc,
+				remark
+			)
+			SELECT
+				t.applyId,
+				1,
+				#{customerId},
+				t.telephone,
+				t.applyName,
+				NOW(),
+				'sys',
+				'系统分单',
+				NULL
+			FROM t_borrow_apply t WHERE t.applyId=#{applyId};
+	</insert>
+</mapper>

@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMTEAMEXT">
+
+	<!--汇总基本数据统计 -->
+	 <select id="totalBase" resultType="map" parameterType="map">
+		 SELECT
+			#{today} as 'recordDate',
+			tab1.applyCount,
+			tab1.seniorCount,
+			tab1.notFillCount,
+			0 as 'costAmount',
+			0 as 'browseCount',
+			tab2.storeCount,
+			tab2.storeBackCount,
+			tab2.feedBackCount,
+			tab2.kfReceivedCount,
+			tab3.sucBookCount,
+			tab1.teamNo,
+			tab1.teamName
+		FROM
+			(
+				SELECT
+					#{today} AS 'recordDate',
+					COUNT(1) AS 'applyCount',
+					SUM(IF(n.applyType IN(1, 6), 1, 0)) AS 'seniorCount',
+					SUM(IF(n.grade = 'F', 1, 0)) AS 'notFillCount',
+					IFNULL(t.teamNo, '005') as 'teamNo',
+					IFNULL(t1.teamName,'其他免费渠道') as 'teamName'
+				FROM
+					t_borrow_apply n LEFT JOIN t_borrow_channel t ON n.channelCode=t.channelCode
+					 LEFT JOIN t_borrow_team t1 ON t.teamNo = t1.teamNo
+				WHERE
+					n.applyTime >= #{today}
+				AND n.applyTime <![CDATA[<]]> DATE_ADD(#{today}, INTERVAL 1 DAY)
+				GROUP BY t.teamNo
+			) tab1
+		LEFT JOIN (
+			SELECT
+		    	#{today} AS 'recordDate',
+				IFNULL(t1.teamNo, '005') as 'teamNo',
+				count(DISTINCT IF(n.handleType = 0 and n.orderType = 1, n.applyId, null)) AS 'kfReceivedCount',
+				count(IF(n.isFeedback = 1, n.applyId, null)) AS 'feedBackCount',
+				count(DISTINCT IF ( n.handleType = 5, n.applyId, null) ) AS 'storeBackCount',
+				count(DISTINCT IF ( n.handleType = 0,n.applyId, null)) AS 'storeCount'
+			FROM
+				${tableName} n JOIN t_borrow_apply t ON n.applyId = t.applyId
+				LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE
+				n.createTime >= #{today}
+			AND n.createTime <![CDATA[<]]> DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY t1.teamNo
+		) tab2 ON tab1.recordDate = tab2.recordDate AND tab1.teamNo = tab2.teamNo
+		LEFT JOIN 
+		(
+			SELECT  
+					IFNULL(t1.teamNo, '005') as 'teamNo',
+					#{today} AS 'recordDate', 
+					COUNT(DISTINCT n.applyId) as 'sucBookCount' 
+			FROM t_treat_book n JOIN t_borrow_apply t ON n.applyId = t.applyId
+				LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE  n.`status`=3 
+						AND n.updateTime >= #{today}
+						AND n.updateTime <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
+			GROUP BY t1.teamNo
+		) tab3 ON tab2.recordDate = tab3.recordDate AND tab2.teamNo = tab3.teamNo
+	 </select>
+	 
+	 
+	<!--挂卖基本统计  -->
+	<select id="saleByBase" resultType="map" parameterType="map">
+		SELECT 
+			#{today} AS 'recordDate',
+			IFNULL(t2.teamNo, '005') as 'teamNo',
+			IFNULL(t3.teamName,'其他免费渠道') as 'teamName',
+			COUNT(DISTINCT IF(t.handleType=1,t.applyId,NULL)) AS 'saleCount',
+			ROUND(SUM(IF(t.handleType=1,t.costPrice,0)),2) / 100 AS 'saleAmount',
+			SUM(IF(t.handleType=1,t.costScore,0)) AS 'saleScore',
+			COUNT(DISTINCT IF(t.handleType=4,t.applyId,NULL)) AS 'failSaleCount',
+			ROUND(SUM(IF(t.handleType=4,t.costPrice*t.discount,0)) / 100,2) AS 'failSaleAmount',
+			SUM(IF(t.handleType=4,t.costScore,0)) AS 'failSaleScore',
+			COUNT(DISTINCT IF(t.handleType=2,t.applyId,NULL)) AS 'sucSaleCount',
+			ROUND(SUM(IF(t.handleType=2,t.costPrice*t.discount,0)) / 100,2) AS 'sucSaleAmount',
+			SUM(IF(t.handleType=2,t.costScore,0)) AS 'sucSaleScore'
+		FROM t_borrow_sel_record t JOIN t_borrow_apply n ON t.applyId = n.applyId
+			 LEFT JOIN t_borrow_channel t2 ON n.channelCode = t2.channelCode
+			 LEFT JOIN t_borrow_team t3 ON t2.teamNo = t3.teamNo 
+			WHERE t.createTime >= #{today} AND t.createTime <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
+		GROUP BY t2.teamNo
+	</select>
+	
+	
+	<!--  查询有过退款的日期 -->	
+	<select id="queryNowRefundDate" resultType="map" parameterType="map">
+      <![CDATA[	
+		SELECT
+			DATE_FORMAT(createTime,'%Y-%m-%d') as 'recordDate'
+		FROM
+			t_borrow_sel_record 
+		WHERE
+			handleType = 4
+			AND updateTime >= DATE_SUB(#{today},INTERVAL 1 DAY)
+			AND updateTime <= CURDATE()
+	   	    AND createTime < DATE_SUB(CURDATE(),INTERVAL 1 DAY)
+			GROUP BY DATE_FORMAT(createTime,'%Y-%m-%d')
+      ]]>
+    </select>
+    
+    <!-- 按团队挂卖统计(查询有过退款的) -->
+    <select id="queryTeamRefund" resultType="map" parameterType="map">
+	SELECT 
+		DATE_FORMAT(t.createTime,'%Y-%m-%d') AS 'recordDate',
+		t2.teamNo,
+		COUNT(DISTINCT t.applyId) AS 'failSaleCount',
+		ROUND(SUM(t.costPrice*t.discount) / 100,2) AS 'failSaleAmount',
+		SUM(t.costScore) AS 'failSaleScore'
+	FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+	JOIN t_borrow_channel t2 ON t1.channelCode = t2.channelCode
+	WHERE 
+	t.handleType=4 
+	AND DATE_FORMAT(t.createTime,'%Y-%m-%d') IN (
+	<foreach collection="recordDates" separator="," item="item">
+	#{item.recordDate}
+	</foreach>
+	)
+	GROUP BY t2.teamNo,DATE_FORMAT(t.createTime,'%Y-%m-%d')
+    </select>
+    
+    <!--总的签单统计(按处理时间)  -->
+	<select id="sumTotalSign" resultType="map" parameterType="map">
+		SELECT 
+			#{today} as 'recordDate',
+			tab1.teamNo,
+			tab1.teamName,
+			IFNULL(tab1.signingCount ,0) as 'signingCount',	
+			IFNULL(tab1.signingAmt ,0) as 'signingAmt',
+			IFNULL(tab2.sucSignCount ,0) as 'sucSignCount',	
+			IFNULL(tab2.sucSignAmt ,0) as 'sucSignAmt',
+			IFNULL(tab2.failSignCount ,0) as 'failSignCount',	
+			IFNULL(tab2.failSignAmt ,0) as 'failSignAmt',
+			IFNULL(tab1.totalSignCount, 0) AS 'totalSignCount',
+			IFNULL(tab1.totalSignAmt, 0) AS 'totalSignAmt' 
+		FROM (
+			SELECT 
+				IFNULL(t1.teamNo, '005') as 'teamNo',
+				IFNULL(t2.teamName,'其他免费渠道') as 'teamName',
+				#{today} as 'recordDate',
+				COUNT(1) as 'totalSignCount',
+				IFNULL(SUM(n.signAmount) ,0) as 'totalSignAmt',
+				COUNT(IF(n.`status`=1,n.applyId,NULL)) as 'signingCount',
+				IFNULL(SUM(IF(n.`status`=1,n.signAmount,0)),0) as 'signingAmt'
+			FROM t_treat_info n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			LEFT JOIN t_borrow_team t2 ON t1.teamNo = t2.teamNo
+			WHERE
+				n.`status` in(1,2,3,4,5,6)
+				AND n.createTime >= #{today}
+				AND n.createTime <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
+			GROUP BY t1.teamNo
+		) tab1 LEFT JOIN 
+		(
+			SELECT 
+				#{today} as 'recordDate',
+				IFNULL(t1.teamNo, '005') as 'teamNo',
+				COUNT(IF(n.failureCause is NULL or n.failureCause = '',n.applyId,NULL)) as 'sucSignCount',
+				IFNULL(SUM(IF(n.failureCause is NULL or n.failureCause = '',n.signAmount,0)),0) as 'sucSignAmt',
+				COUNT(IF(n.failureCause IS NOT NULL AND n.failureCause != '',n.applyId,NULL)) as 'failSignCount',
+				IFNULL(SUM(IF(n.failureCause IS NOT NULL AND n.failureCause != '',n.signAmount,0)),0) as 'failSignAmt'
+			FROM t_treat_info n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE
+				n.`status` = 2
+				AND n.updateTime >= #{today}
+				AND n.updateTime <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
+			GROUP BY t1.teamNo
+		) tab2 ON tab1.recordDate = tab2.recordDate AND tab1.teamNo = tab2.teamNo
+	</select>
+	
+	<!-- 按时间回款基本统计 -->
+	<select id="retByBase" resultType="map" parameterType="map">
+		SELECT
+			#{today} AS 'recordDate',
+			IFNULL(t2.teamNo, '005') as 'teamNo',
+			IFNULL(t3.teamName,'其他免费渠道') as 'teamName',
+			COUNT(CASE WHEN t.`status` = 2 then 1 END) AS 'sucRetCount',
+			IFNULL(SUM(CASE WHEN t.`status`= 2 then t.feeAmount END),0) AS 'sucRetAmount'
+		FROM
+			t_treat_success t JOIN t_borrow_apply t1 ON t.applyId = t1.applyId
+			LEFT JOIN t_borrow_Channel t2 ON t1.channelCode = t2.channelCode
+			LEFT JOIN t_borrow_team t3 ON t2.teamNo = t3.teamNo
+		WHERE
+			t.feeAmountDate >=#{today}
+			AND t.feeAmountDate <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
+		GROUP BY t2.teamNo
+	</select>
+	
+	<!-- 查询总的花费 -->
+	<select id="queryTeamCost" resultType="map" parameterType="map">
+	<![CDATA[SELECT
+		#{recordDate} AS 'recordDate',
+		t1.teamNo,
+		IFNULL(SUM(amount), 0) AS 'costAmount',
+		IFNULL(SUM(browseCount), 0) AS 'browseCount'
+	FROM
+		t_borrow_channel_cost t JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		JOIN t_borrow_team t2 ON t1.teamNo = t2.teamNo
+	WHERE
+	 recordDate >= #{recordDate}
+	 AND recordDate < DATE_ADD(#{recordDate},INTERVAL 1 day)
+	 GROUP BY t1.teamNo
+	 ]]> 
+	</select>
+</mapper>

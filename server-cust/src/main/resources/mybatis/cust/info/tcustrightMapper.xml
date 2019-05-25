@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTRIGHT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			isSummary, 
+			editBorrow, 
+			channels, 
+			orgs, 
+			citys,
+			isZSenior,
+			isSenior,
+			isKfAllot,
+			freeSeniorRob,
+			work, 
+			spread, 
+			dataCount, 
+			sysSet, 
+			otherFunction,
+			hdManager, 
+			isLimitIp,
+			isAllotLend,
+			isCollectWxLogin,
+			collectUserId,
+			isAdminWxLogin,
+			adminUserId,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			maxAllotCount
+		FROM t_cust_right
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="isSummary != null and isSummary != ''">
+				and isSummary = #{isSummary}
+			</if>
+			<if test="editBorrow != null and editBorrow != ''">
+				and editBorrow = #{editBorrow}
+			</if>
+			<if test="channels != null and channels != ''">
+				and channels = #{channels}
+			</if>
+			<if test="citys != null and citys != ''">
+				and citys = #{citys}
+			</if>
+			<if test="isZSenior != null and isZSenior != ''">
+				and isZSenior = #{isZSenior}
+			</if>
+			<if test="orgs != null and orgs != ''">
+				and orgs = #{orgs}
+			</if>
+			<if test="work != null and work != ''">
+				and work = #{work}
+			</if>
+			<if test="spread != null and spread != ''">
+				and spread = #{spread}
+			</if>
+			<if test="dataCount != null and dataCount != ''">
+				and dataCount = #{dataCount}
+			</if>
+			<if test="sysSet != null and sysSet != ''">
+				and sysSet = #{sysSet}
+			</if>
+			<if test="hdManager != null and hdManager != ''">
+				and hdManager = #{hdManager}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="maxAllotCount != null and maxAllotCount != ''">
+				and maxAllotCount = #{maxAllotCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_right 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="isSummary != null and isSummary != ''">
+			and isSummary = #{isSummary}
+		</if>
+		<if test="editBorrow != null and editBorrow != ''">
+			and editBorrow = #{editBorrow}
+		</if>
+		<if test="channels != null and channels != ''">
+			and channels = #{channels}
+		</if>
+		<if test="citys != null and citys != ''">
+			and citys = #{citys}
+		</if>
+		<if test="isZSenior != null and isZSenior != ''">
+			and isZSenior = #{isZSenior}
+		</if>
+		<if test="orgs != null and orgs != ''">
+			and orgs = #{orgs}
+		</if>
+		<if test="work != null and work != ''">
+			and work = #{work}
+		</if>
+		<if test="spread != null and spread != ''">
+			and spread = #{spread}
+		</if>
+		<if test="dataCount != null and dataCount != ''">
+			and dataCount = #{dataCount}
+		</if>
+		<if test="sysSet != null and sysSet != ''">
+			and sysSet = #{sysSet}
+		</if>
+		<if test="hdManager != null and hdManager != ''">
+			and hdManager = #{hdManager}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="maxAllotCount != null and maxAllotCount != ''">
+				and maxAllotCount = #{maxAllotCount}
+			</if>
+		</where>
+	</select>
+
+	<select id="querySummary" resultType="map" parameterType="map">
+		SELECT
+			group_concat(t.customerId) as 'customerIds'
+		FROM t_cust_right t JOIN t_customer t1 ON t.customerId = t1.customerId where t.isSummary=1 AND t1.roleType in(1,2) 
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_right (
+			customerId,
+			isSummary,
+			editBorrow,
+			channels,
+			orgs,
+			citys,
+			isZSenior,
+			isSenior,
+			isKfAllot,
+			isLimitIp,
+			isAllotLend,
+			freeSeniorRob,
+			work,
+			spread,
+			dataCount,
+			sysSet,
+			hdManager,
+			otherFunction,
+			isCollectWxLogin,
+			collectUserId,
+			isAdminWxLogin,
+			adminUserId,
+			createTime,
+			maxAllotCount
+		)
+		VALUES ( 
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=VARCHAR}, 
+			</if>
+			<if test="isSummary !=null ">
+			#{isSummary, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isSummary ==null ">
+			0 ,
+			</if>
+			<if test="editBorrow !=null ">
+			#{editBorrow, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="editBorrow ==null ">
+			0 ,
+			</if>
+			#{channels, jdbcType=VARCHAR}, 
+			#{orgs, jdbcType=VARCHAR}, 
+			#{citys, jdbcType=VARCHAR}, 
+			<if test="isZSenior !=null ">
+			#{isZSenior, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isZSenior ==null ">
+			0 ,
+			</if>
+			<if test="isSenior !=null and isSenior !='' ">
+			#{isSenior, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isSenior ==null or isSenior =='' ">
+			0 ,
+			</if>
+			<if test="isKfAllot !=null ">
+			#{isKfAllot, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isKfAllot ==null ">
+			0 ,
+			</if>
+			<if test="isLimitIp !=null ">
+			#{isLimitIp, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isLimitIp ==null ">
+			1 ,
+			</if>
+			<if test="isAllotLend !=null ">
+			#{isAllotLend, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isAllotLend ==null ">
+			0 ,
+			</if>
+			<if test="freeSeniorRob !=null ">
+			#{freeSeniorRob, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="freeSeniorRob ==null ">
+			0 ,
+			</if>
+			<if test="work !=null ">
+			#{work, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="work ==null ">
+			0 ,
+			</if>
+			<if test="spread !=null ">
+			#{spread, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="spread ==null ">
+			0 ,
+			</if>
+			<if test="dataCount !=null ">
+			#{dataCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="dataCount ==null ">
+			0 ,
+			</if>
+			<if test="sysSet !=null ">
+			#{sysSet, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sysSet ==null ">
+			0 ,
+			</if>
+			<if test="hdManager !=null ">
+			#{hdManager, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="hdManager ==null ">
+			0 ,
+			</if>
+			<if test="otherFunction !=null ">
+			#{otherFunction, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="otherFunction ==null ">
+			0 ,
+			</if>
+			<if test="isCollectWxLogin !=null ">
+			#{isCollectWxLogin, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isCollectWxLogin ==null ">
+			0 ,
+			</if>
+			#{collectUserId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="isAdminWxLogin !=null ">
+			#{isAdminWxLogin, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isAdminWxLogin ==null ">
+			0 ,
+			</if>
+			#{adminUserId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="maxAllotCount !=null ">
+			#{maxAllotCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="maxAllotCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	<insert id="insertCopyAuth" parameterType="map">
+		INSERT INTO t_cust_right (
+		customerId,
+		isSummary,
+		isZSenior,
+		isSenior,
+		isKfAllot,
+		isLimitIp,
+		isAllotLend,
+		freeSeniorRob,
+		editBorrow,
+		channels,
+		citys,
+		orgs,
+		WORK,
+		spread,
+		dataCount,
+		sysSet,
+		hdManager,
+		otherFunction,
+		isCollectWxLogin,
+		collectUserId,
+		isAdminWxLogin,
+		adminUserId,
+		createTime,
+		maxAllotCount) 
+		SELECT
+		#{customerId},
+		isSummary,
+		isZSenior,
+		isSenior,
+		isKfAllot,
+		isLimitIp,
+		isAllotLend,
+		freeSeniorRob,
+		editBorrow,
+		channels,
+		citys,
+		orgs,
+		WORK,
+		spread,
+		dataCount,
+		sysSet,
+		hdManager,
+		otherFunction,
+		isCollectWxLogin,
+		collectUserId,
+		isAdminWxLogin,
+		adminUserId,
+		createTime,
+		maxAllotCount
+		FROM
+		t_cust_right
+		<where> 
+			customerId = #{reCustomerId}
+		</where>
+		
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_right 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_right  
+		<set>
+			<if test="isSummary != null">
+				isSummary = #{isSummary, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="editBorrow != null">
+				editBorrow = #{editBorrow, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="work != null">
+				work = #{work, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channels != null">
+				channels = #{channels, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgs != null">
+				orgs = #{orgs, jdbcType=VARCHAR},  
+			</if>
+			<if test="citys != null">
+				citys = #{citys, jdbcType=VARCHAR},  
+			</if>
+			<if test="isZSenior != null">
+				isZSenior = #{isZSenior, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isSenior != null">
+				isSenior = #{isSenior, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isKfAllot != null">
+				isKfAllot = #{isKfAllot, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isLimitIp != null">
+				isLimitIp = #{isLimitIp, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isAllotLend != null">
+				isAllotLend = #{isAllotLend, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="freeSeniorRob != null">
+				freeSeniorRob = #{freeSeniorRob, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="spread != null">
+				spread = #{spread, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="dataCount != null">
+				dataCount = #{dataCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sysSet != null">
+				sysSet = #{sysSet, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="hdManager != null">
+				hdManager = #{hdManager, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="otherFunction != null">
+				otherFunction = #{otherFunction, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>		
+			<if test="isCollectWxLogin != null">
+				isCollectWxLogin = #{isCollectWxLogin, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="collectUserId != null">
+				collectUserId = #{collectUserId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isAdminWxLogin != null">
+				isAdminWxLogin = #{isAdminWxLogin, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="adminUserId != null">
+				adminUserId = #{adminUserId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="maxAllotCount != null">
+				maxAllotCount = #{maxAllotCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	<!-- 查客服，分单时用 -->
+	<select id="queryRealKf" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t.userName as 'realName',
+			t1.isSenior
+		FROM t_customer t
+		JOIN t_cust_right t1 ON t.customerId = t1.customerId
+		<where>
+			t.`status`=1 AND t.roleType=2 AND t1.isKfAllot=1 AND t.kfLoginStatus=1
+			<if test="isSenior != null and isSenior != ''">
+				AND t1.isSenior = #{isSenior}
+			</if>
+		</where>
+	</select>
+	
+	<!-- 查分信贷经理的kf-->
+	<select id="queryLendKf" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t.userName as 'realName',
+			t1.maxAllotCount,
+			t2.serveCity,
+			IFNULL(t.kfLoginStatus,0) as 'isLogin'
+		FROM t_customer t
+		JOIN t_cust_right t1 ON t.customerId = t1.customerId
+		JOIN t_cust_code t2 ON t.customerId = t2.customerId
+	    WHERE
+			t.`status`=1 AND t1.isAllotLend=1 
+	</select>
+	
+	<!-- 变更用户指定渠道 -->
+	<update id="updateChannel">
+		update t_cust_right set channels = CONCAT(channels,#{channels}) where customerId = #{customerId}
+	</update>
+</mapper>

@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTINFO">
+
+
+<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t1.cardNo,
+			t.customerId,
+			t.headImgUrl, 
+			t.qrcodeImgUrl,
+			t.job, 
+			t.sex, 
+			DATE_FORMAT(t.birthday,'%Y-%m-%d') as birthday , 
+			t.birthdayType, 
+			t.qq, 
+			t.weibo, 
+			t.weixin, 
+			t.provice, 
+			t.cityName, 
+			t.cityArea,
+			t.address, 
+			t.custDesc, 
+			t.headStatus,
+			t.auditDesc,
+			t.auditBy,
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') as auditTime  ,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_cust_info t
+		LEFT JOIN t_cust_identify t1 on t.customerId = t1.customerId
+		LEFT JOIN t_customer t2 on t.customerId=t2.customerId
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and t.customerId = #{customerId}
+			 </if>
+			<if test="headImgUrl != null and headImgUrl != ''">
+				and t.headImgUrl = #{headImgUrl}
+			</if>
+			<if test="job != null and job != ''">
+				and t.job = #{job}
+			</if>
+			<if test="sex != null and sex != ''">
+				and t.sex = #{sex}
+			</if>
+			<if test="cardNo != null and cardNo != ''">
+				and t1.cardNo = #{cardNo}
+			</if>
+			<if test="birthday != null and birthday != ''">
+				and t.birthday = #{birthday}
+			</if>
+			<if test="birthdayType != null and birthdayType != ''">
+				and t.birthdayType = #{birthdayType}
+			</if>
+			<if test="qq != null and qq != ''">
+				and t.qq = #{qq}
+			</if>
+			<if test="weibo != null and weibo != ''">
+				and t.weibo = #{weibo}
+			</if>
+			<if test="weixin != null and weixin != ''">
+				and t.weixin = #{weixin}
+			</if>
+			<if test="provice != null and provice != ''">
+				and t.provice = #{provice}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and t.cityName = #{cityName}
+			</if>
+			<if test="cityArea != null and cityArea != ''">
+				and t.cityArea = #{cityArea}
+			</if>
+			<if test="custDesc != null and custDesc != ''">
+				and t.custDesc = #{custDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_info t
+		LEFT JOIN t_cust_identify t1 on t.customerId = t1.customerId and t1.status=1
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and t.customerId = #{customerId}
+		 </if>
+		<if test="realName != null and realName != ''">
+			and t1.realName = #{realName}
+		</if>
+		<if test="cardNo != null and cardNo != ''">
+			and t1.cardNo = #{cardNo}
+		</if>
+		<if test="headImgUrl != null and headImgUrl != ''">
+			and t.headImgUrl = #{headImgUrl}
+		</if>
+		<if test="company != null and company != ''">
+			and t.company = #{company}
+		</if>
+		<if test="job != null and job != ''">
+			and t.job = #{job}
+		</if>
+		<if test="sex != null and sex != ''">
+			and sex = #{sex}
+		</if>
+		<if test="birthday != null and birthday != ''">
+			and birthday = #{birthday}
+		</if>
+		<if test="birthdayType != null and birthdayType != ''">
+			and birthdayType = #{birthdayType}
+		</if>
+		<if test="qq != null and qq != ''">
+			and qq = #{qq}
+		</if>
+		<if test="weibo != null and weibo != ''">
+			and weibo = #{weibo}
+		</if>
+		<if test="weixin != null and weixin != ''">
+			and weixin = #{weixin}
+		</if>
+		<if test="provice != null and provice != ''">
+			and provice = #{provice}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="cityArea != null and cityArea != ''">
+			and cityArea = #{cityArea}
+		</if>
+		<if test="custDesc != null and custDesc != ''">
+			and t.custDesc = #{custDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and t.updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+	
+    <select id="queryPriefCustInfo" resultType="map" parameterType="map">
+		SELECT
+			t.customerId, 
+			t.address, 
+			t.custDesc,
+			t.sex, 
+			t.headStatus,
+			t.auditDesc,
+			t.qrcodeImgUrl,
+			t.auditBy,
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') as auditTime  ,
+			IFNULL(t.headImgUrl,'') as 'headImgUrl', 
+			ifnull(t4.company,'') as 'company',
+			t.cityName,
+			t.provice,
+			t.cityArea,
+			t1.email,
+			t.job, 
+			IFNULL(t.weixin,'') as 'wxNum',
+			IFNULL(t1.telephone,'') as 'telephone', 
+			IFNULL(t2.realName,'')  as 'custName'
+		FROM t_cust_info t
+		LEFT JOIN t_customer t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		LEFT JOIN t_cust_identify_card t4 on t.customerId = t4.customerId
+		<where>
+	      t.customerId = #{customerId}
+     	</where>
+	</select>
+
+    <select id="queryCustInfoByOpenId" resultType="map" parameterType="map">
+		SELECT
+		    t.gzhId,
+		    t.openid,
+			t.customerId,
+			t.userName,  
+			t3.realName, 
+			t.telephone, 
+			t.status,
+			t.email,
+			t2.cityName,
+			IFNULL(t2.headImgUrl,'') as 'headImgUrl', 
+			t2.job
+		FROM t_customer t
+		LEFT JOIN t_cust_info t2 on t.customerId = t2.customerId
+		LEFT JOIN t_cust_identify t3 on t.customerId = t3.customerId
+		<where>
+	      t.openid in
+	      <foreach item="item" index="index" collection="ids" open="("  separator="," close=")">  
+                   #{item}  
+         </foreach>  
+	      
+     	</where>
+	</select>
+
+
+
+	<!-- 提现(企业付款)参数信息 -->
+	<select id="queryPayInfo" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t.userName as 'nickName',
+			t1.openid,
+			t2.cardNo,
+			t2.realName 
+		FROM t_customer t
+		LEFT JOIN t_wx_info t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		WHERE t.customerId = #{customerId}
+	</select>
+	
+	<select id="queryGradeInfo" resultType="map" parameterType="map">
+		SELECT
+			ifnull(t.gradeCode,'') as 'gradeCode',
+			ifnull(t1.gradeName,'') as "gradeName"
+		FROM t_cust_grade t
+		LEFT JOIN t_grade t1 ON t.gradeCode = t1.gradeCode
+		<where>
+			 and t.customerId = #{customerId}
+		</where>
+	</select>
+
+	
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_info (
+			customerId,
+			headImgUrl,
+			qrcodeImgUrl,
+			job,
+			sex,
+			birthday,
+			birthdayType,
+			qq,
+			weibo,
+			weixin,
+			provice,
+			cityName,
+			cityArea,
+			custDesc,
+			address,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{headImgUrl, jdbcType=VARCHAR}, 
+			#{qrcodeImgUrl, jdbcType=VARCHAR},
+			#{job, jdbcType=VARCHAR}, 
+			#{sex, jdbcType=VARCHAR}, 
+			#{birthday, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{birthdayType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{qq, jdbcType=VARCHAR}, 
+			#{weibo, jdbcType=VARCHAR}, 
+			#{weixin, jdbcType=VARCHAR}, 
+			#{provice, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{cityArea, jdbcType=VARCHAR}, 
+			#{custDesc, jdbcType=VARCHAR},
+			#{address, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_cust_info  
+		<set>
+			<if test="headImgUrl != null">
+				headImgUrl = #{headImgUrl, jdbcType=VARCHAR},  
+			</if>
+			
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR},  
+			</if>
+			<if test="qrcodeImgUrl != null">
+				qrcodeImgUrl = #{qrcodeImgUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="job != null">
+				job = #{job, jdbcType=VARCHAR},  
+			</if>
+			<if test="sex != null">
+				sex = #{sex, jdbcType=VARCHAR},  
+			</if>
+			<if test="birthday != null">
+				birthday = #{birthday, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="birthdayType != null">
+				birthdayType = #{birthdayType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="qq != null">
+				qq = #{qq, jdbcType=VARCHAR},  
+			</if>
+			<if test="cardNo != null">
+				cardNo = #{cardNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="weibo != null">
+				weibo = #{weibo, jdbcType=VARCHAR},  
+			</if>
+			<if test="weixin != null">
+				weixin = #{weixin, jdbcType=VARCHAR},  
+			</if>
+			<if test="provice != null">
+				provice = #{provice, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityArea != null">
+				cityArea = #{cityArea, jdbcType=VARCHAR},  
+			</if>
+			<if test="custDesc != null">
+				custDesc = #{custDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="headStatus != null">
+				headStatus = #{headStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="auditDesc != null">
+				auditDesc = #{auditDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t1.telephone,
+			t2.realName,
+			t2.cardNo,
+			t.customerId,
+			t.sex, 
+			DATE_FORMAT(t.birthday,'%Y-%m-%d') , 
+			t.birthdayType, 
+			t.qq, 
+			t.weibo, 
+			t.weixin, 
+			t.provice, 
+			t.cityName, 
+			t3.address, 
+			t1.email, 
+			t.custDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') createTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') updateTime
+			from T_CUST_INFO t
+			LEFT JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+			LEFT JOIN t_cust_location t3 on t.customerId = t3.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.updateTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.updateTime <= #{endTime} ]]>
+			</if>
+			 
+		</where>
+		order by t.updateTime desc
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+			from T_CUST_INFO t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.updateTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.updateTime <= #{endTime} ]]>
+			</if>
+			 
+			 
+		</where>
+	</select>
+	
+	<!-- 信贷经理个人信息 -->
+	<select id="lendCustInfo" resultType="map" parameterType="map">
+		SELECT
+			t.telephone,
+			(CASE t.`status`
+			WHEN 0 THEN '未激活'
+			WHEN 1 THEN '正常用户'
+			WHEN 2 THEN '锁定 '
+			WHEN 3 THEN '失效'
+			ELSE '未知'
+			END
+			) custStatusText, 
+			(CASE t.`vipGrade`
+			WHEN 0 THEN '未开通'
+			WHEN 1 THEN '已开通'
+			ELSE '未知'
+			END
+			) vipGradeText, 
+			t.vipEndDate,
+			DATE_FORMAT(t.registerTime,'%Y-%m-%d %H:%i:%s') as registerTime,
+			IFNULL(t2.realName,t.userName) as 'realName',
+			f_hide_idenitfyno(t2.cardNo) as 'cardNo',
+			(CASE t2.`status`
+			WHEN 0 THEN '待审核'
+			WHEN 1 THEN '认证通过'
+			WHEN 2 THEN '认证失败'
+			ELSE '未认证'
+			END
+			) identifyStatusText, 
+			t2.auditDesc as 'identifyAuditDesc',
+			t3.company,
+			(CASE t3.`status`
+			WHEN 0 THEN '待审核'
+			WHEN 1 THEN '认证通过'
+			WHEN 2 THEN '认证失败'
+			ELSE '未认证'
+			END
+			) cardStatusText,
+			t3.auditDesc as 'cardAuditDesc',
+			t4.usableAmount,
+			t4.totalScore
+		FROM t_customer t
+		LEFT JOIN t_cust_info t1 on t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		LEFT JOIN t_cust_identify_card t3 on t.customerId = t3.customerId
+		LEFT JOIN t_cust_amount t4 on t.customerId = t4.customerId
+		WHERE t.customerId = #{customerId}
+	</select>
+</mapper>

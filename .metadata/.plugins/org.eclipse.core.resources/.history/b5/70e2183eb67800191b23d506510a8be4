@@ -1,0 +1,318 @@
+package org.xxjr.cust.util.auth;
+
+import java.io.File;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.xxjr.cust.util.auth.util.FileDealUtil;
+import org.xxjr.cust.util.auth.util.GetAccessTokenUtil;
+import org.xxjr.cust.util.auth.util.HttpUtil;
+import org.xxjr.cust.util.auth.util.JXMConvertUtil;
+import org.springframework.util.StringUtils;
+
+public class IdentifyCardUtil {
+
+	/**
+	 * 正常身份证
+	 */
+	private static final String RISK_TYPE_NORMAL = "normal";
+
+	/**
+	 * 复印件
+	 */
+	private static final String RISK_TYPE_COPY = "copy";
+
+	/**
+	 * 临时身份证
+	 */
+	private static final String RISK_TYPE_TEMPORARY = "temporary";
+
+	/**
+	 * 翻拍
+	 */
+	private static final String RISK_TYPE_SCREEN = "screen";
+
+	/**
+	 * 未摆正身份证
+	 */
+	private static final String IMAGE_STATUS_SIDE = "reversed_side";
+
+	/**
+	 * 上传的图片中不包含身份证
+	 */
+	private static final String IMAGE_STATUS_NON = "non_idcard";
+
+	/**
+	 * 身份证模糊
+	 */
+	private static final String IMAGE_STATUS_BLU = "blurred";
+
+	/**
+	 * 身份证关键字段反光或过曝
+	 */
+	private static final String IMAGE_STATUS_OVER = "over_exposure";
+
+	/**
+	 * 其他类型的卡
+	 */
+	private static final String IMAGE_OTHER_TYPE_CARD = "other_type_card";
+
+	/**
+	 * 未知状态
+	 */
+	private static final String IMAGE_STATUS_UNKNOW = "unknown";
+
+	/**
+	 * tempFile 身份证照片
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> identifyCard(File tempFile)
+			throws Exception {
+		LogerUtil.log("start=====:" + new Date());
+		// 身份证识别url
+		String idcardIdentificate = "https://aip.baidubce.com/rest/2.0/ocr/v1/idcard";
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUploadFile(tempFile, pictureMap);
+		String filePath = pictureMap.get("photo");
+		// 识别身份证正面id_card_side=front;识别身份证背面id_card_side=back;
+		String params = "id_card_side=front&detect_risk=true&detect_direction=true&"
+				+ URLEncoder.encode("image", "UTF-8")
+				+ "="
+				+ URLEncoder.encode(filePath, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.0ddd41c7e07da9101ba3e693f410a8a0.2592000.1503647436.282335-9924368";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getAuth();
+		}
+
+		String resultJson = HttpUtil.post(idcardIdentificate, accessToken,
+				params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.ConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		String error_msg = StringUtil.objectToStr(resultHashMap
+				.get("error_msg"));
+		String error_code = StringUtil.objectToStr(resultHashMap
+				.get("error_code"));
+		String risk_type = StringUtil.objectToStr(resultHashMap
+				.get("risk_type"));
+		String edit_tool = StringUtil.objectToStr(resultHashMap
+				.get("edit_tool"));
+		String image_status = StringUtil.objectToStr(resultHashMap
+				.get("image_status"));
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (StringUtils.isEmpty(error_msg)) {
+			switch (risk_type) {
+			case RISK_TYPE_COPY:
+				resultMap.put("errorMessage", "拍照的身份证为复印件");
+				break;
+			case RISK_TYPE_TEMPORARY:
+				resultMap.put("errorMessage", "拍照的身份证为临时身份证");
+				break;
+			case RISK_TYPE_SCREEN:
+				resultMap.put("errorMessage", "拍照的身份证为翻拍的");
+				break;
+			case IMAGE_STATUS_UNKNOW:
+				resultMap.put("errorMessage", "拍照的身份证未知");
+				break;
+			}
+
+			if (IMAGE_STATUS_UNKNOW.equals(risk_type)
+					|| RISK_TYPE_NORMAL.equals(risk_type)) {
+				switch (image_status) {
+				case IMAGE_STATUS_SIDE:
+					resultMap.put("errorMessage", "拍照的身份证未摆正");
+					break;
+				case IMAGE_STATUS_NON:
+					resultMap.put("errorMessage", "拍的照片中不包含身份证");
+					break;
+				case IMAGE_STATUS_BLU:
+					resultMap.put("errorMessage", "拍照的身份证模糊");
+					break;
+				case IMAGE_STATUS_OVER:
+					resultMap.put("errorMessage", "拍照的身份证关键字段反光或过曝");
+					break;
+				case IMAGE_STATUS_UNKNOW:
+					resultMap.put("errorMessage", "拍照的身份证未知");
+					break;
+				case IMAGE_OTHER_TYPE_CARD:
+					resultMap.put("errorMessage", "拍的照片不是身份证");
+					break;
+				}
+			}
+
+			if (!StringUtils.isEmpty(edit_tool)) {
+				resultMap.put("errorMessage", "拍照的身份证被编辑过");
+				return resultMap;
+			}
+
+			if (RISK_TYPE_NORMAL.equals(risk_type)
+					&& RISK_TYPE_NORMAL.equals(image_status)) {
+				Map<String, Object> wordsMap = (Map<String, Object>) resultHashMap
+						.get("words_result");
+				LogerUtil.log(wordsMap);
+				Map<String, Object> nameMap = (Map<String, Object>) wordsMap
+						.get("姓名");
+				Map<String, Object> identMap = (Map<String, Object>) wordsMap
+						.get("公民身份号码");
+				LogerUtil.log(nameMap);
+				LogerUtil.log(identMap);
+				String name = (String) nameMap.get("words");
+				String cardNo = (String) identMap.get("words");
+				if (!StringUtils.isEmpty(name) && !StringUtils.isEmpty(cardNo)) {
+					resultMap.put("name", name);
+					resultMap.put("cardNo", cardNo);
+					resultMap.put("risk_type", risk_type);
+				}
+			}
+		} else {
+			resultMap.put("error_code", error_code);
+			resultMap.put("errorMessage", error_msg);
+		}
+		LogerUtil.log(resultMap);
+		LogerUtil.log("end======:" + new Date());
+		return resultMap;
+	}
+	
+	/**
+	 * in 文件流，需要自己关闭
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> identifyCard(InputStream in)
+			throws Exception {
+		LogerUtil.log("start=====:" + new Date());
+		// 身份证识别url
+		String idcardIdentificate = "https://aip.baidubce.com/rest/2.0/ocr/v1/idcard";
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUpload(in, pictureMap);
+		String filePath = pictureMap.get("photo");
+		// 识别身份证正面id_card_side=front;识别身份证背面id_card_side=back;
+		String params = "id_card_side=front&detect_risk=true&detect_direction=true&"
+				+ URLEncoder.encode("image", "UTF-8")
+				+ "="
+				+ URLEncoder.encode(filePath, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.0ddd41c7e07da9101ba3e693f410a8a0.2592000.1503647436.282335-9924368";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getAuth();
+		}
+
+		String resultJson = HttpUtil.post(idcardIdentificate, accessToken,
+				params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.ConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		String error_msg = StringUtil.objectToStr(resultHashMap
+				.get("error_msg"));
+		String error_code = StringUtil.objectToStr(resultHashMap
+				.get("error_code"));
+		String risk_type = StringUtil.objectToStr(resultHashMap
+				.get("risk_type"));
+		String edit_tool = StringUtil.objectToStr(resultHashMap
+				.get("edit_tool"));
+		String image_status = StringUtil.objectToStr(resultHashMap
+				.get("image_status"));
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (StringUtils.isEmpty(error_msg)) {
+			switch (risk_type) {
+			case RISK_TYPE_COPY:
+				resultMap.put("errorMessage", "拍照的身份证为复印件");
+				break;
+			case RISK_TYPE_TEMPORARY:
+				resultMap.put("errorMessage", "拍照的身份证为临时身份证");
+				break;
+			case RISK_TYPE_SCREEN:
+				resultMap.put("errorMessage", "拍照的身份证为翻拍的");
+				break;
+			case IMAGE_STATUS_UNKNOW:
+				resultMap.put("errorMessage", "拍照的身份证未知");
+				break;
+			}
+
+			if (IMAGE_STATUS_UNKNOW.equals(risk_type)
+					|| RISK_TYPE_NORMAL.equals(risk_type)) {
+				switch (image_status) {
+				case IMAGE_STATUS_SIDE:
+					resultMap.put("errorMessage", "拍照的身份证未摆正");
+					break;
+				case IMAGE_STATUS_NON:
+					resultMap.put("errorMessage", "拍的照片中不包含身份证");
+					break;
+				case IMAGE_STATUS_BLU:
+					resultMap.put("errorMessage", "拍照的身份证模糊");
+					break;
+				case IMAGE_STATUS_OVER:
+					resultMap.put("errorMessage", "拍照的身份证关键字段反光或过曝");
+					break;
+				case IMAGE_STATUS_UNKNOW:
+					resultMap.put("errorMessage", "拍照的身份证未知");
+					break;
+				case IMAGE_OTHER_TYPE_CARD:
+					resultMap.put("errorMessage", "拍的照片不是身份证");
+					break;
+				}
+			}
+
+			if (!StringUtils.isEmpty(edit_tool)) {
+				resultMap.put("errorMessage", "拍照的身份证被编辑过");
+				return resultMap;
+			}
+
+			if (RISK_TYPE_NORMAL.equals(risk_type)
+					&& RISK_TYPE_NORMAL.equals(image_status)) {
+				Map<String, Object> wordsMap = (Map<String, Object>) resultHashMap
+						.get("words_result");
+				LogerUtil.log(wordsMap);
+				Map<String, Object> nameMap = (Map<String, Object>) wordsMap
+						.get("姓名");
+				Map<String, Object> identMap = (Map<String, Object>) wordsMap
+						.get("公民身份号码");
+				LogerUtil.log(nameMap);
+				LogerUtil.log(identMap);
+				String name = (String) nameMap.get("words");
+				String cardNo = (String) identMap.get("words");
+				if (!StringUtils.isEmpty(name) && !StringUtils.isEmpty(cardNo)) {
+					resultMap.put("name", name);
+					resultMap.put("cardNo", cardNo);
+					resultMap.put("risk_type", risk_type);
+				}
+			}
+		} else {
+			resultMap.put("error_code", error_code);
+			resultMap.put("errorMessage", error_msg);
+		}
+		LogerUtil.log(resultMap);
+		LogerUtil.log("end======:" + new Date());
+		return resultMap;
+	}
+
+	public static void main(String[] args) throws Exception {
+		String filePath = "C:/Users/Administrator/Pictures/IMG_20170724_172232.jpg";
+		File file = new File(filePath);
+		identifyCard(file);
+	}
+}

@@ -1,0 +1,178 @@
+package org.xxjr.job.listener.busi;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+/***
+ * 卡数数据获取
+ * 第一贷款数据获取
+ * 转小小金融数据获取
+ * @author qinxcb
+ *
+ */
+@Lazy
+@Component
+public class AutoGetKaniuJob implements BaseExecteJob {
+	private static Logger log = LogManager.getLogger(AutoGetKaniuJob.class);
+
+	public final String lastGetTime = "KaNiuLastTime";
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		StringBuffer messages = new StringBuffer();
+	//	Object processId = param.getAttr(JobConstant.KEY_processId);
+	/*	try {
+          if(!AppProperties.isDebug()){
+      		String applyStartTime = (String) RedisUtils.getRedisService().get(
+					lastGetTime);
+			if (applyStartTime == null) {
+				applyStartTime = DateUtil.toStringByParttern(
+						DateUtil.getNextHour(new Date(), -24),
+						DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS);
+			}
+			String applyEndTime = DateUtil.toStringByParttern(new Date(),
+					DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS);
+
+			int currentPage = 1;
+			int everyPage = 100;
+			AppParam queryKaniu = new AppParam();
+			queryKaniu.addAttr("startDate", applyStartTime);
+			queryKaniu.addAttr("endDate", applyEndTime);
+			queryKaniu.setCurrentPage(currentPage);
+			queryKaniu.setEveryPage(everyPage);
+			AppResult kaNiu = KaniuApplyUtils.listOrder(queryKaniu);
+			messages.append("AutoGetKaniuJob:" + kaNiu.getPage().getTotalRecords());
+			
+			this.saveData(kaNiu.getRows());
+			int totalPage = kaNiu.getPage().getTotalPage();
+			log.info("AutoGetKaniuJob:" + kaNiu.toJson() + ":applyStartTime:" + applyStartTime +":totalPage:" + totalPage);
+			if (totalPage > 1) {
+				for (int i = 1; i < totalPage; i++) {
+					queryKaniu.setCurrentPage(i + 1);
+					kaNiu = KaniuApplyUtils.listOrder(queryKaniu);
+					this.saveData(kaNiu.getRows());
+				}
+			}
+			
+			RedisUtils.getRedisService().set(lastGetTime,applyEndTime);
+          }
+		} catch (Exception e) {
+			log.error("AutoGetKaniuJob executeJob error:", e);
+			result.setSuccess(Boolean.FALSE);
+			messages.append("AutoGetKaniuJob executeJob error:" + e.getMessage());
+		}*/
+		
+		// 第一贷款数据
+		/*try {
+			long totalSize = 0;
+			if(SysParamsUtil.getBoleanByKey("getDydk", false)){
+				totalSize = GetDydkUtil.getBorrowApply();
+			}
+			JobUtil.addProcessExecute(processId, 
+					"AutoGetDydkUtil size :"+ totalSize);
+		} catch (Exception e) {
+			log.error("AutoGetDydkJob executeJob error:", e);
+			result.setSuccess(Boolean.FALSE);
+			messages.append("AutoGetDydkJob executeJob error:" + e.getMessage());
+		}*/
+        
+		result.setMessage(messages.toString());
+		return result;
+	}
+/*
+	private int saveData(List<Map<String, Object>> rows) {
+		AppParam param = new AppParam();
+		param.setService("kaniuService");
+		param.setMethod("insert");
+		int size = 0;
+		for (Map<String, Object> data : rows) {
+			data.put("myStatus", "0");
+			data.put("createTime", new Date());
+			param.setAttr(data);
+			try {
+				param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ServiceKey.Key_busi));
+				RemoteInvoke.getInstance().call(param);
+				Object orderId = data.get("orderId");
+				if(StringUtils.isEmpty(data.get("shebao"))|| "无社保".equals(data.get("shebao"))){
+					continue;
+				}
+				//将数据转存到卡牛处理
+				AppParam paramDai = new AppParam();
+				paramDai.setService("kaniuService");
+				paramDai.setMethod("insertDai");
+				paramDai.addAttr("telephone",data.get("phone"));
+				paramDai.addAttr("kaniuMinAmount",
+						SysParamsUtil.getIntParamByKey("kaniuMinAmount", 20000));
+				int robType = BorrowErrorCode.RobType_2;
+				Map<String,Object> priceConfig = SeniorCfgUtils.getKaniuPrice(data);
+				paramDai.addAttr("score", priceConfig.get("score"));
+				paramDai.addAttr("price", priceConfig.get("price"));
+				paramDai.addAttr("robType",robType);
+				paramDai.addAttr("orderId",orderId);
+				
+				Object salaryPay = paramDai.getAttr("salaryPay");
+				String wagesType ="0";
+				if("打卡".equals(salaryPay)){
+					wagesType ="1";
+				}else if("现金".equals(salaryPay)){
+					wagesType ="2";
+				}
+				paramDai.addAttr("wagesType",wagesType);
+				StringBuffer loanDesc = new StringBuffer();
+				String idCard = (String) data.get("idCard");
+				if(!StringUtils.isEmpty(idCard) && idCard.trim().toString().length()==18){
+					int year = Integer.valueOf(idCard.trim().substring(6, 10));
+					year = Integer.valueOf(DateUtil.toStringByParttern(new Date(), "YYYY")) -year ;
+					if(year<20 || year>55){
+						continue;
+					}
+					int sex = Integer.valueOf(idCard.trim().substring(17, 18));
+					loanDesc.append("" +year +"岁," + (sex%2==0?"女,":"男,"));
+				}
+				loanDesc.append( (StringUtils.isEmpty(salaryPay)?"":salaryPay+",") +"月收入:" + data.get("incomeMonth"));
+				if(!StringUtils.isEmpty(data.get("house"))) loanDesc.append(",房产："+data.get("house"));
+				if(!StringUtils.isEmpty(data.get("car"))) loanDesc.append(",车产："+data.get("car"));
+				if(!StringUtils.isEmpty(data.get("shebao"))&&
+						!"无社保".equals(data.get("shebao"))) loanDesc.append(",社保："+data.get("shebao"));
+				if(!StringUtils.isEmpty(data.get("gongjijin")) && "无公积金".equals(data.get("gongjijin"))){
+					loanDesc.append(",公积金：" + data.get("gongjijin"));
+				}
+				
+				if(!StringUtils.isEmpty(data.get("credit"))) loanDesc.append(","+data.get("credit"));
+				
+				paramDai.addAttr("loanDesc",loanDesc.toString());
+				
+				try{
+					
+					paramDai.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+					RemoteInvoke.getInstance().call(paramDai);
+					size++;
+				} catch (Exception e) {
+					e.printStackTrace();
+					log.error("AutoGetDydkJob saveData:", e);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+		return size;
+	}*/
+	
+/*	public static void main(String[] args){
+		String idCard ="430321198911110533";
+		
+		int year = Integer.valueOf(idCard.trim().substring(6, 10));
+		int sex = Integer.valueOf(idCard.trim().substring(17, 18));
+		System.out.println(
+				Integer.valueOf(DateUtil.toStringByParttern(new Date(), "YYYY")) -year  +":" + year +":" + sex);
+		
+	}*/
+}

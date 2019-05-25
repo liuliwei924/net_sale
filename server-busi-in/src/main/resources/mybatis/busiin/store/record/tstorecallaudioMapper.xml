@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORECALLAUDIO">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			audioId,
+			customerId, 
+			applyId, 
+			audionUrl, 
+			DATE_FORMAT(uploadTime,'%Y-%m-%d %H:%i:%s') as uploadTime  ,
+			fileName, 
+			DATE_FORMAT(startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			custTel, 
+			borrowTel
+		FROM t_store_call_audio 
+		<include refid="sqlQuery"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_audio 
+		<include refid="sqlQuery"/>
+	</select>
+	
+	<sql id="sqlQuery">
+		<where>
+			<if test="audioId != null and audioId != ''">
+			    and audioId = #{audioId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="audionUrl != null and audionUrl != ''">
+				and audionUrl = #{audionUrl}
+			</if>
+			<if test="uploadTime != null and uploadTime != ''">
+				and uploadTime = #{uploadTime}
+			</if>
+			<if test="fileName != null and fileName != ''">
+				and fileName = #{fileName}
+			</if>
+			<if test="startCallTime != null and startCallTime != ''">
+				and startCallTime = #{startCallTime}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and custTel = #{custTel}
+			</if>
+			<if test="borrowTel != null and borrowTel != ''">
+				and borrowTel = #{borrowTel}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and uploadTime  >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and uploadTime  < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+		</where>
+	</sql>
+	
+	
+	<select id="queryCallAudio" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.uploadTime, '%Y-%m-%d') AS 'recordDate',
+			t.audioId,
+			t.customerId, 
+			t.applyId, 
+			t.audionUrl,
+			t.`duration`,
+			DATE_FORMAT(t.uploadTime,'%Y-%m-%d %H:%i:%s') as uploadTime  ,
+			t.fileName, 
+			DATE_FORMAT(t.startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			t.custTel,
+			CONCAT(t2.orgNo,'-',t2.orgName) as orgName,
+			f_hide_phone (t.borrowTel) AS borrowTel,
+			t3.applyName,
+			t1.realName,
+			t1.groupName,
+			(CASE 
+				WHEN t3.orderStatus =-1 THEN '待跟进'
+				WHEN t3.orderStatus =0 THEN '跟进中'
+				WHEN t3.orderStatus =1 THEN '未上门待签约'
+				WHEN t3.orderStatus =2 THEN '已上门待签约'
+				WHEN t3.orderStatus =3 THEN '已上门签约'
+				WHEN t3.orderStatus =4 THEN '进件审核中'
+				WHEN t3.orderStatus =5 THEN '银行已放款'
+				WHEN t3.orderStatus =6 THEN '银行已拒绝'
+				WHEN t3.orderStatus =7 THEN '无效客户'
+				WHEN t3.orderStatus =8 THEN '空号/错号'
+				ELSE '未知'
+				END
+			) AS orderStatusText,
+			t3.`grade`,
+			t3.custLabel
+		FROM t_store_call_audio t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_borrow_store_apply t3 on t.applyId = t3.applyId
+		<include refid="showSqlQuery"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryCallAudioCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_audio t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_borrow_store_apply t3 on t.applyId = t3.applyId
+		<include refid="showSqlQuery"/>
+	</select>
+	
+	<sql id="showSqlQuery">
+		<where>
+			<if test="audioId != null and audioId != ''">
+			    and t.audioId = #{audioId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="audionUrl != null and audionUrl != ''">
+				and t.audionUrl = #{audionUrl}
+			</if>
+			<if test="uploadTime != null and uploadTime != ''">
+				and t.uploadTime = #{uploadTime}
+			</if>
+			<if test="fileName != null and fileName != ''">
+				and t.fileName = #{fileName}
+			</if>
+			<if test="startCallTime != null and startCallTime != ''">
+				and t.startCallTime = #{startCallTime}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and t.custTel = #{custTel}
+			</if>
+			<if test="borrowTel != null and borrowTel != ''">
+				and t.borrowTel = #{borrowTel}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.startCallTime  >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.startCallTime  < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+			    and t1.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+			    and t1.orgId in (${userOrgs})
+			</if>
+			<if test="isManager != null and isManager != ''">
+			    and (t1.orgId in (${manaOrgs}) OR t.duration >=300)
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t1.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t1.teamName = #{teamName}
+			</if>
+			<if test="realName != null and realName != ''">
+			    and t1.realName LIKE CONCAT(#{realName},'%') 
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				and t3.`applyName` LIKE CONCAT(#{storeRealName},'%')
+			</if>
+			<if test="startDuration != null and startDuration != ''">
+				 <![CDATA[and t.duration  >= #{startDuration}]]>
+			</if>
+			<if test="endDuration != null and endDuration != ''">
+				<![CDATA[and t.duration  < #{endDuration}]]>
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+			    and t3.orderStatus = #{orderStatus}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+			    and t3.custLabel = #{custLabel}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and t.uploadTime >= #{applyTime} ]]>
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="audioId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_call_audio (
+			customerId,
+			applyId,
+			audionUrl,
+			uploadTime,
+			fileName,
+			startCallTime,
+			duration,
+			custTel,
+			borrowTel
+		)
+		SELECT 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{audionUrl, jdbcType=VARCHAR}, 
+			#{uploadTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{fileName, jdbcType=VARCHAR}, 
+			#{startCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			IFNULL(#{duration, jdbcType=INTEGER,typeHandler=NumberHandler},0), 	
+			#{custTel, jdbcType=VARCHAR}, 
+			#{borrowTel, jdbcType=VARCHAR}
+			FROM DUAL WHERE NOT EXISTS (select 1 from t_store_call_audio e where
+			e.audionUrl = #{audionUrl})
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_call_audio 
+		<where> 
+			audioId = #{audioId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_call_audio  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="audionUrl != null">
+				audionUrl = #{audionUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="uploadTime != null">
+				uploadTime = #{uploadTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="fileName != null">
+				fileName = #{fileName, jdbcType=VARCHAR},  
+			</if>
+			<if test="startCallTime != null">
+				startCallTime = #{startCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="custTel != null">
+				custTel = #{custTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="borrowTel != null">
+				borrowTel = #{borrowTel, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  audioId = #{audioId}
+		</where>
+	</update>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.audioId,
+			t.customerId, 
+			t.applyId, 
+			t.audionUrl,
+			t.`duration`,
+			DATE_FORMAT(t.uploadTime,'%Y-%m-%d %H:%i:%s') as uploadTime,
+			t.fileName, 
+			DATE_FORMAT(t.startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime,
+			t.custTel,
+			t.borrowTel,
+			t1.realName
+		FROM t_store_call_audio t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_audio t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+	</select>
+	<select id="queryNotRelationAudio" resultType="map" parameterType="map">
+		SELECT
+			t.audioId,
+			t.customerId, 
+			t.audionUrl, 
+			DATE_FORMAT(t.uploadTime,'%Y-%m-%d %H:%i:%s') as uploadTime  ,
+			t.fileName, 
+			DATE_FORMAT(t.startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			t.custTel, 
+			t.borrowTel,
+			t1.applyId
+		FROM
+			t_store_call_audio t
+		JOIN t_borrow_store_apply t1 ON t1.telephone = t.borrowTel
+		WHERE
+			t.applyId IS NULL
+	</select>
+</mapper>

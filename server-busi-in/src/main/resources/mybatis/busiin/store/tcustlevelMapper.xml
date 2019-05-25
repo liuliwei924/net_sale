@@ -1,0 +1,616 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTLEVEL">
+    
+    <sql id="querySqlWhere">
+	    <where>
+				<if test="customerId != null and customerId != ''">
+				  and customerId = #{customerId}
+				 </if>
+				<if test="levelType != null and levelType != ''">
+					and levelType = #{levelType}
+				</if>
+				<if test="isAllotOrder != null and isAllotOrder != ''">
+					and isAllotOrder = #{isAllotOrder}
+				</if>
+				<if test="isRobOrder != null and isRobOrder != ''">
+					and isRobOrder = #{isRobOrder}
+				</if>
+				<if test="totalAbility != null and totalAbility != ''">
+					and totalAbility = #{totalAbility}
+				</if>
+				<if test="gradeCode != null and gradeCode != ''">
+					and gradeCode = #{gradeCode}
+				</if>
+				<if test="ordTotalCount != null and ordTotalCount != ''">
+					and ordTotalCount = #{ordTotalCount}
+				</if>
+				<if test="dealOrderCount != null and dealOrderCount != ''">
+					and dealOrderCount = #{dealOrderCount}
+				</if>
+				<if test="notDealCount != null and notDealCount != ''">
+					and notDealCount = #{notDealCount}
+				</if>
+				<if test="agAllotCount != null and agAllotCount != ''">
+					and agAllotCount = #{agAllotCount}
+				</if>
+				<if test="agNotDealCount != null and agNotDealCount != ''">
+					and agNotDealCount = #{agNotDealCount}
+				</if>
+				<if test="visitCount != null and visitCount != ''">
+					and visitCount = #{visitCount}
+				</if>
+				<if test="signCount != null and signCount != ''">
+					and signCount = #{signCount}
+				</if>
+				<if test="backCount != null and backCount != ''">
+					and backCount = #{backCount}
+				</if>
+				<if test="invalidCount != null and invalidCount != ''">
+					and invalidCount = #{invalidCount}
+				</if>
+				<if test="allotDesc != null and allotDesc != ''">
+					and allotDesc = #{allotDesc}
+				</if>
+				<if test="updateTime != null and updateTime != ''">
+					and updateTime = #{updateTime}
+				</if>
+				<if test="stopAllotDate != null and stopAllotDate != ''">
+					and stopAllotDate = #{stopAllotDate}
+				</if>
+		  </where>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			levelType, 
+			isAllotOrder, 
+			isRobOrder,
+			ordTotalCount,
+			dealOrderCount,
+			visitCount,
+			signCount,
+			backCount,
+			gradeCode,			
+			totalAbility,
+			notDealCount, 
+			agAllotCount, 
+			agNotDealCount,   
+			invalidCount,
+			backAmount,
+			allotDesc,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			stopAllotDate
+		FROM t_cust_level
+		<include refid="querySqlWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+   
+    <select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_level 
+		<include refid="querySqlWhere"/>
+	</select>
+	
+	<select id="queryLoginStatus" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t.levelType, 
+			t.isAllotOrder, 
+			t.isRobOrder,
+			t.ordTotalCount,
+			t.dealOrderCount,
+			t.visitCount,
+			t.signCount,
+			t.backCount,
+			t.gradeCode,			
+			t.totalAbility,
+			t.notDealCount, 
+			t.agAllotCount, 
+			t.agNotDealCount,   
+			t.invalidCount,
+			t.backAmount,
+			t.allotDesc,
+			t1.loginStatus,
+			t2.allotSeniorCount
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_store_allot_record t2 ON t.customerId = t2.customerId
+		AND t2.recordDate= CURDATE()
+		WHERE t.customerId = #{customerId}
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryLess8Cust" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			o1.cityName,
+			t1.orgId as 'orgId',
+			IFNULL(t2.totalCount,0) as 'totalCount'
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org o1 ON t1.orgId = o1.orgId
+		LEFT JOIN t_store_allot_record t2 ON t.customerId = t2.customerId and t2.recordDate= CURDATE()
+		WHERE 
+		  <![CDATA[t.isAllotOrder=1 
+		   AND o1.cityName=#{cityName}
+		   AND IFNULL(t2.totalCount,0)<#{baseCount}
+		   ]]>
+		  ORDER BY t2.totalCount ASC,t.levelType DESC,t.totalAbility DESC
+	</select>
+	
+	<select id="queryMore8Cust" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			o1.cityName,
+			t1.orgId as 'orgId',
+			t2.totalCount
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org o1 ON t1.orgId = o1.orgId
+		LEFT JOIN t_store_allot_record t2 ON t.customerId = t2.customerId and t2.recordDate= CURDATE()
+		WHERE 
+		  <![CDATA[t.isAllotOrder=1 
+		   AND o1.cityName=#{cityName}
+		   AND t2.totalCount>=#{baseCount}
+		   AND t1.loginStatus = 1
+		  ]]>
+		  ORDER BY t.levelType DESC,t.totalAbility DESC,t2.totalCount ASC
+	</select>
+	
+	
+	<!-- 获取城市及等级下可分配未满足基本分单的门店人员 -->
+	<select id="queryLessBaseCust" parameterType="map" resultType="map">
+		SELECT
+			t.customerId,
+			t2.cityName,
+			t1.orgId as 'orgId',
+			IFNULL(t3.totalCount,0) as 'totalCount',
+			IFNULL(t3.allotSeniorCount,0) as 'allotSeniorCount',
+			IFNULL(t4.baseCount,0) as 'baseCount',
+			(IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.baseCount,1)) as allotPercent
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_store_allot_record t3 ON t.customerId = t3.customerId and t3.recordDate= CURDATE()
+		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
+		WHERE 
+		  t.isAllotOrder in(1,4) 
+		   AND t2.cityName = #{cityName}
+		   <if test="orgId != null and orgId !=''">
+		   		AND t2.orgId = #{orgId}
+		   </if>
+		   AND t1.roleType in (3,6,7,8,9)
+		   AND t1.loginStatus = 1
+		   <![CDATA[ AND IFNULL(t3.allotSeniorCount,0) <= t4.baseCount]]>
+		   ORDER BY  (IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.baseCount,1)),t.gradeCode DESC
+	</select>
+	
+	<!-- 获取城市及等级下可分配已满足基本分单的门店人员 -->
+	<select id="queryMoreBaseCust" parameterType="map" resultType="map">
+		SELECT
+			t.customerId,
+			t2.cityName,
+			t1.orgId as 'orgId',
+			t3.totalCount,
+			IFNULL(t3.allotSeniorCount,0) as 'allotSeniorCount',
+			IFNULL(t4.baseCount,0) as 'baseCount',
+			(IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.maxCount,1)) as allotPercent
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_store_allot_record t3 ON t.customerId = t3.customerId and t3.recordDate= CURDATE()
+		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
+		WHERE 
+		  t.isAllotOrder in(1,4)
+		   AND t2.cityName = #{cityName}
+		   <if test="orgId != null and orgId !=''">
+		    	AND t2.orgId = #{orgId}
+		   </if>
+		   AND t1.roleType in (3,6,7,8,9)
+		   AND t1.loginStatus = 1
+		   <![CDATA[AND IFNULL(t3.allotSeniorCount,0) < t4.maxCount
+		   AND IFNULL(t3.allotSeniorCount,0) > t4.baseCount]]>
+		   ORDER BY (IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.maxCount,1)),t.gradeCode DESC
+		   <if test="limitCount != null and limitCount !=''">
+		   limit #{limitCount}
+		   </if>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_level (
+			customerId,
+			levelType,
+			isAllotOrder,
+			isRobOrder,
+			totalAbility,
+			gradeCode,
+			ordTotalCount,
+			dealOrderCount,
+			notDealCount,
+			agAllotCount,
+			agNotDealCount,
+			visitCount,
+			signCount,
+			backCount,
+			invalidCount,
+			backAmount,
+			allotDesc,
+			stopAllotDate
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{levelType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="isAllotOrder !=null ">
+			#{isAllotOrder, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isAllotOrder ==null ">
+			0 ,
+			</if>
+			<if test="isRobOrder !=null ">
+			#{isRobOrder, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isRobOrder ==null ">
+			0 ,
+			</if>
+			<if test="totalAbility !=null ">
+			#{totalAbility, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="totalAbility ==null ">
+			0.00 ,
+			</if>
+			<if test="gradeCode !=null ">
+			#{gradeCode, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="gradeCode ==null ">
+			1 ,
+			</if>
+			<if test="ordTotalCount !=null ">
+			#{ordTotalCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="ordTotalCount ==null ">
+			0 ,
+			</if>
+			<if test="dealOrderCount !=null ">
+			#{dealOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="dealOrderCount ==null ">
+			0 ,
+			</if>
+			<if test="notDealCount !=null ">
+			#{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notDealCount ==null ">
+			0 ,
+			</if>
+			<if test="agAllotCount !=null ">
+			#{agAllotCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="agAllotCount ==null ">
+			0 ,
+			</if>
+			<if test="agNotDealCount !=null ">
+			#{agNotDealCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="agNotDealCount ==null ">
+			0 ,
+			</if>
+			<if test="visitCount !=null ">
+			#{visitCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="visitCount ==null ">
+			0 ,
+			</if>
+			<if test="signCount !=null ">
+			#{signCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signCount ==null ">
+			0 ,
+			</if>
+			<if test="backCount !=null ">
+			#{backCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="backCount ==null ">
+			0 ,
+			</if>
+			<if test="invalidCount !=null ">
+			#{invalidCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="invalidCount ==null ">
+			0 ,
+			</if>
+			<if test="backAmount !=null ">
+			#{backAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="backAmount ==null ">
+			0.00 ,
+			</if>
+			#{allotDesc, jdbcType=VARCHAR},
+			#{stopAllotDate, jdbcType=DATE,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_level 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_level  
+		<set>
+			<if test="levelType != null">
+				levelType = #{levelType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isAllotOrder != null">
+				isAllotOrder = #{isAllotOrder, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isRobOrder != null">
+				isRobOrder = #{isRobOrder, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalAbility != null">
+				totalAbility = #{totalAbility, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="gradeCode != null">
+				gradeCode = #{gradeCode, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="ordTotalCount != null">
+				ordTotalCount = #{ordTotalCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="dealOrderCount != null">
+				dealOrderCount = #{dealOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notDealCount != null">
+				notDealCount = #{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="agAllotCount != null">
+				agAllotCount = #{agAllotCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="agNotDealCount != null">
+				agNotDealCount = #{agNotDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitCount != null">
+				visitCount = #{visitCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signCount != null">
+				signCount = #{signCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="backCount != null">
+				backCount = #{backCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="invalidCount != null">
+				invalidCount = #{invalidCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backAmount != null">
+				backAmount = #{backAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="allotDesc != null">
+				allotDesc = #{allotDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="stopAllotDate != null">
+				stopAllotDate = #{stopAllotDate, jdbcType=DATE,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+			  <if test="updateAllotOrderFlag != null">
+			  	AND isAllotOrder in (1,4)
+			  </if>
+		</where>
+	</update>
+	
+	<select id="queryAllotOrder" resultType="map" parameterType="map">
+		SELECT
+			c.customerId,
+			c.levelType,
+			c.isAllotOrder,
+			c.totalAbility,
+			c.gradeCode,
+			c.isRobOrder,
+			c.ordTotalCount,
+			c.dealOrderCount,
+			c.notDealCount,
+			c.agAllotCount,
+			c.agNotDealCount,
+			c.visitCount,
+			c.signCount,
+			c.backCount,
+			c.invalidCount,
+			c.backAmount,
+			c.allotDesc,
+			DATE_FORMAT(c.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			c.stopAllotDate,
+			t.realName,
+			t.telephone,
+			CONCAT(t1.orgNo,'-',t1.orgName) as orgName,
+			t1.cityName,
+			t.loginStatus,
+			t.groupName,
+  			t.teamName,
+  			t2.gradeName,
+  			t.employeeNo,
+  			t.queryStatus,
+  			t1.orgNo
+		FROM t_cust_level c
+		JOIN t_busi_cust t ON t.customerId = c.customerId
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_borrow_rank_cfg t2 ON t2.gradeCode = c.gradeCode
+  		WHERE t.`roleType` IN (3,6,7,8,9)
+		<include refid="queryAllotSqlWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+   
+    <select id="queryAllotOrderCount" resultType="int" parameterType="map">
+		SELECT 
+		  COUNT(*) 
+		FROM t_cust_level c
+		JOIN t_busi_cust t ON t.customerId = c.customerId
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_borrow_rank_cfg t2 ON t2.gradeCode = c.gradeCode
+  		WHERE t.`roleType` IN (3,6,7,8,9)
+		<include refid="queryAllotSqlWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<sql id="queryAllotSqlWhere">
+		<if test="gradeCode != null and gradeCode != ''">
+			and c.gradeCode = #{gradeCode}
+		</if>
+		<if test="isAllotOrder != null and isAllotOrder != ''">
+			and c.isAllotOrder = #{isAllotOrder}
+		</if>
+		<if test="telephone != null and telephone != ''">
+		    and t.telephone = #{telephone}
+		 </if>
+	 	 <if test="realName != null and realName != ''">
+		    and t.realName like CONCAT(#{realName},'%')
+		 </if>
+		 <if test="orgId != null and orgId != ''">
+			 and t.orgId = #{orgId}
+		 </if>
+		 <if test="loginStatus != null and loginStatus != ''">
+			 and t.loginStatus = #{loginStatus}
+		 </if>
+		 <if test="groupName != null and groupName != ''">
+			 and t.groupName = #{groupName}
+		 </if>
+		 <if test="teamName != null and teamName != ''">
+			 and t.teamName = #{teamName}
+		 </if>
+		 <if test="allotDesc != null and allotDesc != ''">
+			and c.allotDesc like concat(concat("%",#{allotDesc}),"%")
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t.orgId in (${userOrgs})
+		</if>
+		<if test="queryStatus != null and queryStatus != ''">
+			 and t.queryStatus = #{queryStatus}
+		 </if>
+		 <if test="employeeNo != null and employeeNo != ''">
+			 and t.employeeNo = #{employeeNo}
+		 </if>
+    </sql>
+    
+    <!-- 查询关闭分单原因 -->
+    <select id="queryCloseAllotDesc" resultType="map" parameterType="map">
+		SELECT
+		  `customerId`,
+		  `levelType`,
+		  `isAllotOrder`,
+		  `totalAbility`,
+		  `gradeCode`,
+		  `isRobOrder`,
+		  `ordTotalCount`,
+		  `dealOrderCount`,
+		  `notDealCount`,
+		  `agAllotCount`,
+		  `agNotDealCount`,
+		  `visitCount`,
+		  `signCount`,
+		  `backCount`,
+		  `invalidCount`,
+		  `backAmount`,
+		  `allotDesc`
+		FROM `t_cust_level`
+		WHERE isAllotOrder IN (0,2)
+		AND customerId = #{customerId}
+	</select>
+	<!-- 查询满足条件新订单立即分配的人 -->
+	<select id="queryNewOrderAllot" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t2.cityName,
+			t1.orgId as 'orgId',
+			t3.allotSeniorCount,
+			t.notDealCount,
+			t.gradeCode
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_store_allot_record t3 ON t.customerId = t3.customerId and t3.recordDate= CURDATE()
+		WHERE 
+			t.isAllotOrder in(1,4) 
+		   AND t2.cityName = #{cityName}
+		   <if test="orgId != null and orgId !=''">
+		   		AND t2.orgId = #{orgId}
+		   </if>
+		   AND t1.roleType in (3,6,7,8,9)
+		   AND t1.loginStatus = 1
+		  <![CDATA[ AND t.notDealCount <= 1]]>
+		   ORDER BY  t3.allotSeniorCount ASC,t.notDealCount ASC,t.gradeCode DESC
+		limit 1
+	</select>
+	
+	<!-- 查询未满足基本分单量新订单立即分配的人 -->
+	<select id="queryLessOrderAllot" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t2.cityName,
+			t1.orgId as 'orgId',
+			t3.allotSeniorCount,
+			t4.baseCount,
+			(IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.baseCount,1)) allotPercent,
+			t.notDealCount,
+			t.gradeCode
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_store_allot_record t3 ON t.customerId = t3.customerId and t3.recordDate= CURDATE()
+		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
+		WHERE 
+			t.isAllotOrder in(1,4) 
+		   AND t2.cityName = #{cityName}
+		   <if test="orgId != null and orgId !=''">
+		   		AND t2.orgId = #{orgId}
+		   </if>
+		   AND t1.roleType in (3,6,7,8,9)
+		   AND t1.loginStatus = 1
+		  <![CDATA[ AND IFNULL(t3.allotSeniorCount,0) <= t4.baseCount]]>
+		   ORDER BY  (IFNULL(t3.allotSeniorCount,0) / IFNULL(t4.baseCount,1)),t.gradeCode DESC
+		limit 1
+	</select>
+	
+	
+	<!-- 查询已满足基本分单量新订单立即分配的人  -->
+	<select id="queryMoreOrderAllot" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t2.cityName,
+			t1.orgId as 'orgId',
+			t3.allotSeniorCount,
+			(IFNULL(t3.allotSeniorCount,0) /IFNULL(t4.maxCount,1)) as allotPercent,
+			t.notDealCount,
+			t.gradeCode
+		FROM t_cust_level t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		LEFT JOIN t_store_allot_record t3 ON t.customerId = t3.customerId and t3.recordDate= CURDATE()
+		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
+		WHERE 
+			t.isAllotOrder in(1,4) 
+		   AND t2.cityName = #{cityName}
+		   <if test="orgId != null and orgId !=''">
+		   		AND t2.orgId = #{orgId}
+		   </if>
+		   AND t1.roleType in (3,6,7,8,9)
+		   AND t1.loginStatus = 1
+		   <![CDATA[AND IFNULL(t3.allotSeniorCount,0) < t4.maxCount]]>
+		   <![CDATA[AND IFNULL(t3.allotSeniorCount,0) > t4.baseCount]]>
+		   ORDER BY (IFNULL(t3.allotSeniorCount,0) /IFNULL(t4.maxCount,1)),t.gradeCode DESC
+		limit 1
+	</select>
+	
+	
+</mapper>

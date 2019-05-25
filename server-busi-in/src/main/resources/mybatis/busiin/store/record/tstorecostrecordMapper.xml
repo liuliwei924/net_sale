@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORECOSTRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			customerId, 
+			price, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_store_cost_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="price != null and price != ''">
+				and price = #{price}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_cost_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="price != null and price != ''">
+			and price = #{price}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryCostCount" resultType="int" parameterType="map">
+		<![CDATA[SELECT
+			COUNT(t.applyId)
+		FROM
+			t_store_cost_record t
+		WHERE
+			t.customerId = #{customerId}
+		AND t.createTime >= #{recordDate}
+		AND t.status = 0
+		AND t.createTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+	</select>
+	<!-- 查询订单成本单量 -->
+	<select id="queryOrderCost" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.applyId, 
+			t.customerId, 
+			t.price, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName,
+			concat(t2.orgNo,'-',t2.orgName) as orgName
+		FROM t_store_cost_record t 
+		LEFT JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+		<include refid="querySqlWhere" />
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryOrderCostCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_cost_record t 
+		LEFT JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+		<include refid="querySqlWhere" />
+	</select>
+	<sql id="querySqlWhere">
+		<where>
+			<if test="recordId != null and recordId != ''">
+			    and t.recordId = #{recordId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="price != null and price != ''">
+				and t.price = #{price}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="recordDate != null and recordDate != ''">
+			   <![CDATA[and t.createTime >= #{recordDate}
+		    	and t.createTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]> 
+			</if>
+		</where>
+	</sql>
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_cost_record (
+			applyId,
+			customerId,
+			orgId,
+			price,
+			status,
+			createTime
+		)
+        select  
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{price, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			0,
+			now()
+		from dual where not exists( select 1 from t_store_cost_record  e where e.applyId =#{applyId} 
+		and DATE_FORMAT(e.createTime,'%Y-%m-%d') = #{recordDate})
+		
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_cost_record 
+		<where>
+			<if test="recordId != null">
+				recordId = #{recordId, jdbcType=BIGINT,typeHandler=NumberHandler}
+			</if>
+			<if test="applyId != null">
+				and applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}
+			</if>
+			<if test="customerId != null">
+				and customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler} 
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_cost_record  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="price != null">
+				price = #{price, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	
+	<update id="updateCostByApplyId" parameterType="map">
+		UPDATE t_store_cost_record  
+		<set>
+			<if test="status != null">
+				status = #{status, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			<if test="applyId != null">
+				and applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}
+			</if>
+			<if test="customerId != null">
+				and customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler} 
+			</if>
+		</where>
+	</update>
+	<!-- 查询门店人员成本单量 -->
+	<select id="queryCostCountByCustId" resultType="int" parameterType="map">
+		<![CDATA[
+		SELECT
+			COUNT(t.applyId)
+		FROM
+			t_store_cost_record t
+		WHERE
+			t.customerId = #{customerId}
+		AND t.createTime >= #{recordDate}
+		AND t.status = 0
+		AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
+	</select>
+	<!-- 查询门店成本单量 -->
+	<select id="queryCostCountByOrgId" resultType="int" parameterType="map">
+		SELECT
+			COUNT(t.applyId)
+		FROM
+			t_store_cost_record t
+		WHERE
+			t.orgId = #{orgId}
+		AND t.status = 0
+		<![CDATA[AND t.createTime >= #{recordDate}
+		AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
+	</select>
+	<!-- 查询门店成本人数 -->
+	<select id="queryStoreCountByOrgId" resultType="int" parameterType="map">
+		SELECT 
+			COUNT(*) 
+		FROM (
+			SELECT
+				count(t.customerId) as costCount
+			FROM
+				t_store_cost_record t
+			WHERE
+				t.orgId = #{orgId}
+			AND t.status = 0
+			<![CDATA[AND t.createTime >= #{recordDate}
+			AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
+			GROUP BY t.customerId
+		) as tab1
+	</select>
+	<!-- 门店人员最终退单数 -->
+	<select id="queryStoreBackCostCount" resultType="map" parameterType="map">
+		SELECT
+		    #{recordMonth} as recordDate,
+			tab1.customerId,
+			floor(tab1.costCount / #{avgCostCount} * #{avgBackCount}) as backCostCount,
+			floor(tab1.costCount / #{avgCostCount} * #{avgBackCount}) as costCount
+		FROM (
+				SELECT
+					t.customerId,
+					count(t.customerId) as costCount
+				FROM
+					t_store_cost_record t
+				WHERE
+					t.orgId = #{orgId}
+				AND t.status = 0
+				<![CDATA[AND t.createTime >= #{recordDate}
+				AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
+				GROUP BY t.customerId
+		) as tab1
+	</select>
+	
+</mapper>

@@ -1,0 +1,68 @@
+package org.xxjr.job.listener.fx;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.sys.util.ServiceKey;
+@Lazy
+@Component
+public class AutoSumTrainerPerformanceJob implements BaseExecteJob {
+	private static Logger log = LogManager.getLogger(AutoSumTrainerPerformanceJob.class);
+	/**
+	 * 每个月1号统计上个月讲师提成
+	 * 
+	 * @author Administrator
+	 *
+	 */
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try {
+			Date perMonth = DateUtil.getNextMonth(new Date(), -1);
+			Date startDate = DateUtil.getMonthFirstSecond(perMonth);
+			Date endDate = DateUtil.getMonthLastSecond(perMonth);
+			AppParam queryParam = new AppParam();
+			queryParam.setService("fxTrainAllotService");
+			queryParam.setMethod("queryTrainingFee");
+			queryParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sho));
+			queryParam.addAttr("startDate", startDate);
+			queryParam.addAttr("endDate", endDate);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(
+					queryParam);
+			List<Map<String,Object>> list = queryResult.getRows();
+			if(list.size() > 0){
+				AppParam saveParam = new AppParam("sumTrainerPerformanceService","save");
+				saveParam.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_sum));
+				saveParam.addAttr("list", list);
+				saveParam.addAttr("monthDate", DateUtil.getSimpleFmt(perMonth));
+				saveParam.addAttr("startDate", startDate);
+				saveParam.addAttr("endDate", endDate);
+				RemoteInvoke.getInstance().call(saveParam);
+			}
+		} catch (Exception e) {
+			log.error("AutoSumTrainerPerformanceJob executeJob error:", e);
+			JobUtil.addProcessExecute(processId, "AutoSumTrainerPerformanceJob error:" + e.getMessage());
+		}
+		return result;
+	}
+	
+}

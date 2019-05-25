@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORECALLRECENT">
+    
+    <sql id="querySql">
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="recentStatus != null and recentStatus != ''">
+				and recentStatus = #{recentStatus}
+			</if>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(recentTime,'%Y-%m-%d %H:%i:%s') as recentTime  ,
+			DATE_FORMAT(firstTime,'%Y-%m-%d %H:%i:%s') as firstTime  ,
+			callTimes, 
+			applyId, 
+			curDuration,
+			totalDuration,
+			sucCallTimes,
+			recentStatus, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_store_call_recent
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_recent 
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_store_call_recent (
+			recentTime,
+			firstTime,
+			callTimes,
+			applyId,
+			curDuration,
+			totalDuration,
+			sucCallTimes,
+			recentStatus,
+			createTime
+		)
+		VALUES ( 
+			#{recentTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{firstTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			<if test="callTimes !=null ">
+			#{callTimes, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="callTimes ==null ">
+			0 ,
+			</if> 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="curDuration !=null ">
+			#{curDuration, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="curDuration ==null ">
+			0 ,
+			</if>
+			<if test="totalDuration !=null ">
+			#{totalDuration, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalDuration ==null ">
+			0 ,
+			</if>
+			<if test="sucCallTimes !=null ">
+			#{sucCallTimes, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucCallTimes ==null ">
+			0 ,
+			</if>
+			<if test="recentStatus !=null ">
+			#{recentStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="recentStatus ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_call_recent 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_call_recent  
+		<set>
+			<if test="recentTime != null">
+				recentTime = #{recentTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="callTimes != null">
+				callTimes = #{callTimes, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="curDuration != null">
+				curDuration = #{curDuration, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalDuration != null">
+				totalDuration = #{totalDuration, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucCallTimes != null">
+				sucCallTimes = #{sucCallTimes, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="recentStatus != null">
+				recentStatus = #{recentStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			   applyId=#{applyId}
+		</where>
+	</update>
+</mapper>

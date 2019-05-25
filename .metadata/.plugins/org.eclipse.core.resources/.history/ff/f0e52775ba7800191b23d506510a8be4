@@ -1,0 +1,219 @@
+package org.xxjr.cust.member;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.member.TicketShareRuleUtils;
+
+@Lazy
+@Service
+public class ShareRecordService extends BaseService {
+	private static final String NAMESPACE = "SHARERECORD";
+
+	/**
+	 * query
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByChannel
+	 */
+	public AppResult queryByChannel(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryByChannel", "queryByChannelCount");
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		AppResult result = new AppResult();
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		result = super.insert(params, NAMESPACE);
+		result.putAttr("recordId", params.getAttr("recordId"));
+		return result;
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("recordId", id);
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("recordId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	/**
+	 * 分享按日统计汇总
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShareOfDaySummary(AppParam params) {
+		return super.query(params, NAMESPACE, "queryShareOfDaySummary");
+	}
+	
+	/**
+	 * 分享按日统计
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShareByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryShareSum", "queryShareSumCount");
+	}
+	
+	/**
+	 * 分享按人统计
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryPersonSumByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryPersonSum", "queryPersonSumCount");
+	}
+	
+	/** 
+	 *	分享券
+	 * @param params
+	 * @return
+	 */
+	public AppResult shareTicket(AppParam params) {
+		AppResult result = new AppResult();
+		AppParam queryParam = new AppParam();
+		Object customerId = params.getAttr("customerId");
+		queryParam.addAttr("customerId", customerId);
+		queryParam.addAttr("startTime", DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD));
+		AppResult queryResult = this.query(queryParam);
+		
+		List<Map<String, Object>> recordList = queryResult.getRows();
+		String businessId = String.valueOf(params.getAttr("businessId"));
+		for (Map<String, Object> recordMap : recordList) {
+			 String recordBusinessId = String.valueOf(recordMap.get("businessId"));
+			if (businessId.equals(recordBusinessId)) {
+				result.putAttr("status", "1");
+				result.setMessage("您已根据这个单分享过红包，不能重复分享");
+				return result;
+			}
+		}
+
+		List<Map<String, Object>> ticketList = TicketShareRuleUtils.getTicketContent();
+		Map<String, Object> map = ticketList.remove(ticketList.size()-1);
+		params.addAttr("orderNum", map.get("order"));
+		params.addAttr("ticketAmount", map.get("price"));
+		AppResult insertResult = this.insert(params);
+		if (Integer.valueOf(insertResult.getAttr(DuoduoConstant.DAO_Insert_SIZE)
+				.toString()) == 1) {
+			Object resultId = insertResult.getAttr("recordId");
+			//生成抢单券
+			AppParam shareRecord = new AppParam();
+			shareRecord.setService("ticketShareDtlService");
+			shareRecord.setMethod("initShareTicket");
+			shareRecord.addAttr("list", ticketList);
+			shareRecord.addAttr("recordId",resultId);
+			shareRecord.addAttr("shareCustId", customerId);
+			SoaManager.getInstance().invoke(shareRecord);
+			
+			result.putAttr("order", map.get("order"));
+			result.putAttr("price", map.get("price"));
+			result.putAttr("recordId", resultId);
+		}else {
+			result.putAttr("status", "1");
+			result.setMessage("添加记录错误，分享失败");
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * queryPersonSumCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryPersonSumCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryPersonSumCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	/**
+	 * queryShareSumCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShareSumCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryShareSumCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 查找分享数和提现数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult shareCountAndWithdrawInfo(AppParam params){
+		return query(params, NAMESPACE, "shareCountAndWithdrawInfo");
+	}
+}

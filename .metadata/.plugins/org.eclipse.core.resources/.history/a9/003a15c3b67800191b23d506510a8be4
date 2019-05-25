@@ -1,0 +1,85 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.StringUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractLoanUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+@PushCode(30)
+public class PushMiYiUtil extends AbstractLoanUtil{
+
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		Object message = null;
+		
+		String url = SysParamsUtil.getStringParamByKey("push_MiYi_cfg_url", "http://apl.jiehuahua.com/DataReport/index");
+		
+		Map<String, Object> resMap = PushPlatformUtils.httpPost(url, getParams(row), true);
+		if (NumberUtil.getInt(resMap.get("code")) == 0) {
+			status = 1;
+		}
+		message = resMap.get("msg");
+		Map<String, Object> respones = new HashMap<String, Object>();
+		respones.put("status", status);
+		respones.put("message", message);
+		return respones;
+	}
+	
+	private static Map<String, String> getParams (Map<String, Object> row) {
+		Map<String, String> param = new HashMap<String, String>();
+		String telephone = StringUtil.objectToStr(row.get("telephone"));
+		param.put("mobile", telephone);
+		param.put("real_name", StringUtil.objectToStr(row.get("applyName")));
+		String cityName = StringUtil.objectToStr(row.get("cityName"));
+		if (cityName.endsWith("市")) {
+			cityName = cityName.substring(0, cityName.length());
+		}
+		param.put("city", cityName);
+		
+		String channel = SysParamsUtil.getStringParamByKey("push_MiYi_cfg_channel", "test-xxjr");
+		String key = SysParamsUtil.getStringParamByKey("push_MiYi_cfg_key", "bn46sKnbtbpzxYmHR8gTMcNx5NAzewU62tPSD5mz8PpWKPnKmYhdmeTMUdvsYA7Y");
+		String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+		param.put("sign", Md5.getInstance().encrypt(telephone + channel + timestamp + key));
+		param.put("channel", channel);
+		param.put("timestamp", timestamp);
+
+		String identifyNo = StringUtil.objectToStr(row.get("identifyNo"));
+		if (StringUtils.isEmpty(identifyNo)) {
+			param.put("no_id_no_zm_field", "1");
+			Integer sex = NumberUtil.getInt(row.get("sex"), 1);
+			Integer age = NumberUtil.getInt(row.get("age"), 0);
+			param.put("gender", sex == 1 ? "1" : "2");
+			param.put("age", StringUtil.objectToStr(age));
+		} else {
+			Integer age = IdCardResolveUtil.getAge(identifyNo);
+			Integer sex = IdCardResolveUtil.getSex(identifyNo);
+			param.put("gender", sex == 1 ? "1" : "2");
+			param.put("age", StringUtil.objectToStr(age));
+			param.put("id_no", identifyNo);
+		}
+		
+		int loanAmount = NumberUtil.getInt(row.get("loanAmount"), 0);
+		param.put("apply_amount", StringUtil.objectToStr((loanAmount * 10000)));
+		param.put("apply_time_limit", StringUtil.objectToStr(row.get("loanDeadline")));
+		String zimaScore = StringUtil.objectToStr(row.get("zimaScore"));
+		if (StringUtils.isEmpty(zimaScore)) {
+			param.put("no_id_no_zm_field", "1");
+		}else {
+			param.put("zm_score", zimaScore);
+		}
+		param.put("ip", StringUtil.objectToStr(row.get("applyIp")));
+		return param;
+	}
+
+}

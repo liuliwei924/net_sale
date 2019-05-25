@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTMOBILE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			changeId,
+			customerId, 
+			oldMobile, 
+			newMobile, 
+			status, 
+			customerIp, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') createTime,
+			auditBy, 
+			DATE_FORMAT(auditTime,'%Y-%m-%d %H:%i:%s') auditTime,
+			auditDesc
+		FROM t_cust_mobile
+		<where>
+			<if test="changeId != null and changeId != ''">
+			  and changeId = #{changeId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="oldMobile != null and oldMobile != ''">
+				and oldMobile = #{oldMobile}
+			</if>
+			<if test="newMobile != null and newMobile != ''">
+				and newMobile = #{newMobile}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="customerIp != null and customerIp != ''">
+				and customerIp = #{customerIp}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="auditBy != null and auditBy != ''">
+				and auditBy = #{auditBy}
+			</if>
+			<if test="auditTime != null and auditTime != ''">
+				and auditTime = #{auditTime}
+			</if>
+			<if test="auditDesc != null and auditDesc != ''">
+				and auditDesc = #{auditDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_mobile 
+		<where>
+		<if test="changeId != null and changeId != ''">
+		    and changeId = #{changeId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="oldMobile != null and oldMobile != ''">
+			and oldMobile = #{oldMobile}
+		</if>
+		<if test="newMobile != null and newMobile != ''">
+			and newMobile = #{newMobile}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="customerIp != null and customerIp != ''">
+			and customerIp = #{customerIp}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="auditBy != null and auditBy != ''">
+			and auditBy = #{auditBy}
+		</if>
+		<if test="auditTime != null and auditTime != ''">
+			and auditTime = #{auditTime}
+		</if>
+		<if test="auditDesc != null and auditDesc != ''">
+			and auditDesc = #{auditDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="changeId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_mobile (
+			customerId,
+			oldMobile,
+			newMobile,
+			status,
+			customerIp,
+			createTime,
+			auditBy,
+			auditTime,
+			auditDesc
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{oldMobile, jdbcType=VARCHAR}, 
+			#{newMobile, jdbcType=VARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{customerIp, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{auditBy, jdbcType=VARCHAR}, 
+			#{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{auditDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_mobile 
+		<where> 
+			changeId = #{changeId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_mobile  
+		<set>
+			
+			<if test="oldMobile != null">
+				oldMobile = #{oldMobile, jdbcType=VARCHAR},  
+			</if>
+			<if test="newMobile != null">
+				newMobile = #{newMobile, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerIp != null">
+				customerIp = #{customerIp, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="auditDesc != null">
+				auditDesc = #{auditDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  changeId = #{changeId}
+		</where>
+	</update>
+	
+	<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t2.realName,
+			t1.telephone,
+			t.changeId,
+			t.customerId, 
+			t.oldMobile, 
+			t.newMobile, 
+			t.status, 
+			t.customerIp, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') createTime,
+			t.auditBy, 
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') auditTime,
+			t.auditDesc
+			from t_cust_mobile t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+		   JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			 <if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+		</where>
+		order by t.createTime desc
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+			from t_cust_mobile t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			 <if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+		</where>
+	</select>
+</mapper>

@@ -1,0 +1,67 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.security.MD5Util;
+import org.ddq.common.util.StringUtil;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractInsureUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+@PushCode(17)
+public class PushSyUtil extends AbstractInsureUtil{
+	
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		//获取配置
+		String url = SysParamsUtil.getStringParamByKey("insure_sy_cfg_url", "http://sx.360doo.com/JSI/foreign/colligateYwxHandler.ashx");
+		String channel = SysParamsUtil.getStringParamByKey("insure_sy_cfg_channel", "4434");
+		String advertisers = null;
+		Map<String, String> connParam = new HashMap<String, String>();
+		if (NumberUtil.getInt(row.get("sourceType"), 0) > 0) {
+			advertisers = SysParamsUtil.getStringParamByKey("insure_sy_cfg_advertisersCard", "23581");
+			if (SysParamsUtil.getBoleanByKey("insure_sy_cfg_iscredit", true)) {
+				connParam.put(SysParamsUtil.getStringParamByKey("insure_sy_cfg_creditKey", "credit"), "1");
+			}
+		}else {
+			advertisers = SysParamsUtil.getStringParamByKey("insure_sy_cfg_advertisers", "23221");
+		}
+		String key = SysParamsUtil.getStringParamByKey("insure_sy_cfg_key", "off2kals4qpc7p9rhk_!@#*crypt(ywxkey)");
+		
+		//转换处理
+		String identifyNo = StringUtil.getString(row.get("identifyNo"));
+		String birthday = IdCardResolveUtil.getBirthday(identifyNo);
+		String telephone = StringUtil.objectToStr(row.get("telephone"));
+		int age = NumberUtil.getInt(row.get("age"), -1);
+		birthday = PushPlatformUtils.getBirthDay(birthday, age);
+		birthday = birthday.replaceAll("-", "");
+		connParam.put("bxtype", "1");
+		connParam.put("name", StringUtil.objectToStr(row.get("applyName")));
+		connParam.put("birthday", birthday);
+		connParam.put("sex", NumberUtil.getInt(row.get("sex"), 1) == 1 ? "1" : "0");
+		connParam.put("phone", telephone);
+		connParam.put("idcard", identifyNo);
+		connParam.put("ip", StringUtil.objectToStr(row.get("applyIp")));
+		connParam.put("useragent", PushPlatformUtils.getUserAgent(row.get("userAgent")));
+		
+		//链接拼接参数
+		StringBuilder builder = new StringBuilder(url);
+		builder.append("?c=").append(channel);
+		builder.append("&p=").append(advertisers);
+		builder.append("&v=").append(MD5Util.getEncryptByKey(birthday + telephone, key + channel + advertisers));
+		builder.append("&t=").append("mobile");
+		Map<String, Object> resultMap = PushPlatformUtils.httpPost(builder.toString(), connParam, true);
+		if(Boolean.valueOf(StringUtil.objectToStr(resultMap.get("success")))){
+			status = 1;
+		}
+		Map<String, Object> resMap = new HashMap<String, Object>();
+		resMap.put("status", status);
+		resMap.put("message", resultMap.get("errMsg"));
+		return resMap;
+	}
+}

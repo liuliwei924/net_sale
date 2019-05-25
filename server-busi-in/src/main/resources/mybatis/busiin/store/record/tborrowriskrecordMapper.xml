@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWRISKRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			applyName, 
+			telephone, 
+			riskType, 
+			platfType, 
+			day180appTimes, 
+			jsonText, 
+			respcode, 
+			respMessage, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_borrow_risk_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="riskType != null and riskType != ''">
+				and riskType = #{riskType}
+			</if>
+			<if test="platfType != null and platfType != ''">
+				and platfType = #{platfType}
+			</if>
+			<if test="day180appTimes != null and day180appTimes != ''">
+				and day180appTimes = #{day180appTimes}
+			</if>
+			<if test="jsonText != null and jsonText != ''">
+				and jsonText = #{jsonText}
+			</if>
+			<if test="respcode != null and respcode != ''">
+				and respcode = #{respcode}
+			</if>
+			<if test="respMessage != null and respMessage != ''">
+				and respMessage = #{respMessage}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="respcodeIn != null and respcodeIn != ''">
+				and respcode in (${respcodeIn})
+			</if>
+			
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_risk_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="riskType != null and riskType != ''">
+			and riskType = #{riskType}
+		</if>
+		<if test="platfType != null and platfType != ''">
+			and platfType = #{platfType}
+		</if>
+		<if test="day180appTimes != null and day180appTimes != ''">
+			and day180appTimes = #{day180appTimes}
+		</if>
+		<if test="jsonText != null and jsonText != ''">
+			and jsonText = #{jsonText}
+		</if>
+		<if test="respcode != null and respcode != ''">
+			and respcode = #{respcode}
+		</if>
+		<if test="respMessage != null and respMessage != ''">
+			and respMessage = #{respMessage}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="respcodeIn != null and respcodeIn != ''">
+			and respcode in (${respcodeIn})
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_risk_record (
+			applyId,
+			applyName,
+			telephone,
+			riskType,
+			platfType,
+			day180appTimes,
+			jsonText,
+			respcode,
+			respMessage,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			<if test="riskType !=null ">
+			#{riskType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="riskType ==null ">
+			1 ,
+			</if>
+			<if test="platfType !=null ">
+			#{platfType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="platfType ==null ">
+			1 ,
+			</if>
+			<if test="day180appTimes !=null ">
+			#{day180appTimes, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="day180appTimes ==null ">
+			0 ,
+			</if>
+			#{jsonText, jdbcType=NVARCHAR}, 
+			#{respcode, jdbcType=VARCHAR}, 
+			#{respMessage, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_risk_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_risk_record  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="riskType != null">
+				riskType = #{riskType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="platfType != null">
+				platfType = #{platfType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="day180appTimes != null">
+				day180appTimes = #{day180appTimes, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="jsonText != null">
+				jsonText = #{jsonText, jdbcType=NVARCHAR},  
+			</if>
+			<if test="respcode != null">
+				respcode = #{respcode, jdbcType=VARCHAR},  
+			</if>
+			<if test="respMessage != null">
+				respMessage = #{respMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

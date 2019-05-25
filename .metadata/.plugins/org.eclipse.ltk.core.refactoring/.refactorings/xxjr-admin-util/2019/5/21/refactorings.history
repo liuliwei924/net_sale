@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Move element &apos;DBConst.java&apos; to &apos;xxjr-admin-util/src/main/java/org.xxjr.sys.util&apos;&#x0A;- Original project: &apos;xxjr-admin-util&apos;&#x0A;- Destination element: &apos;xxjr-admin-util/src/main/java/org.xxjr.sys.util&apos;&#x0A;- Original element: &apos;org.xxjr.store.util.DBConst.java&apos;&#x0A;- Update references to refactored element" description="Move compilation unit" destination="/src\/main\/java&lt;org.xxjr.sys.util" element1="/src\/main\/java&lt;org.xxjr.store.util{DBConst.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.move" patterns="*" policy="org.eclipse.jdt.ui.moveResources" qualified="false" references="true" stamp="1558485432530" units="1" version="1.0"/>
+</session>

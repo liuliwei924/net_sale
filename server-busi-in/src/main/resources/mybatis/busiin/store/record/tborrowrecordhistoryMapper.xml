@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWRECORDHISTORY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			storeBy, 
+			robWay, 
+			score, 
+			amount, 
+			readFlag, 
+			handleType, 
+			handleDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			orderType, 
+			isFeedback,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM t_borrow_record_history
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="storeBy != null and storeBy != ''">
+				and storeBy = #{storeBy}
+			</if>
+			<if test="robWay != null and robWay != ''">
+				and robWay = #{robWay}
+			</if>
+			<if test="score != null and score != ''">
+				and score = #{score}
+			</if>
+			<if test="amount != null and amount != ''">
+				and amount = #{amount}
+			</if>
+			<if test="readFlag != null and readFlag != ''">
+				and readFlag = #{readFlag}
+			</if>
+			<if test="handleType != null and handleType != ''">
+				and handleType = #{handleType}
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and handleDesc = #{handleDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}
+			</if>
+			<if test="isFeedback != null and isFeedback != ''">
+				and isFeedback = #{isFeedback}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_record_history 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="storeBy != null and storeBy != ''">
+			and storeBy = #{storeBy}
+		</if>
+		<if test="robWay != null and robWay != ''">
+			and robWay = #{robWay}
+		</if>
+		<if test="score != null and score != ''">
+			and score = #{score}
+		</if>
+		<if test="amount != null and amount != ''">
+			and amount = #{amount}
+		</if>
+		<if test="readFlag != null and readFlag != ''">
+			and readFlag = #{readFlag}
+		</if>
+		<if test="handleType != null and handleType != ''">
+			and handleType = #{handleType}
+		</if>
+		<if test="handleDesc != null and handleDesc != ''">
+			and handleDesc = #{handleDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="isFeedback != null and isFeedback != ''">
+			and isFeedback = #{isFeedback}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_record_history (
+			applyId,
+			storeBy,
+			robWay,
+			score,
+			amount,
+			readFlag,
+			handleType,
+			handleDesc,
+			createTime,
+			orderType,
+			isFeedback,
+			updateTime
+		)
+		VALUES ( 
+			<if test="applyId !=null ">
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyId ==null ">
+			0 ,
+			</if>
+			#{storeBy, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="robWay !=null ">
+			#{robWay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="robWay ==null ">
+			0 ,
+			</if>
+			<if test="score !=null ">
+			#{score, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="score ==null ">
+			0 ,
+			</if>
+			<if test="amount !=null ">
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="amount ==null ">
+			0 ,
+			</if>
+			<if test="readFlag !=null ">
+			#{readFlag, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="readFlag ==null ">
+			0 ,
+			</if>
+			#{handleType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{handleDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			<if test="orderType !=null ">
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderType ==null ">
+			1 ,
+			</if>
+			<if test="isFeedback !=null ">
+			#{isFeedback, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="isFeedback ==null ">
+			0 ,
+			</if>
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<!-- 门店历史记录查询插入 -->
+	<insert id="insertBySelect" parameterType="map">
+		INSERT INTO t_borrow_record_history (
+			applyId,
+			storeBy,
+			robWay,
+			score,
+			amount,
+			readFlag,
+			handleType,
+			handleDesc,
+			createTime,
+			orderType,
+			isFeedback,
+			updateTime
+		)
+		SELECT 
+			applyId,
+			storeBy,
+			robWay,
+			score,
+			amount,
+			readFlag,
+			handleType,
+			handleDesc,
+			createTime,
+			orderType,
+			isFeedback,
+			now()
+		 FROM 
+		${tableName}
+		where applyId = #{applyId}
+	
+	</insert>
+	
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_record_history 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_record_history  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeBy != null">
+				storeBy = #{storeBy, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="robWay != null">
+				robWay = #{robWay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="score != null">
+				score = #{score, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="amount != null">
+				amount = #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="readFlag != null">
+				readFlag = #{readFlag, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="handleType != null">
+				handleType = #{handleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="handleDesc != null">
+				handleDesc = #{handleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="orderType != null">
+				orderType = #{orderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isFeedback != null">
+				isFeedback = #{isFeedback, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREEXCLUESIVENOTIFY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			applyName, 
+			recCustId, 
+			orgId, 
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_store_excluesive_notify
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="recCustId != null and recCustId != ''">
+				and recCustId = #{recCustId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_excluesive_notify 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="recCustId != null and recCustId != ''">
+			and recCustId = #{recCustId}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_excluesive_notify (
+			applyId,
+			applyName,
+			recCustId,
+			orgId,
+			status,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_excluesive_notify 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_excluesive_notify  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="recCustId != null">
+				recCustId = #{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+
+	<!-- 查询7天未处理的待发送人员 -->
+	<select id="queryNotDealPerson" parameterType="map" resultType="map">
+		SELECT
+			t.recCustId
+		FROM t_store_excluesive_notify t
+		JOIN t_busi_cust t1 on t.recCustId = t1.customerId
+		where
+		t.status = 0
+		GROUP BY t.recCustId
+		ORDER BY t.recCustId
+		LIMIT 50
+	</select>
+	
+	<!-- 查询7天未处理的待发送消息 -->
+	<select id="queryNotDealNotify" parameterType="map" resultType="map">
+		SELECT
+			t.recordId,
+			t.applyId, 
+			t.applyName, 
+			tab1.recCustId, 
+			t.orgId, 
+			t.status
+		FROM t_store_excluesive_notify t
+		JOIN (
+			select n.customerId as recCustId ,n.orgId,n.loginStatus  from t_busi_cust n where n.roleType = 7 GROUP BY n.orgId
+		) as tab1 on t.orgId = tab1.orgId
+		where
+		t.status = 0
+		and tab1.loginStatus = 1
+		<if test="orgId !=null and orgId !=''">
+		and	t.orgId = #{orgId}
+		</if>
+		limit 5
+	</select>
+
+</mapper>

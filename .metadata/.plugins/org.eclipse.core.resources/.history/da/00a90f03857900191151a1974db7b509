@@ -1,0 +1,112 @@
+package org.xxjr.job.listener.busi.kf;
+
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.llw.ddq.model.cache.RedisUtils;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 客服离线job
+ * @author 2017-06-01 by liulw
+ *
+ */
+@Lazy
+@Component
+public class KfOfflineJob implements BaseExecteJob {
+	
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		//汇总统计
+		try {
+			LogerUtil.log(" 客服离线  KfOfflineJob >>>>>>>>>>>>>>>>>> start>>>>>>>>>>>>>>>>>>>>");
+			//查询分配的客服
+
+			AppParam queryParams = new AppParam("custRightService", "queryRealKf");
+			queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_cust));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParams);
+			List<Map<String,Object>> kfList = queryResult.getRows();
+			
+			AppParam updateParam = new AppParam("customerService", "newUpdate");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_cust));
+			
+			for(Map<String,Object> map : kfList){
+				String customerId = null;
+				try{
+					customerId = map.get("customerId").toString();
+					Object signId = RedisUtils.getRedisService()
+							.get(CustomerUtil.KF_USER_SESSION + customerId);
+					
+					int kfLoginStatus = (signId != null) ? 1: 0;
+					updateParam.addAttr("customerId", customerId);
+					updateParam.addAttr("kfLoginStatus", kfLoginStatus);
+					RemoteInvoke.getInstance().call(updateParam);
+				}catch(Exception e){
+					LogerUtil.error(KfOfflineJob.class, e, "客服离线判断报错 customerId=" + customerId);
+				}
+				
+			}
+			
+			kfList = null;
+			updateParam = null;
+			result.setMessage("KfOfflineJob 执行成功");
+			
+			JobUtil.addProcessExecute(processId, " 客服离线  KfOfflineJob msg:" + result.getMessage());
+			LogerUtil.log(" 客服离线  KfOfflineJob >>>>>>>>>>>>>>>>>>end msg:" + result.getMessage());
+			
+			dealStoreOffline(processId);
+		} catch (Exception e) {
+			LogerUtil.error(KfOfflineJob.class, e, "KfAutoAllotOrderJob >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "客服分单 报错：" + e.getMessage() );
+		}
+		
+		return result;
+	}
+
+	/**
+	 * 更新用户登录状态
+	 * @param processId
+	 */
+	private void dealStoreOffline(Object processId) {
+		AppParam queryParams = new AppParam("busiCustService", "queryCust");
+		queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParams);
+		List<Map<String,Object>> crmList = queryResult.getRows();
+		for(Map<String,Object> map : crmList){
+			String customerId = "";
+			try{
+				customerId = StringUtil.getString(map.get("customerId"));
+				String signId = (String)RedisUtils.getRedisService()
+						.get(StoreUserUtil.USER_KEY + customerId);
+				int loginStatus = NumberUtil.getInt(map.get("loginStatus"),0);
+				if(StringUtils.isEmpty(signId) && loginStatus != 0 && loginStatus != 4){
+					//更新用户登陆状态
+					StoreUserUtil.updateUserLoginStatus(customerId, 0);
+					//添加退出记录
+					StoreUserUtil.addStoreOnlineRecord(customerId, 0, "无操作自动退出");
+				}
+			}catch(Exception e){
+				LogerUtil.error(KfOfflineJob.class, e, "用户离线判断报错 customerId=" + customerId);
+			}
+		}
+	}
+	
+}

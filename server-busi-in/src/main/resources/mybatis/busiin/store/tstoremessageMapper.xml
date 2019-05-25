@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREMESSAGE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			msgId,
+			applyId, 
+			lastStore, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_store_message
+		<where>
+			<if test="msgId != null and msgId != ''">
+			  and msgId = #{msgId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and lastStore = #{lastStore}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="startCreateTime !=null and startCreateTime !=''">
+				and createTime >= DATE_SUB(CURDATE() ,INTERVAL 30 DAY)
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_message 
+		<where>
+		<if test="msgId != null and msgId != ''">
+		    and msgId = #{msgId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="lastStore != null and lastStore != ''">
+			and lastStore = #{lastStore}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="msgId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_message (
+			applyId,
+			lastStore,
+			createTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{lastStore, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_message 
+		<where> 
+			msgId = #{msgId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_message  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="lastStore != null">
+				lastStore = #{lastStore, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  msgId = #{msgId}
+		</where>
+	</update>
+</mapper>

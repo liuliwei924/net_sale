@@ -1,0 +1,425 @@
+package org.xxjr.busi.util.novel;
+
+import java.io.Serializable;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
+
+import org.apache.commons.lang.StringUtils;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.jsoup.Connection;
+import org.jsoup.helper.HttpConnection;
+import org.jsoup.nodes.Document;
+import org.xxjr.busi.util.ZixunUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class NovelUtil {
+	
+	/*资讯保存4个小时*/
+	private static final Integer postList_Chache_Time = 60*60*4;
+	
+	// 旧的资讯接口
+	private static final String post_url_old = "http://www.xxjr.com/zixun/archives/author/admin";
+	private static final String post_old_redis_key = "post_old_redis_key";
+		
+	// 贷款攻略
+	private static final String post_url_dkgl = "http://www.xxjr.com/zixun/archives/author/admin?from=dkgl";
+	private static final String post_dkgl_redis_key = "post_redis_key_old";
+	// 信用卡资讯
+	private static final String post_url_xyk = "http://www.xxjr.com/zixun/archives/author/admin?from=xyk";
+	private static final String post_xyk_redis_key = "post_xyk_redis_key";
+	// 信用卡攻略
+	private static final String post_url_xykgl = "http://www.xxjr.com/zixun/archives/author/admin?from=xykgl";
+	private static final String post_xykgl_redis_key = "post_xykgl_redis_key";
+	// 贷款资讯
+	private static final String post_url_dkzx = "http://www.xxjr.com/zixun/archives/author/admin?from=dkzx";
+	private static final String post_dkzx_redis_key = "post_dkzx_redis_key";
+	// 信用卡文章
+	private static final String post_url_xyks = "http://www.xxjr.com/credit/index_xyk";
+	private static final String post_xyks_redis_key = "post_xyks_redis_key";
+	// 个人贷款
+	private static final String post_url_grdk = "http://www.xxjr.com/zixun/archives/author/admin?from=grdk";
+	private static final String post_grdk_redis_key = "post_grdk_redis_key";
+	// 企业贷款
+	private static final String post_url_qydk = "http://www.xxjr.com/zixun/archives/author/admin?from=qydk";
+	private static final String post_qydk_redis_key = "post_qydk_redis_key";
+	
+	// 各个城市的资讯
+	private static final String post_url_city_news = "http://www.xxjr.com/news/author/admin/?from=";
+	private static final String post_city_news_redis = "post_url_city_news_redis";
+		
+	private static List<Map<String,Object>> defaultList = new ArrayList<Map<String,Object>>();
+	
+	static{
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("cat_name", "媒体报道");
+		map.put("cat_url", "https://www.xxjr.com/zixun/mtbd");
+		map.put("desc", "\\u00A0近日，主流媒体以《二度转让!汇源集团4.62亿挂牌转让四川信托约3.14%股权》为题，采访报道了小小金融总经理刘小峰。最近，信托公司股权转让达到了一个小高潮。小小金融总经理刘小峰向《国际金融报》记者表...");
+		map.put("img", "https://static.xxjr.com/wp-content/uploads/2018/08/国际金融报logo-300x180.png");
+		map.put("post_views", 16);
+		map.put("tag", false);
+		map.put("time", "2019-02-15");
+		map.put("title", "媒体采访小小金融：信托股权转让迎来小高潮");
+		map.put("url", "/zixun/8174560");
+		defaultList.add(map);
+		defaultList.add(map);
+		defaultList.add(map);
+		defaultList.add(map);
+	}
+	/**
+	 * 查询资讯详情
+	 * 
+	 * @param novelId
+	 * @param typeId
+	 * @return
+	 */
+	public static Map<String, Object> queryNovelDetail(String novelId,
+			String typeId) {
+		
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (!StringUtils.isNumeric(novelId)) {
+			return map;
+		}
+		AppParam params = new AppParam("zixunService", "queryDtl");
+		params.addAttr("novelId", novelId);
+		params.addAttr("typeId", typeId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		if (result.getRows().size() > 0) {
+			map = result.getRow(0);
+			params.setMethod("queryPreNext");
+			result = RemoteInvoke.getInstance().callNoTx(params);
+			for (int i = 0; i < result.getRows().size(); i++) {
+				Integer novId = Integer.parseInt(result.getRow(i)
+						.get("novelId").toString());
+				if (novId > Integer.parseInt(novelId)) {
+					map.put("nextId", novId);
+					map.put("nextTitle", result.getRow(i).get("title"));
+				} else {
+					map.put("preId", novId);
+					map.put("preTitle", result.getRow(i).get("title"));
+				}
+			}
+		}
+		params.setMethod("update");
+		params.addAttr("viewCount","0");
+		if(map.get("viewCount")!=null) {
+			params.addAttr("viewCount", Integer.parseInt(map.get("viewCount").toString())+1);
+		}
+		 RemoteInvoke.getInstance().callNoTx(params);
+		return map;
+	}
+
+	/**
+	 * 查询资讯类型列表
+	 * 
+	 * @param AppParam
+	 * @return
+	 */
+	public static List<Map<String, Object>> queryType() {
+		  return ZixunUtil.queryAllNovelType(SysParamsUtil.getStringParamByKey("sysNovelGzhId", "11"));
+	}
+
+	/**
+	 * 查询首页资讯列表
+	 * 
+	 * @param AppParam
+	 * @return
+	 */
+	public static List<Map<String, Object>> queryList(List<Map<String, Object>> filter) {
+		AppResult result = new AppResult();
+		AppParam param = new AppParam();
+		param.setService("zixunService");
+		param.setMethod("queryList");
+		param.addAttr("enable", 1);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		if(filter==null){
+			param.setEveryPage(7);
+			param.setOrderBy("reprintCount");
+			param.setOrderValue("desc");
+			result = RemoteInvoke.getInstance().callNoTx(param);
+			return result.getRows();
+		}else{ 
+			List<String> ids=new ArrayList<String>();
+			for (int i = 0; i < filter.size(); i++) {
+				ids.add(filter.get(i).get("novelId").toString());
+			}
+			param.addAttr("filter", ids);//过滤已经在热门资讯中显示的信息
+			param.setOrderBy("updateTime");
+			param.setOrderValue("desc");
+			result = RemoteInvoke.getInstance().callNoTx(param);
+			return result.getRows();
+		}
+	}
+	
+	
+	/**
+	 * 资讯-旧的资讯
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getPostList(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_old_redis_key);
+		if(AppProperties.isDebug()) {
+			return defaultList;
+		}
+		if(postList == null){
+			return refreshPostList(post_url_old, post_old_redis_key,size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 资讯-贷款攻略
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getDkglPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_dkgl_redis_key);
+		if(postList == null){
+			postList = refreshPostList(post_url_dkgl, post_dkgl_redis_key,size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 资讯-信用卡资讯
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getXykPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_xyk_redis_key);
+		if(postList == null){
+			postList = refreshPostList(post_url_xyk, post_xyk_redis_key,size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 资讯-信用卡攻略
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getXykglPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_xykgl_redis_key);
+		if(postList == null){
+			postList = refreshPostList(post_url_xykgl, post_xykgl_redis_key,size);
+		}
+		return postList;
+	}
+	/**
+	 * 资讯-信用卡文章
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getXyksPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_xyks_redis_key);
+		if(postList == null){
+			postList = refreshPostList(post_url_xyks, post_xyks_redis_key,size);
+		}
+		return postList;
+	}
+	/**
+	 * 个人贷款
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getGrdkPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_grdk_redis_key);
+		if(postList == null){
+			postList = refreshPostList(post_url_grdk, post_grdk_redis_key,size);
+		}
+		return postList;
+	}
+	/**
+	 * 企业贷款
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getQydkPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_qydk_redis_key);
+		if(postList == null ){
+			postList = refreshPostList(post_url_qydk, post_qydk_redis_key,size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 资讯-贷款资讯
+	 * @param size 条数
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getDkzxPost(int size){
+		List<Map<String,Object>> postList = (List<Map<String,Object>>)RedisUtils.getRedisService().get(post_dkzx_redis_key);
+		if(postList == null ){
+			postList = refreshPostList(post_url_dkzx, post_dkzx_redis_key,size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 每个城市的资讯
+	 * @param size
+	 * @param cityen
+	 * @return
+	 */
+	public static List<Map<String, Object>> getCityNews (int size, String cityen) {
+		String redisKey = cityen.concat(post_city_news_redis);
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> postList = (List<Map<String, Object>>) RedisUtils.getRedisService().get(redisKey);
+		if (postList == null) {
+			String url = "".concat(post_url_city_news).concat(cityen);
+			postList = refreshPostList(url, redisKey, size);
+		}
+		return postList;
+	}
+	
+	/**
+	 * 最新的资讯
+	 * @param size
+	 * @return
+	 */
+	public static List<Map<String, Object>> getNewNews (int size) {
+		String redisKey = "new_".concat(post_city_news_redis);
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> postList = (List<Map<String, Object>>) RedisUtils.getRedisService().get(redisKey);
+		if (postList == null) {
+			String url = "".concat(post_url_city_news).concat("news");
+			postList = refreshPostList(url, redisKey, size);
+		}
+		return postList;
+	}
+	
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static List<Map<String,Object>> refreshPostList(String postUrl,String redisKey, int size){
+		if (postUrl.indexOf("https://") > -1) {
+			trustEveryone();
+		}
+		Connection conn = HttpConnection.connect(postUrl);
+		conn.timeout(10000);
+		conn.header("Referer", "http://www.xxjr.com/");
+		conn.userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:56.0) Gecko/20100101 Firefox/56.0");
+		conn.ignoreContentType(true);
+		Document doc = null;
+		List<Map<String,Object>> postList = null;
+		try{
+			
+ 			doc = conn.get();
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(
+							StringUtil.decodeStr(doc.body().text()), Map.class);
+			 postList = (List<Map<String,Object>>)all.get("postList");
+			 if(postList == null){
+				 postList = new ArrayList<Map<String,Object>>();
+			 }else{
+				 int listSize = postList.size();
+				 if(size > 0 && listSize > size){
+ 					 postList = new ArrayList(postList.subList(0, size));
+				 }
+				 for(Map<String,Object> map:postList){
+					 if(map.get("url")!=null){
+						 String url = map.get("url").toString();
+						 int indexIp = url.indexOf("www.xxjr.com");
+						 int indexHostName = url.indexOf("xxjr.com");
+						 if(indexIp>0){
+							 map.put("url", url.substring(indexIp + "www.xxjr.com".length()));
+						 }else if(indexHostName>0){
+							 map.put("url", url.substring(indexIp + "xxjr.com".length()));
+						 }
+					 }
+				 }
+				 RedisUtils.getRedisService().set(redisKey, (Serializable)postList, postList_Chache_Time);
+			 }
+			
+		}catch(Exception e){
+			log.error("refreshPostList:" + postUrl, e);
+			RedisUtils.getRedisService().set(redisKey, (Serializable)postList, postList_Chache_Time);
+			e.printStackTrace();
+		}
+		
+		return postList;
+	}
+
+	
+	/***
+	 * https连接处理
+	 */
+	public static void trustEveryone() {  
+	        try {  
+	            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() { 
+					@Override
+					public boolean verify(String arg0, SSLSession arg1) {
+						return true;
+					}  
+	            }); 
+	            SSLContext context = SSLContext.getInstance("TLS");  
+	            context.init(null, new X509TrustManager[] { new X509TrustManager() {
+
+					@Override
+					public void checkClientTrusted(X509Certificate[] chain,
+							String authType) throws CertificateException {
+						
+					}
+					@Override
+					public void checkServerTrusted(X509Certificate[] chain,
+							String authType) throws CertificateException {
+						
+					}
+
+					@Override 
+					public X509Certificate[] getAcceptedIssuers() {
+						return null;
+					}  
+	                
+	            } }, new SecureRandom());  
+	            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());  
+	        } catch (Exception e) {  
+	        }  
+	    } 
+
+	public static void main(String[] args) {
+		//refreshPostList(post_url_dkgl,post_dkgl_redis_key,5);
+		String url = "https://m.xxjr.com/zixun/8145057";
+		
+		 int indexIp = url.indexOf("www.xxjr.com");
+		 int indexHostName = url.indexOf("xxjr.com");
+		 if(indexIp>0){
+			 System.out.println(url.substring(indexIp + "www.xxjr.com".length()));
+		 }else if(indexHostName>0){
+			 System.out.println(url.substring(indexHostName + "xxjr.com".length()));
+		 }
+		 
+		
+	}
+}

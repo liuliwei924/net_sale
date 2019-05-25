@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PRODUCTTYPE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			typeId,
+			typeName,
+			parentId, 
+			level, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_product_type
+		<where>
+			<if test="typeId != null and typeId != ''">
+			  and typeId = #{typeId}
+			 </if>
+			<if test="typeName != null and typeName != ''">
+				and typeName = #{typeName}
+			</if>
+			<if test="parentId != null and parentId != ''">
+				and parentId = #{parentId}
+			</if>
+			<if test="level != null and level != ''">
+				and level = #{level}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_product_type 
+		<where>
+		<if test="typeId != null and typeId != ''">
+		    and typeId = #{typeId}
+		 </if>
+		<if test="typeName != null and typeName != ''">
+			and typeName = #{typeName}
+		</if>
+		<if test="parentId != null and parentId != ''">
+			and parentId = #{parentId}
+		</if>
+		<if test="level != null and level != ''">
+			and level = #{level}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="typeId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_product_type (
+			typeName,
+			parentId,
+			level,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{typeName, jdbcType=VARCHAR}, 
+			#{parentId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="level !=null ">
+			#{level, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="level ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_product_type 
+		<where> 
+			typeId = #{typeId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_product_type  
+		<set>
+			<if test="typeName != null">
+				typeName = #{typeName, jdbcType=VARCHAR},  
+			</if>
+			<if test="parentId != null">
+				parentId = #{parentId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="level != null">
+				level = #{level, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  typeId = #{typeId}
+		</where>
+	</update>
+	
+	<select id="queryTypeList" resultType="map" parameterType="map">
+		SELECT
+			t.typeId,
+			t.typeName, 
+			t.parentId,
+			IFNULL(t1.typeName,'无') as parentTypeName,
+			t.level, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_product_type t
+		LEFT JOIN t_product_type t1 on t.parentId = t1.typeId
+		<include refid="typeSQL"></include>
+		order by t.createTime 
+	</select>
+	<select id="queryTypeListCount" resultType="int" parameterType="map">
+		SELECT
+		count(*)
+		FROM t_product_type t
+	 	LEFT JOIN t_product_type t1 on t.parentId = t1.typeId
+		<include refid="typeSQL"></include>
+	</select>
+	
+	<sql id="typeSQL">
+		<where>
+			<if test="typeId != null and typeId != ''">
+			    and t.typeId = #{typeId}
+			 </if>
+			<if test="typeName != null and typeName != ''">
+				and t.typeName = #{typeName}
+			</if>
+			<if test="parentId != null and parentId != ''">
+				and t.parentId = #{parentId}
+			</if>
+			<if test="level != null and level != ''">
+				and t.level = #{level}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 获取最深的子节点 -->
+	<select id="queryTypeMaxLevel" resultType="map">
+		select t.typeId,t.typeName from t_product_type t ORDER BY t.level  DESC limit  1
+	</select>
+	
+	<select id="queryProTypeMenus" parameterType="map" resultType="map">
+		SELECT
+			t.typeId,
+			t.typeName,
+			t.typeName as label,
+			t.parentId, 
+			t.level,
+			(CASE 
+				WHEN  tab1.typeId != '' then 1
+        		ELSE 0
+        		END
+			) as isLeaf,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+			FROM t_product_type t
+   			LEFT JOIN (
+				SELECT e.typeId from t_product_type e  where e.typeId not in (
+				SELECT DISTINCT(parentId) from t_product_type e1 where e1.parentId is not NULL
+				)
+     		)as tab1 on  tab1.typeId = t.typeId
+	</select>
+</mapper>

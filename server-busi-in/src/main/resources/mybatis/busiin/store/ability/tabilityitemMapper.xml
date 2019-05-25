@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ABILITYITEM">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			itemType,
+			rewardFirstVal, 
+			rewardNextVal, 
+			detailDesc, 
+			enable, 
+			params, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_ability_item
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_ability_item 
+		<include refid="queryWhereSql"></include>
+	</select>
+	<sql id="queryWhereSql">
+		<where>
+			<if test="itemType != null and itemType != ''">
+			    and itemType = #{itemType}
+			 </if>
+			<if test="rewardFirstVal != null and rewardFirstVal != ''">
+				and rewardFirstVal = #{rewardFirstVal}
+			</if>
+			<if test="rewardNextVal != null and rewardNextVal != ''">
+				and rewardNextVal = #{rewardNextVal}
+			</if>
+			<if test="detailDesc != null and detailDesc != ''">
+				and detailDesc = #{detailDesc}
+			</if>
+			<if test="enable != null and enable != ''">
+				and enable = #{enable}
+			</if>
+			<if test="params != null and params != ''">
+				and params = #{params}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_ability_item (
+			itemType,
+			rewardFirstVal,
+			rewardNextVal,
+			detailDesc,
+			enable,
+			params,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{itemType, jdbcType=VARCHAR}, 
+			<if test="rewardFirstVal !=null ">
+			#{rewardFirstVal, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rewardFirstVal ==null ">
+			0.00 ,
+			</if>
+			<if test="rewardNextVal !=null ">
+			#{rewardNextVal, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rewardNextVal ==null ">
+			0.00 ,
+			</if>
+			#{detailDesc, jdbcType=VARCHAR}, 
+			<if test="enable !=null ">
+			#{enable, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="enable ==null ">
+			1 ,
+			</if>
+			#{params, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_ability_item 
+		<where> 
+			itemType = #{itemType}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_ability_item  
+		<set>
+			<if test="rewardFirstVal != null">
+				rewardFirstVal = #{rewardFirstVal, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardNextVal != null">
+				rewardNextVal = #{rewardNextVal, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="detailDesc != null">
+				detailDesc = #{detailDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="enable != null">
+				enable = #{enable, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="params != null">
+				params = #{params, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  itemType = #{itemType}
+		</where>
+	</update>
+</mapper>

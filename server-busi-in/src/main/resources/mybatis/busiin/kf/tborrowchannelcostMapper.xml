@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCHANNELCOST">
+    
+    <sql id="queryWhereSql">
+   	  <where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+			  and channelCode = #{channelCode}
+			 </if>
+			 <if test="dateMonth != null and dateMonth != ''">
+			 and DATE_FORMAT(recordDate,'%Y-%m')=#{dateMonth}
+			 </if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[recordDate <= #{endRecordDate}]]>
+			</if>
+		</where>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			channelCode,
+			browseCount,
+			amount, 
+			createBy, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_borrow_channel_cost
+		<include refid="queryWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_channel_cost 
+		<include refid="queryWhereSql"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_borrow_channel_cost (
+			recordDate,
+			channelCode,
+			browseCount,
+			amount,
+			createBy,
+			createTime,
+			updateTime
+		)
+		VALUES (
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler},
+			#{channelCode, jdbcType=VARCHAR},
+			<if test="browseCount !=null ">
+			#{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="browseCount ==null ">
+			0,
+			</if>
+			<if test="amount !=null ">
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="amount ==null ">
+			0.00 ,
+			</if>
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_channel_cost 
+		<where> 
+			recordDate = #{recordDate} AND 
+			channelCode = #{channelCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_channel_cost  
+		<set>
+			<if test="amount != null">
+				amount = #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  channelCode = #{channelCode}
+		</where>
+	</update>
+	<!-- 更新结算金额,点击量 -->
+	<update id="updateCostAmt" parameterType="map" statementType="CALLABLE">
+		 {call proc_update_cost_amount(
+		      #{optDate,jdbcType=VARCHAR,mode=IN}
+		      )
+       	  }
+	</update>
+</mapper>

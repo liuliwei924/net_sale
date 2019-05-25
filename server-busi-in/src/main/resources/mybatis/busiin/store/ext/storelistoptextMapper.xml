@@ -1,0 +1,1810 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORELISTOPTEXT">
+	<sql id="querySqlWhere">
+		<where>
+				a.applyType != 3
+			<if test="applyId != null and applyId != ''">
+				and a.applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and a.customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and a.applyName = #{applyName}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and a.telephone = #{telephone}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and b.cityName = #{cityName}
+			</if>
+			<if test="searchKey != null and searchKey != ''">
+				and (a.applyName like CONCAT(#{searchKey},'%') or
+				a.telephone like CONCAT(#{searchKey},'%'))
+			</if>
+			<if test="storeStatus != null and storeStatus != ''">
+				and a.storeStatus = #{storeStatus}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and a.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and a.applyTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and a.applyTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			
+		</where>
+	</sql>
+	
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+		a.applyId,
+		a.applyName,
+		a.customerId,
+		a.telephone,
+		a.storeStatus,
+		a.lastStore,
+		DATE_FORMAT(a.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+		a.custLabel,
+		a.orderType,
+		DATE_FORMAT(a.transTime,'%Y-%m-%d %H:%i:%s') as transTime,
+		a.applyType,
+		b.loanAmount,
+		b.loanDeadline,
+		b.cityName,
+		f_asset_info_new(a.applyId) as 'assetInfo'
+		FROM T_BORROW_APPLY a
+		LEFT JOIN T_BORROW_BASE b ON
+		b.applyId = a.applyId
+		<include refid="querySqlWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_APPLY a
+		LEFT JOIN T_BORROW_BASE b ON
+		b.applyId = a.applyId
+		<include refid="querySqlWhere" />
+	</select>
+
+	<select id="queryReLoan" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.applyId,
+			t.customerId,
+			t.loanAmount as reloanAmount,
+			t.loanOrg,
+			t.anjiePerson,
+			t.loanType,
+			t.backType,
+			(CASE t.backType
+				WHEN 1 THEN '手动添加'
+				WHEN 2 THEN '查CFS回款'
+				END) as 'backTypeText',
+			(CASE t.loanType
+				WHEN 1 THEN '信用贷'
+				WHEN 2 THEN '抵押贷'
+				ELSE '未知'
+				END
+			) as loanTypeText,
+			DATE_FORMAT(t.feeAmountDate,'%Y-%m-%d') as feeAmountDate,
+			t.status as reStatus,
+			(CASE t.status
+				WHEN 1 THEN '未核算'
+				WHEN 2 THEN '已核算'
+				WHEN 3 THEN '审核失败'
+				ELSE '未知'
+				END
+			) as reStatusText,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.feeAmount,
+			t1.applyName,
+			f_hide_phone(t1.telephone) as telephone,
+			t1.lastStore,
+			DATE_FORMAT(t1.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			t1.custLabel,
+			(CASE t1.custLabel
+				WHEN 0 THEN '0星：默认未了解的客户'
+				WHEN 1 THEN '1星：无条件无可贷点'
+				WHEN 2 THEN '2星：有条件暂时不能进件的'
+				WHEN 3 THEN '2星+：有需求要约上门客户'
+				WHEN 4 THEN '3星：可做小贷的客户'
+				WHEN 5 THEN '4星：可做银行的客户'
+				ELSE '未知'
+				END
+			) as custLabelText,
+			t1.orderType,
+			t1.applyType,
+			t2.loanAmount,
+			t2.loanDeadline,
+			IFNULL(t2.cityName,t1.cityName) as 'cityName',
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			CONCAT(t6.orgNo,'-',t6.orgName) as orgName,
+			t4.groupName,
+			t4.teamName,
+			t.recType,
+			(CASE t.recType
+				 WHEN 3 THEN '订金收入'
+				 WHEN 4 THEN '客户回款'
+				 WHEN 5 THEN '客户尾款'
+				 WHEN 6 THEN '客户返点'
+				 WHEN 7 THEN '客户退款'
+				 WHEN 8 THEN '转总部入账'
+				 WHEN 10 THEN '退订金'
+				 WHEN 16 THEN '定金转回款'
+				 WHEN 17 THEN '提前回款退款'
+				 WHEN 18 THEN '投诉退款'
+				 END) as 'recTypeText',
+			t4.realName as currentDeal,
+			t4.realName as reLoanName,
+			(case when #{roleType}=1 then concat(t1.channelDetail,'-',t3.channelName)  else null end ) as channelText,
+			IFNULL(t7.lendAmount,IFNULL(t.loanAmount,0)) as lendAmount,
+			IFNULL(TRUNCATE (t.feeAmount / IFNULL(t7.lendAmount,t.feeAmount) * 100,2),0) as amountRate,
+			(case when #{roleType} = 1 then CONCAT_WS('-',t8.teamName,t3.channelName)  else null end ) as 'channelTeamName'
+		FROM T_TREAT_SUCCESS t
+		JOIN T_BORROW_STORE_APPLY t1 ON t1.applyId = t.applyId
+		LEFT JOIN T_BORROW_BASE t2 ON t2.applyId = t.applyId
+		LEFT JOIN T_BORROW_CHANNEL t3 ON t3.channelCode = t1.channelCode
+		JOIN T_BUSI_CUST t4 ON t4.customerId = t1.lastStore
+		JOIN T_BUSI_CUST t5 ON t5.customerId = t.customerId
+		LEFT JOIN T_ORG t6 ON t6.orgId = t4.orgId
+		LEFT JOIN T_TREAT_LOAN_RECORD t7 ON t7.loanNo = t.loanNo
+		LEFT JOIN t_borrow_team t8 ON t8.teamNo = t3.teamNo
+		<include refid="queryReLoanWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryReLoanCount" resultType="int" parameterType="map">
+		SELECT 
+			COUNT(*) 
+		FROM T_TREAT_SUCCESS t
+		JOIN T_BORROW_STORE_APPLY t1 ON t1.applyId = t.applyId
+		LEFT JOIN T_BORROW_BASE t2 ON t2.applyId = t.applyId
+		LEFT JOIN T_BORROW_CHANNEL t3 ON t3.channelCode = t1.channelCode
+		JOIN T_BUSI_CUST t4 ON t4.customerId = t1.lastStore
+		JOIN T_BUSI_CUST t5 ON t5.customerId = t.customerId
+		LEFT JOIN T_ORG t6 ON t6.orgId = t4.orgId
+		LEFT JOIN T_TREAT_LOAN_RECORD t7 ON t7.loanNo = t.loanNo
+		LEFT JOIN t_borrow_team t8 ON t8.teamNo = t3.teamNo
+		<include refid="queryReLoanWhere" />
+	</select>
+
+	<sql id="queryReLoanWhere">
+		<where>
+			t1.applyType != 3
+			<if test="orgId != null and orgId != ''">
+				and t6.orgId = #{orgId}
+			</if>
+			<if test="orgIdIn != null and orgIdIn != ''">
+			    and t6.orgId in (${orgIdIn})
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t1.custLabel = #{custLabel}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="backType != null and backType != ''">
+				and t.`backType` = #{backType}
+			</if>
+			<if test="recType != null and recType != ''">
+				and t.recType = #{recType}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t1.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone = #{telephone} 
+			</if>
+			<if test="realName != null and realName != ''">
+				and t4.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t4.telephone = #{mobile}
+			</if>
+			<if test="reLoanName != null and reLoanName != ''">
+				and t5.realName like CONCAT(#{reLoanName},'%') 
+			</if>
+			<if test="reLoanMobile != null and reLoanMobile != ''">
+				and t5.telephone = #{reLoanMobile}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and IFNULL(t2.cityName,t1.cityName) = #{cityName}
+			</if>
+			<if test="searchKey != null and searchKey != ''">
+				and (t1.applyName like CONCAT(#{searchKey},'%') or
+				t1.telephone like CONCAT(#{searchKey},'%'))
+			</if>
+			<if test="storeSearchKey != null and storeSearchKey != ''">
+				and (t4.realName like CONCAT(#{storeSearchKey},'%') or
+				t4.telephone like CONCAT(#{storeSearchKey},'%'))
+			</if>
+			<if test="reStatus != null and reStatus != ''">
+				and t.status = #{reStatus}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t6.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t4.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t4.teamName = #{teamName}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t1.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.feeAmountDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.feeAmountDate < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startApplyDate != null and startApplyDate != ''">
+				 <![CDATA[and t1.applyTime >= #{startApplyDate}]]>
+			</if>
+			<if test="endApplyDate != null and endApplyDate != ''">
+				<![CDATA[and t1.applyTime < DATE_ADD(#{endApplyDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="nowDate != null and nowDate != ''">
+				<![CDATA[and DATE_SUB(t1.transTime,INTERVAL 30 minute) <= #{nowDate} 
+				and #{nowDate} <= t1.transTime]]>
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and t3.channelName like CONCAT('%', #{channelName},'%') 
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t3.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	<select id="querySigned" resultType="map" parameterType="map">
+		SELECT
+			t.treatyNo,
+			t.applyId,
+			t.signAmount,
+			t.customerId,
+			t.anjiePerson,
+			t.signType,
+			(CASE t.signType
+					WHEN 1 THEN '银行'
+					WHEN 2 THEN '小额'
+					ELSE '未知'
+					END
+			) as signTypeText,
+			t.upStatus,
+			t.treatyWill,
+			t1.applyName,
+			f_hide_phone(t1.telephone) as telephone,
+			t1.lastStore,
+			t1.status,
+			(CASE t1.status
+					WHEN 0 THEN '待处理'
+					WHEN 1 THEN '客服锁定中'
+					WHEN 2 THEN '门店锁定中'
+					WHEN 3 THEN '可转信贷经理'
+					WHEN 4 THEN '转信贷经理中'
+					WHEN 5 THEN '转信贷经理成功'
+					WHEN 6 THEN '转信贷经理失败'
+					WHEN 7 THEN '门店退回'
+					WHEN 8 THEN '过期失效'
+					ELSE '未知'
+					END
+			) as statusText,
+			DATE_FORMAT(t1.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			t1.custLabel,
+			(CASE t1.custLabel
+					WHEN 0 THEN '0星：默认未了解的客户'
+					WHEN 1 THEN '1星：无条件无可贷点'
+					WHEN 2 THEN '2星：有条件暂时不能进件的'
+					WHEN 3 THEN '2星+：有需求要约上门客户'
+					WHEN 4 THEN '3星：可做小贷的客户'
+					WHEN 5 THEN '4星：可做银行的客户'
+					ELSE '未知'
+					END
+			) as custLabelText,
+			t1.orderType,
+			(CASE t1.orderType
+					WHEN 1 THEN '新申请'
+					WHEN 2 THEN '再分配'
+					END
+			) as orderTypeText,
+			t1.applyType,
+			(CASE t1.applyType
+					WHEN 1 THEN '优质单'
+					WHEN 2 THEN '普通单'
+					WHEN 3 THEN '垃圾单'
+					WHEN 4 THEN '小贷客户'
+					WHEN 5 THEN '微店单'
+					WHEN 6 THEN '准优质单'
+					WHEN 7 THEN '优质客户'
+					ELSE '未知'
+					END
+			) as applyTypeText,
+			t2.loanAmount,
+			t2.loanDeadline,
+			IFNULL(t2.cityName,t1.cityName) as 'cityName',
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as signTime,
+			DATE_FORMAT(t.signTime,'%Y-%m-%d %H:%i:%s') as realSignTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t.status as signStatus,
+			(CASE t.status
+					 WHEN 1 THEN '提交按揭中'
+					 WHEN 2 THEN '结案'
+					 WHEN 5 THEN '贷款未提交'
+					END
+			) as signStatusText,
+			concat(t6.orgNo,'-',t6.orgName) as orgName,
+			t.orgId,
+			t4.realName as currentDeal,
+			t5.realName as signOrderName,
+			t4.groupName,
+			t4.teamName,
+			t7.handleDesc,
+			DATE_FORMAT(t7.lastTime,'%Y-%m-%d %H:%i:%s') as  'handleTime',
+			t1.channelCode,
+			t3.channelName,
+			t1.channelDetail,
+			(case when #{roleType} in (1,2) then concat(t1.channelDetail,'-',t3.channelName)  else null end ) as channelText,
+			t1.`applyTime`,
+			t.failureCause
+		FROM T_TREAT_INFO t
+		JOIN T_BORROW_STORE_APPLY t1 ON t1.applyId = t.applyId
+		LEFT JOIN T_BORROW_BASE t2 ON t2.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t3 ON t3.channelCode = t1.channelCode
+		JOIN T_BUSI_CUST t4 ON t4.customerId = t1.lastStore
+		JOIN T_BUSI_CUST t5 ON t5.customerId = t.customerId
+		LEFT JOIN T_ORG t6 ON t6.orgId = t4.orgId
+		LEFT JOIN T_STORE_HANDLE_RECORD t7 ON t7.applyId = t.applyId
+		<include refid="querySignedWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="querySignedCount" resultType="int" parameterType="map">
+		SELECT 
+			COUNT(*) 
+		FROM T_TREAT_INFO t
+		JOIN T_BORROW_STORE_APPLY t1 ON t1.applyId = t.applyId
+		LEFT JOIN T_BORROW_BASE t2 ON t2.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t3 ON t3.channelCode = t1.channelCode
+		JOIN T_BUSI_CUST t4 ON t4.customerId = t1.lastStore
+		JOIN T_BUSI_CUST t5 ON t5.customerId = t.customerId
+		LEFT JOIN T_ORG t6 ON t6.orgId = t4.orgId
+		LEFT JOIN T_STORE_HANDLE_RECORD t7 ON t7.applyId = t.applyId
+		<include refid="querySignedWhere" />
+	</select>
+
+	<sql id="querySignedWhere">
+		<where>
+			t1.applyType != 3
+			<if test="orgId != null and orgId != ''">
+				and t6.orgId = #{orgId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t1.applyType = #{applyType}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t1.custLabel = #{custLabel}
+			</if>
+			<if test="signType != null and signType != ''">
+				and t.signType = #{signType}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t1.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone = #{telephone}
+			</if>
+			<if test="realName != null and realName != ''">
+				and t4.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t4.telephone = #{mobile}
+			</if>
+			<if test="signOrderName != null and signOrderName != ''">
+				and t5.realName like CONCAT(#{signOrderName},'%') 
+			</if>
+			<if test="signMobile != null and signMobile != ''">
+				and t5.telephone = #{signMobile}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and IFNULL(t2.cityName,t1.cityName) = #{cityName}
+			</if>
+			<if test="signStatus != null and signStatus != ''">
+				and t.status = #{signStatus}
+			</if>
+			<if test="upStatus != null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t6.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t4.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t4.teamName = #{teamName}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t1.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t1.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.createTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.createTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t7.lastTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t7.lastTime  < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startFinishDate != null and startFinishDate != ''">
+				 <![CDATA[and t.updateTime >= #{startFinishDate}]]>
+			</if>
+			<if test="endFinishDate != null and endFinishDate != ''">
+				<![CDATA[and t.updateTime < DATE_ADD(#{endFinishDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startApplayDate != null and startApplayDate != ''">
+				 <![CDATA[and t1.applyTime >= #{startApplayDate}]]>
+			</if>
+			<if test="endApplayDate != null and endApplayDate != ''">
+				<![CDATA[and t1.applyTime < DATE_ADD(#{endApplayDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="nowDate != null and nowDate != ''">
+				<![CDATA[and DATE_SUB(t1.transTime,INTERVAL 30 minute) <= #{nowDate} 
+				and #{nowDate} <= t1.transTime]]>
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and t7.handleDesc like CONCAT('%',#{handleDesc},'%')
+			</if>
+			<if test="signAmount != null and signAmount != ''">
+				and t.signAmount = #{signAmount}
+			</if>
+			<if test="failureCause !=null and failureCause != ''" >
+				and t.failureCause = #{failureCause}
+			</if>
+			<if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t1.channelCode,#{fixChannels})
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t3.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+
+	<!-- 查询通知的门店人员抢单的业务员 -->
+	<select id="getNoticeStore" resultType="map" parameterType="map">
+		SELECT
+			t1.orgId,
+			t1.orgName,
+			t.realName,
+			t.customerId,
+			t.telephone 
+		FROM t_busi_cust t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE
+		  t.roleType=3 AND t1.cityName=#{cityName}
+		  AND !FIND_IN_SET(t1.cityName,(select allotCitys FROM t_base_cfg))
+	</select>
+	<!-- 查询订单相关信息 -->
+	<select id="queryOrderInfo" resultType="map" parameterType="map">
+		SELECT
+		t.applyId,
+		t.lastStore,
+		t1.orgId,
+		t1.groupName,
+		t1.teamName
+		FROM
+		t_borrow_store_apply t
+		LEFT JOIN t_busi_cust t1 ON t.lastStore = t1.customerId
+		WHERE t.applyId = #{applyId}
+	</select>
+	
+	<!-- 查询订单相关信息(t_borrow_apply) -->
+	<select id="queryBorrowOrderInfo" resultType="map" parameterType="map">
+		SELECT
+		t.applyId,
+		t.lastStore,
+		t1.orgId,
+		t1.groupName,
+		t1.teamName
+		FROM
+		t_borrow_apply t
+		LEFT JOIN t_busi_cust t1 ON t.lastStore = t1.customerId
+		WHERE t.applyId = #{applyId}
+	</select>
+	
+	<!-- 查询再分配池列表信息 -->
+	<select id="queryAllotPond" resultType="map" parameterType="map">
+		SELECT 
+		  t.`applyId`,
+		  t.`orderType`,
+		  t1.`applyName`,
+		  f_hide_phone (t1.telephone) AS telephone,
+		  t2.loanAmount,
+		  t2.loanDeadline,
+		  IFNULL(t2.cityName, t1.cityName) AS 'cityName',
+		  concat(t3.orgNo,'-',t3.orgName) as orgName,
+		  DATE_FORMAT(
+		    t1.applyTime,
+		    '%Y-%m-%d %H:%i:%s'
+		  ) AS applyTime,
+		  DATE_FORMAT(
+		    t1.updateTime,
+		    '%Y-%m-%d %H:%i:%s'
+		  ) AS updateTime,
+		  f_asset_info_new (t1.applyId) AS 'assetInfo',
+		  t.`recordDate`,
+		  t4.`realName`,
+		  t5.`handleDesc`,
+		  t6.`type`,
+		  t6.`channelCode`,
+		  t6.`channelName`,
+		  t.nextRecordDate,
+		  (CASE t6.type
+		   	WHEN 1 THEN '自有平台'
+			WHEN 2 THEN '推广渠道'
+			WHEN 3 THEN 'API接口'
+			WHEN 4 THEN '历史数据'
+			WHEN 5 THEN '推广渠道'
+			WHEN 6 THEN '测试数据'
+		   ELSE 'API接口' END) as 'channelTypeText',
+		   (CASE t6.isCost
+		   	WHEN 1 THEN '成本单'
+			WHEN 2 THEN '测试单'
+			END) as 'isCostText'
+		FROM
+		  t_net_store_pool t 
+		  LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId 
+		  LEFT JOIN t_borrow_base t2 ON t.applyId = t2.applyId 
+		  LEFT JOIN t_org t3 ON t.orgId = t3.orgId 
+		  LEFT JOIN t_busi_cust t4 ON t.`lastStore` = t4.`customerId` 
+		  LEFT JOIN t_store_handle_record t5 ON t.`applyId` = t5.`applyId`
+          LEFT JOIN t_borrow_channel t6 ON t1.`channelCode` = t6.`channelCode`
+		<include refid="getAllotPondSql"/>
+		ORDER BY t.applyTime DESC
+	</select>
+	
+	<!-- 查询再分配池列表信息条数-->
+	<select id="queryAllotPondCount" resultType="int" parameterType="map">
+		SELECT 
+		  COUNT(1)
+		FROM
+		  t_net_store_pool t 
+		  LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId 
+		  LEFT JOIN t_borrow_base t2 ON t.applyId = t2.applyId 
+		  LEFT JOIN t_org t3 ON t.orgId = t3.orgId 
+		  LEFT JOIN t_busi_cust t4 ON t.`lastStore` = t4.`customerId` 
+		  LEFT JOIN t_store_handle_record t5 ON t.`applyId` = t5.`applyId`
+          LEFT JOIN t_borrow_channel t6 ON t1.`channelCode` = t6.`channelCode`
+		<include refid="getAllotPondSql"/>
+	</select>
+	
+	<sql id="getAllotPondSql">
+		<where>
+	  		<if test="startDate != null and startDate != ''">
+				 <![CDATA[AND t.applyTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.applyTime <= #{endDate}]]>
+			</if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+				 <![CDATA[AND t.recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+				<![CDATA[AND t.recordDate <= #{endRecordDate}]]>
+			</if>
+			<if test="cityName != null and cityName != ''">
+				AND IFNULL(t2.cityName,t1.cityName) = #{cityName}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t.`orgId`=#{orgId}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				AND t.`orderType`=#{orderType}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				AND t.`orgId` in (${userOrgs})
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				AND t1.`applyName` LIKE CONCAT(#{storeRealName},'%')
+			</if>
+			<if test="storeTelephone != null and storeTelephone != ''">
+				AND t1.`telephone`=#{storeTelephone}
+			</if>
+			<if test="realName != null and realName != ''">
+				AND t4.`realName` LIKE CONCAT(#{realName},'%')
+			</if>
+			<if test="channelType != null and channelType != ''">
+				AND t6.`type`= #{channelType}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t1.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="isCost != null and isCost != ''">
+				AND t6.`isCost`= #{isCost}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t6.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	<select id="queryCfsSignList" resultType="map" parameterType="map">
+		SELECT
+			t.reContractId,
+			t.applyId,
+			t.applyName, 
+			t.customerId,
+			t.contractType,
+			(CASE t.contractType
+				WHEN 1 THEN '手动添加'
+				WHEN 2 THEN 'CFS返回'
+				ELSE '未知'
+				END
+			 ) as 'contractTypeText', 
+			t.customerName,
+			t.orgId,
+			(CASE WHEN t.status = 1 THEN f_hide_phone (t.telephone)
+			 ELSE t.telephone END
+			 ) as telephone,
+			DATE_FORMAT(t.queryDate,'%Y-%m-%d %H:%i:%s') as queryDate,
+			DATE_FORMAT(t.dealDate,'%Y-%m-%d %H:%i:%s') as dealDate,
+			t.status,
+			(CASE t.status
+				WHEN 0 THEN '未处理'
+				WHEN 1 THEN '处理成功'
+				WHEN 2 THEN '处理失败'
+				ELSE '未知'
+				END
+			 ) as 'statusText',
+			t.errorMessage,
+			CONCAT(t1.orgNo,'-',t1.orgName) as orgName,
+			t.signDate,
+			t.jsonText,
+			t.feeAmountTotal
+		FROM t_treat_origin_info t
+		LEFT JOIN t_org t1 ON t1.orgId = t.orgId
+		LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		<include refid="queryCFSWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryCfsSignListCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_origin_info t
+		LEFT JOIN t_org t1 ON t1.orgId = t.orgId
+		LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		<include refid="queryCFSWhere" />
+	</select>
+
+	<sql id="queryCFSWhere">
+		<where>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and t.reContractId = #{reContractId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="contractType != null and contractType != ''">
+				and t.contractType = #{contractType}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="customerName != null and customerName != ''">
+				and t.customerName like CONCAT(#{customerName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone = #{mobile}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t1.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t1.orgId in (${userOrgs})
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.queryDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.queryDate < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t.dealDate >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t.dealDate < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startSignDate != null and startSignDate != ''">
+				 <![CDATA[and t.signDate >= #{startSignDate}]]>
+			</if>
+			<if test="endSignDate != null and endSignDate != ''">
+				<![CDATA[and t.signDate < DATE_ADD(#{endSignDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="errorMessage != null and errorMessage != ''">
+				and t.errorMessage like CONCAT(#{errorMessage},'%')
+			</if>
+		</where>
+	</sql>
+	<!-- 查询所有列表 -->
+	<select id="queryBorrowAllList" resultType="map" parameterType="map">
+		SELECT
+		t.applyId,
+		t.applyName,
+		t.customerId,
+		f_hide_phone(t.telephone) as telephone,
+		t.orderStatus,
+		(CASE 
+			WHEN t.orderStatus =-1 THEN '待跟进'
+			WHEN t.orderStatus =0 THEN '跟进中'
+			WHEN t.orderStatus =1 THEN '未上门待签约'
+			WHEN t.orderStatus =2 THEN '已上门待签约'
+			WHEN t.orderStatus =3 THEN '已上门签约'
+			WHEN t.orderStatus =4 THEN '进件审核中'
+			WHEN t.orderStatus =5 THEN '银行已放款'
+			WHEN t.orderStatus =6 THEN '银行已拒绝'
+			WHEN t.orderStatus =7 THEN '无效客户'
+			WHEN t.orderStatus =8 THEN '空号/错号'
+			ELSE '未知'
+			END
+		) as orderStatusText,
+		t.lastStore,
+		t.`status`,
+		(CASE t.`status`
+				WHEN 0 THEN '待处理'
+				WHEN 1 THEN '客服锁定中'
+				WHEN 2 THEN '门店锁定中'
+				WHEN 3 THEN '可转信贷经理'
+				WHEN 4 THEN '转信贷经理中'
+				WHEN 5 THEN '转信贷经理成功'
+				WHEN 6 THEN '转信贷经理失败'
+				WHEN 7 THEN '门店退回'
+				WHEN 8 THEN '过期失效'
+				ELSE '未知'
+				END
+		) as statusText,
+		DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+		t.custLabel,
+		(CASE t.custLabel
+				WHEN 0 THEN '0星：默认未了解的客户'
+				WHEN 1 THEN '1星：无条件无可贷点'
+				WHEN 2 THEN '2星：有条件暂时不能进件的'
+				WHEN 3 THEN '2星+：有需求要约上门客户'
+				WHEN 4 THEN '3星：可做小贷的客户'
+				WHEN 5 THEN '4星：可做银行的客户'
+				ELSE '未知'
+				END
+		) as custLabelText,
+		t.orderType,
+		(CASE t.orderType
+				WHEN 1 THEN '新申请'
+				ELSE '再分配'
+				END
+		) as orderTypeText,
+		t.applyType,
+		(CASE t.applyType
+				WHEN 1 THEN '优质单'
+				WHEN 2 THEN '普通单'
+				WHEN 3 THEN '垃圾单'
+				WHEN 4 THEN '小贷客户'
+				WHEN 5 THEN '微店单'
+				WHEN 6 THEN '准优质单'
+				WHEN 7 THEN '优质客户'
+				ELSE '未知'
+				END
+		) as applyTypeText,
+		t1.loanAmount,
+		t1.loanDeadline,
+		IFNULL(t1.cityName,t.cityName) as 'cityName',
+		t1.age,
+		t.channelCode,
+		f_asset_info_new(t.applyId) as 'assetInfo',
+		CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+		t2.realName as currentDeal,
+		t2.groupName,
+		t2.teamName,
+		t4.handleDesc,
+		DATE_FORMAT(t4.lastTime,'%Y-%m-%d %H:%i:%s') as  'handleTime',
+		CONCAT('成功',t6.sucCallTimes,'次，总时长',FORMAT(t6.totalDuration/60,1),'分钟') AS callInfo,
+		CONCAT(FORMAT(t6.curDuration/60,1), '分钟') AS curDuration,
+		(case when #{roleType}=1 then CONCAT(t.channelDetail,'-',t7.channelName)  else null end ) as channelText,
+		t1.`desc`,
+		t.allotBy,
+	    DATE_FORMAT(t.allotTime,'%Y-%m-%d %H:%i:%s') as allotTime,
+	    t.allotDesc,
+	    (CASE t1.sex
+			WHEN 0 THEN '女'
+			WHEN 1 THEN '男'
+			ELSE '未知'
+			END
+		) AS sexText
+		FROM t_borrow_apply t
+		LEFT JOIN T_BORROW_BASE t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_store_handle_record t4 ON t4.applyId = t.applyId
+		LEFT JOIN t_store_call_recent t6 ON t6.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t7 ON t7.channelCode = t.channelCode
+		<include refid="queryAllWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryBorrowAllListCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_apply t
+		LEFT JOIN T_BORROW_BASE t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_store_handle_record t4 ON t4.applyId = t.applyId
+		LEFT JOIN t_store_call_recent t6 ON t6.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t7 ON t7.channelCode = t.channelCode
+		<include refid="queryAllWhere" />
+	</select>
+
+	<sql id="queryAllWhere">
+		<where>
+			t.applyType != 3
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t.applyType = #{applyType}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t.custLabel = #{custLabel}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone = #{mobile}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and IFNULL(t1.cityName,t.cityName) = #{cityName}
+			</if>
+			<if test="searchKey != null and searchKey != ''">
+				and (t.applyName like CONCAT(#{searchKey},'%') or
+				t.telephone like CONCAT(#{searchKey},'%'))
+			</if>
+			<if test="storeSearchKey != null and storeSearchKey != ''">
+				and (t2.realName like CONCAT(#{storeSearchKey},'%') or
+				t2.telephone like CONCAT(#{storeSearchKey},'%'))
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="orderStatusIn != null and orderStatusIn != ''">
+				and t.orderStatus in (${orderStatusIn})
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t3.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t3.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.applyTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.applyTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t4.lastTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t4.lastTime < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="nowDate != null and nowDate != ''">
+				<![CDATA[and DATE_SUB(t.transTime,INTERVAL 30 minute) <= #{nowDate} 
+				and #{nowDate} <= t.transTime]]>
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and t4.handleDesc like CONCAT('%',#{handleDesc},'%')
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and t.orderType = #{orderType}
+			</if>
+			<if test="startAllotDate != null and startAllotDate != ''">
+				 <![CDATA[and t.allotTime  >= #{startAllotDate}]]>
+			</if>
+			<if test="endAllotDate != null and endAllotDate != ''">
+				<![CDATA[and t.allotTime  < DATE_ADD(#{endAllotDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="sex != null and sex != ''">
+				and t1.sex = #{sex}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t7.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	<!-- 统计 -->
+	<select id="queryBorrowAllSummary" resultType="map" parameterType="map">
+		SELECT
+			count(1) AS allOrderCount,
+			count(
+				CASE
+				when t.`status` = 2 and t.`orderStatus` = -1
+				then 1
+				ELSE null
+				end
+			) as waitOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 0
+				then 1
+				ELSE null
+				end
+			) as followOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 1
+				then 1
+				ELSE null
+				end
+			) as notWaitSignCount,
+			count(
+				CASE
+				when t.`orderStatus` = 2
+				then 1
+				ELSE null
+				end
+			) as waitSignCount,
+			count(
+				CASE
+				when t.`orderStatus` = 3
+				then 1
+				ELSE null
+				end
+			) as signedOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 4
+				then 1
+				ELSE null
+			end) as checkOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 5
+				then 1
+				ELSE null
+			end) as loanOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 6
+				then 1
+				ELSE null
+			end) AS refuseOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 7
+				then 1
+				ELSE null
+			end) as invalidOrderCount,
+			count(
+				CASE
+				when t.`orderStatus` = 8
+				then 1
+				ELSE null
+			end) as nullOrderCount
+		FROM T_BORROW_APPLY t
+		LEFT JOIN T_BORROW_BASE t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_store_handle_record t4 ON t4.applyId = t.applyId
+		<include refid="queryAllWhere" />
+	</select>
+	
+	<select id="queryBorrowMainInfo" resultType="map" parameterType="map">
+		SELECT
+			a.loanAmount, 
+			a.loanDeadline, 
+			a.loanPurpose, 
+			a.cityName,
+			IFNULL(b.orderStatus,-1) as orderStatus,
+			b.applyName,
+			b.telephone,
+			b.custLabel,
+			DATE_FORMAT(b.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			a.`desc`,
+			b.applyType,
+			b.channelCode,
+			b.channelDetail,
+			b.custLabel,
+			b.applyId,
+			book.status as bookStatus,
+			c.channelCode,
+			c.type,
+			(CASE c.type
+		   WHEN 1 THEN '自有平台'
+		   WHEN 2 THEN '推广渠道'
+		   WHEN 3 THEN 'API接口'
+		   WHEN 4 THEN '历史数据'
+		   WHEN 5 THEN '推广渠道'
+		   WHEN 6 THEN '测试数据'
+		   ELSE 'API接口'  END) as 'channelTypeText'
+		FROM T_BORROW_APPLY b
+		LEFT JOIN T_BORROW_BASE a ON a.applyId = b.applyId
+		LEFT JOIN t_treat_book book ON b.applyId = book.applyId
+		LEFT JOIN t_borrow_channel c ON b.channelCode = c.channelCode
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and b.applyId = #{applyId}
+			 </if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="storeSignDeparture" resultType="map" parameterType="map">
+		SELECT 
+			#{today} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			t2.realName AS 'realName'
+		FROM
+			t_treat_info t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_busi_cust t2 on t2.customerId = t.customerId
+		<where>
+			t2.roleType = 0 
+			<if test="today != null and today != ''">
+			 <![CDATA[AND t.createTime >= #{today}
+			  AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)]]>
+			 </if>
+		</where>
+	</select>
+	<select id="storeSignDepartMonth" resultType="map" parameterType="map">
+		SELECT 
+			#{toMonth} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			t2.realName AS 'realName'
+		FROM
+			t_treat_info t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_busi_cust t2 on t2.customerId = t.customerId
+		<where>
+			t2.roleType = 0 
+			 <if test="toMonth != null and toMonth != ''">
+			  AND DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth}
+			 </if>
+		</where>
+	</select>
+	<select id="storeReLoanDeparture" resultType="map" parameterType="map">
+		SELECT 
+			#{today} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			t2.realName AS 'realName'
+		FROM
+			t_treat_success t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_busi_cust t2 on t2.customerId = t.customerId
+		<where>
+			t2.roleType = 0 
+			<if test="today != null and today != ''">
+			  <![CDATA[AND t.feeAmountDate >= #{today}
+			  AND t.feeAmountDate < DATE_ADD(#{today}, INTERVAL 1 DAY)]]>
+			 </if>
+		</where>
+	</select>
+	<select id="storeReLoanDepartMonth" resultType="map" parameterType="map">
+		SELECT 
+			#{toMonth} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			t2.realName AS 'realName'
+		FROM
+			t_treat_success t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		JOIN t_busi_cust t2 on t2.customerId = t.customerId
+		<where>
+			t2.roleType = 0 
+			 <if test="toMonth != null and toMonth != ''">
+			  AND DATE_FORMAT(t.feeAmountDate, '%Y-%m') = #{toMonth}
+			 </if>
+		</where>
+	</select>
+	<select id="storeCostDeparture" resultType="map" parameterType="map">
+		SELECT 
+			#{today} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t2.orgId as 'orgId',
+			t2.orgName as 'orgName',
+			t2.cityName as 'cityName',
+			count(t.applyId) as costCount,
+			t3.realName AS 'realName'
+		FROM
+			t_store_cost_record t
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_org t2 ON t2.orgId = t1.orgId
+		JOIN t_busi_cust t3 on t3.customerId = t.customerId
+		<where>
+			t3.roleType = 0
+			AND t.status = 0 
+			<if test="today != null and today != ''">
+			  <![CDATA[AND t.createTime >= #{today}
+			  AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)]]>
+			 </if>
+		</where>
+		group by t.customerId
+	</select>
+	<select id="storeCostDepartMonth" resultType="map" parameterType="map">
+		SELECT 
+			#{toMonth} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t2.orgId as 'orgId',
+			t2.orgName as 'orgName',
+			t2.cityName as 'cityName',
+			count(t.applyId) as costCount,
+			t3.realName AS 'realName'
+		FROM
+			t_store_cost_record t
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_org t2 ON t2.orgId = t1.orgId
+		JOIN t_busi_cust t3 on t3.customerId = t.customerId
+		<where>
+			t3.roleType = 0
+			AND t.status = 0 
+			 <if test="toMonth != null and toMonth != ''">
+			  AND DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth}
+			 </if>
+		</where>
+		group by t.customerId
+	</select>
+	<select id="queryOrderChannelInfo" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.channelCode,
+			t1.isCost
+		FROM T_BORROW_STORE_APPLY t
+		LEFT JOIN T_BORROW_CHANNEL t1 ON t.channelCode = t1.channelCode
+		where t.applyId = #{applyId}
+	</select>
+	<select id="queryDealOrderTypeToday" parameterType="map" resultType="map">
+		SELECT
+			#{recordDate} AS 'recordDate',
+			t1.orgId,
+			t1.groupName,
+			CONCAT(t2.orgNo,'-',t2.orgName) as orgName,
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			JOIN t_org t2 on t1.orgId = t2.orgId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			 <![CDATA[AND t.applyTime >= #{recordDate}
+			  AND t.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+			 <if test="orgId !=null and orgId !=''">
+			 	AND t1.orgId = #{orgId}
+			 </if>
+			 <if test="groupName !=null and groupName !=''">
+			 	AND t1.groupName = #{groupName}
+			 </if>
+			  
+			GROUP BY t1.orgId,t1.groupName
+	</select>
+	
+	<select id="queryDealOrderTypeCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+		FROM(
+			SELECT 
+				COUNT(1)
+			FROM
+				t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			AND t.applyTime >=CURDATE()
+			<if test="orgId !=null and orgId !=''">
+		 		AND t1.orgId = #{orgId}
+		 	</if>
+			<if test="groupName !=null and groupName !=''">
+		 		AND t1.groupName = #{groupName}
+		 	</if>
+	 	 GROUP BY t1.orgId,t1.groupName)AS tab1
+	</select>
+	
+	<!-- 今日订单状态总计 -->
+	 <select id="queryDealOrderTypeTodaySum" resultType="map" parameterType="map">
+		SELECT
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			AND t.applyTime >=CURDATE()
+			<if test="orgId !=null and orgId !=''">
+			 	AND t1.orgId = #{orgId}
+			</if>
+			<if test="groupName !=null and groupName !=''">
+			 	AND t1.groupName = #{groupName}
+			</if>
+	</select>
+	<!-- 订单状态分组统计（门店） 今日 -->
+	<select id="queryOrgDealOrderToday" parameterType="map" resultType="map">
+		SELECT
+			#{recordDate} AS 'recordDate',
+			t1.orgId,
+			t1.groupName,
+			CONCAT(t2.orgNo,'-',t2.orgName) as orgName,
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			JOIN t_org t2 on t1.orgId = t2.orgId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			 <![CDATA[AND t.orderTypeUpdateTime >= #{recordDate}
+			  AND t.orderTypeUpdateTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+			 <if test="orgId !=null and orgId !=''">
+			 	AND t1.orgId = #{orgId}
+			 </if>
+			 <if test="groupName !=null and groupName !=''">
+			 	AND t1.groupName = #{groupName}
+			 </if>
+			GROUP BY t1.orgId,t1.groupName
+	</select>
+	<!-- 订单状态分组统计（门店） 今日分页 -->
+	<select id="queryOrgDealOrderTodayCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+		FROM(
+			SELECT 
+				COUNT(1)
+			FROM
+				t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			JOIN t_org t2 on t1.orgId = t2.orgId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			AND t.orderTypeUpdateTime >=CURDATE()
+			<if test="orgId !=null and orgId !=''">
+		 		AND t1.orgId = #{orgId}
+		 	</if>
+			<if test="groupName !=null and groupName !=''">
+		 		AND t1.groupName = #{groupName}
+		 	</if>
+	 	 GROUP BY t1.orgId,t1.groupName)AS tab1
+	</select>
+	
+	<!-- 订单状态分组统计总计（门店） 今日 -->
+	 <select id="queryOrgDealOrderTodaySum" resultType="map" parameterType="map">
+		SELECT
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			JOIN t_org t2 on t1.orgId = t2.orgId
+			WHERE  t1.groupName != ''
+			AND t1.orgId IS NOT NULL
+			AND t.orderTypeUpdateTime >=CURDATE()
+			<if test="orgId !=null and orgId !=''">
+			 	AND t1.orgId = #{orgId}
+			</if>
+			<if test="groupName !=null and groupName !=''">
+			 	AND t1.groupName = #{groupName}
+			</if>
+	</select>
+	<!-- 新申请再分配统计总数 -->
+	<select id="queryApplayCount" parameterType="map" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 ON t1.customerId = t.lastStore
+			LEFT JOIN t_borrow_channel t2 ON t.`channelCode` = t2.`channelCode`
+			where 
+				 t.`status` = 2 AND t.applyType != 3
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore =#{lastStore}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t.orgId in (${userOrgs})
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and t.orderType = #{orderType}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t1.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t1.teamName = #{teamName}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t2.`type` = #{queryChannelType}
+			</if>
+	</select>
+	<select id="queryStoreApplyList" parameterType="map" resultType="map">
+		SELECT
+			t.applyName,
+			f_hide_phone(t.telephone) as telephone,
+			t.applyId,
+			t1.loanAmount,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(t.allotTime,'%Y-%m-%d %H:%i:%s') as allotTime,
+			t.allotBy,
+			t.allotDesc,
+			concat(t3.orgNo,'-',t3.orgName) as orgName,
+			t2.realName as currentDeal,
+			t2.groupName,
+			t2.teamName,
+			(CASE t4.type
+			   	WHEN 1 THEN '自有平台'
+				WHEN 2 THEN '推广渠道'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN '历史数据'
+				WHEN 5 THEN '推广渠道'
+				WHEN 6 THEN '测试数据'
+		   ELSE 'API接口' END) as 'channelTypeText',
+		   t.custLabel,
+			(CASE t.custLabel
+				WHEN 0 THEN '0星：默认未了解的客户'
+				WHEN 1 THEN '1星：无条件无可贷点'
+				WHEN 2 THEN '2星：有条件暂时不能进件的'
+				WHEN 3 THEN '2星+：有需求要约上门客户'
+				WHEN 4 THEN '3星：可做小贷的客户'
+				WHEN 5 THEN '4星：可做银行的客户'
+				ELSE '未知'
+				END
+			) as custLabelText,
+			t.orderType,
+			(CASE t.orderType
+				WHEN 1 THEN '新申请'
+				ELSE '再分配'
+				END
+			) as orderTypeText,
+			t.orderStatus,
+			(CASE 
+				WHEN t.orderStatus =-1 THEN '待跟进'
+				WHEN t.orderStatus =0 THEN '跟进中'
+				WHEN t.orderStatus =1 THEN '未上门待签约'
+				WHEN t.orderStatus =2 THEN '已上门待签约'
+				WHEN t.orderStatus =3 THEN '已上门签约'
+				WHEN t.orderStatus =4 THEN '进件审核中'
+				WHEN t.orderStatus =5 THEN '银行已放款'
+				WHEN t.orderStatus =6 THEN '银行已拒绝'
+				WHEN t.orderStatus =7 THEN '无效客户'
+				WHEN t.orderStatus =8 THEN '空号/错号'
+				ELSE '未知'
+				END
+			) as orderStatusText,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			t5.handleDesc,
+			DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d %H:%i:%s') as 'handleTime'
+		FROM
+		t_borrow_store_apply t
+		LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId 
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_borrow_channel t4 ON t.`channelCode` = t4.`channelCode`
+		LEFT JOIN t_store_handle_record t5 ON t5.applyId = t.applyId
+		<include refid="queryStoreApplyWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryStoreApplyCount" resultType="int" parameterType="map">
+		SELECT
+			count(*)
+		FROM
+		t_borrow_store_apply t
+		LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId 
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_borrow_channel t4 ON t.`channelCode` = t4.`channelCode`
+		LEFT JOIN t_store_handle_record t5 ON t5.applyId = t.applyId
+		<include refid="queryStoreApplyWhere" />
+	</select>
+	<sql id="queryStoreApplyWhere">
+		<where>
+			t.applyType != 3
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t.custLabel = #{custLabel}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone = #{mobile}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="status != null and status != ''">
+				and t.`status` = #{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.applyTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.applyTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and t.orderType = #{orderType}
+			</if>
+			<if test="startAllotDate != null and startAllotDate != ''">
+				 <![CDATA[and t.allotTime >= #{startAllotDate}]]>
+			</if>
+			<if test="endAllotDate != null and endAllotDate != ''">
+				<![CDATA[and t.allotTime < DATE_ADD(#{endAllotDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="channelType != null and channelType != ''">
+				AND t4.`type`= #{channelType}
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t.lastUpdateTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t.lastUpdateTime  < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and t5.handleDesc like CONCAT('%',#{handleDesc},'%')
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t4.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询退单列表 -->
+	<select id="queryBackOrderList" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.applyName,
+			t.customerId,
+			f_hide_phone(t.telephone) as telephone,
+			t.orderStatus,
+			t.orgId,
+			t.applyCount,
+			(CASE 
+				WHEN t.orderStatus =-1 THEN '待跟进'
+				WHEN t.orderStatus =0 THEN '跟进中'
+				WHEN t.orderStatus =1 THEN '未上门待签约'
+				WHEN t.orderStatus =2 THEN '已上门待签约'
+				WHEN t.orderStatus =3 THEN '已上门签约'
+				WHEN t.orderStatus =4 THEN '进件审核中'
+				WHEN t.orderStatus =5 THEN '银行已放款'
+				WHEN t.orderStatus =6 THEN '银行已拒绝'
+				WHEN t.orderStatus =7 THEN '无效客户'
+				WHEN t.orderStatus =8 THEN '空号/错号'
+				ELSE '未知'
+				END
+			) as orderStatusText,
+			t.lastStore,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			t.custLabel,
+			(CASE t.custLabel
+				WHEN 0 THEN '0星：默认未了解的客户'
+				WHEN 1 THEN '1星：无条件无可贷点'
+				WHEN 2 THEN '2星：有条件暂时不能进件的'
+				WHEN 3 THEN '2星+：有需求要约上门客户'
+				WHEN 4 THEN '3星：可做小贷的客户'
+				WHEN 5 THEN '4星：可做银行的客户'
+				ELSE '未知'
+				END
+			) as custLabelText,
+			t.orderType,
+			(CASE t.orderType
+				WHEN 1 THEN '新申请'
+				ELSE '再分配'
+				END
+			) as orderTypeText,
+			t1.loanAmount,
+			t.channelCode,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+			t2.realName as currentDeal,
+			t2.groupName,
+			t2.teamName,
+			t4.handleDesc,
+			DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d %H:%i:%s') as  'handleTime',
+			(case when #{roleType} = 1 then CONCAT(t.channelDetail,'-',t5.channelName)  else null end ) as channelText,
+			t1.`desc`,
+		    t.backStatus,
+		    (CASE t.backStatus
+				WHEN 1 THEN '未退单'
+				WHEN 2 THEN '退单中'
+				WHEN 3 THEN '退单成功'
+				WHEN 4 THEN '退单失败'
+				ELSE '未知'
+				END
+			) as backStatusText,
+		    t.backDesc,
+		    t.backReDesc,
+			t5.type AS channelType,
+		    (CASE t5.type
+				WHEN 1 THEN '自有平台'
+				WHEN 2 THEN '推广渠道'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN '历史数据'
+				WHEN 5 THEN '推广渠道'
+				WHEN 6 THEN '测试数据'
+				ELSE 'API接口'
+				END
+			) AS channelTypeText
+		FROM t_borrow_store_apply t
+		LEFT JOIN T_BORROW_BASE t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_store_handle_record t4 ON t4.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+		<include refid="queryBackOrderWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryBackOrderCount" resultType="int" parameterType="map">
+		SELECT 
+			COUNT(*) 
+		FROM t_borrow_store_apply t
+		LEFT JOIN T_BORROW_BASE t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.lastStore
+		LEFT JOIN t_org t3 ON t3.orgId = t2.orgId
+		LEFT JOIN t_store_handle_record t4 ON t4.applyId = t.applyId
+		LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+		<include refid="queryBackOrderWhere" />
+	</select>
+	<sql id="queryBackOrderWhere">
+		<where>
+			t.applyType != 3
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t.applyType = #{applyType}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t.custLabel = #{custLabel}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone = #{mobile}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and IFNULL(t1.cityName,t.cityName) = #{cityName}
+			</if>
+			<if test="searchKey != null and searchKey != ''">
+				and (t.applyName like CONCAT(#{searchKey},'%') or
+				t.telephone like CONCAT(#{searchKey},'%'))
+			</if>
+			<if test="storeSearchKey != null and storeSearchKey != ''">
+				and (t2.realName like CONCAT(#{storeSearchKey},'%') or
+				t2.telephone like CONCAT(#{storeSearchKey},'%'))
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="orderStatusIn != null and orderStatusIn != ''">
+				and t.orderStatus in (${orderStatusIn})
+			</if>
+			<if test="status != null and status != ''">
+				and t.`status` = #{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore = #{lastStore}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.applyTime  >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.applyTime  < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t.lastUpdateTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t.lastUpdateTime  < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and t4.handleDesc like CONCAT('%',#{handleDesc},'%')
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and t.orderType = #{orderType}
+			</if>
+			<if test="startAllotDate != null and startAllotDate != ''">
+				 <![CDATA[and t.allotTime  >= #{startAllotDate}]]>
+			</if>
+			<if test="endAllotDate != null and endAllotDate != ''">
+				<![CDATA[and t.allotTime  < DATE_ADD(#{endAllotDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="backStatus != null and backStatus != ''">
+				and t.backStatus = #{backStatus}
+			</if>
+			<if test="backStatusIn != null and backStatusIn != ''">
+				and t.backStatus in (${backStatusIn})
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>		
+			<if test="channelType != null and channelType != ''">
+				and t5.type = #{channelType}
+			</if>
+			<if test="custLabelIn != null and custLabelIn != ''">
+				and t.custLabel in (${custLabelIn})
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t5.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	
+</mapper>

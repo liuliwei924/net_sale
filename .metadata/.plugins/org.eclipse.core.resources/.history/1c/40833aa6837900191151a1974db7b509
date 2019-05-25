@@ -1,0 +1,107 @@
+package org.xxjr.job.listener.busi;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+/***
+ * 第一贷款
+ * @author qinxcb
+ *
+ */
+public class GetDydkUtil {
+	private static Logger log = LogManager.getLogger(GetDydkUtil.class);
+
+	public static  long getBorrowApply() {
+		AppResult result = new AppResult();
+		
+		AppParam dydkParams = new AppParam("wpApplyService", "queryByPage");
+		dydkParams.setDataBase("dydk");
+		dydkParams.setCurrentPage(1);
+		dydkParams.setEveryPage(100);
+		dydkParams.addAttr("startDate", DateUtil.toStringByParttern(new Date(),
+				DateUtil.DATE_PATTERN_YYYY_MM_DD));
+		dydkParams.addAttr("status", "0");
+		dydkParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+		AppResult dataResult = RemoteInvoke.getInstance().call(dydkParams);
+		int size = dataResult.getRows().size();
+		int totalPage = dataResult.getPage().getTotalPage();
+		Long totalCount = dataResult.getPage().getTotalRecords();
+		int importCount = 0;
+		log.info("AutoGetDydkUtil********* :startTime:" + new Date() +":totalPage:" 
+		+ totalPage+"totalCount:"+ totalCount);
+		
+		if(size > 0){
+			List<Map<String,Object>> dataList = dataResult.getRows();
+			result =  saveData(dataList);
+			importCount = (Integer)result.getAttr(DuoduoConstant.TOTAL_SIZE);
+			if (totalPage > 1) {
+				for (int i = 1; i < totalPage; i++) {
+					dydkParams.setCurrentPage(i + 1);
+					dataResult = RemoteInvoke.getInstance().callNoTx(dydkParams);
+					result = saveData(dataResult.getRows());
+					importCount += (Integer)result.getAttr(DuoduoConstant.TOTAL_SIZE);
+				}
+			}
+		}
+		
+		log.info("AutoGetDydkUtil********* :endTime:" + new Date() +":importCount:" 
+				+ importCount+"--totalCount:"+ totalCount);
+		
+		return totalCount;
+	}
+
+    private static AppResult saveData(List<Map<String,Object>> dataList){
+    	int loanAmtRobType = SysParamsUtil.getIntParamByKey("loanAmtRobType", 2);
+    	if(dataList.size() > 0){
+    		
+    		for(Map<String, Object> data : dataList){
+    			if(StringUtils.isEmpty(data.get("city"))){
+    				continue;
+    			}
+    			
+    			Double loanAmount = Double.parseDouble(data.get("amount").toString());
+    			if(loanAmount >=10000){
+    				loanAmount = loanAmount/10000;
+    			}
+    			if (loanAmount < loanAmtRobType) {
+    				data.put("robType", "1");//免费抢单
+    			}else{
+    				data.put("robType", "2");//积分抢单
+    			}
+    			String price = getPrice(loanAmount);
+    			data.put("score", price);
+    			data.put("price", Integer.valueOf(price)*6);
+    		}
+    		AppParam savaParams = new AppParam("daiBorrowService","batchInsertBydydk");
+    		savaParams.addAttr("list", dataList);
+    		savaParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+    		return RemoteInvoke.getInstance().call(savaParams);
+    	}
+    	
+    	return new AppResult();
+    }
+    
+    public static String getPrice(Double loanAmount){//loanAmount 万为单位
+    	if(loanAmount <= 2){
+    		return SysParamsUtil.getIntParamByKey("kaniuPrice2", 1500)+"";
+    	}else if(loanAmount <= 5){
+    		return SysParamsUtil.getIntParamByKey("kaniuPrice5", 2000)+"";
+    	}else if(loanAmount > 5){
+    		return SysParamsUtil.getIntParamByKey("kaniuPrice5+", 3000)+"";
+    	}
+    	return 1500+"";
+    }
+}

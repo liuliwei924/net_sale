@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATORIGININFO">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			reContractId,
+			applyId, 
+			applyName, 
+			telephone, 
+			contractType, 
+			customerName, 
+			customerId, 
+			orgId, 
+			DATE_FORMAT(queryDate,'%Y-%m-%d %H:%i:%s') as queryDate  ,
+			DATE_FORMAT(dealDate,'%Y-%m-%d %H:%i:%s') as dealDate  ,
+			jsonText, 
+			status, 
+			errorMessage,
+			signDate,
+			feeAmountTotal
+		FROM t_treat_origin_info
+		<where>
+			<if test="reContractId != null and reContractId != ''">
+			  and reContractId = #{reContractId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="contractType != null and contractType != ''">
+				and contractType = #{contractType}
+			</if>
+			<if test="customerName != null and customerName != ''">
+				and customerName = #{customerName}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="queryDate != null and queryDate != ''">
+				and queryDate = #{queryDate}
+			</if>
+			<if test="dealDate != null and dealDate != ''">
+				and dealDate = #{dealDate}
+			</if>
+			<if test="jsonText != null and jsonText != ''">
+				and jsonText = #{jsonText}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="errorMessage != null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+			<if test="signDate != null and signDate != ''">
+				and signDate = #{signDate}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_origin_info 
+		<where>
+		<if test="reContractId != null and reContractId != ''">
+		    and reContractId = #{reContractId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="contractType != null and contractType != ''">
+			and contractType = #{contractType}
+		</if>
+		<if test="customerName != null and customerName != ''">
+			and customerName = #{customerName}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="queryDate != null and queryDate != ''">
+			and queryDate = #{queryDate}
+		</if>
+		<if test="dealDate != null and dealDate != ''">
+			and dealDate = #{dealDate}
+		</if>
+		<if test="jsonText != null and jsonText != ''">
+			and jsonText = #{jsonText}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="errorMessage != null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		<if test="signDate != null and signDate != ''">
+			and signDate = #{signDate}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="reContractId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_origin_info (
+			reContractId,
+			applyId,
+			applyName,
+			telephone,
+			contractType,
+			customerName,
+			customerId,
+			orgId,
+			queryDate,
+			dealDate,
+			jsonText,
+			status,
+			errorMessage,
+			signDate,
+			feeAmountTotal
+		)
+		VALUES ( 
+			#{reContractId, jdbcType=VARCHAR},
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			<if test="contractType !=null ">
+			#{contractType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="contractType ==null ">
+			1 ,
+			</if>
+			#{customerName, jdbcType=VARCHAR}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{queryDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{dealDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{jsonText, jdbcType=NVARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{errorMessage, jdbcType=VARCHAR},
+			#{signDate, jdbcType=DATE,typeHandler=DateHandler},
+			<if test="feeAmountTotal !=null ">
+			#{feeAmountTotal, jdbcType=NUMERIC,typeHandler=NumberHandler} 
+			</if>
+			<if test="feeAmountTotal ==null ">
+			0.00
+			</if>
+			
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_origin_info 
+		<where> 
+			reContractId = #{reContractId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_origin_info  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="contractType != null">
+				contractType = #{contractType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerName != null">
+				customerName = #{customerName, jdbcType=VARCHAR},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="queryDate != null">
+				queryDate = #{queryDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="dealDate != null">
+				dealDate = #{dealDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="jsonText != null">
+				jsonText = #{jsonText, jdbcType=NVARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},
+			</if>
+			<if test="signDate != null">
+				signDate = #{signDate, jdbcType=DATE,typeHandler=DateHandler},
+			</if>
+			<if test="feeAmountTotal != null">
+				feeAmountTotal = #{feeAmountTotal, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			
+		</set>
+		<where>
+			  reContractId = #{reContractId}
+		</where>
+	</update>
+</mapper>

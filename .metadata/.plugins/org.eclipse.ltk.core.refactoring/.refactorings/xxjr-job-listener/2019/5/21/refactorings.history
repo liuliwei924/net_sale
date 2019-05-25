@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 4 elements to &apos;xxjr-mq-listener/src/main/resources&apos;&#x0A;- Original project: &apos;xxjr-job-listener&apos;&#x0A;- Destination element: &apos;xxjr-mq-listener/src/main/resources&apos;&#x0A;- Original elements:&#x0A;     application-dev.properties&#x0A;     application-test.properties&#x0A;     application-prod.properties&#x0A;     application.properties" description="Copy files" destination="=xxjr-mq-listener/src\/main\/resources" element1="src/main/resources/application-dev.properties" element2="src/main/resources/application-test.properties" element3="src/main/resources/application-prod.properties" element4="src/main/resources/application.properties" files="4" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1558319489836" units="0" version="1.0"/>
+</session>

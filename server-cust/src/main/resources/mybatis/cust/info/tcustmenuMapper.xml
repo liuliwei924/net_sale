@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTMENU">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			menuId,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_cust_menu
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="menuId != null and menuId != ''">
+			  and menuId = #{menuId}
+			 </if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_menu 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="menuId != null and menuId != ''">
+		    and menuId = #{menuId}
+		 </if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_menu (
+			customerId,
+			menuId,
+			createTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{menuId, jdbcType=INTEGER,typeHandler=NumberHandler}
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<!-- 查询插入权限 -->
+	<insert id="insertCopyAuth" parameterType="map">
+		INSERT INTO t_cust_menu (
+		customerId,
+		menuId,
+		createTime
+		) SELECT
+		#{customerId},
+		menuId,
+		createTime
+		FROM
+		t_cust_menu
+		<where>
+			  customerId = #{reCustomerId}
+		</where>
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_menu 
+		<where> 
+			customerId = #{customerId}
+		<if test="menuId != null and menuId != ''">
+		    and menuId = #{menuId}
+		 </if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_menu  
+		<set>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId} AND 
+			  menuId = #{menuId}
+		</where>
+	</update>
+	
+	<select id="queryTreeMenus" resultType="map" parameterType="map">
+		SELECT
+		t.menuId,
+		t.parentId,
+		t.menuName,
+		CASE
+		WHEN t1.customerId IS NULL THEN
+		false
+		ELSE
+		true
+		END AS "checked"
+		FROM
+		t_sys_menu t
+		LEFT JOIN t_cust_menu t1 ON t.menuId = t1.menuId
+		AND t1.customerId = #{customerId}
+		WHERE t.`enable`=1
+		ORDER BY
+		t.parentId,
+		t.num	
+	</select>
+	
+	<select id="queryUserMenus" resultType="map" parameterType="map">
+			SELECT
+				t.menuId,
+				t.subCode,
+				t.parentId,
+				t.menuCode,
+				t.menuName,
+				t.menuUrl
+			FROM
+				t_sys_menu t
+			JOIN t_cust_menu t1 ON t.menuId = t1.menuId
+			where  t1.customerId =#{customerId} and t.enable = 1
+			ORDER BY
+				t.parentId,
+				t.num asc
+	</select>
+	
+	<select id="queryMenus" resultType="map" parameterType="map">
+		SELECT
+			t.menuId,
+			t.subCode,
+			t.parentId,
+			t.menuCode,
+			t.menuName,
+			t.menuUrl,
+			t.enable
+		FROM
+			t_sys_menu t
+		ORDER BY
+			t.parentId,
+			t.num asc
+	</select>
+	
+	<update id="editSysMenu" parameterType="map">
+		UPDATE t_sys_menu 
+		SET 
+			enable = #{enable, jdbcType=INTEGER,typeHandler=NumberHandler}
+		<where>
+			<if test="type == 1"><!-- 禁用二级菜单 -->
+			and menuId = #{menuId}
+			</if>
+			<if test="type == 2"><!-- 禁用一级菜单和对应的二级菜单 -->
+			and menuId = #{menuId}
+			or parentId = #{menuId}
+			</if>
+		</where>
+	</update>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_cust_menu (
+			customerId,
+			menuId,
+			createTime
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+			 ( 
+				#{item.customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+				#{item.menuId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+				#{item.createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			)
+		</foreach>
+  </insert>
+  
+	<delete id="delByCustId" parameterType="map">
+		DELETE FROM t_cust_menu 
+		<where> 
+			customerId = #{customerId} 
+		</where>
+	</delete>
+</mapper>

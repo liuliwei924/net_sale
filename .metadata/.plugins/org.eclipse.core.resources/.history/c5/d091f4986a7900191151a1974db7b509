@@ -1,0 +1,120 @@
+package org.xxjr.job.listener.busi;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.job.core.BaseExecteJob;
+import org.ddq.job.util.JobConstant;
+import org.ddq.job.util.JobUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.job.listener.busi.store.StoreCallRecordUtils;
+import org.xxjr.job.listener.busi.store.StoreDepartureUtils;
+import org.xxjr.job.listener.busi.store.StoreNotifyUtils;
+import org.xxjr.sys.util.CreditCardUtil;
+import org.xxjr.sys.util.NumberUtil;
+
+/**
+ * 自动更新申请总次数和关联未匹配订单的通话记录和录音自动化任务
+ * @author Administrator
+ *
+ */
+@Lazy
+@Component
+public class AutoUpdateBroCountJob implements BaseExecteJob  {
+	private static Logger log = LogManager.getLogger(AutoUpdateBroCountJob.class);
+	
+	/**
+	 * 自动更新申请总次数和关联未匹配订单的通话记录和录音自动化任务
+	 * @param processId
+	 * @return
+	 */
+	@Override
+	public AppResult executeJob(AppParam param){
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try {
+			//自动更新申请总次数
+			autoUpdateBroCount(processId);
+			//关联未匹配订单的通话记录
+			StoreCallRecordUtils.relationCallRecord(processId);
+			//关联未匹配订单的通话录音记录
+			StoreCallRecordUtils.relationCallAudioRecord(processId);
+			//删除一个月以上的个人消息
+			StoreNotifyUtils.deleteMoreOneMonthNotify(processId);
+			String today = DateUtil.toStringByParttern(new Date(),DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			String toMonth = DateUtil.toStringByParttern(new Date(),"yyyy-MM");
+			//离职人员签单基本统计
+			StoreDepartureUtils.storeSignDeparture(processId, today);
+			//离职人员签单月度基本统计
+			StoreDepartureUtils.storeSignDepartMonth(processId, toMonth);
+			//离职人员回款基本统计
+			StoreDepartureUtils.storeReLoanDeparture(processId, today);
+			//离职人员回款月度基本统计
+			StoreDepartureUtils.storeReloanDepartMonth(processId, toMonth);
+			//离职人员成本基本统计
+			StoreDepartureUtils.storeCostDeparture(processId, today);
+			//离职人员成本月度基本统计
+			StoreDepartureUtils.storeCostDepartMonth(processId, toMonth);
+			//批量添加访客记录到CFS
+			StoreNotifyUtils.batchVisitUpLoadToCFS(processId);
+		} catch (Exception e) {
+			LogerUtil.error(AutoUpdateBroCountJob.class, e, "AutoUpdateBroCountJob >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "自动更新申请总次数和关联未匹配订单的通话记录和录音自动化任务" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	public AppResult autoUpdateBroCount(Object processId) {
+		AppResult result = new AppResult();
+		try{
+			log.info("***********执行自动更新总浏览次数开始**************");
+			int totalCount = 0;
+			//获取所有极速贷款的key
+			List<Map<String,Object>> list = CreditCardUtil.getPlatList(null);
+	
+			if(list.size() > 0){
+	
+				for(int i =0;i<list.size();i++){
+	
+					Map<String,Object> map = list.get(i);
+					String recordId = map.get("recordId").toString();
+					int applyCount = NumberUtil.getInt(map.get("applyCount"),0);
+	
+					//更新到数据库
+					AppParam param = new AppParam();
+					param.setService("creditCardService");
+					param.setMethod("update");
+					param.addAttr("recordId", recordId);
+					param.addAttr("applyCount", applyCount);
+					param.setRmiServiceName(AppProperties.
+							getProperties(DuoduoConstant.RMI_SERVICE_START+"sys"));
+					result = RemoteInvoke.getInstance().call(param);
+						
+					//清除缓存
+				    RedisUtils.getRedisService().del(CreditCardUtil.Count_Cache_Key+recordId);
+					totalCount++;
+					}
+	
+				}
+				result.setMessage("成功处理了：" + totalCount +" 条记录");
+				log.info("***********成功处理了："+totalCount+"条记录**************");
+				log.info("***********执行自动更新浏览次数结束**************");
+		} catch (Exception e) {
+			LogerUtil.error(AutoUpdateBroCountJob.class, e, "autoUpdateBroCount >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "自动更新申请总次数" + e.getMessage() );
+		}
+		return result;
+	}
+}

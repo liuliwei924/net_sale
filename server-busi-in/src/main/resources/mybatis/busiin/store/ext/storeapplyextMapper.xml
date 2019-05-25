@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREAPPLYEXT">
+	<select id="queryRateToday" parameterType="map" resultType="map">
+		SELECT
+			#{recordDate} AS 'recordDate',
+			t1.orgId, 
+			CONCAT(t2.orgNo,'-',t2.orgName) as orgName,
+			COUNT(CASE WHEN t.orderRate = 1 THEN t.applyId END) as rateOneCount,
+			COUNT(CASE WHEN t.orderRate = 2 THEN t.applyId END) as rateTwoCount,
+			COUNT(CASE WHEN t.orderRate = 3 THEN t.applyId END) as rateThreeCount,
+			COUNT(CASE WHEN t.orderRate = 4 THEN t.applyId END) as rateFourCount,
+			COUNT(CASE WHEN t.orderRate = 5 THEN t.applyId END) as rateFiveCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			JOIN t_org t2 on t1.orgId = t2.orgId
+		WHERE
+			t.orderRate IS NOT NULL
+		  <![CDATA[AND t.applyTime >= #{recordDate}
+	    AND t.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+		 <if test="orgId != null and orgId != ''">
+		    and t1.orgId = #{orgId}
+		 </if>
+		 	GROUP BY t1.orgId
+		  <if test="orderSql == null">
+			ORDER by recordDate DESC
+		  </if>
+		  <if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		  </if>
+	</select>
+	
+	<select id="queryRateTodayCount" parameterType="map" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM 
+		(
+			SELECT COUNT(1) 		
+			FROM
+				t_borrow_store_apply t
+				JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+			WHERE
+				t.orderRate IS NOT NULL
+			AND t.applyTime >= CURDATE()
+			GROUP BY t1.orgId
+			) AS tab1
+	</select>
+	
+	    <select id="queryRateTodaySum" resultType="map" parameterType="map">
+		SELECT
+			COUNT(CASE WHEN t.orderRate = 1 THEN t.applyId END) as rateOneCount,
+			COUNT(CASE WHEN t.orderRate = 2 THEN t.applyId END) as rateTwoCount,
+			COUNT(CASE WHEN t.orderRate = 3 THEN t.applyId END) as rateThreeCount,
+			COUNT(CASE WHEN t.orderRate = 4 THEN t.applyId END) as rateFourCount,
+			COUNT(CASE WHEN t.orderRate = 5 THEN t.applyId END) as rateFiveCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.orderRate IS NOT NULL
+		AND t.applyTime >= CURDATE()
+		</select>
+	<select id="queryOrderChannelToday" parameterType="map" resultType="map">
+		SELECT
+			#{recordDate} AS 'recordDate',
+			t.channelCode,
+			t1.channelName,
+			CONCAT(t.channelCode,'-',t1.channelName) as channel,
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		WHERE
+			t.channelCode != ''
+		  <![CDATA[AND t.applyTime >= #{recordDate}
+	    AND t.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+	    <if test="channelCode !=null and channelCode !=''">
+	    AND t1.channelCode = #{channelCode}
+	    </if>
+	    GROUP BY t.channelCode
+	    <if test="orderSql == null">
+			ORDER BY CONVERT(recordDate USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryOrderChannelTodayCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*) 
+		FROM (
+				SELECT
+					count(*),
+					t.channelCode
+				FROM
+					t_borrow_store_apply t
+					LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+				WHERE
+					t.channelCode != ''
+				  <![CDATA[AND t.applyTime >= #{recordDate}
+			    AND t.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+			    <if test="channelCode !=null and channelCode !=''">
+			    	AND t.channelCode = #{channelCode}
+			    </if>
+			    GROUP BY t.channelCode
+			) A
+	</select>
+	
+	<select id="queryOrderChannelTodaySum" parameterType="map" resultType="map">
+		SELECT
+			COUNT(CASE WHEN t.dealOrderType =0 then t.applyId END) as noCondition,
+			COUNT(CASE WHEN t.dealOrderType =1 then t.applyId END) as smallLoansCount,
+			COUNT(CASE WHEN t.dealOrderType =2 then t.applyId END) as carCount,
+			COUNT(CASE WHEN t.dealOrderType =3 then t.applyId END) as insuranceCount,
+			COUNT(CASE WHEN t.dealOrderType =4 then t.applyId END) as replaceCount,
+			COUNT(CASE WHEN t.dealOrderType =5 then t.applyId END) as houseCount,
+			COUNT(CASE WHEN t.dealOrderType =6 then t.applyId END) as rejectCallCount,
+			COUNT(CASE WHEN t.dealOrderType =7 then t.applyId END) as notOneselfCount,
+			COUNT(CASE WHEN t.dealOrderType =8 then t.applyId END) as emptyCount,
+			COUNT(CASE WHEN t.dealOrderType =9 then t.applyId END) as noneedCount,
+			COUNT(CASE WHEN t.dealOrderType =10 then t.applyId END) as notDealCount,
+			COUNT(CASE WHEN t.dealOrderType =11 then t.applyId END) as taxesEntLoanCount,
+			COUNT(CASE WHEN t.dealOrderType =12 then t.applyId END) as accumulationFundCount,
+			COUNT(CASE WHEN t.dealOrderType =13 then t.applyId END) as otherHouseCount,
+			COUNT(t.applyId) as totalCount
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.channelCode != ''
+		  <![CDATA[AND t.applyTime >= #{recordDate}
+	    AND t.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+	    <if test="channelCode !=null and channelCode !=''">
+	    AND t.channelCode = #{channelCode}
+	    </if>
+	</select>
+	
+	<!-- 查询签单失败渠道今日统计 -->
+	<select id="querySignFailToday" parameterType="map" resultType="map">
+		SELECT
+			#{recordDate} AS 'recordDate',
+			t2.channelCode,
+			t2.channelName,
+			COUNT(t.applyId) as totalCount,
+			COUNT(CASE WHEN t.failureCause = '大数据检测未通过' THEN t.applyId END) as bigDataCount ,
+			COUNT(CASE WHEN t.failureCause = '征信体现不了/查询次数多' THEN t.applyId END) as creditCount ,
+			COUNT(CASE WHEN t.failureCause = '历史或当前逾期' THEN t.applyId END) as overdueCount ,
+			COUNT(CASE WHEN t.failureCause = '负债过高' THEN t.applyId END) as liabiCount ,
+			COUNT(CASE WHEN t.failureCause = '网贷太多/小额笔数多' THEN t.applyId END) as netLoanCount ,
+			COUNT(CASE WHEN t.failureCause = '系统综合评级不足' THEN t.applyId END) as scoreCount ,
+			COUNT(CASE WHEN t.failureCause = '门拒/电核不通过' THEN t.applyId END) as storeRefuseCount ,
+			COUNT(CASE WHEN t.failureCause = '利息高不接受/额度低不接受/客户自行取消' THEN t.applyId END) as  interestCount,
+			COUNT(CASE WHEN t.failureCause = '禁入行业/同行已操作' THEN t.applyId END) as banCount 
+		FROM
+			t_treat_info t
+			join t_borrow_store_apply t1 on t.applyId = t1.applyId
+			join t_borrow_channel t2 on t1.channelCode = t2.channelCode
+			WHERE 
+			 t.`status` = 2 
+		  <![CDATA[AND t1.applyTime >= #{recordDate}
+	   			   AND t1.applyTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+	   	    <if test="channelCode !=null and channelCode !=''">
+			 	AND t2.channelCode = #{channelCode}
+			</if>
+		GROUP BY t2.channelCode
+	</select>
+	
+	<select id="querySignFailTodayCount" parameterType="map" resultType="int">
+		SELECT 
+			COUNT(*)
+			FROM(
+				SELECT 
+					COUNT(1)
+				FROM
+					t_treat_info t
+					join t_borrow_store_apply t1 on t.applyId = t1.applyId
+					join t_borrow_channel t2 on t1.channelCode = t2.channelCode
+				WHERE
+				   t.`status` = 2 and t1.applyTime >=CURDATE()
+		  <if test="channelCode !=null and channelCode !=''">
+	    		AND t2.channelCode = #{channelCode}
+		  </if>
+		  GROUP BY t2.channelCode)AS tab1
+	</select>
+	
+	
+	<!-- 查询签单失败渠道今日统计总计 -->
+	 <select id="querySignFailTodaySum" resultType="map" parameterType="map">
+		SELECT
+			COUNT(t.applyId) as totalCount,
+			COUNT(CASE WHEN t.failureCause = '大数据检测未通过' THEN t.applyId END) as bigDataCount ,
+			COUNT(CASE WHEN t.failureCause = '征信体现不了/查询次数多' THEN t.applyId END) as creditCount ,
+			COUNT(CASE WHEN t.failureCause = '历史或当前逾期' THEN t.applyId END) as overdueCount ,
+			COUNT(CASE WHEN t.failureCause = '负债过高' THEN t.applyId END) as liabiCount ,
+			COUNT(CASE WHEN t.failureCause = '网贷太多/小额笔数多' THEN t.applyId END) as netLoanCount ,
+			COUNT(CASE WHEN t.failureCause = '系统综合评级不足' THEN t.applyId END) as scoreCount ,
+			COUNT(CASE WHEN t.failureCause = '门拒/电核不通过' THEN t.applyId END) as storeRefuseCount ,
+			COUNT(CASE WHEN t.failureCause = '利息高不接受/额度低不接受/客户自行取消' THEN t.applyId END) as  interestCount,
+			COUNT(CASE WHEN t.failureCause = '禁入行业/同行已操作' THEN t.applyId END) as banCount 
+		FROM
+			t_treat_info t
+			join t_borrow_store_apply t1 on t.applyId = t1.applyId
+			join t_borrow_channel t2 on t1.channelCode = t2.channelCode
+			WHERE 
+			 t.`status` = 2  and  t1.applyTime >= CURDATE()
+			<if test="channelCode !=null and channelCode !=''">
+			 	AND t2.channelCode = #{channelCode}
+			</if>
+	</select>
+	<select id="queryOrgDealDetail" parameterType="map" resultType="map">
+		SELECT
+			t.applyName,
+			f_hide_phone(t.telephone) as telephone,
+			t.applyId
+		FROM
+			t_borrow_store_apply t
+		JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+		<include refid="queryDeatilWhere" />
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<sql id="queryDeatilWhere">
+		<where>
+			 <if test="recordDate !=null and recordDate !=''">
+			 	<![CDATA[AND t.orderTypeUpdateTime >= #{recordDate}
+		  		AND t.orderTypeUpdateTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY)]]>
+			 </if>
+			 <if test="orgId !=null and orgId !=''">
+			 	AND t1.orgId = #{orgId}
+			 </if>
+			 <if test="groupName !=null and groupName !=''">
+			 	AND t1.groupName = #{groupName}
+			 </if>
+			 <if test="dealOrderType !=null and dealOrderType !=''">
+			 	AND t.dealOrderType = #{dealOrderType}
+			 </if>
+		</where>
+	</sql>
+	<select id="queryOrgDealDetailCount" parameterType="map" resultType="int">
+		SELECT
+			count(*)
+		FROM
+			t_borrow_store_apply t
+		JOIN t_busi_cust t1 on t.lastStore = t1.customerId
+		<include refid="queryDeatilWhere" />
+	</select>
+</mapper>

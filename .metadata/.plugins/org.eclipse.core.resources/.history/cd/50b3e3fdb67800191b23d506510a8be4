@@ -1,0 +1,426 @@
+package org.xxjr.cust.util.info;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+import com.google.common.collect.ImmutableMap;
+
+public class MjbCustInfoUtil {
+
+	/***
+	 * 用户类型 信贷员出借人
+	 */
+	public final static String UserType_1 = "1";
+	/***
+	 * 用户类型 借款人
+	 */
+	public final static String UserType_2 = "2";
+
+	/**
+	 * 修改个人信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult update(AppParam params) {
+		params = new AppParam("custInfoService", "update");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		if (result.isSuccess()) {
+			CustomerIdentify.refreshIdentifyById(params.getAttr("customerId")
+					.toString());
+		}
+		return result;
+	}
+	/**
+	 * 查询用户简单信息
+	 * @param customerId
+	 * @return
+	 */
+	public static Map<String, Object> queryPreCustInfo(String customerId) {
+		AppParam param = new AppParam();
+		param.addAttr("customerId", customerId);
+		param.setService("custInfoService");
+		param.setMethod("queryPriefCustInfo");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (result.getRows().size() > 0) {
+			map = result.getRow(0);
+		}
+		return map;
+	}
+
+	/**
+	 * 查询用户身份实名信息
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static Map<String, Object> queryIdentifyInfo(AppParam params) {
+		params.setService("custIdentifyService");
+		params.setMethod("query");
+		AppResult result = ServiceKey.doCallNoTx(params, ServiceKey.Key_mjb);
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (result.getRows().size() > 0)
+			map = result.getRow(0);
+
+		result = null;
+		return map;
+	}
+
+	/**
+	 * 查询用户身份个数
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static Integer queryIdentifyCount(AppParam params) {
+		params.setService("custIdentifyService");
+		params.setMethod("queryCount");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		return (Integer) result.getAttr(DuoduoConstant.TOTAL_SIZE);
+
+	}
+
+	/**
+	 * 编辑用户身份信息
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult editIdentifyInfo(AppParam params) {
+		params.setService("custIdentifyService");
+		params.setMethod("update");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		return RemoteInvoke.getInstance().call(params);
+
+	}
+
+	/**
+	 * 查询用户工作认证信息
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static Map<String, Object> queryWorkCardInfo(AppParam params) {
+		params.setService("custIdentifyCardService");
+		params.setMethod("query");
+		AppResult result = ServiceKey.doCallNoTx(params, ServiceKey.Key_mjb);
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (result.getRows().size() > 0)
+			map = result.getRow(0);
+		return map;
+	}
+
+	/**
+	 * 查询用户工作认证个数
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static Integer queryWorkCardCount(AppParam params) {
+		params.setService("custIdentifyCardService");
+		params.setMethod("queryCount");
+		AppResult result = ServiceKey.doCallNoTx(params, ServiceKey.Key_mjb);
+		return (Integer) result.getAttr(DuoduoConstant.TOTAL_SIZE);
+
+	}
+
+	/**
+	 * 编辑用户工作认证信息
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult editWorkCardInfo(AppParam params) {
+		params.setService("custIdentifyCardService");
+		params.setMethod("update");
+		return ServiceKey.doCall(params, ServiceKey.Key_mjb);
+
+	}
+
+	/**
+	 * 查询提现参数信息
+	 * 
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> queryCustPayInfo(String custId) {
+		AppParam param = new AppParam();
+		param.addAttr("customerId", custId);
+		param.setService("custInfoService");
+		param.setMethod("queryPayInfo");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		if (result.getRows().size() > 0) {
+			return result.getRow(0);
+		}
+		return null;
+	}
+
+	/**
+	 * 查询公司列表(分页)
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult queryCompanysByPage(AppParam params) {
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		params.setService("companyService");
+		params.setMethod("queryByPage");
+		return RemoteInvoke.getInstance().call(params);
+
+	}
+
+	/**
+	 * 查询公司列表
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult queryCompanys(AppParam params) {
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		params.setService("companyService");
+		params.setMethod("query");
+		return RemoteInvoke.getInstance().call(params);
+
+	}
+
+	/**
+	 * 检查用户入驻信贷经理是否需要填写信息
+	 * 
+	 * @param custInfo
+	 * @return
+	 */
+	public static Map<String, Object> getCheckJoin(Map<String, Object> custInfo) {
+		Object cardNo = custInfo.get("cardNo");
+		Object company = custInfo.get("company");
+		Object cardStatus = custInfo.get("cardStatus");
+		Object identifyStatus = custInfo.get("identifyStatus");
+		String customerId = custInfo.get("customerId").toString();
+		Map<String, Object> locationMap = MapLocaltionUtil
+				.mjbQueryLocation(customerId);
+		Object longitude = locationMap.get("longitude");
+		Object latitude = locationMap.get("latitude");
+
+		int identifyFlag = 1;
+
+		if (StringUtils.isEmpty(cardStatus)
+				|| StringUtils.isEmpty(identifyStatus)) {
+			identifyFlag = -1;
+		} else if ("1".equals(cardStatus.toString())
+				&& "1".equals(identifyStatus.toString())) {
+			identifyFlag = 1;
+		} else if (StringUtils.isEmpty(company) || StringUtils.isEmpty(cardNo)) {
+			identifyFlag = -1;
+		} else if (StringUtils.isEmpty(longitude)
+				|| StringUtils.isEmpty(latitude)) {
+			identifyFlag = -1;
+		}
+
+		return ImmutableMap.of("infoFlag", 1, "identifyFlag", identifyFlag);
+	}
+	//获取表单填写完成情况
+	public static HashMap<String, Object> getCompletionInfo(Map<String, Object> custMap) {
+		HashMap<String, Object> map = new HashMap<String,Object>();
+		//个人信息
+		if (StringUtils.isEmpty(custMap.get("realName"))
+				||StringUtils.isEmpty(custMap.get("cardNo"))
+				||StringUtils.isEmpty(custMap.get("workType"))
+				||StringUtils.isEmpty(custMap.get("creditType"))
+				||StringUtils.isEmpty(custMap.get("haveWeiLi"))
+				||StringUtils.isEmpty(custMap.get("zhimaScore"))
+				||StringUtils.isEmpty(custMap.get("education"))
+				|| !getCustInfo(custMap)
+				|| !getFundInfo(custMap)
+				|| !getSocialInfo(custMap)) {
+			map.put("custInfo", 0);
+		}else {
+			map.put("custInfo", 1);
+		}
+		
+		//实名认证信息
+		map.put("identifyInfo", StringUtils.isEmpty(custMap.get("status"))? -1:custMap.get("status"));
+		
+		//家庭情况
+		if (StringUtils.isEmpty(custMap.get("marry"))
+				||StringUtils.isEmpty(custMap.get("childrenAmount"))
+				||StringUtils.isEmpty(custMap.get("monthlyExpenses"))) {
+			map.put("familyInfo", 0);
+		}else {
+			map.put("familyInfo", 1);
+		}
+		// 家庭情况-居住地
+		if (!StringUtils.isEmpty(custMap.get("address"))
+				&& getAddrInfo(custMap)) {
+			map.put("addrInfo", 1);
+		}else {
+			map.put("addrInfo", 0);
+		}
+		//房产
+		if (!StringUtils.isEmpty(custMap.get("houseType"))
+			&& ("4".equals(custMap.get("houseType").toString()) 
+					||"5".equals(custMap.get("houseType").toString())
+					||"6".equals(custMap.get("houseType").toString())
+					||"7".equals(custMap.get("houseType").toString()))
+			&& !StringUtils.isEmpty(custMap.get("houseVal"))){
+			map.put("houseInfo", 1);
+		}else if (!StringUtils.isEmpty(custMap.get("houseType"))
+				&& !StringUtils.isEmpty(custMap.get("houseVal"))
+				&& "3".equals(custMap.get("houseType").toString())
+				&& !StringUtils.isEmpty(custMap.get("houseMonthPay"))) {
+			map.put("houseInfo", 1);
+		}else if (!StringUtils.isEmpty(custMap.get("houseType"))) {
+			map.put("houseInfo", 1);
+		}else{
+			map.put("houseInfo", 0);
+		}
+		
+		//车产
+		if (!StringUtils.isEmpty(custMap.get("carType"))) {
+			if ("2".equals(custMap.get("carType").toString())
+					||("3".equals(custMap.get("carType").toString())
+							&& !StringUtils.isEmpty(custMap.get("carPrice"))
+							&& !StringUtils.isEmpty(custMap.get("carMonthPay")))
+					|| ("4".equals(custMap.get("carType").toString())
+							&& !StringUtils.isEmpty(custMap.get("carPrice")))) {
+				map.put("carInfo", 1);
+			}else {
+				map.put("carInfo", 0);
+			}
+		}else {
+			map.put("carInfo", 0);
+		}
+		
+		//保险
+		if (!StringUtils.isEmpty(custMap.get("insurType")) 
+				&& "0".equals(custMap.get("insurType").toString())) {
+			map.put("insurInfo", 1);
+		}else if (!StringUtils.isEmpty(custMap.get("insurType"))
+				&& !StringUtils.isEmpty(custMap.get("insurPayType"))
+				&& !StringUtils.isEmpty(custMap.get("insurMonthAmt"))
+				&& !StringUtils.isEmpty(custMap.get("insurMonth"))) {
+			map.put("insurInfo", 1);
+		}else {
+			map.put("insurInfo", 0);
+		}
+		return map;
+	}
+	/** 居住地 **/
+	protected static boolean getAddrInfo(Map<String, Object> custMap) {
+		if (StringUtils.isEmpty(custMap.get("cityArea"))) {
+			return false;
+		}
+		return true;
+	}
+	/** 社保 **/
+	protected static boolean getSocialInfo(Map<String, Object> custMap) {
+		Object socialType = custMap.get("socialType");
+		Object socialMonth = custMap.get("socialMonth");
+		if (!StringUtils.isEmpty(socialType)) {
+			if ("1".equals(socialType.toString()) 
+					&& !StringUtils.isEmpty(socialMonth)) {
+				return true;
+			}else if ("2".equals(socialType.toString())) {
+				return true;
+			}
+		}
+		return false;
+	}
+	/** 公积金**/
+	protected static boolean getFundInfo(Map<String, Object> custMap) {
+		Object fundType = custMap.get("fundType");
+		Object fundMonth = custMap.get("fundMonth");
+		if (!StringUtils.isEmpty(fundType)) {
+			if ("1".equals(fundType.toString()) 
+					&& !StringUtils.isEmpty(fundMonth)) {
+				return true;
+			}else if ("2".equals(fundType.toString())) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	protected static boolean getCustInfo(Map<String, Object> custMap) {
+		if (StringUtils.isEmpty(custMap.get("workType"))) {
+			return false;
+		}
+		String workType = custMap.get("workType").toString();
+		//职业身份（1无固定职业 2企业主 3个体户 4上班族  5-学生）
+		if ("1".equals(workType)) {
+			if (!StringUtils.isEmpty(custMap.get("income"))) {
+				return true;
+			}
+		}else if ("2".equals(workType)) {
+			if (!StringUtils.isEmpty(custMap.get("manageYear"))
+					&& !StringUtils.isEmpty(custMap.get("totalAmount"))
+					&& !StringUtils.isEmpty(custMap.get("pubAmount"))
+					&& !StringUtils.isEmpty(custMap.get("hasLicense"))) {
+				return true;
+			}
+		}else if ("3".equals(workType)) {
+			if (!StringUtils.isEmpty(custMap.get("manageYear"))
+					&& !StringUtils.isEmpty(custMap.get("totalAmount"))
+					&& !StringUtils.isEmpty(custMap.get("caseAmount"))
+					&& !StringUtils.isEmpty(custMap.get("hasLicense"))) {
+				return true;
+			}
+		}else if ("4".equals(workType) && !StringUtils.isEmpty(custMap.get("wagesType"))) {
+			if ("1".equals(custMap.get("wagesType").toString())
+					&& !StringUtils.isEmpty(custMap.get("income"))) {
+				return true;
+			}else if ("2".equals(custMap.get("wagesType").toString())
+					&& !StringUtils.isEmpty(custMap.get("caseAmount"))) {
+				return true;
+			}
+		}else if ("5".equals(workType)) {
+			return true;
+		}
+		return false;
+	}
+	
+	
+	/**
+	 * 插入信贷经理分配信息
+	 * @param customerId
+	 * @param telephone
+	 * @param sourceType 来源(没有可不填)
+	 * @return
+	 */
+	public static AppResult saveLendAllot(Object customerId, Object telephone, String sourceType){
+		AppResult saveResult = new AppResult();
+		try{
+			if (StringUtils.isEmpty(sourceType)) {
+				sourceType = "mjb";
+			}
+			AppParam lendParam = new AppParam("mjbLendService","add");
+			lendParam.addAttr("customerId", customerId);
+			lendParam.addAttr("telephone", telephone);
+			lendParam.addAttr("sourceType", sourceType);
+			lendParam.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+			saveResult = RemoteInvoke.getInstance().call(lendParam);
+		}catch(Exception e1){
+			LogerUtil.error(MjbCustInfoUtil.class, e1, "插入信贷经理分配信息 报错!");
+		}
+		return saveResult;
+	}
+}

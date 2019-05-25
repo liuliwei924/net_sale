@@ -1,0 +1,168 @@
+package org.xxjr.job.listener.xxxj;
+
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 竞拍活动
+ * @author zenghw
+ *
+ */
+public class XjAuctionUtil {
+	
+	/**
+	 * 修改竞拍物品状态
+	 * @return
+	 */
+	public static String updateAuctionStatus(){
+		StringBuffer msgBuf = new StringBuffer();
+		try{
+			AppParam param = new AppParam("xjAuctionProService","updateAuctionStatus");
+			param.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_XJ));
+			AppResult result = RemoteInvoke.getInstance().call(param);
+			int count = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
+			msgBuf.append("竞拍物品状态修改成功，更新数量：" + count);
+		} catch(Exception ex){
+			msgBuf.append("【定时修改竞拍状态错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjAuctionUtil.class,ex, "updateAuctionStatus error");
+		}
+		return msgBuf.toString();
+	}
+	
+	
+	
+	/**
+	 * 竞拍结束核算竞拍成功用户
+	 * @return
+	 */
+	public static String auctionSettlement(){
+		StringBuffer msgBuf = new StringBuffer();
+		try{
+			//查询竞拍已结束，未核算的竞拍物品信息
+			AppParam param = new AppParam("xjAuctionProService","query");
+			param.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_XJ));
+			param.addAttr("auctionStatus", "3");//3已结束
+			param.addAttr("checkStatus", "0");//0未核算
+			param.addAttr("status", "1");//1- 上架
+			AppResult aucResult = RemoteInvoke.getInstance().callNoTx(param);
+			if(aucResult.getRows() != null && aucResult.getRows().size() > 0){
+				for (Map<String, Object> aucMap : aucResult.getRows()) {
+					String auctionId = StringUtil.getString(aucMap.get("auctionId"));//竞拍物品ID
+					String auctionName = StringUtil.getString(aucMap.get("auctionName"));//竞拍物品名称
+					
+					//1 抽取成功的用户
+					AppParam checkSucParams = new AppParam("xjAuctionRecordService", "checkAucSucResullt");
+					checkSucParams.addAttr("auctionId", auctionId);
+					checkSucParams.addAttr("auctionName", auctionName);
+					checkSucParams.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_XJ));
+					
+					AppResult checkSucResult = RemoteInvoke.getInstance().call(checkSucParams);
+					int checkSucSize = NumberUtil.getInt(checkSucResult.getAttr("checkSucSize"), 0);
+					int checkFailSize = 0;
+					if(checkSucResult.isSuccess()){
+						//解冻未竞得的用户
+						AppParam notParams = new AppParam("xjAuctionRecordService", "frozeCustAucCoins");
+						notParams.addAttr("auctionId", auctionId);
+						notParams.addAttr("checkResultFlag", 1);
+						notParams.setRmiServiceName(AppProperties
+								.getProperties(DuoduoConstant.RMI_SERVICE_START
+										+ ServiceKey.Key_XJ));
+						AppResult checkFailResult = RemoteInvoke.getInstance().call(notParams);
+						 
+						 checkFailSize = NumberUtil.getInt(checkFailResult.getAttr("checkFailSize"), 0);
+						 
+						// 更改成已核算
+						AppParam autUpdateParam = new AppParam("xjAuctionProService","update");
+						autUpdateParam.setRmiServiceName(AppProperties
+									.getProperties(DuoduoConstant.RMI_SERVICE_START
+											+ ServiceKey.Key_XJ));
+						autUpdateParam.addAttr("auctionId", auctionId);
+						autUpdateParam.addAttr("checkStatus", "1");//1 已核算
+						RemoteInvoke.getInstance().call(autUpdateParam);
+					}
+					msgBuf.append("竞拍产品ID=").append(auctionId).append(",")
+					.append("产品名称：").append(aucMap.get("auctionName")).append(",")
+					.append("应竞拍数量:").append(aucMap.get("auctionNum")).append(",")
+					.append("实际竞拍成功数量:").append(checkSucSize).append(",")
+					.append("解冻未竞得用户数量:").append(checkFailSize).append(",");
+				}
+			}else{
+				msgBuf.append("无待核算的竞拍产品");
+			}
+				
+		} catch(Exception ex){
+			msgBuf.append("【核算竞拍成功用户错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjAuctionUtil.class,ex, "auctionSettlement error");
+		}
+		return msgBuf.toString();
+	}
+	
+	/**
+	 * 自动确认收货
+	 * 待收货状态，14天未确认收货，自动确认
+	 * @return
+	 */
+	public static String autoCollectGoods(){
+		StringBuffer msgBuf = new StringBuffer();
+		AppResult result = new AppResult();
+		try{
+			AppParam param = new AppParam("xjAuctionOrderService","updateAutoCollect");
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().call(param);
+			int orderCount = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
+			if(orderCount > 0){
+				msgBuf.append("自动确认收货成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【自动确认收货错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjAuctionUtil.class,ex, "autoCollectGoods error");
+		}
+		return msgBuf.toString();
+	}
+	
+	
+	/**
+	 * 自动放弃领取
+	 * 竞拍得主，竞的物品，如果隔天15点前未领取，视为放弃领取
+	 * @return
+	 */
+	public static String autoGiveUpReceive(){
+		StringBuffer msgBuf = new StringBuffer();
+		AppResult result = new AppResult();
+		try{
+			AppParam param = new AppParam("xjAuctionOwnService","updateAutoGiveUp");
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+			int updateCount = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
+			if(updateCount > 0){
+				msgBuf.append("放弃领取成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【自动放弃领取错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjAuctionUtil.class,ex, "autoGiveUpReceive error");
+		}
+		return msgBuf.toString();
+	}
+}

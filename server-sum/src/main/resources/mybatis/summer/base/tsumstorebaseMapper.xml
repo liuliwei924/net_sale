@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMSTOREBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			feedBackCount, 
+			receiveCount,
+			realName,
+			againAllto,
+			noHandlCount,
+			isNet,
+			costCount,
+			backCostCount,
+			handelTime,
+			leaveCount,
+			applyHandelTime,
+			applyAllotTime,
+			custLabel0,
+			custLabel1,
+			custLabel2,
+			custLabel3,
+			custLabel4,
+			custLabel5,
+			newApplyCount,
+			groupName
+		FROM t_sum_store_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="feedBackCount != null and feedBackCount != ''">
+				and feedBackCount = #{feedBackCount}
+			</if>
+			<if test="receiveCount != null and receiveCount != ''">
+				and receiveCount = #{receiveCount}
+			</if>
+			<if test="realName != null and realName != ''">
+			    and realName = #{realName}
+			</if>
+			<if test="againAllto != null and againAllto != ''">
+			    and againAllto = #{againAllto}
+			</if>
+			<if test="noHandlCount != null and noHandlCount != ''">
+			    and noHandlCount = #{noHandlCount}
+			</if>
+			<if test="isNet != null and isNet != ''">
+			    and isNet = #{isNet}
+			</if>
+			<if test="costCount != null and costCount != ''">
+			    and costCount = #{costCount}
+			</if>
+			<if test="backCostCount != null and backCostCount != ''">
+			    and backCostCount = #{backCostCount}
+			</if>
+			<if test="handelTime != null and handelTime != ''">
+			    and handelTime = #{handelTime}
+			</if>
+			<if test="leaveCount != null and leaveCount != ''">
+			    and leaveCount = #{leaveCount}
+			</if>
+			<if test="applyHandelTime != null and applyHandelTime != ''">
+			    and applyHandelTime = #{applyHandelTime}
+			</if>
+			<if test="applyAllotTime != null and applyAllotTime != ''">
+			    and applyAllotTime = #{applyAllotTime}
+			</if>
+			<if test="custLabel0 != null and custLabel0 != ''">
+			    and custLabel0 = #{custLabel0}
+			</if>
+			<if test="custLabel1 != null and custLabel1 != ''">
+			    and custLabel1 = #{custLabel1}
+			</if>
+			<if test="custLabel2 != null and custLabel2 != ''">
+			    and custLabel2 = #{custLabel2}
+			</if>
+			<if test="custLabel3 != null and custLabel3 != ''">
+			    and custLabel3 = #{custLabel3}
+			</if>
+			<if test="custLabel4 != null and custLabel4 != ''">
+			    and custLabel4 = #{custLabel4}
+			</if>
+			<if test="custLabel5 != null and custLabel5 != ''">
+			    and custLabel5 = #{custLabel5}
+			</if>
+			<if test="newApplyCount != null and newApplyCount != ''">
+			    and newApplyCount = #{newApplyCount}
+			</if>
+			<if test="groupName != null and groupName != ''">
+			    and groupName = #{groupName}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_store_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="feedBackCount != null and feedBackCount != ''">
+			and feedBackCount = #{feedBackCount}
+		</if>
+		<if test="receiveCount != null and receiveCount != ''">
+			and receiveCount = #{receiveCount}
+		</if>
+		<if test="realName != null and realName != ''">
+			 and realName = #{realName}
+		</if>
+		<if test="againAllto != null and againAllto != ''">
+		    and againAllto = #{againAllto}
+		</if>
+		<if test="noHandlCount != null and noHandlCount != ''">
+		    and noHandlCount = #{noHandlCount}
+		</if>
+		<if test="isNet != null and isNet != ''">
+		    and isNet = #{isNet}
+		</if>
+		<if test="costCount != null and costCount != ''">
+		    and costCount = #{costCount}
+		</if>
+		<if test="backCostCount != null and backCostCount != ''">
+		    and backCostCount = #{backCostCount}
+		</if>
+		<if test="handelTime != null and handelTime != ''">
+		    and handelTime = #{handelTime}
+		</if>
+		<if test="leaveCount != null and leaveCount != ''">
+		    and leaveCount = #{leaveCount}
+		</if>
+		<if test="applyHandelTime != null and applyHandelTime != ''">
+			and applyHandelTime = #{applyHandelTime}
+		</if>
+		<if test="applyAllotTime != null and applyAllotTime != ''">
+		    and applyAllotTime = #{applyAllotTime}
+		</if>
+		<if test="custLabel0 != null and custLabel0 != ''">
+		    and custLabel0 = #{custLabel0}
+		</if>
+		<if test="custLabel1 != null and custLabel1 != ''">
+		    and custLabel1 = #{custLabel1}
+		</if>
+		<if test="custLabel2 != null and custLabel2 != ''">
+		    and custLabel2 = #{custLabel2}
+		</if>
+		<if test="custLabel3 != null and custLabel3 != ''">
+		    and custLabel3 = #{custLabel3}
+		</if>
+		<if test="custLabel4 != null and custLabel4 != ''">
+		    and custLabel4 = #{custLabel4}
+		</if>
+		<if test="custLabel5 != null and custLabel5 != ''">
+		    and custLabel5 = #{custLabel5}
+		</if>
+		<if test="newApplyCount != null and newApplyCount != ''">
+			and newApplyCount = #{newApplyCount}
+		</if>
+		<if test="groupName != null and groupName != ''">
+		    and groupName = #{groupName}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_store_base (
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			feedBackCount,
+			receiveCount,
+			dealCount,
+			realName,
+			againAllto,
+			noHandlCount,
+			isNet,
+			costCount,
+			backCostCount,
+			handelTime,
+			leaveCount,
+			applyHandelTime,
+			applyAllotTime,
+			custLabel0,
+			custLabel1,
+			custLabel2,
+			custLabel3,
+			custLabel4,
+			custLabel5,
+			newApplyCount,
+			groupName
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if> 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="feedBackCount !=null ">
+			#{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feedBackCount ==null ">
+			0 ,
+			</if>
+			<if test="receiveCount !=null ">
+			#{receiveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="receiveCount ==null ">
+			0 ,
+			</if>
+			<if test="dealCount !=null ">
+			#{dealCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="dealCount ==null ">
+			0 ,
+			</if>
+			#{realName,jdbcType=VARCHAR},
+			<if test="againAllto !=null ">
+			#{againAllto, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="againAllto ==null ">
+			0 ,
+			</if>
+			<if test="noHandlCount !=null ">
+			#{noHandlCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="noHandlCount ==null ">
+			0 ,
+			</if>
+			<if test="isNet !=null ">
+			#{isNet, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="isNet ==null ">
+			0 ,
+			</if>
+			<if test="costCount !=null ">
+			#{costCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="costCount ==null ">
+			0 ,
+			</if>
+			<if test="backCostCount !=null ">
+			#{backCostCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backCostCount ==null ">
+			0 ,
+			</if>
+			<if test="handelTime !=null ">
+			#{handelTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="handelTime ==null ">
+			0.00 ,
+			</if>
+			<if test="leaveCount !=null ">
+			#{leaveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="leaveCount ==null ">
+			0 ,
+			</if>
+			<if test="applyHandelTime !=null ">
+			#{applyHandelTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="applyHandelTime ==null ">
+			0.00 ,
+			</if>
+			<if test="applyAllotTime !=null ">
+			#{applyAllotTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="applyAllotTime ==null ">
+			0.00 ,
+			</if>
+			<if test="custLabel0 !=null ">
+			#{custLabel0, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel0 ==null ">
+			0 ,
+			</if>
+			<if test="custLabel1 !=null ">
+			#{custLabel1, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel1 ==null ">
+			0 ,
+			</if>
+			<if test="custLabel2 !=null ">
+			#{custLabel2, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel2 ==null ">
+			0 ,
+			</if>
+			<if test="custLabel3 !=null ">
+			#{custLabel3, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel3 ==null ">
+			0 ,
+			</if>
+			<if test="custLabel4 !=null ">
+			#{custLabel4, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel4 ==null ">
+			0 ,
+			</if>
+			<if test="custLabel5 !=null ">
+			#{custLabel5, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel5 ==null ">
+			0 ,
+			</if>
+			<if test="newApplyCount !=null ">
+			#{newApplyCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="newApplyCount ==null ">
+			0,
+			</if>
+			#{groupName, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_store_base 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_store_base  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="feedBackCount != null">
+				feedBackCount = #{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="receiveCount != null">
+				receiveCount = #{receiveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="realName != null">
+			    realName = #{realName,jdbcType=VARCHAR},
+			</if>
+			<if test="againAllto != null">
+			    againAllto = #{againAllto,jdbcType=VARCHAR},
+			</if>
+			<if test="noHandlCount != null">
+			    noHandlCount = #{noHandlCount,jdbcType=VARCHAR},
+			</if>
+			<if test="isNet != null">
+			    isNet = #{isNet,jdbcType=VARCHAR},
+			</if>
+			<if test="costCount != null">
+				costCount = #{costCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backCostCount != null">
+				backCostCount = #{backCostCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="handelTime != null and handelTime != ''">
+			    handelTime = #{handelTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="leaveCount != null">
+				leaveCount = #{leaveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyHandelTime != null and applyHandelTime != ''">
+			    applyHandelTime = #{applyHandelTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="applyAllotTime != null and applyAllotTime != ''">
+			    applyAllotTime = #{applyAllotTime, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel0 != null and custLabel0 != ''">
+			    custLabel0 = #{custLabel0, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel1 != null and custLabel1 != ''">
+			    custLabel1 = #{custLabel1, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel2 != null and custLabel2 != ''">
+			    custLabel2 = #{custLabel2, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel3 != null and custLabel3 != ''">
+			    custLabel3 = #{custLabel3, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel4 != null and custLabel4 != ''">
+			    custLabel4 = #{custLabel4, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="custLabel5 != null and custLabel5 != ''">
+			    custLabel5 = #{custLabel5, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="newApplyCount != null and newApplyCount != ''">
+			    newApplyCount = #{newApplyCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backCostFlag != null">
+				backCostCount = backCostCount + 1,
+			</if>
+			<if test="groupName != null">
+			    groupName = #{groupName,jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE t
+		FROM
+			t_sum_store_base t
+		LEFT JOIN t_busi_cust t1 ON t.customerId = t1.customerId 
+		<where> 
+			t.recordDate = #{today} and t1.roleType != 0
+			<if test="orgId != null and orgId != ''">
+		    	and t.orgId = #{orgId}
+		 	</if>
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_store_base  (
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			feedBackCount,
+			receiveCount,
+			dealCount,
+			realName,
+			againAllto,
+			noHandlCount,
+			isNet,
+			costCount,
+			backCostCount,
+			handelTime,
+			leaveCount,
+			applyHandelTime,
+			applyAllotTime,
+			custLabel0,
+			custLabel1,
+			custLabel2,
+			custLabel3,
+			custLabel4,
+			custLabel5,
+			newApplyCount,
+			groupName
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.cityName}, 
+		  #{item.feedBackCount}, 
+		  #{item.receiveCount},
+		  #{item.dealCount},
+		  #{item.realName},
+		  #{item.againAllto},
+		  #{item.noHandlCount},
+		  #{item.isNet},
+		  #{item.costCount},
+		  #{item.backCostCount},
+		  #{item.handelTime},
+		  #{item.leaveCount},
+		  #{item.applyHandelTime},
+		  #{item.applyAllotTime},
+		  #{item.custLabel0},
+		  #{item.custLabel1},
+		  #{item.custLabel2},
+		  #{item.custLabel3},
+		  #{item.custLabel4},
+		  #{item.custLabel5},
+		  #{item.newApplyCount},
+		  #{item.groupName}
+		  )
+		</foreach>
+  </insert>
+  
+  <!-- 每天门店人员统计 -->
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t1.recordDate,
+			t1.customerId,
+			t1.orgId,
+			concat(t6.orgNo,'-',t1.orgName) as orgName,
+			t1.cityName,
+			(case when t5.roleType = 0 then concat(t1.realName,'','(已离职)') else t1.realName end) as realName,
+			IFNULL(t1.groupName,t5.groupName) as groupName,
+			IFNULL(t1.receiveCount,0) as receiveCount,
+			IFNULL(t1.feedBackCount,0) as feedBackCount,
+			IFNULL(t1.dealCount,0) as dealCount,
+			IFNULL(t2.preBookCount,0) as preBookCount,
+			IFNULL(t2.sucBookCount,0) as sucBookCount,
+			IFNULL(t2.failBookCount,0) as failBookCount,
+			IFNULL(t3.signingCount,0) as signingCount,
+			IFNULL(t3.signingAmt,0) as signingAmt,
+			IFNULL(t3.sucSignCount,0) as sucSignCount,
+			IFNULL(t3.sucSignAmt,0) as sucSignAmt,
+			IFNULL(t3.failSignCount,0) as failSignCount,
+			IFNULL(t3.failSignAmt,0) as failSignAmt,
+			IFNULL(t3.treatyWill,0) as treatyWill,
+			IFNULL(t4.retCount,0) as retCount,
+			IFNULL(t4.retAmount,0) as retAmount,
+			IFNULL(t4.sucRetCount,0) as sucRetCount,
+			IFNULL(t4.sucRetAmount,0) as sucRetAmount,
+			IFNULL(t2.manualCount,0) as manualCount,
+			IFNULL(t2.visitorCount,0) as visitorCount,
+			IFNULL(t3.totalSignCount,0) as totalSignCount,
+			IFNULL(t3.totalSignAmt,0) as totalSignAmt,
+			IFNULL(t1.againAllto,0) as againAllto,
+			IFNULL(t1.costCount,0) as costCount,
+			IFNULL(t1.backCostCount,0) as backCostCount,
+			IFNULL(t1.handelTime,0) as handelTime,
+			IFNULL(t1.leaveCount,0) as leaveCount,
+			IFNULL(t1.applyHandelTime,0) as applyHandelTime,
+			IFNULL(t1.applyAllotTime,0) as applyAllotTime,
+			IFNULL(t1.noHandlCount,0) as noHandlCount,
+			IFNULL(t1.custLabel0,0) as custLabel0,
+			IFNULL(t1.custLabel1,0) as custLabel1,
+			IFNULL(t1.custLabel2,0) as custLabel2,
+			IFNULL(t1.custLabel3,0) as custLabel3,
+			IFNULL(t1.custLabel4,0) as custLabel4,
+			IFNULL(t1.custLabel5,0) as custLabel5,
+			IFNULL(t1.newApplyCount,0) as newApplyCount
+		FROM
+			t_sum_store_base t1
+		LEFT JOIN t_sum_book_store t2 ON t1.recordDate = t2.recordDate
+		AND t1.customerId = t2.customerId
+		LEFT JOIN t_sum_sign_store t3 ON t1.recordDate = t3.recordDate
+		AND t1.customerId = t3.customerId
+		LEFT JOIN t_sum_ret_store t4 ON t1.recordDate = t4.recordDate
+		AND t1.customerId = t4.customerId
+		JOIN t_busi_cust t5 on t1.customerId = t5.customerId
+		JOIN t_org t6 ON t1.orgId = t6.orgId
+		<include refid="sqlQuery"/>
+		<if test="orderSql == null">
+			ORDER BY t1.recordDate DESC,t1.customerId,CONVERT(t1.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},t1.customerId,CONVERT(t1.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_store_base t1
+		LEFT JOIN t_sum_book_store t2 ON t1.recordDate = t2.recordDate
+		AND t1.customerId = t2.customerId
+		LEFT JOIN t_sum_sign_store t3 ON t1.recordDate = t3.recordDate
+		AND t1.customerId = t3.customerId
+		LEFT JOIN t_sum_ret_store t4 ON t1.recordDate = t4.recordDate
+		AND t1.customerId = t4.customerId
+		JOIN t_busi_cust t5 on t1.customerId = t5.customerId
+		JOIN t_org t6 ON t1.orgId = t6.orgId
+		<include refid="sqlQuery"/>
+	</select>
+	
+		<!-- 按月-门店人员统计 -->
+	<select id="queryPerMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t1.recordDate,'%Y-%m') as recordDate,
+			t1.customerId,
+			t1.orgId,
+			t1.orgName,
+			t1.cityName,
+			t1.realName,
+			IFNULL(sum(t1.receiveCount),0) as receiveCount,
+			IFNULL(sum(t1.feedBackCount),0) as feedBackCount,
+			IFNULL(sum(t1.dealCount),0) as dealCount,
+			IFNULL(sum(t2.preBookCount),0) as preBookCount,
+			IFNULL(sum(t2.sucBookCount),0) as sucBookCount,
+			IFNULL(sum(t2.failBookCount),0) as failBookCount,
+			IFNULL(sum(t3.signingCount),0) as signingCount,
+			IFNULL(sum(t3.signingAmt),0) as signingAmt,
+			IFNULL(sum(t3.sucSignCount),0) as sucSignCount,
+			IFNULL(sum(t3.sucSignAmt),0) as sucSignAmt,
+			IFNULL(sum(t3.failSignCount),0) as failSignCount,
+			IFNULL(sum(t3.failSignAmt),0) as failSignAmt,
+			IFNULL(sum(t3.treatyWill),0) as treatyWill,
+			IFNULL(sum(t4.retCount),0) as retCount,
+			IFNULL(sum(t4.retAmount),0) as retAmount,
+			IFNULL(sum(t4.sucRetCount),0) as sucRetCount,
+			IFNULL(sum(t4.sucRetAmount),0) as sucRetAmount,
+			IFNULL(sum(t2.manualCount),0) as manualCount,
+			IFNULL(sum(t2.visitorCount),0) as visitorCount,
+			IFNULL(sum(t3.totalSignCount),0) as totalSignCount,
+			IFNULL(sum(t3.totalSignAmt),0) as totalSignAmt,
+			IFNULL(sum(t1.againAllto),0) as againAllto,
+			IFNULL(sum(t1.costCount),0) as costCount,
+			IFNULL(sum(t1.backCostCount),0) as backCostCount,
+			IFNULL(sum(t1.handelTime),0) as handelTime,
+			IFNULL(sum(t1.leaveCount),0) as leaveCount,
+			IFNULL(sum(t1.applyHandelTime),0) as applyHandelTime,
+			IFNULL(sum(t1.applyAllotTime),0) as applyAllotTime,
+			IFNULL(sum(t1.custLabel0),0) as custLabel0,
+			IFNULL(sum(t1.custLabel1),0) as custLabel1,
+			IFNULL(sum(t1.custLabel2),0) as custLabel2,
+			IFNULL(sum(t1.custLabel3),0) as custLabel3,
+			IFNULL(sum(t1.custLabel4),0) as custLabel4,
+			IFNULL(sum(t1.custLabel5),0) as custLabel5
+		FROM
+			t_sum_store_base t1
+		LEFT JOIN t_sum_book_store t2 ON t1.recordDate = t2.recordDate
+		AND t1.customerId = t2.customerId
+		LEFT JOIN t_sum_sign_store t3 ON t1.recordDate = t3.recordDate
+		AND t1.customerId = t3.customerId
+		LEFT JOIN t_sum_ret_store t4 ON t1.recordDate = t4.recordDate
+		AND t1.customerId = t4.customerId
+		<include refid="sqlQuery"/>
+		GROUP BY t1.customerId,DATE_FORMAT(t1.recordDate,'%Y-%m')
+		ORDER BY t1.recordDate  DESC
+	</select>
+	
+	<select id="queryPerMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_store_base t1
+		<include refid="sqlQuery"/>
+		GROUP BY t1.customerId,DATE_FORMAT(t1.recordDate,'%Y-%m')) tab1
+	</select>
+	
+	<sql id="sqlQuery">
+    	<where>
+    		<if test="isNet != null and isNet != ''">
+			    and t1.isNet = #{isNet}
+			</if>
+			<if test="recordDate != null and recordDate != ''">
+			  and t1.recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and t1.customerId = #{customerId}
+			 </if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+			</if>
+			<if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			</if>
+			<if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+			    and t1.orgId = #{orgId}
+			</if>
+			<if test="orgIdIn != null and orgIdIn != ''">
+			    and t1.orgId in (${orgIdIn})
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+			    and t1.orgId in (${userOrgs})
+			</if>
+			<if test="realName != null and realName != ''">
+			    and t1.realName LIKE CONCAT(#{realName},'%') 
+			</if>
+			<if test="cityName != null and cityName !=''">
+			    and t1.cityName = #{cityName}
+			</if>
+			<if test="custLabel0 != null and custLabel0 !=''">
+			    and t1.custLabel0 = #{custLabel0}
+			</if>
+			<if test="custLabel1 != null and custLabel1 !=''">
+			    and t1.custLabel1 = #{custLabel1}
+			</if>
+			<if test="custLabel2 != null and custLabel2 !=''">
+			    and t1.custLabel2 = #{custLabel2}
+			</if>
+			<if test="custLabel3 != null and custLabel3 !=''">
+			    and t1.custLabel3 = #{custLabel3}
+			</if>
+			<if test="custLabel4 != null and custLabel4 !=''">
+			    and t1.custLabel4 = #{custLabel4}
+			</if>
+			<if test="custLabel5 != null and custLabel5 !=''">
+			    and t1.custLabel5 = #{custLabel5}
+			</if>
+			<if test="groupName != null and groupName !=''">
+			    and IFNULL(t1.groupName,t5.groupName) = #{groupName}
+			</if>
+		</where>
+    </sql>
+    <!-- 门店人员本月统计总计 -->
+	<select id="queryStoreDayTotal" resultType="map" parameterType="map">
+		SELECT
+			SUM(tab1.receiveCount) AS receiveCountSum,
+			SUM(tab1.feedBackCount) AS feedBackCountSum,
+			SUM(tab1.dealCount) AS dealCountSum,
+			SUM(tab1.preBookCount) AS preBookCountSum,
+			SUM(tab1.sucBookCount) AS sucBookCountSum,
+			SUM(tab1.failBookCount) AS failBookCountSum,
+			SUM(tab1.signingCount) AS signingCountSum,
+			SUM(tab1.signingAmt) AS signingAmtSum,
+			SUM(tab1.sucSignCount) AS sucSignCountSum,
+			SUM(tab1.sucSignAmt) AS sucSignAmtSum,
+			SUM(tab1.failSignCount) AS failSignCountSum,
+			SUM(tab1.failSignAmt) AS failSignAmtSum,
+			SUM(tab1.treatyWill) AS treatyWillSum,
+			SUM(tab1.retCount) AS retCountSum,
+			SUM(tab1.retAmount) AS retAmountSum,
+			SUM(tab1.sucRetCount) AS sucRetCountSum,
+			SUM(tab1.sucRetAmount) AS sucRetAmountSum,
+			SUM(tab1.manualCount) AS manualCountSum,
+			SUM(tab1.visitorCount) AS visitorCountSum,
+			SUM(tab1.totalSignCount) AS totalSignCountSum,
+			SUM(tab1.totalSignAmt) AS totalSignAmtSum,
+			SUM(tab1.againAllto) AS againAlltoSum,
+			SUM(tab1.costCount) AS costCountSum,
+			SUM(tab1.backCostCount) AS backCostCountSum,
+			TRUNCATE(SUM(tab1.handelTime) / count(*),2) AS handelTimeSum,
+			SUM(tab1.leaveCount) AS leaveCountSum,
+			TRUNCATE(SUM(tab1.applyHandelTime) / count(*),2) AS applyHandelTimeSum,
+			TRUNCATE(SUM(tab1.applyAllotTime) / count(*),2) AS applyAllotTimeSum,
+			SUM(tab1.noHandlCount) AS noHandlCountSum,
+			SUM(tab1.custLabel0) AS sumCustLabel0,
+			SUM(tab1.custLabel1) AS sumCustLabel1,
+			SUM(tab1.custLabel2) AS sumCustLabel2,
+			SUM(tab1.custLabel3) AS sumCustLabel3,
+			SUM(tab1.custLabel4) AS sumCustLabel4,
+			SUM(tab1.custLabel5) AS sumCustLabel5,
+			SUM(tab1.newApplyCount) AS newApplyCountSum
+		FROM (
+			SELECT
+				IFNULL(t1.receiveCount,0) as receiveCount,
+				IFNULL(t1.feedBackCount,0) as feedBackCount,
+				IFNULL(t1.dealCount,0) as dealCount,
+				IFNULL(t2.preBookCount,0) as preBookCount,
+				IFNULL(t2.sucBookCount,0) as sucBookCount,
+				IFNULL(t2.failBookCount,0) as failBookCount,
+				IFNULL(t3.signingCount,0) as signingCount,
+				IFNULL(t3.signingAmt,0) as signingAmt,
+				IFNULL(t3.sucSignCount,0) as sucSignCount,
+				IFNULL(t3.sucSignAmt,0) as sucSignAmt,
+				IFNULL(t3.failSignCount,0) as failSignCount,
+				IFNULL(t3.failSignAmt,0) as failSignAmt,
+				IFNULL(t3.treatyWill,0) as treatyWill,
+				IFNULL(t4.retCount,0) as retCount,
+				IFNULL(t4.retAmount,0) as retAmount,
+				IFNULL(t4.sucRetCount,0) as sucRetCount,
+				IFNULL(t4.sucRetAmount,0) as sucRetAmount,
+				IFNULL(t2.manualCount,0) as manualCount,
+				IFNULL(t2.visitorCount,0) as visitorCount,
+				IFNULL(t3.totalSignCount,0) as totalSignCount,
+				IFNULL(t3.totalSignAmt,0) as totalSignAmt,
+				IFNULL(t1.againAllto,0) as againAllto,
+				IFNULL(t1.costCount,0) as costCount,
+				IFNULL(t1.backCostCount,0) as backCostCount,
+				IFNULL(t1.handelTime,0) as handelTime,
+				IFNULL(t1.leaveCount,0) as leaveCount,
+				IFNULL(t1.applyHandelTime,0) as applyHandelTime,
+				IFNULL(t1.applyAllotTime,0) as applyAllotTime,
+				IFNULL(t1.noHandlCount,0) as noHandlCount,
+				IFNULL(t1.custLabel0,0) as custLabel0,
+				IFNULL(t1.custLabel1,0) as custLabel1,
+				IFNULL(t1.custLabel2,0) as custLabel2,
+				IFNULL(t1.custLabel3,0) as custLabel3,
+				IFNULL(t1.custLabel4,0) as custLabel4,
+				IFNULL(t1.custLabel5,0) as custLabel5,
+				IFNULL(t1.newApplyCount,0) as newApplyCount
+			FROM
+				t_sum_store_base t1
+			LEFT JOIN t_sum_book_store t2 ON t1.recordDate = t2.recordDate
+			AND t1.customerId = t2.customerId
+			LEFT JOIN t_sum_sign_store t3 ON t1.recordDate = t3.recordDate
+			AND t1.customerId = t3.customerId
+			LEFT JOIN t_sum_ret_store t4 ON t1.recordDate = t4.recordDate
+			AND t1.customerId = t4.customerId
+			JOIN t_busi_cust t5 on t1.customerId = t5.customerId
+			JOIN t_org t6 ON t1.orgId = t6.orgId
+			<include refid="sqlQuery"/>
+			<if test="orderSql == null">
+				ORDER BY t1.recordDate DESC,t1.customerId,CONVERT(t1.orgName USING GBK)
+			</if>
+		) tab1
+	</select>
+</mapper>

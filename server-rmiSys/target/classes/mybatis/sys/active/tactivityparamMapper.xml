@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ACTIVITYPARAM">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			paramId as "paramId",
+			activeId as "activeId",  <!-- 活动ID -->
+			paramType as "paramType",  <!-- 参数类型 0 输入参数 1 条件参数 2 返回参数 -->
+			paramKey as "paramKey",  <!-- 参数KEY -->
+			paramDesc as "paramDesc",  <!-- 参数描述 -->
+			paramValue as "paramValue" <!-- 参数值 -->
+		FROM t_activity_param
+		<where>
+			<if test="paramId != null and paramId != ''">
+			  and paramId = #{paramId}
+			 </if>
+			<if test="activeId != null and activeId != ''">
+				and activeId = #{activeId}
+			</if>
+			<if test="paramType != null and paramType != ''">
+				and paramType = #{paramType}
+			</if>
+			<if test="paramKey != null and paramKey != ''">
+				and paramKey = #{paramKey}
+			</if>
+			<if test="paramDesc != null and paramDesc != ''">
+				and paramDesc = #{paramDesc}
+			</if>
+			<if test="paramValue != null and paramValue != ''">
+				and paramValue = #{paramValue}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_activity_param 
+		<where>
+		<if test="paramId != null and paramId != ''">
+		    and paramId = #{paramId}
+		 </if>
+		<if test="activeId != null and activeId != ''">
+			and activeId = #{activeId}
+		</if>
+		<if test="paramType != null and paramType != ''">
+			and paramType = #{paramType}
+		</if>
+		<if test="paramKey != null and paramKey != ''">
+			and paramKey = #{paramKey}
+		</if>
+		<if test="paramDesc != null and paramDesc != ''">
+			and paramDesc = #{paramDesc}
+		</if>
+		<if test="paramValue != null and paramValue != ''">
+			and paramValue = #{paramValue}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="paramId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_activity_param (
+			activeId,
+			paramType,
+			paramKey,
+			paramDesc,
+			paramValue
+		)
+		VALUES ( 
+			#{activeId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="paramType !=null ">
+			#{paramType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="paramType ==null ">
+			0 ,
+			</if>
+			#{paramKey, jdbcType=VARCHAR}, 
+			#{paramDesc, jdbcType=VARCHAR}, 
+			#{paramValue, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_activity_param 
+		<where> 
+			<if test="paramId != null">
+				and paramId = #{paramId}
+			</if>
+			<if test="activeId != null">
+				and activeId = #{activeId}
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_activity_param  
+		<set>
+			<if test="activeId != null">
+				activeId = #{activeId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="paramType != null">
+				paramType = #{paramType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="paramKey != null">
+				paramKey = #{paramKey, jdbcType=VARCHAR},  
+			</if>
+			<if test="paramDesc != null">
+				paramDesc = #{paramDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="paramValue != null">
+				paramValue = #{paramValue, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  paramId = #{paramId}
+		</where>
+	</update>
+</mapper>

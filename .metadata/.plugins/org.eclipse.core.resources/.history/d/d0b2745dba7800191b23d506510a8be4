@@ -1,0 +1,430 @@
+package org.xxjr.cust.fund;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+@Lazy
+@Service
+@Slf4j
+public class RechargeBackService extends BaseService {
+	private static final String NAMESPACE = "RECHARGEBACK";
+
+	/**
+	 * 查寻数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * 分页查寻数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryViewByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryView", "queryViewCount");
+	}
+	
+	/**
+	 * 查寻分页统计数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+
+	/**
+	 * 添加数据处理
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult insertBatch(AppParam params) {
+		AppResult result = new AppResult();
+		List<Map<String, Object>> list = (List<Map<String, Object>>) params
+				.getAttr("list");
+		int size = super.getDao().batchInsert(NAMESPACE, "insertBatch",
+				list, params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * 退款成功
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateSuccess(AppParam params) {
+		AppResult result = new AppResult();
+		String ids = (String) params.getAttr("ids");
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				if(StringUtils.isEmpty(id)){
+					continue;
+				}
+				AppParam queryP = new AppParam();
+				queryP.addAttr("backId", id);
+				AppResult queryId = super.query(queryP, NAMESPACE);
+				if(queryId.getRows().size()==1){
+					Map<String,Object> backInfo =queryId.getRow(0);
+					// 查询交易状态
+					AppParam customerClearVip = new AppParam();
+					customerClearVip.setService("customerService");
+					customerClearVip.setMethod("clearVip");
+					customerClearVip.addAttr("customerId", backInfo.get("customerId"));
+					SoaManager.getInstance().invoke(customerClearVip);
+				}
+			}
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	/**
+	 * 取消退款
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateCancel(AppParam params) {
+		AppResult result = new AppResult();
+		String ids = (String) params.getAttr("ids");
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("backId", id);
+				param.addAttr("status", "3");
+				this.update(param);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("backId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 添加数据处理
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * 添加数据处理
+	 * @param params
+	 * @return
+	 */
+	public AppResult save(AppParam params) {
+		Object telephone = params.getAttr("telephone");
+		if(StringUtils.isEmpty(telephone)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("telephone", telephone);
+		Map<String,Object> userInfo = CustomerUtil.queryCustInfo(queryParam);
+		if(userInfo == null || userInfo.isEmpty()){
+			throw new SysException("未找到该手机号对应的用户信息");
+		}
+		Object userName = StringUtils.isEmpty(userInfo.get("realName")) ?
+				userInfo.get("userName") : userInfo.get("realName");
+		params.addAttr("customerId", userInfo.get("customerId"));
+		params.addAttr("userName", userName);
+		params.addAttr("backType", 1);
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		params.addAttr("backChannel", "baofoo");
+		return super.insert(params, NAMESPACE);
+	}
+
+	
+	/**
+	 * 修改数据处理
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		params.addAttr("updateTime", new Date());
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * 批量退款
+	 * @param params
+	 * @return
+	 */
+	public AppResult batchAudit(AppParam params) {
+		AppResult result = new AppResult();
+		String backIds = (String)params.getAttr("backIds");
+		if(StringUtils.isEmpty(backIds)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		for (String id : backIds.split(",")) {
+			AppParam param = new AppParam();
+			param.addAttr("backId", id);
+			result = this.audit(param);
+		}
+		return result;
+	}
+		
+	/**
+	 * 审核
+	 * @param params
+	 * @return
+	 */
+	public AppResult audit(AppParam params) {
+		Object backId = params.getAttr("backId");
+		Object toStatus = params.getAttr("status");
+		Object backChannel = params.getAttr("backChannel");
+		if (StringUtils.isEmpty(backId) || StringUtils.isEmpty(toStatus)
+				|| StringUtils.isEmpty(backChannel)) {
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("backId", backId);
+		AppResult queryResult = this.query(queryParam);
+		if(queryResult.getRows().size() == 0){
+			throw new SysException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		AppParam updateParam = new AppParam();
+		updateParam.addAttr("backId", backId);
+		updateParam.addAttr("status", toStatus);
+		updateParam.addAttr("backChannel", backChannel);
+		updateParam.addAttr("fromStatus", queryResult.getRow(0).get("status"));
+		updateParam.addAttr("auditDesc", params.getAttr("auditDesc"));
+		return this.update(updateParam);
+	}
+	
+	/**
+	 * 删除数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("backId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("backId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	/**
+	 * 批量退款
+	 * @param params
+	 * @return
+	 */
+	public AppResult batchRefunds(AppParam params) {
+		AppResult result = new AppResult();
+		String backIds = (String)params.getAttr("backIds");
+		if(StringUtils.isEmpty(backIds)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		for (String id : backIds.split(",")) {
+			AppParam param = new AppParam();
+			param.addAttr("backId", id);
+			result = this.refunds(param);
+		}
+		return result;
+	}
+	/**
+	 * 批量查询退款状态
+	 * @param params
+	 * @return
+	 */
+	public AppResult batchQueryTrade(AppParam params) {
+		AppResult result = new AppResult();
+		String backIds = (String)params.getAttr("backIds");
+		if(StringUtils.isEmpty(backIds)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		for (String id : backIds.split(",")) {
+			AppParam param = new AppParam();
+			param.addAttr("backId", id);
+			result = this.queryTrade(param);
+		}
+		return result;
+	}
+
+	/**
+	 * 支付退款
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult refunds(AppParam params){
+		AppResult result = new AppResult();
+		Object backId = params.getAttr("backId");
+		if(StringUtils.isEmpty(backId)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("backId", backId);
+		AppResult queryResult = this.query(queryParam);
+		if(queryResult.getRows().size() <= 0){
+			throw new SysException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		Map<String,Object> backInfo = queryResult.getRow(0);
+		String status = StringUtil.getString(backInfo.get("status"));
+		if(!"1".equals(status) && !"5".equals(status)){
+			throw new SysException("当前状态不允许发起退款");
+		}
+		Object payType = backInfo.get("backChannel");
+		if(!"baofoo".equals(payType.toString())){
+			throw new SysException("当前只支持宝付退款");
+		}
+		AppParam payParam = new AppParam("paymentService","rechargeBackPay");
+		//手续费
+		String refundsPayFee = SysParamsUtil.getStringParamByKey("refundsPayFee", "1");
+		Map<String,Object> custInfo = CustomerIdentify.getCustIdentify(backInfo.get("customerId").toString());
+		payParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_col));
+		payParam.addAttr("payType", payType);
+		payParam.addAttr("amount", backInfo.get("backAmount"));
+		payParam.addAttr("holderName",  backInfo.get("userName"));
+		payParam.addAttr("bankCardNo", backInfo.get("bankNo"));
+		payParam.addAttr("bankName", backInfo.get("bankName"));
+		payParam.addAttr("telephone", backInfo.get("telephone"));
+		payParam.addAttr("identityNo", custInfo.get("cardNo"));
+		payParam.addAttr("payFee", refundsPayFee);
+		payParam.addAttr("remark", "vip退款");
+		AppResult payResult = RemoteInvoke.getInstance().call(payParam);
+		if(!result.isSuccess() || StringUtils.isEmpty(payResult.getAttr("resultMap"))){
+			throw new SysException("退款请求接口失败");
+		}
+		
+		Map<String,Object> resultMap = (Map<String,Object>)payResult.getAttr("resultMap");
+		log.info("refunds resultMap:" + resultMap.toString());
+		String payStatus = resultMap.get("status").toString();
+		//减去手续费，保存实际支付金额
+		BigDecimal backAmount = new BigDecimal(backInfo.get("backAmount").toString()).setScale(2, RoundingMode.HALF_UP);
+		BigDecimal realAmount = new BigDecimal(backAmount.doubleValue()
+				- Double.parseDouble(refundsPayFee)).setScale(2, RoundingMode.HALF_UP);
+		params.addAttr("status", "3");
+		if("-1".equals(payStatus)){
+			params.addAttr("status", "5");
+		}
+		params.addAttr("errorCode", resultMap.get("errorCode"));
+		params.addAttr("errorMsg", resultMap.get("errorMsg"));
+		params.addAttr("realAmount", realAmount);
+		params.addAttr("poundage", refundsPayFee);
+		params.addAttr("orderNo", resultMap.get("orderNo"));
+		params.addAttr("backTime", new Date());
+		return this.update(params);
+	}
+	
+	/**
+	 * 退款状态查询
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult queryTrade(AppParam params){
+		AppResult result = new AppResult();
+		Object backId = params.getAttr("backId");
+		if(StringUtils.isEmpty(backId)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("backId", backId);
+		queryParam.addAttr("status", "3");
+		AppResult queryResult = this.query(queryParam);
+		if(queryResult.getRows().size() <= 0){
+			throw new SysException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		Map<String,Object> backInfo = queryResult.getRow(0);
+		Object orderNo = backInfo.get("orderNo");
+		if(StringUtils.isEmpty(orderNo)){
+			throw new SysException("订单号为空，无法进行查询操作！");
+		}
+		Object payType = backInfo.get("backChannel");
+		AppParam payParam = new AppParam("paymentService","queryAgentPayStatus");
+		payParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_col));
+		payParam.addAttr("orderNo", orderNo);
+		payParam.addAttr("payType", payType);
+		result = RemoteInvoke.getInstance().call(payParam);
+		if(!result.isSuccess() || StringUtils.isEmpty(result.getAttr("resultMap"))){
+			throw new SysException("退款请求接口失败");
+		}
+		
+		Map<String,Object> resultMap = (Map<String,Object>)result.getAttr("resultMap");
+		log.info("queryTrade resultMap:" + resultMap.toString());
+		String status = org.ddq.common.util.StringUtil.getString(resultMap.get("status"));
+		AppParam updateParam = new AppParam();
+		if("1".equals(status)){
+			updateParam.addAttr("status", "4");//退款成功
+			// 清余额，清会员
+			if("1".equals(StringUtil.getString(backInfo.get("clearVip")))){
+				AppParam customerClearVip = new AppParam();
+				customerClearVip.setService("customerService");
+				customerClearVip.setMethod("clearVip");
+				customerClearVip.addAttr("customerId", backInfo.get("customerId"));
+				SoaManager.getInstance().invoke(customerClearVip);
+			}
+		}else if("-1".equals(status)){
+			updateParam.addAttr("status", "5");//退款失败
+			updateParam.addAttr("errorCode", resultMap.get("errorCode"));
+			updateParam.addAttr("errorMsg", resultMap.get("errorMsg"));
+		}
+		updateParam.addAttr("orderNo", orderNo);
+		updateParam.addAttr("backId", backId);
+		return this.update(updateParam);
+	}
+}

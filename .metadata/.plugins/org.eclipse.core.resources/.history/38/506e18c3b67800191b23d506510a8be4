@@ -1,0 +1,81 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.StringUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractInsureUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONObject;
+@PushCode(9)
+public class PushXinDanUtil extends AbstractInsureUtil {
+	
+	
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		String json = conversionData(row);
+		String url = SysParamsUtil.getStringParamByKey("push_xindan_cfg_url", "http://xbbapi.data88.cn/insurance/doInsure");
+		Map<String, Object> response = PushPlatformUtils.httpPost(url, null, json, true, null);
+		if ("SUCCEEDED".equals(StringUtil.getString(response.get("status")))) {
+			status = 1;
+		}
+		Map<String, Object> resMap = new HashMap<String, Object>();
+		resMap.put("status", status);
+		resMap.put("message", response.get("message"));
+		return resMap;
+	}
+	
+	private String conversionData (Map<String, Object> row) {
+		String channelCode = SysParamsUtil.getStringParamByKey("push_xindan_cfg_channelCode", "01f9ba8f");
+		String salt = SysParamsUtil.getStringParamByKey("push_xindan_cfg_salt", "c96ccb2c5dec273321a90e4de735dd74");
+		JSONObject context = new JSONObject();
+		context.put("adCode", channelCode);
+		context.put("policyHolderName", row.get("applyName"));
+		context.put("mobile", row.get("telephone"));
+		if (!StringUtils.isEmpty(row.get("identifyNo"))) {
+			context.put("policyHolderIdCard", StringUtil.getString(row.get("identifyNo")));
+		
+			String sex = IdCardResolveUtil.getSex(StringUtil.getString(row.get("identifyNo"))).toString();
+			if ("1".equals(sex)) {
+				context.put("policyHolderSex", "MALE");
+			} else {
+				context.put("policyHolderSex", "FEMALE");
+			}
+			
+			String birthday = IdCardResolveUtil.getBirthday(StringUtil.getString(row.get("identifyNo")));
+			context.put("policyHolderBirth", birthday);
+		}else {
+			String sex = StringUtil.getString(row.get("sex"));//性别处理
+			if (StringUtils.isEmpty(sex)) {
+				sex = IdCardResolveUtil.getSex(StringUtil.getString(row.get("identifyNo"))).toString();
+			}
+			if ("1".equals(sex)) {
+				context.put("policyHolderSex", "MALE");
+			} else {
+				context.put("policyHolderSex", "FEMALE");
+			}
+			String birthday = IdCardResolveUtil.getBirthday(StringUtil.getString(row.get("identifyNo")));
+			int age = NumberUtil.getInt(row.get("age"), -1);
+			context.put("policyHolderBirth", PushPlatformUtils.getBirthDay(birthday, age));
+		}
+		
+		context.put("fromIp", row.get("applyIp"));
+		context.put("userAgent", PushPlatformUtils.getUserAgent(row.get("userAgent")));
+		context.put("sign", Md5.getInstance().encrypt(channelCode + salt + row.get("telephone")));
+		JSONObject tag = new JSONObject();
+		context.put("tag", tag);
+		
+		return context.toJSONString();
+	}
+	
+	
+}

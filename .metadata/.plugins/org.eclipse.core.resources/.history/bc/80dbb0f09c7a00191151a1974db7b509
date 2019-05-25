@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMEXPORTKF">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			DATE_FORMAT(recordTime,'%Y-%m-%d %H:%i:%s') as recordTime , 
+			exportMan, 
+			fileName, 
+			parameter,
+			customerId 
+		FROM t_sum_export_kf
+		<where>
+			 <![CDATA[DATE_FORMAT(recordTime,'%Y-%m-%d')>= #{startRecordDate} AND DATE_FORMAT(recordTime,'%Y-%m-%d')<= #{endRecordDate}]]>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="exportMan != null and exportMan != ''">
+				and exportMan = #{exportMan}
+			</if>
+			<if test="fileName != null and fileName != ''">
+				and fileName like '%${fileName}%'
+			</if>
+			<if test="parameter != null and parameter != ''">
+				and parameter = #{parameter}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+		</where>
+		ORDER By recordId DESC
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM t_sum_export_kf 
+		<where>
+			<![CDATA[DATE_FORMAT(recordTime,'%Y-%m-%d')>= #{startRecordDate} AND DATE_FORMAT(recordTime,'%Y-%m-%d')<= #{endRecordDate}]]>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="exportMan != null and exportMan != ''">
+				and exportMan = #{exportMan}
+			</if>
+			<if test="fileName != null and fileName != ''">
+				and fileName like '%${fileName}%'
+			</if>
+			<if test="parameter != null and parameter != ''">
+				and parameter = #{parameter}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sum_export_kf (
+			recordTime,
+			exportMan,
+			fileName,
+			parameter,
+			customerId
+		)
+		VALUES ( 
+			#{recordTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{exportMan, jdbcType=VARCHAR}, 
+			#{fileName, jdbcType=VARCHAR}, 
+			#{parameter, jdbcType=VARCHAR},
+			#{customerId, jdbcType=BIGINT, typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_export_kf 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_export_kf  
+		<set>
+			<if test="exportMan != null">
+				exportMan = #{exportMan, jdbcType=VARCHAR},  
+			</if>
+			<if test="fileName != null">
+				fileName = #{fileName, jdbcType=VARCHAR},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT, typeHandler=NumberHandler}
+			</if>
+			<if test="parameter != null">
+				parameter = #{parameter, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

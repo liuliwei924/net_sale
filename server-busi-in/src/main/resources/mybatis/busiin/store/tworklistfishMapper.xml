@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="WORKLISTFISH">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			fishId,
+			extraId, 
+			workType, 
+			customerId, 
+			custTel, 
+			custName, 
+			DATE_FORMAT(allotTime,'%Y-%m-%d %H:%i:%s') as allotTime  ,
+			allotBy, 
+			allotDesc, 
+			remark, 
+			DATE_FORMAT(finishTime,'%Y-%m-%d %H:%i:%s') as finishTime
+		FROM t_work_list_fish
+		<where>
+			<if test="fishId != null and fishId != ''">
+			  and fishId = #{fishId}
+			 </if>
+			<if test="extraId != null and extraId != ''">
+				and extraId = #{extraId}
+			</if>
+			<if test="workType != null and workType != ''">
+				and workType = #{workType}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and custTel = #{custTel}
+			</if>
+			<if test="custName != null and custName != ''">
+				and custName = #{custName}
+			</if>
+			<if test="allotTime != null and allotTime != ''">
+				and allotTime = #{allotTime}
+			</if>
+			<if test="allotBy != null and allotBy != ''">
+				and allotBy = #{allotBy}
+			</if>
+			<if test="allotDesc != null and allotDesc != ''">
+				and allotDesc = #{allotDesc}
+			</if>
+			<if test="remark != null and remark != ''">
+				and remark = #{remark}
+			</if>
+			<if test="finishTime != null and finishTime != ''">
+				and finishTime = #{finishTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_work_list_fish 
+		<where>
+		<if test="fishId != null and fishId != ''">
+		    and fishId = #{fishId}
+		 </if>
+		<if test="extraId != null and extraId != ''">
+			and extraId = #{extraId}
+		</if>
+		<if test="workType != null and workType != ''">
+			and workType = #{workType}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="custTel != null and custTel != ''">
+			and custTel = #{custTel}
+		</if>
+		<if test="custName != null and custName != ''">
+			and custName = #{custName}
+		</if>
+		<if test="allotTime != null and allotTime != ''">
+			and allotTime = #{allotTime}
+		</if>
+		<if test="allotBy != null and allotBy != ''">
+			and allotBy = #{allotBy}
+		</if>
+		<if test="allotDesc != null and allotDesc != ''">
+			and allotDesc = #{allotDesc}
+		</if>
+		<if test="remark != null and remark != ''">
+			and remark = #{remark}
+		</if>
+		<if test="finishTime != null and finishTime != ''">
+			and finishTime = #{finishTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="fishId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_work_list_fish (
+			extraId,
+			workType,
+			customerId,
+			custTel,
+			custName,
+			allotTime,
+			allotBy,
+			allotDesc,
+			remark,
+			finishTime
+		)
+		VALUES ( 
+			#{extraId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="workType !=null ">
+			#{workType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="workType ==null ">
+			0 ,
+			</if>
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{custTel, jdbcType=VARCHAR}, 
+			<if test="custName !=null ">
+			#{custName, jdbcType=VARCHAR}, 
+			</if>
+			<if test="custName ==null ">
+			0 ,
+			</if>
+			#{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{allotBy, jdbcType=VARCHAR}, 
+			#{allotDesc, jdbcType=VARCHAR}, 
+			#{remark, jdbcType=VARCHAR}, 
+			#{finishTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_work_list_fish 
+		<where> 
+			fishId = #{fishId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_work_list_fish  
+		<set>
+			<if test="extraId != null">
+				extraId = #{extraId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="workType != null">
+				workType = #{workType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="custTel != null">
+				custTel = #{custTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="custName != null">
+				custName = #{custName, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotTime != null">
+				allotTime = #{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="allotBy != null">
+				allotBy = #{allotBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotDesc != null">
+				allotDesc = #{allotDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="remark != null">
+				remark = #{remark, jdbcType=VARCHAR},  
+			</if>
+			<if test="finishTime != null">
+				finishTime = #{finishTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+		</set>
+		<where>
+			  fishId = #{fishId}
+		</where>
+	</update>
+</mapper>

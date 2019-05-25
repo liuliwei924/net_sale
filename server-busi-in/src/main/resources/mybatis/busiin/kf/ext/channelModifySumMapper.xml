@@ -1,0 +1,1112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CHANNELMONDIFYSUM">
+
+	<!-- 共用的时间处理sql -->
+	<sql id="commonTimeSql">
+		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]>
+		 <if test="channelCode == null or channelCode == ''">
+			AND n.channelCode !='' 
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			AND n.channelCode = #{channelCode}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(n.channelCode,#{fixChannels})
+		</if>
+	</sql>
+	<!-- 共用的数量查询sql-->
+	<select id="channelBaseCount" resultType="int" parameterType="map">
+			SELECT COUNT(1) FROM (SELECT  COUNT(1)
+				FROM t_borrow_apply t 
+				LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+				WHERE <![CDATA[t.applyTime>= #{startRecordDate} AND t.applyTime<= #{endRecordDate}]]>
+				<if test="channelCode == null or channelCode == ''">
+					AND t.channelCode !='' 
+				</if>
+				<if test="fixChannels != null and fixChannels != ''">
+					AND FIND_IN_SET(t.channelCode,#{fixChannels})
+				</if>
+				<include refid="channelBaseSql"/>
+		GROUP BY t.channelCode,	DATE_FORMAT(t.applyTime,#{datePattern})) tab1
+	</select>
+	<!-- 共用的条件判断sql -->
+	<sql id="channelBaseSql">
+		
+		<if test="channelCode != null and channelCode != ''">
+			AND t.channelCode = #{channelCode}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			AND t1.channelName like CONCAT(#{channelName},'%')
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND t1.teamNo= #{teamNo}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(t.channelCode,#{fixChannels})
+		</if>
+	</sql>
+	
+	<!-- 共用的channel cost sql-->
+	<sql id="comChannelCostSql">
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		LEFT JOIN (
+				SELECT n.channelCode, 
+					DATE_FORMAT(n.recordDate,#{datePattern}) as 'recordDate',
+					SUM(n.amount) as 'amount'
+				FROM t_borrow_channel_cost n 
+				<where>
+				<![CDATA[n.recordDate>= #{startRecordDate} AND n.recordDate<= #{endRecordDate}]]>
+					<if test="channelCode != null and channelCode != ''">
+						AND n.channelCode = #{channelCode}
+					</if>
+					<if test="fixChannels != null and fixChannels != ''">
+						AND FIND_IN_SET(n.channelCode,#{fixChannels})
+					</if>
+				</where>
+				GROUP BY n.channelCode,DATE_FORMAT(n.recordDate,#{datePattern})
+		) t2 ON t.channelCode = t2.channelCode AND t.recordDate= t2.recordDate
+	</sql>
+	
+	<!--  渠道城市统计 sql -->
+	<sql id="channelCitySql">
+		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]>
+		 <if test="channelCode == null or channelCode == ''">
+			AND n.channelCode !='' 
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			AND n.channelCode = #{channelCode}
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND ch.teamNo = #{teamNo}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(n.channelCode,#{fixChannels})
+		</if>
+		<if test="cityName != null and cityName != '' and cityName != '其他城市'">
+			AND n.cityName = #{cityName}
+		</if>
+		<if test="cityName != null and cityName != '' and cityName == '其他城市'">
+			AND n.cityName not in (
+			<foreach collection="configCitys" item="item" separator=",">
+			#{item}
+			</foreach>
+			)
+		</if>
+	</sql>
+	<!--  渠道城市统计 sql -->
+	<sql id="channelCitySql2">
+		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]>
+		 <if test="channelCode == null or channelCode == ''">
+			AND n.channelCode !='' 
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			AND n.channelCode = #{channelCode}
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND ch.teamNo = #{teamNo}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(n.channelCode,#{fixChannels})
+		</if>
+		<if test="cityName != null and cityName != '' and cityName != '其他城市'">
+			AND m.cityName = #{cityName}
+		</if>
+		<if test="cityName != null and cityName != '' and cityName == '其他城市'">
+			AND m.cityName not in (
+			<foreach collection="configCitys" item="item" separator=",">
+			#{item}
+			</foreach>
+			)
+		</if>
+	</sql>
+	
+	
+	<!--大渠道基本情况统计(跟进后) -->
+	<select id="channelBase" resultType="map" parameterType="map">
+	<![CDATA[
+		SELECT * FROM (
+		SELECT 
+			t.recordDate,
+			t.channelCode,
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			t2.amount as 'costAmount',
+			COUNT(t.applyId) as 'applyCount',
+			ROUND(t2.amount/COUNT(t.applyId),2) as 'costCB',
+			COUNT(CASE WHEN t.applyType=1 OR t.applyType =6 THEN 1 END) as 'seniorCount',
+			ROUND(COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT allotCitys FROM t_base_cfg))THEN 1 END)/COUNT(t.applyId)*100,2) as 'netCityProp',
+			ROUND(COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT callCitys FROM t_base_cfg))THEN 1 END)/COUNT(t.applyId)*100,2) as 'callCityProp',
+			ROUND((COUNT(t.applyId)-
+			COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT allotCitys FROM t_base_cfg))THEN 1 END)-
+			COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT callCitys FROM t_base_cfg))THEN 1 END))/COUNT(t.applyId)*100,2) as 'otherCityProp',
+			COUNT(CASE WHEN t.loanAmount>=0 AND t.loanAmount<=1 THEN 1 END) as 'amtCount1',
+			COUNT(CASE WHEN t.loanAmount>1 AND t.loanAmount<3 THEN 1 END) as 'amtCount2',
+			COUNT(CASE WHEN t.loanAmount>=3 AND t.loanAmount<5 THEN 1 END) as 'amtCount3',
+			COUNT(CASE WHEN t.loanAmount>=5 AND t.loanAmount<10 THEN 1 END) as 'amtCount4',
+			COUNT(CASE WHEN t.loanAmount>=10 THEN 1 END) as 'amtCount5',
+			COUNT(CASE WHEN t.assetLevel=0 THEN 1 END) as 'noAssetCount',
+			COUNT(CASE WHEN t.assetLevel=1 THEN 1 END) as 'assetCount1',
+			COUNT(CASE WHEN t.assetLevel=2 THEN 1 END) as 'assetCount2',
+			COUNT(CASE WHEN t.assetLevel=3 THEN 1 END) as 'assetCount3',
+			COUNT(CASE WHEN t.assetLevel=4 THEN 1 END) as 'assetCount4'
+			FROM 
+			(
+			SELECT 
+				n.applyId,
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				IFNULL(n1.cityName,n.cityName) as 'cityName',
+			  IFNULL(n1.loanAmount,0) as 'loanAmount',
+				n.applyType,
+			 (IF(n1.houseType !='' AND n1.houseType!=0 AND n1.houseType!=2,1,0)+
+			 IF(n1.carType !='' AND n1.carType!=0 AND n1.carType!=2,1,0)+
+			 IF(n3.insurType !='' AND n3.insurType!=0 ,1,0)+
+			 IF(n2.wagesType=1,1,IF(n1.socialType=1 AND n1.fundType=1,1,0))
+			 ) as 'assetLevel'
+			FROM t_borrow_apply n 
+			LEFT JOIN t_borrow_base n1 ON n.applyId = n1.applyId
+			LEFT JOIN t_borrow_income n2 ON n.applyId = n2.applyId
+			LEFT JOIN t_borrow_insure n3 ON n.applyId = n3.applyId
+			]]>
+			WHERE  <include refid="commonTimeSql"/>
+			) as t
+			<include refid="comChannelCostSql"/>
+			<where>
+			<include refid="channelBaseSql"/>
+			</where>
+			GROUP BY t.channelCode,t.recordDate
+		) as t
+			ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	<!-- 金额资质详细情况统计 -->
+	<select id="channelDtl" resultType="map" parameterType="map">
+
+	SELECT
+			t.recordDate,
+			t.channelCode,
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			t.applyCount as 'applyCount',
+			t2.amount as 'costAmount',
+			ROUND(t2.amount/t.applyCount,2) as 'costCB',
+			t.seniorCount as 'seniorCount',
+			t3.assetCount1 as 'assetCount1',
+			t3.assetCount2 as 'assetCount2',
+			t3.assetCount3 as 'assetCount3',
+			t3.assetCount4 as 'assetCount4',
+			t3.assetCount5 as 'assetCount5'
+	FROM (
+			  SELECT 
+					n.channelCode,
+					COUNT(n.applyId) as 'applyCount',
+					COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+			        DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  WHERE  <include refid="commonTimeSql"/>
+			  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+			) as t 
+	<include refid="comChannelCostSql"/>
+	LEFT JOIN
+			(
+			SELECT 
+				tmp2.recordDate,
+				tmp2.channelCode,
+				MAX(CASE tmp2.amountLevel WHEN 1 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount1',
+				MAX(CASE tmp2.amountLevel WHEN 2 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount2',
+				MAX(CASE tmp2.amountLevel WHEN 3 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount3',
+				MAX(CASE tmp2.amountLevel WHEN 4 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount4',
+				MAX(CASE tmp2.amountLevel WHEN 5 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount5'
+			FROM
+				(
+				SELECT 
+				tmp1.recordDate,
+				tmp1.channelCode,
+				tmp1.amountLevel,
+				CONCAT_WS('-',
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=0 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=1 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=2 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=3 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=4 THEN 1 END),0)
+				) as 'assetCount'
+				FROM (
+					SELECT 	<![CDATA[
+						DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+						n.channelCode,
+						(CASE 	WHEN IFNULL(n1.loanAmount,0)>0 AND IFNULL(n1.loanAmount,0)<=1 THEN 1 
+								WHEN n1.loanAmount>1 AND n1.loanAmount<3 THEN 2 
+								WHEN n1.loanAmount>=3 AND n1.loanAmount<5 THEN 3
+								WHEN n1.loanAmount>=5 AND n1.loanAmount<10 THEN 4
+								WHEN n1.loanAmount>=10  THEN 5
+								ELSE 0 
+						END) as 'amountLevel',
+					 (IF(n1.houseType !='' AND n1.houseType!=0 AND n1.houseType!=2,1,0)+
+					 IF(n1.carType !='' AND n1.carType!=0 AND n1.carType!=2,1,0)+
+					 IF(n3.insurType !='' AND n3.insurType!=0 ,1,0)+
+					 IF(n2.wagesType=1,1,IF(n1.socialType=1 AND n1.fundType=1,1,0))
+					 ) as 'assetLevel'
+					]]> 
+				FROM t_borrow_apply n 
+				LEFT JOIN t_borrow_base n1 ON n.applyId = n1.applyId
+				LEFT JOIN t_borrow_income n2 ON n.applyId = n2.applyId
+				LEFT JOIN t_borrow_insure n3 ON n.applyId = n3.applyId
+				WHERE   <include refid="commonTimeSql"/>
+			) as tmp1 
+			GROUP BY tmp1.channelCode,tmp1.recordDate,tmp1.amountLevel 
+			)as tmp2
+		GROUP BY tmp2.channelCode,tmp2.recordDate 
+		
+		) as t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+		<where>
+			<include refid="channelBaseSql"/>
+		</where>
+		ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+
+	<!-- 线索流向情况统计 -->
+	<select id="channelSale" resultType="map" parameterType="map">
+	SELECT
+		t.recordDate,
+		t.channelCode,
+		CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+		t.applyCount as 'applyCount',
+		t2.amount as 'costAmount',
+		ROUND(t2.amount/t.applyCount,2) as 'costCB',
+	    IFNULL(	t.seniorCount,0) as 'seniorCount',
+        IFNULL(t3.netStoreCount,0) as 'netStoreCount',
+	    IFNULL(t4.saleCount,0) as 'saleCount',
+	    IFNULL(t44.sucSaleCount-IFNULL(t45.failSaleCount,0),0) as 'sucSaleCount',
+	    IFNULL(ROUND(t44.sucSaleAmt-IFNULL(t45.failSaleAmt,0),2),0) as 'sucSaleAmt',
+		IFNULL(t5.bxCount,0) as 'bxCount',
+	    IFNULL(t5.sucBxCount,0) as 'sucBxCount',
+	    IFNULL(t6.sucBookCount,0) as 'sucBookCount',
+		IFNULL(t7.totalSignCount,0) as 'totalSignCount',
+		IFNULL(t7.signAmount,0) as 'signAmount',
+		IFNULL(t8.sucRetCount,0) as 'sucRetCount',
+		ROUND(IFNULL(t8.sucRetAmount,0),2) as 'sucRetAmount'
+     FROM (
+			  SELECT 
+					n.channelCode,
+					COUNT(n.applyId) as 'applyCount',
+					COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+			    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  WHERE  
+			  	<include refid="commonTimeSql"/>
+			  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+			) as t 
+	<include refid="comChannelCostSql"/>
+	LEFT JOIN (
+		SELECT COUNT(n.applyId) as 'netStoreCount',n.channelCode, DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+		FROM t_borrow_store_apply n JOIN t_org n1 ON n.orgId = n1.orgId AND n1.isNet=1 
+		WHERE <include refid="commonTimeSql"/>
+			AND n.orgId !=''
+		GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+	LEFT JOIN(
+		SELECT  
+		    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'saleCount'
+		FROM t_borrow_sel_count n
+		WHERE 
+		 	<include refid="commonTimeSql"/> AND n.handleType=1
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t4 ON t4.channelCode = t.channelCode AND t4.recordDate = t.recordDate
+	
+	LEFT JOIN(
+		SELECT  
+		    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+		FROM t_borrow_sel_count n
+		WHERE 
+		 	<include refid="commonTimeSql"/> AND n.handleType=2
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t44 ON t44.channelCode = t.channelCode AND t44.recordDate = t.recordDate
+	
+	LEFT JOIN(
+		SELECT  
+		    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+		FROM t_borrow_sel_count n
+		WHERE 
+		 	<include refid="commonTimeSql"/> AND n.handleType=4
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t45 ON t45.channelCode = t.channelCode AND t45.recordDate = t.recordDate
+	
+	LEFT JOIN(
+		SELECT  
+		    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(CASE WHEN n.`status`!=0 THEN 1 END) as 'bxCount',
+				COUNT(CASE WHEN n.`status`=1 THEN 1 END) as 'sucBxCount'
+		FROM t_borrow_apply_push n 
+		WHERE
+		   <include refid="commonTimeSql"/>
+		   AND n.pushType in(select pushCode  from t_borrow_push_cfg where `type`=1)
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t5 ON t5.channelCode = t.channelCode AND t5.recordDate = t.recordDate
+	
+	LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'sucBookCount' 
+			FROM t_treat_book m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			WHERE <include refid="commonTimeSql"/> AND m.`status`=3
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t6 ON t6.channelCode = t.channelCode AND t6.recordDate = t.recordDate
+	
+	LEFT JOIN (
+		SELECT 
+			n.signAmount,
+			n.channelCode, 
+			DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+			COUNT(DISTINCT n.applyId) as 'totalSignCount' 
+		FROM t_treat_info_history n
+		WHERE  <include refid="commonTimeSql"/>
+		GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t7 ON t7.channelCode = t.channelCode AND t7.recordDate = t.recordDate
+	
+	LEFT JOIN (
+		SELECT 
+			n.channelCode, 
+			DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+			COUNT(n.recordId) as 'sucRetCount' ,
+			IFNULL(SUM(n.feeAmount),0)  AS 'sucRetAmount'
+		FROM t_treat_success_history n
+		WHERE <include refid="commonTimeSql"/>  AND n.`status`= 2
+		GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	) as t8 ON t8.channelCode = t.channelCode AND t8.recordDate = t.recordDate
+	<where>
+		<include refid="channelBaseSql"/>
+	</where>
+	ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	<!-- 网销门店数据 -->
+	<select id="channelNet" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.channelCode,
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			t.applyCount as 'applyCount',
+			t2.amount as 'costAmount',
+			ROUND(t2.amount/t.applyCount,2) as 'costCB',
+		    IFNULL(t.seniorCount,0) as 'seniorCount',
+		    IFNULL(t3.netStoreCount,0) as 'netStoreCount',
+    		IFNULL(t3.dealStoreCount,0) as 'dealStoreCount',
+			IFNULL(t3.invalidCount,0) as 'invalidCount',
+			IFNULL(t7.3dayCallCount,0) as '3dayCallCount',
+			IFNULL(t3.useCount,0) as 'useCount',
+			CONCAT(ROUND((IFNULL(IFNULL(t3.useCount, 0) / IFNULL(t3.netStoreCount, 1),0) * 100),2),'%') AS 'useUv',
+			IFNULL(t3.labelCount0,0) as 'labelCount0',
+			IFNULL(t3.labelCount1,0) as 'labelCount1',
+			IFNULL(t3.labelCount2,0) as 'labelCount2',
+			IFNULL(t3.labelCount3, 0) AS 'labelCount3',
+			IFNULL(t3.labelCount4,0) as 'labelCount4',
+		  	IFNULL(t3.labelCount5,0) as 'labelCount5',
+			CONCAT(ROUND((IFNULL(t3.labelCount3, 0) / IFNULL(t3.netStoreCount, 1) * 100),2),'%') AS 'labelRate3',
+			IFNULL(t3.labelCount4, 0) AS 'labelCount4',
+			CONCAT(ROUND((IFNULL(t3.labelCount4, 0) / IFNULL(t3.netStoreCount, 1) * 100),2),'%') AS 'labelRate4',
+			IFNULL(t3.labelCount5, 0) AS 'labelCount5',
+			CONCAT(ROUND((IFNULL(t3.labelCount5, 0) / IFNULL(t3.netStoreCount, 1) * 100),2),'%') AS 'labelRate5',
+			IFNULL(t4.sucBookCount,0) as 'sucBookCount',
+			IFNULL(t5.totalSignCount,0) as 'totalSignCount',
+			IFNULL(t5.signAmount,0) as 'signAmount',
+			IFNULL(t8.lendAmount, 0) as 'lendAmount',
+			IFNULL(t6.sucRetCount,0) as 'sucRetCount',
+			ROUND(IFNULL(t6.sucRetAmount,0),2) as 'sucRetAmount'
+		FROM (
+			  SELECT 
+					n.channelCode,
+					COUNT(n.applyId) as 'applyCount',
+					COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+			    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  WHERE <include refid="commonTimeSql"/>
+			  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+				) as t 
+		<include refid="comChannelCostSql"/>
+		LEFT JOIN (<![CDATA[
+				SELECT 
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.applyId) as 'netStoreCount',
+				COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+				COUNT(CASE WHEN n.orderStatus =8 THEN 1 END) as 'invalidCount',
+				COUNT(CASE WHEN n.custLabel>=3 THEN 1 END) as 'useCount',
+				COUNT(CASE WHEN n.custLabel=0 THEN 1 END) as 'labelCount0',
+				COUNT(CASE WHEN n.custLabel=1 THEN 1 END) as 'labelCount1',
+				COUNT(CASE WHEN n.custLabel=2 THEN 1 END) as 'labelCount2',
+				COUNT(CASE WHEN n.custLabel=3 THEN 1 END) as 'labelCount3',
+				COUNT(CASE WHEN n.custLabel=4 THEN 1 END) as 'labelCount4',
+				COUNT(CASE WHEN n.custLabel=5 THEN 1 END) as 'labelCount5'
+				FROM t_borrow_store_apply n
+				]]>
+				WHERE  <include refid="commonTimeSql"/>
+				GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+			) t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'sucBookCount' 
+			FROM t_treat_book m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			WHERE <include refid="commonTimeSql"/> AND m.`status`=3
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) t4 ON t4.channelCode = t.channelCode AND t4.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.signAmount,
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT n.applyId) as 'totalSignCount' 
+			FROM t_treat_info_history n
+			WHERE  <include refid="commonTimeSql"/>
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) t5 ON t5.channelCode = t.channelCode AND t5.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.recordId) as 'sucRetCount' ,
+				IFNULL(SUM(n.feeAmount),0)  AS 'sucRetAmount'
+			FROM t_treat_success_history n
+			WHERE <include refid="commonTimeSql"/>  AND n.`status`= 2		
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) t6 ON t6.channelCode = t.channelCode AND t6.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(1) as '3dayCallCount' 
+			FROM t_store_call_recent m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			WHERE <include refid="commonTimeSql"/>  
+			<![CDATA[
+			AND m.recentStatus=1 AND TIMESTAMPDIFF(DAY, n.applyTime,m.firstTime)<=3
+			]]>
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) t7 ON t7.channelCode = t.channelCode AND t7.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode,
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				SUM(m.lendAmount) as 'lendAmount'
+			FROM t_treat_loan_record m JOIN t_borrow_apply n ON n.applyId = m.applyId
+			WHERE <include refid="commonTimeSql"/>  
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		)t8 ON t8.channelCode = t.channelCode AND t8.recordDate = t.recordDate
+		<where>
+			<include refid="channelBaseSql"/>
+		</where>
+		ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	
+	<!-- ROI数据统计 -->
+	<select id="channelROI" resultType="map" parameterType="map">
+	SELECT
+		t.recordDate,
+		t.channelCode,
+		CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+		t.applyCount as 'applyCount',
+		t2.amount as 'costAmount',
+		ROUND(t2.amount/t.applyCount,2) as 'costCB',
+	    IFNULL(	t.seniorCount,0) as 'seniorCount',
+		ROUND(IFNULL(t2.amount,0),2) as 'realAmount',
+		ROUND(IFNULL(t3.sucRetAmount,0),2) as 'sucRetAmount',
+		ROUND(IFNULL(t4.sucSaleAmt,0)-IFNULL(t5.failSaleAmt,0),2) as 'sucSaleAmt',
+		<![CDATA[ROUND((IFNULL(t3.sucRetAmount,0) + IFNULL(t4.sucSaleAmt,0)-IFNULL(t5.failSaleAmt,0))/IF(IFNULL(t2.amount,0)<=0,1,t2.amount),2) as 'ROI']]>
+	FROM (
+		  SELECT 
+				n.channelCode,
+				COUNT(n.applyId) as 'applyCount',
+				COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+		    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+		  FROM t_borrow_apply n
+		  WHERE  <include refid="commonTimeSql"/>
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t 
+	<include refid="comChannelCostSql"/>
+	LEFT JOIN (
+		SELECT 
+			n.channelCode, 
+			DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+			COUNT(n.recordId) as 'sucRetCount' ,
+			IFNULL(SUM(n.feeAmount),0)  AS 'sucRetAmount'
+		FROM t_treat_success_history n
+		WHERE  <include refid="commonTimeSql"/> AND n.`status`= 2	
+		GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+	LEFT JOIN(
+		SELECT  
+		    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+		FROM t_borrow_sel_count n
+		WHERE <include refid="commonTimeSql"/> AND n.handleType=2
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t4 ON t4.channelCode = t.channelCode AND t4.recordDate = t.recordDate
+	LEFT JOIN(
+		SELECT  
+		    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+		FROM t_borrow_sel_count n
+		WHERE <include refid="commonTimeSql"/> AND n.handleType=4
+		  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t5 ON t5.channelCode = t.channelCode AND t5.recordDate = t.recordDate
+		<where>
+			<include refid="channelBaseSql"/>
+		</where>
+		ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	<!-- 渠道城市情况统计 -->
+	<select id="channelCity" resultType="map" parameterType="map">
+		SELECT
+			CONCAT_WS('至',#{startRecordDate},#{endDate}) as 'recordDate',
+			t.channelCode,
+			t.cityName,
+			IFNULL(t9.lendAmount,0) as 'lendAmount',
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			CONCAT(ROUND(IFNULL(t4.sucBookCount,0)/IFNULL(t3.storeCount,0) * 100,2), '%') as 'bookRate',
+			CONCAT(ROUND(IFNULL(t5.totalSignCount,0)/IFNULL(t3.storeCount,0) * 100,2), '%') as 'signRate',
+			CONCAT(ROUND(IFNULL(t6.retCount,0)/IFNULL(t3.storeCount,0) * 100,2), '%') as 'retRate',
+			t.applyCount as 'applyCount',
+		    IFNULL(	t3.storeCount,0) as 'storeCount',
+			CONCAT(ROUND((IFNULL(t3.useCount,0)/IFNULL(t3.storeCount,1) * 100),2),'%') as 'useUv',
+			IFNULL(t3.useCount,0) as useCount,
+			IFNULL(	t4.sucBookCount,0) as 'sucBookCount',
+			IFNULL(	t3.dealStoreCount,0) as 'dealStoreCount',
+			IFNULL(	t5.totalSignCount,0) as 'totalSignCount',
+			ROUND(IFNULL(t5.totalSignAmount,0),2) as 'totalSignAmount',
+			IFNULL(	t6.retCount,0) as 'retCount',
+			ROUND(IFNULL(t6.retAmount,0),2) as 'retAmount',
+			IFNULL(	t7.sucSaleCount-IFNULL(t8.failSaleCount,0),0) as 'sucSaleCount',
+			ROUND(IFNULL(t7.sucSaleAmt-IFNULL(t8.failSaleAmt,0),0),2) as 'sucSaleAmt'
+		FROM (
+			  SELECT 
+					n.channelCode,
+					n.cityName,
+					COUNT(n.applyId) as 'applyCount',
+					n.applyId
+			  FROM t_borrow_apply n
+			  LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			  WHERE <include refid="channelCitySql"/> AND n.cityName IS NOT NULL
+			  GROUP BY n.channelCode,n.cityName
+			 ) as t 
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		LEFT JOIN (<![CDATA[
+				SELECT 
+					n.channelCode, 
+					n.cityName,
+					COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+					COUNT(n.applyId) as 'storeCount',
+					COUNT(CASE WHEN n.custLabel>=3 THEN 1 END) as 'useCount'
+				FROM t_borrow_store_apply n
+				LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+				]]>
+				WHERE  <include refid="channelCitySql"/> AND n.cityName IS NOT NULL
+				GROUP BY n.channelCode,n.cityName
+			) t3 ON t3.channelCode = t.channelCode AND t3.cityName = t.cityName
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				n.cityName,
+				COUNT(DISTINCT n.applyId) as 'sucBookCount' 
+			FROM t_treat_book m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE <include refid="channelCitySql"/> AND m.`status`=3 AND n.cityName IS NOT NULL
+			GROUP BY n.channelCode,n.cityName
+		) t4 ON t4.channelCode = t.channelCode AND t4.cityName = t.cityName
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'totalSignCount',
+				SUM(n.signAmount) as 'totalSignAmount'
+			FROM t_treat_info_history n
+			JOIN t_borrow_apply m ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE  <include refid="channelCitySql2"/> AND m.cityName IS NOT NULL
+			GROUP BY n.channelCode,m.cityName
+		) t5 ON t5.channelCode = t.channelCode AND t5.cityName = t.cityName
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				m.cityName,
+				COUNT(n.recordId) as 'retCount' ,
+				SUM(n.feeAmount)  AS 'retAmount'
+			FROM t_treat_success_history n
+			JOIN t_borrow_apply m ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE <include refid="channelCitySql2"/>  AND n.`status` in(1,2) AND m.cityName IS NOT NULL
+			GROUP BY n.channelCode,m.cityName
+		) t6 ON t6.channelCode = t.channelCode AND t6.cityName = t.cityName
+	   LEFT JOIN(
+		SELECT  
+				m.channelCode,
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
+		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
+		WHERE <include refid="channelCitySql2"/> AND n.handleType=2
+		  GROUP BY m.channelCode,m.cityName
+		) as t7 ON t7.channelCode = t.channelCode AND t7.cityName = t.cityName
+		
+	  LEFT JOIN(
+		SELECT  
+				m.channelCode,
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
+		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
+		WHERE <include refid="channelCitySql2"/> AND n.handleType=4
+		  GROUP BY m.channelCode,m.cityName
+		) as t8 ON t8.channelCode = t.channelCode AND t8.cityName = t.cityName
+		LEFT JOIN (
+			SELECT 
+				n.cityName,
+				n.channelCode,
+				SUM(m.lendAmount) as 'lendAmount'
+			FROM t_treat_loan_record m JOIN t_borrow_apply n ON n.applyId = m.applyId
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode 
+			WHERE <include refid="channelCitySql"/>  
+			GROUP BY n.channelCode,n.cityName
+		)t9 ON t9.channelCode = t.channelCode AND t9.cityName = t.cityName 
+		<where>
+			<if test="channelName != null and channelName != ''">
+				AND t1.channelName like CONCAT(#{channelName},'%')
+			</if>
+		</where>
+		ORDER BY t.applyCount DESC,t.applyId
+	</select>
+	
+	<!-- 城市渠道统计的条数sql-->
+	<select id="channelCityCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT  COUNT(1)
+			FROM t_borrow_apply t
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = t.channelCode
+			WHERE <![CDATA[t.applyTime>= #{startRecordDate} AND t.applyTime<= #{endRecordDate} AND t.cityName IS NOT NULL]]>
+				<if test="channelCode == null or channelCode == ''">
+					AND t.channelCode !='' 
+				</if>
+				<if test="channelCode != null and channelCode != ''">
+					AND t.channelCode = #{channelCode}
+				</if>
+				<if test="fixChannels != null and fixChannels != ''">
+					AND FIND_IN_SET(t.channelCode,#{fixChannels})
+				</if>
+				<if test="teamNo != null and teamNo != ''">
+					AND ch.teamNo = #{teamNo}
+				</if>
+				<if test="cityName != null and cityName != '' and cityName != '其他城市'">
+					AND t.cityName = #{cityName}
+				</if>
+				<if test="cityName != null and cityName != '' and cityName == '其他城市'">
+					AND t.cityName not in (
+				<foreach collection="configCitys" item="item" separator=",">
+					#{item}
+				</foreach>
+				)
+				</if>
+				<if test="channelName != null and channelName != ''">
+					AND ch.channelName like CONCAT(#{channelName},'%')
+				</if>
+		GROUP BY t.channelCode,	t.cityName) tab1
+	</select>
+	<!-- 城市渠道统计的条数sql-->
+	<select id="channelCityDateCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(1)
+		FROM (
+			  SELECT 
+			  		DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			  WHERE <include refid="channelCitySql"/> AND n.cityName IS NOT NULL
+			  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,n.cityName
+			 ) as t 
+	</select>
+	
+		<!-- 渠道城市情况统计 本月和月度-->
+	<select id="channelCityDate" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.channelCode,
+			t.cityName,
+			IFNULL(t9.lendAmount, 0) as 'lendAmount',
+			CONCAT(ROUND(IFNULL(t4.sucBookCount,0)/IFNULL(t3.storeCount,0) * 100,2),'%') as 'bookRate',
+			CONCAT(ROUND(IFNULL(t5.totalSignCount,0)/IFNULL(t3.storeCount,0) * 100,2), '%') as 'signRate',
+			CONCAT(ROUND(IFNULL(t6.retCount,0)/IFNULL(t3.storeCount,0) * 100,2), '%') as 'retRate',
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			t.applyCount as 'applyCount',
+		    IFNULL(	t3.storeCount,0) as 'storeCount',
+			CONCAT(ROUND((IFNULL(t3.useCount,0)/IFNULL(t3.storeCount,1) * 100),2),'%') as 'useUv',
+			IFNULL(t3.useCount,0) as useCount,
+			IFNULL(	t4.sucBookCount,0) as 'sucBookCount',
+			IFNULL(	t3.dealStoreCount,0) as 'dealStoreCount',
+			IFNULL(	t5.totalSignCount,0) as 'totalSignCount',
+			ROUND(IFNULL(t5.totalSignAmount,0),2) as 'totalSignAmount',
+			IFNULL(	t6.retCount,0) as 'retCount',
+			ROUND(IFNULL(t6.retAmount,0),2) as 'retAmount',
+			IFNULL(	t7.sucSaleCount-IFNULL(t8.failSaleCount,0),0) as 'sucSaleCount',
+			ROUND(IFNULL(t7.sucSaleAmt-IFNULL(t8.failSaleAmt,0),0),2) as 'sucSaleAmt'
+		FROM (
+			  SELECT 
+			  		DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+					n.channelCode,
+					n.cityName,
+					COUNT(n.applyId) as 'applyCount',
+					n.applyId
+			  FROM t_borrow_apply n
+			  LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			  WHERE <include refid="channelCitySql"/> AND n.cityName IS NOT NULL
+			  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,n.cityName
+			 ) as t 
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		LEFT JOIN (<![CDATA[
+				SELECT 
+					DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+					n.channelCode, 
+					n.cityName,
+					COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+					COUNT(n.applyId) as 'storeCount',
+					COUNT(CASE WHEN n.custLabel>=3 THEN 1 END) as 'useCount'
+				FROM t_borrow_store_apply n
+				LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+				]]>
+				WHERE  <include refid="channelCitySql"/> AND n.cityName IS NOT NULL
+				GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,n.cityName
+			) t3 ON t3.channelCode = t.channelCode AND t3.cityName = t.cityName AND t3.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate', 
+				n.channelCode, 
+				n.cityName,
+				COUNT(DISTINCT n.applyId) as 'sucBookCount' 
+			FROM t_treat_book m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			 LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE <include refid="channelCitySql"/> AND m.`status`=3 AND n.cityName IS NOT NULL
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,n.cityName
+		) t4 ON t4.channelCode = t.channelCode AND t4.cityName = t.cityName AND t4.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode, 
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'totalSignCount',
+				SUM(n.signAmount) as 'totalSignAmount'
+			FROM t_treat_info_history n JOIN t_borrow_apply m ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE  <include refid="channelCitySql2"/> AND m.cityName IS NOT NULL
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,m.cityName
+		) t5 ON t5.channelCode = t.channelCode AND t5.cityName = t.cityName AND t5.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode, 
+				m.cityName,
+				COUNT(n.recordId) as 'retCount' ,
+				SUM(n.feeAmount)  AS 'retAmount'
+			FROM t_treat_success_history n JOIN t_borrow_apply m ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode
+			WHERE <include refid="channelCitySql2"/>  AND n.`status` in(1,2) AND m.cityName IS NOT NULL
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,m.cityName
+		) t6 ON t6.channelCode = t.channelCode AND t6.cityName = t.cityName AND t6.recordDate = t.recordDate
+	   LEFT JOIN(
+		SELECT  
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				m.channelCode,
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
+		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
+		WHERE <include refid="channelCitySql2"/> AND n.handleType=2
+		  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),m.channelCode,m.cityName
+		) as t7 ON t7.channelCode = t.channelCode AND t7.cityName = t.cityName AND t7.recordDate = t.recordDate
+		
+	  LEFT JOIN(
+		SELECT  
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				m.channelCode,
+				m.cityName,
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
+		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
+		WHERE <include refid="channelCitySql2"/> AND n.handleType=4
+		  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),m.channelCode,m.cityName
+		) as t8 ON t8.channelCode = t.channelCode AND t8.cityName = t.cityName AND t8.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode,
+				n.cityName,
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				SUM(m.lendAmount) as 'lendAmount'
+			FROM t_treat_loan_record m JOIN t_borrow_apply n ON n.applyId = m.applyId
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = n.channelCode 
+			WHERE <include refid="channelCitySql"/>  
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern}),n.channelCode,n.cityName
+		)t9 ON t9.channelCode = t.channelCode AND t9.recordDate = t.recordDate AND t9.cityName = t.cityName 
+		<where>
+			<if test="channelName != null and channelName != ''">
+				AND t1.channelName like CONCAT(#{channelName},'%')
+			</if>
+		</where>
+		ORDER BY t.recordDate DESC,t.applyId
+	</select>
+	
+	<!-- 网销门店数据(实际时间) -->
+	<select id="channelNetReal" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.channelCode,
+			IFNULL(t2.sucBookCount,0) as 'sucBookCount',
+			IFNULL(t3.totalSignCount,0) as 'totalSignCount',
+			IFNULL(t4.sucRetCount,0) as 'sucRetCount',
+			ROUND(IFNULL(t4.sucRetAmount,0),2) as 'sucRetAmount',
+			ROUND(IFNULL(t5.sucSaleCount,0)-IFNULL(t6.failSaleCount,0),2) as 'sucSaleCount',
+			ROUND(IFNULL(t5.sucSaleAmt,0)-IFNULL(t6.failSaleAmt,0),2) as 'sucSaleAmt'
+		FROM (
+			  SELECT 
+					n.channelCode,
+			    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n LEFT JOIN t_borrow_channel t on n.channelCode = t.channelCode
+			  JOIN t_borrow_team t1 on t.teamNo = t1.teamNo
+			  WHERE <include refid="commonTimeSql"/>
+			  		<if test="teamId != null and teamId != ''">
+						AND t1.teamNo = #{teamId}
+					</if>
+			  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+				) as t 
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(m.visitTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'sucBookCount' 
+			FROM t_treat_visit_detail m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			WHERE 
+				<![CDATA[m.visitTime>= #{startRecordDate} AND m.visitTime<=#{endRecordDate}]]>
+				 <if test="channelCode == null or channelCode == ''">
+					AND n.channelCode !='' 
+				 </if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.channelCode = #{channelCode}
+				</if>
+			GROUP BY n.channelCode,DATE_FORMAT(m.visitTime,#{datePattern})
+		) t2 ON t2.channelCode = t.channelCode AND t2.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(m.createTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'totalSignCount' 
+			FROM t_treat_info m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			WHERE  
+				<![CDATA[m.createTime>= #{startRecordDate} AND m.createTime<=#{endRecordDate}]]> AND m.`status` in(1,2)
+				 <if test="channelCode == null or channelCode == ''">
+					AND n.channelCode !='' 
+				 </if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.channelCode = #{channelCode}
+				</if>
+			GROUP BY n.channelCode,DATE_FORMAT(m.createTime,#{datePattern})
+		) t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT 
+				n.channelCode, 
+				DATE_FORMAT(m.feeAmountDate,#{datePattern}) as 'recordDate',
+				COUNT(m.recordId) as 'sucRetCount' ,
+				IFNULL(SUM(m.feeAmount),0)  AS 'sucRetAmount'
+			FROM t_treat_success m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			WHERE 
+				<![CDATA[m.feeAmountDate>= #{startRecordDate} AND m.feeAmountDate<=#{endRecordDate}]]>  
+				 <if test="channelCode == null or channelCode == ''">
+					AND n.channelCode !='' 
+				 </if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.channelCode = #{channelCode}
+				</if>
+				AND m.`status`=2		
+			GROUP BY n.channelCode,DATE_FORMAT(m.feeAmountDate,#{datePattern})
+		) t4 ON t4.channelCode = t.channelCode AND t4.recordDate = t.recordDate
+		
+		LEFT JOIN(
+		SELECT  
+		    	DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+		FROM t_borrow_sel_count n LEFT JOIN t_borrow_channel t ON n.channelCode
+		WHERE 
+			 <![CDATA[n.createTime>= #{startRecordDate} AND n.createTime<=#{endRecordDate}]]>  
+			 <if test="channelCode == null or channelCode == ''">
+				AND n.channelCode !='' 
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+				AND n.channelCode = #{channelCode}
+			</if>
+			AND n.handleType=2
+		  GROUP BY n.channelCode,DATE_FORMAT(n.createTime,#{datePattern})
+		) as t5 ON t5.channelCode = t.channelCode AND t5.recordDate = t.recordDate
+		
+		LEFT JOIN(
+		SELECT  
+		    	DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+		FROM t_borrow_sel_count n LEFT JOIN t_borrow_channel t ON n.channelCode
+		WHERE 
+			<![CDATA[n.createTime>= #{startRecordDate} AND n.createTime<=#{endRecordDate}]]>  
+			 <if test="channelCode == null or channelCode == ''">
+				AND n.channelCode !='' 
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+				AND n.channelCode = #{channelCode}
+			</if>
+			AND n.handleType=4
+		  GROUP BY n.channelCode,DATE_FORMAT(n.createTime,#{datePattern})
+		) as t6 ON t6.channelCode = t.channelCode AND t6.recordDate = t.recordDate
+		<where>
+			<include refid="channelBaseSql"/>
+		</where>
+		ORDER BY t.recordDate DESC,t.channelCode
+	</select>
+	<!-- 网销门店数据(实际时间) -->
+	<select id="channelNetRealCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(*)
+		FROM (
+			  SELECT 
+					n.channelCode,
+			    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			  JOIN t_borrow_team t1 ON t.teamNo = t1.teamNo
+			  WHERE <include refid="commonTimeSql"/>
+			  		<if test="teamId != null and teamId != ''">
+			  			AND t1.teamNo = #{teamId}
+			  		</if>
+			  GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+				) as t 
+		<where>
+			<include refid="channelBaseSql"/>
+		</where>
+	</select>
+	
+	<!-- 城市统计 -->
+	<select id="citySumary" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.cityName,
+			t.applyCount as 'applyCount',
+		    IFNULL(t3.netStoreCount,0) as 'netStoreCount',
+    		IFNULL(t3.dealStoreCount,0) as 'dealStoreCount',
+			IFNULL(t3.labelCount0,0) as 'labelCount0',
+			IFNULL(t3.labelCount1,0) as 'labelCount1',
+			IFNULL(t3.labelCount2,0) as 'labelCount2',
+			IFNULL(t3.labelCount3, 0) AS 'labelCount3',
+			IFNULL(t3.labelCount4,0) as 'labelCount4',
+		  	IFNULL(t3.labelCount5,0) as 'labelCount5',
+			CONCAT(ROUND(IFNULL(IFNULL(t3.netStoreCount,0) / t.applyCount * 100,0),2),'%') AS 'nav',
+			CONCAT(ROUND(IFNULL((IFNULL(t3.labelCount3,0)+IFNULL(t3.labelCount4,0)+IFNULL(t3.labelCount5,0)) / IFNULL(t3.dealStoreCount,0) * 100,0),2),'%') AS 'adv',
+			CONCAT(ROUND(IFNULL((IFNULL(t3.labelCount4,0)+IFNULL(t3.labelCount5,0)) / IFNULL(t3.dealStoreCount,0) * 100,0),2),'%') AS 'adv2',
+			CONCAT(ROUND(IFNULL((IFNULL(t3.labelCount3,0)+IFNULL(t3.labelCount4,0)+IFNULL(t3.labelCount5,0)) / t.applyCount * 100,0),2),'%') AS 'lav',
+			CONCAT(ROUND(IFNULL((IFNULL(t3.labelCount4,0)+IFNULL(t3.labelCount5,0)) / t.applyCount * 100,0),2),'%') AS 'lav2',
+			CONCAT(ROUND(IFNULL(IFNULL(t3.dealStoreCount,0) / IFNULL(t3.netStoreCount,0) * 100,0),2),'%') AS 'dnv'
+		FROM (
+			  SELECT 
+					n.cityName,
+					COUNT(n.applyId) as 'applyCount',
+			    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  WHERE 
+			  		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]> AND FIND_IN_SET(n.cityName,(SELECT allotCitys FROM t_base_cfg))
+			  		<if test="cityName != null and cityName != ''">
+						AND n.cityName = #{cityName}
+					</if>
+			  GROUP BY n.cityName,DATE_FORMAT(n.applyTime,#{datePattern})
+				) as t 
+		LEFT JOIN (<![CDATA[
+				SELECT 
+				n.cityName, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.applyId) as 'netStoreCount',
+				COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+				COUNT(CASE WHEN n.custLabel=0 THEN 1 END) as 'labelCount0',
+				COUNT(CASE WHEN n.custLabel=1 THEN 1 END) as 'labelCount1',
+				COUNT(CASE WHEN n.custLabel=2 THEN 1 END) as 'labelCount2',
+				COUNT(CASE WHEN n.custLabel=3 THEN 1 END) as 'labelCount3',
+				COUNT(CASE WHEN n.custLabel=4 THEN 1 END) as 'labelCount4',
+				COUNT(CASE WHEN n.custLabel=5 THEN 1 END) as 'labelCount5'
+				FROM t_borrow_store_apply n
+				]]>
+				WHERE  
+					<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]> AND FIND_IN_SET(n.cityName,(SELECT allotCitys FROM t_base_cfg))
+			  		<if test="cityName != null and cityName != ''">
+						AND n.cityName = #{cityName}
+					</if>
+				GROUP BY n.cityName,DATE_FORMAT(n.applyTime,#{datePattern})
+			) t3 ON t3.cityName = t.cityName AND t3.recordDate = t.recordDate
+		ORDER BY t.recordDate DESC,t.applyCount DESC
+	</select>
+	<!-- 城市统计 -->
+	<select id="citySumaryCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(*)
+		FROM (
+			  SELECT 
+					n.cityName,
+					COUNT(n.applyId) as 'applyCount',
+					COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+			    	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+			  FROM t_borrow_apply n
+			  WHERE
+					<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]> AND FIND_IN_SET(n.cityName,(SELECT allotCitys FROM t_base_cfg))
+			  		<if test="cityName != null and cityName != ''">
+						AND n.cityName = #{cityName}
+					</if>
+			  GROUP BY n.cityName,DATE_FORMAT(n.applyTime,#{datePattern})
+				) as t 
+		LEFT JOIN (<![CDATA[
+				SELECT 
+				n.cityName, 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.applyId) as 'netStoreCount',
+				COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+				COUNT(CASE WHEN n.custLabel=0 THEN 1 END) as 'labelCount0',
+				COUNT(CASE WHEN n.custLabel=1 THEN 1 END) as 'labelCount1',
+				COUNT(CASE WHEN n.custLabel=2 THEN 1 END) as 'labelCount2',
+				COUNT(CASE WHEN n.custLabel=3 THEN 1 END) as 'labelCount3',
+				COUNT(CASE WHEN n.custLabel=4 THEN 1 END) as 'labelCount4',
+				COUNT(CASE WHEN n.custLabel=5 THEN 1 END) as 'labelCount5'
+				FROM t_borrow_store_apply n
+				]]>
+				WHERE  
+					<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]> AND FIND_IN_SET(n.cityName,(SELECT allotCitys FROM t_base_cfg))
+			  		<if test="cityName != null and cityName != ''">
+						AND n.cityName = #{cityName}
+					</if>
+				GROUP BY n.cityName,DATE_FORMAT(n.applyTime,#{datePattern})
+			) t3 ON t3.cityName = t.cityName AND t3.recordDate = t.recordDate
+	</select>
+</mapper>

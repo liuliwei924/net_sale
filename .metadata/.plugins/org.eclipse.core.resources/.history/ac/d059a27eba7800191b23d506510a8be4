@@ -1,0 +1,431 @@
+package org.xxjr.cust.reward;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.active.mq.activity.RewardUtil;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.DateUtil;
+//import org.ddq.wx.util.base.ConfigUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.CustConstant;
+import org.xxjr.cust.util.ShowErrorCode;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.invite.CustInviteUtil;
+import org.xxjr.cust.util.member.ScoreUtils;
+
+@Lazy
+@Service
+@Slf4j
+public class CustScoreService extends BaseService {
+	private static final String NAMESPACE = "CUSTSCORE";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * 查询注册用户是否已绑定
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryBinded(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryBinded",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryView
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryView(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryView", "queryViewCount");
+	}
+	
+	/**
+	 * queryViewCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryViewCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryViewCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+
+	/**
+	 * 从一个人积分到另一个人积分处理
+	 * @param params
+	 * @return
+	 */
+	public AppResult scoreFromTo(AppParam params) {
+		if(params.getAttr("fromCust")==null || params.getAttr("toCust")==null ||
+				params.getAttr("score")==null){
+			throw new AppException(ShowErrorCode.REWARD_NO_KEY_FROM_TO);
+		}
+		int score = Integer.valueOf(params.getAttr("score").toString());
+		
+		//扣除 from 积分
+		AppResult result = ScoreUtils.scoreChangeCust(params.getAttr("fromCust").toString(), -score, 0, "抢甩单扣除积分");
+		//添加新积分
+		ScoreUtils.scoreChangeCust(params.getAttr("toCust").toString(), score, 0, "甩单新加积分");
+		return result;
+	}
+	/**
+	 * insert 不修改WX信息
+	 * @param params
+	 * @return
+	 */
+	public AppResult insertNew(AppParam params) {
+		if(params.getAttr("createTime")==null){
+			params.addAttr("createTime", new Date());
+		}
+		AppResult result =  super.insert(params, NAMESPACE);
+		//修改总积分
+		AppParam  scoreAmount = new AppParam();
+		if(params.getAttr("customerId")!=null){
+			scoreAmount.addAttr("customerId", params.getAttr("customerId"));
+			if(params.getAttr("openid")!=null){
+				scoreAmount.addAttr("openid", params.getAttr("openid"));
+			}
+			if(params.getAttr("gzhId")!=null){
+				scoreAmount.addAttr("gzhId", params.getAttr("gzhId"));
+			}
+			scoreAmount.addAttr("score", params.getAttr("score"));
+			scoreAmount.setService("custAmountService");
+			scoreAmount.setMethod("updateScore");
+			SoaManager.getInstance().invoke(scoreAmount);
+		}
+		return result;
+	}
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		if(params.getAttr("createTime")==null){
+			params.addAttr("createTime", new Date());
+		}
+		String createDesc = (String) params.getAttr("createDesc");
+		if(!StringUtils.isEmpty(createDesc) && !StringUtils.isEmpty(params.getAttr("openid")) 
+				&& (createDesc.contains("直接推荐") || createDesc.contains("间接推荐"))){
+			//积分配置
+			Map<String, Object> configInfo =null;// ConfigUtil.getScoreInfo(params.getAttr("gzhId"));
+			//限制次数
+			Integer num = 0;
+			if(createDesc.contains("直接推荐") && !StringUtils.isEmpty(configInfo.get("directNum"))){
+				num = (Integer) configInfo.get("directNum");
+			}
+			if(createDesc.contains("间接推荐") && !StringUtils.isEmpty(configInfo.get("indirectNum"))){
+				num = (Integer) configInfo.get("indirectNum");
+			}
+			if(num > 0){
+				// 查询当天推荐积分奖励记录
+				AppParam scoreParam = new AppParam();
+				scoreParam.addAttr("createDesc", createDesc);
+				scoreParam.addAttr("openid", params.getAttr("openid"));
+				Date today = new Date();
+				Date startDateTime = DateUtil.getDayFirstSecond(today);
+				Date endDateTime = DateUtil.getDayLastSecond(today);
+				scoreParam.addAttr("startTime", DateUtil.toStringByParttern(startDateTime, DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
+				scoreParam.addAttr("endTime", DateUtil.toStringByParttern(endDateTime, DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
+				AppResult qeuryResult = this.queryCount(scoreParam);
+				Integer size = (Integer) qeuryResult.getAttr(DuoduoConstant.TOTAL_SIZE);
+				if (size >= num) {
+					return new AppResult();
+				}
+			}
+		}
+		
+		if(params.getAttr("customerId")==null && params.getAttr("openid")!=null){
+			AppParam queryParam = new AppParam();
+			queryParam.setService("customerService");
+			queryParam.setMethod("query");
+			queryParam.addAttr("openid", params.getAttr("openid"));
+			AppResult queryResult = SoaManager.getInstance().invoke(queryParam);
+			if(queryResult.getRows().size()>0 && queryResult.getRow(0).get("customerId")!=null){
+				params.addAttr("customerId", queryResult.getRow(0).get("customerId"));
+			}
+		}
+		AppResult result =  super.insert(params, NAMESPACE);
+		//修改总积分
+		AppParam  scoreAmount = new AppParam();
+		if(params.getAttr("customerId")!=null){
+			scoreAmount.addAttr("customerId", params.getAttr("customerId"));
+			if(params.getAttr("openid")!=null){
+				scoreAmount.addAttr("openid", params.getAttr("openid"));
+			}
+			if(params.getAttr("gzhId")!=null){
+				scoreAmount.addAttr("gzhId", params.getAttr("gzhId"));
+			}
+			scoreAmount.addAttr("score", params.getAttr("score"));
+			scoreAmount.setService("custAmountService");
+			scoreAmount.setMethod("updateScore");
+			SoaManager.getInstance().invoke(scoreAmount);
+		}
+		scoreAmount = new AppParam();
+		if(params.getAttr("openid")!=null && params.getAttr("gzhId")!=null){
+			scoreAmount.setService("custWxinfoService");
+			scoreAmount.setMethod("updateScore");
+			scoreAmount.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + "wx"));
+			scoreAmount.addAttr("openid", params.getAttr("openid"));
+			scoreAmount.addAttr("gzhId", params.getAttr("gzhId"));
+			scoreAmount.addAttr("score", params.getAttr("score"));
+			try{
+				RemoteInvoke.getInstance().call(scoreAmount);
+			}catch(Exception e){
+				log.error("updateTotalScore custWxinfoService error", e);
+			}
+		}
+		return result;
+	}
+	
+	/***
+	 * 活动奖励添加
+	 * @param context
+	 * @return
+	 */
+	public AppResult insertActivity(AppParam context) {
+		int score = RewardUtil.getRewardValue(context);
+		String customerId = context.getAttr("customerId").toString();
+		int type = StringUtils.isEmpty(context.getAttr("type")) ? 1 : Integer.valueOf(context.getAttr("type").toString());
+		AppResult result = ScoreUtils.scoreChangeCust(customerId, score, 
+				type, context.getAttr("createDesc")==null?"活动调用":context.getAttr("createDesc").toString());
+		if(result.isSuccess() && CustInviteUtil.isInActive()){
+			// 插入奖励记录
+			Object selfId = context.getAttr("selfId");
+			Object newRewardType = context.getAttr("newRewardType");
+			if(!StringUtils.isEmpty(selfId) && !StringUtils.isEmpty(newRewardType)){
+				try {
+					// 自己获得的积分不存入表
+					if(!selfId.toString().equals(customerId)){
+						AppParam scoreParams = new AppParam();
+						scoreParams.setService("inviteRewardService");
+						scoreParams.setMethod("insert");
+						scoreParams.addAttr("customerId", customerId);
+						scoreParams.addAttr("awardValue", score);
+						scoreParams.addAttr("awardType", "score");
+						scoreParams.addAttr("createDesc", context.getAttr("createDesc"));
+						scoreParams.addAttr("rewardType", newRewardType);
+						scoreParams.addAttr("sendStatus", "1");
+						scoreParams.addAttr("friendId", selfId);
+						scoreParams.addAttr("sendTime", new Date());
+						SoaManager.getInstance().invoke(scoreParams);
+					}
+					
+					// 修改奖励概况
+					String rewardDesc = score + "积分";
+					AppParam updateParams = new AppParam();
+					updateParams.setService("inviteRecordService");
+					updateParams.setMethod("update");
+					updateParams.addAttr("customerId", selfId);
+					Map<String, Object> userMap = CustomerIdentify.getCustIdentify(selfId.toString());
+					Object referer = userMap.get("referer");
+					Object refererTwo = userMap.get("refererTwo");
+					if(selfId.toString().equals(customerId)){
+						// 奖励自己
+						if("1".equals(newRewardType.toString())){
+							updateParams.addAttr("identifyReward", rewardDesc);
+						}else if("2".equals(newRewardType.toString())){
+							updateParams.addAttr("cardIdentifyReward", rewardDesc);
+						}
+						SoaManager.getInstance().invoke(updateParams);
+					}else if(!StringUtils.isEmpty(referer) && customerId.equals(referer.toString())){
+						// 奖励直接推荐人
+						if("1".equals(newRewardType.toString())){
+							updateParams.addAttr("refererIdentifyReward", rewardDesc);
+						}else if("2".equals(newRewardType.toString())){
+							updateParams.addAttr("refererCardIdentifyReward", rewardDesc);
+						}
+						SoaManager.getInstance().invoke(updateParams);
+					}else if(!StringUtils.isEmpty(refererTwo) && customerId.equals(refererTwo.toString())){
+						// 奖励间接推荐人
+						if("1".equals(newRewardType.toString())){
+							updateParams.addAttr("refererTwoIdentifyReward", rewardDesc);
+						}else if("2".equals(newRewardType.toString())){
+							updateParams.addAttr("refererTwoCardIdentifyReward", rewardDesc);
+						}
+						SoaManager.getInstance().invoke(updateParams);
+					}
+				} catch (Exception e) {
+					log.error("update invite data error", e);
+				}
+			}
+		}
+		return result;
+	}
+	/**
+	 * 修改经验值
+	 * updateScore
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateNewScore(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "updateNewScore", params.getAttr(), params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("scoreId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("scoreId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	public AppResult custTotalScore(AppParam params){
+		List<Map<String,Object>> data = this.getDao().query(NAMESPACE, "custTotalScore", params.getAttr(), params.getDataBase());
+		AppResult result = new AppResult();
+		result.addRows(data);
+		return result;
+	}
+	
+	
+
+	/***
+	 * 批量导入积分
+	 * @param context
+	 * @return
+	 */
+	public AppResult uploadExcel(AppParam context){
+		AppResult result = new AppResult();
+//		List<Map<String, Object>> list = (List<Map<String, Object>>) context.getAttr("list");
+//		int j = 0;
+//		int row =0;
+//		if (!StringUtils.isEmpty(context.getAttr("list"))) {
+//			for (Map<String, Object> cashMap:list) {
+//				Object userName = cashMap.get("userName");
+//				Object score = cashMap.get("score");
+//				Object createDesc = cashMap.get("createDesc");
+//				row ++;
+//				if (!StringUtils.isEmpty(userName) && !StringUtils.isEmpty(score)) {
+//					Object customerId = UserInfoUtil.queryCustId(userName.toString());
+//					if (customerId == null) {
+//						throw new SysException("缺少参数，用户名：" + userName +" 在系统中不存在！第" + row +"行" );
+//					}
+//					if(StringUtils.isEmpty(createDesc)){
+//						throw new SysException("缺少参数，描述信息不允许为空,第" + row +"行" );
+//					}
+//					int intScore = new BigDecimal(score.toString()).intValue();
+//					if(intScore==0){
+//						throw new SysException("积分不正确，第" + row +"行 积分为0" );
+//					}
+//					cashMap.put("customerId", customerId);
+//					cashMap.put("score", intScore);
+//					cashMap.put("createDesc", createDesc);
+//					cashMap.put("scoreType", 10);
+//					cashMap.put("type", "1");
+//					if(intScore<0) {
+//						 cashMap.put("type", "0");
+//					}
+//					AppParam insetScoreParam = new AppParam();
+//					insetScoreParam.addAttrs(cashMap);
+//					result = this.insert(insetScoreParam);
+//					j++;
+//				}
+//			}
+//		}
+//		result.setMessage("成功处理了"+ j + "条记录!");
+		return result;
+	}
+	
+	/**
+	 * 抢单送积分
+	 * @param context
+	 * @return
+	 */
+	public AppResult robSend(AppParam params){
+		Object customerId = params.getAttr("customerId");
+		Object rewardScore = params.getAttr("rewardScore");
+		if(StringUtils.isEmpty(customerId) || StringUtils.isEmpty(rewardScore)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		int score = Integer.valueOf(rewardScore.toString());
+		String createDesc = StringUtils.isEmpty(params.getAttr("createDesc"))?"抢单赠送":params.getAttr("createDesc").toString();
+		return ScoreUtils.scoreChangeCust(customerId.toString(), score, 
+				Integer.valueOf(CustConstant.SCORE_TYPE_23), createDesc);
+	}
+	
+	/**
+	 * 查询工作认证获取的积分
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCardScore(AppParam params){
+		return super.query(params, NAMESPACE, "queryCardScore");
+	}
+	
+}

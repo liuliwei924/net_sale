@@ -1,0 +1,102 @@
+package org.xxjr.job.listener.xxxj;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.xxjr.sys.util.ServiceKey;
+
+public class DailySumUtil {
+
+		// 用户信息统计
+		public static AppResult sumCust(Object processId) {
+			AppResult result = new AppResult();
+			try {
+				String yesterday = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),DateUtil.DATE_PATTERN_YYYY_MM_DD);
+				AppParam queryParam = new AppParam("xjCustService","querySumCust");
+				queryParam.addAttr("startRecordDate", yesterday);
+				queryParam.addAttr("endRecordDate", yesterday + " 23:59:59");
+				queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_XJ));
+				result = RemoteInvoke.getInstance().callNoTx(queryParam);
+				if(result.getRows().size()>0){
+					AppParam saveParam = new AppParam("xjSumCustService","save");
+					saveParam.addAttr("recordDate", yesterday);
+					saveParam.addAttrs(result.getRow(0));
+					saveParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sum));
+					result = RemoteInvoke.getInstance().call(saveParam);
+				}
+			} catch (Exception e) {
+				LogerUtil.error(DailySumUtil.class, e,"sumCustInfo >>>>>>>>>>>>>>>>>>error");
+				JobUtil.addProcessExecute(processId,"统计用户信息报错：" + e.getMessage());
+			}
+			return result;
+		}
+		
+		// 星舰币发放统计
+		public static AppResult sumCoin(Object processId) {
+			AppResult result = new AppResult();
+			try {
+				String yesterday = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),DateUtil.DATE_PATTERN_YYYY_MM_DD);
+				AppParam queryParam = new AppParam("xjRecCoinRecordService","querySumCoin");
+				queryParam.addAttr("startRecordDate", yesterday);
+				queryParam.addAttr("endRecordDate", yesterday + " 23:59:59");
+				queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_XJ));
+				result = RemoteInvoke.getInstance().callNoTx(queryParam);
+				if(result.getRows().size()>0){
+					AppParam saveParam = new AppParam("xjSumCoinService","save");
+					saveParam.addAttr("recordDate", yesterday);
+					saveParam.addAttrs(result.getRow(0));
+					saveParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sum));
+					result = RemoteInvoke.getInstance().call(saveParam);
+				}
+			} catch (Exception e) {
+				LogerUtil.error(DailySumUtil.class, e,"sumCoin >>>>>>>>>>>>>>>>>>error");
+				JobUtil.addProcessExecute(processId,"统计星舰币发放情况报错：" + e.getMessage());
+			}
+			return result;
+		}
+		
+		
+		/**
+		 * 用户来源统计
+		 * @param processId
+		 * @return
+		 */
+		public static AppResult sumCustSource(Object processId) {
+			AppResult result = new AppResult();
+			try {
+				String yesterday = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),DateUtil.DATE_PATTERN_YYYY_MM_DD);
+				AppParam queryParam = new AppParam("xjCustService","querySourceSum");
+				queryParam.addAttr("startRecordDate", yesterday);
+				queryParam.addAttr("endRecordDate", yesterday + " 23:59:59");
+				queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_XJ));
+				result = RemoteInvoke.getInstance().callNoTx(queryParam);
+				if(result.getRows().size()>0){
+					List<Map<String,Object>> dataList = result.getRows();
+					AppParam saveParam = new AppParam("xjSumSourceService","save");
+					saveParam.addAttr("list", dataList);
+					saveParam.addAttr("recordDate", yesterday);
+					saveParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sum));
+					result = RemoteInvoke.getInstance().call(saveParam);
+				}
+			} catch (Exception e) {
+				LogerUtil.error(DailySumUtil.class, e,"sumCustSource >>>>>>>>>>>>>>>>>>error");
+				JobUtil.addProcessExecute(processId,"统计用户渠道信息报错：" + e.getMessage());
+			}
+			return result;
+	   }
+}

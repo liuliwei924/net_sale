@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TELEEMPLOYEE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			empId,
+			cityName, 
+			orgName, 
+			empName, 
+			telephone, 
+			cardNo, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(sendTime,'%Y-%m-%d %H:%i:%s') as sendTime  
+		FROM t_tele_employee
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_tele_employee 
+		<include refid="queryWhereSql"></include>
+	</select>
+	
+	 <sql id="queryWhereSql">
+    	<where>
+		<if test="empId != null and empId != ''">
+		    and empId = #{empId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and cityName LIKE '${cityName}%'
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName LIKE '${orgName}%'
+		</if>
+		<if test="empName != null and empName != ''">
+			and empName = #{empName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cardNo != null and cardNo != ''">
+			and cardNo LIKE '${cardNo}%'
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="sendTime != null and sendTime != ''">
+			and sendTime = #{sendTime}
+		</if>
+		<if test="userName != null and userName != ''">
+			and (empName LIKE '${userName}%' OR telephone LIKE '${userName}%')
+		</if>
+		</where>
+    </sql>
+    
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="empId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_tele_employee (
+			cityName,
+			orgName,
+			empName,
+			telephone,
+			cardNo,
+			createTime,
+			sendTime
+		)
+		VALUES ( 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{empName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			#{cardNo, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{sendTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_tele_employee 
+		<where> 
+			empId = #{empId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_tele_employee  
+		<set>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="empName != null">
+				empName = #{empName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="cardNo != null">
+				cardNo = #{cardNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+			<if test="sendTime != null">
+				sendTime = #{sendTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  empId = #{empId}
+		</where>
+	</update>
+	
+	<update id="updateSendTime" parameterType="map">
+		UPDATE t_tele_employee 
+		SET
+			sendTime = NOW()
+		<where>
+			<if test="empIdList != null">
+				empId IN
+				<foreach item="itemNo" index="index" collection="empIdList" 
+                     open="(" separator="," close=")">
+             		 #{itemNo}                
+           		 </foreach>  
+			</if>
+		</where>
+	</update>
+</mapper>

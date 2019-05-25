@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATCONTRACT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t.contractId,
+			t.loanNo, 
+			t.applyId, 
+			t.reContractId,
+			t.status, 
+			(CASE 
+				WHEN t.status =0 THEN '未提交 '
+				WHEN t.status =1 THEN '已签约待面签'
+				WHEN t.status =2 THEN '面签待补资料'
+				WHEN t.status =3 THEN '资料全待审批'
+				WHEN t.status =4 THEN '已批复待放款'
+				WHEN t.status =5 THEN '已放款待结算'
+				WHEN t.status =6 THEN '回总部待办结'
+				WHEN t.status =7 THEN '已回款待结案'
+				WHEN t.status =8 THEN '正常结案'
+				WHEN t.status =-1 THEN '客户取消结案'
+				WHEN t.status =-2 THEN '批复拒绝结案'
+				WHEN t.status =-3 THEN '客户取消'
+				WHEN t.status =-4 THEN '批复拒绝'
+				WHEN t.status =-100 THEN '更换按揭员'
+				WHEN t.status =102 THEN '面签待补资料'
+				WHEN t.status =103 THEN '资料全待审批'
+				WHEN t.status =104 THEN '已批复待抵押'
+				WHEN t.status =105 THEN '已批复待赎楼'
+				WHEN t.status =106 THEN '已还款待取证'
+				WHEN t.status =107 THEN '已取证待抵押'
+				WHEN t.status =108 THEN '已抵押待放款'
+				WHEN t.status =109 THEN '已放款待结算'
+				WHEN t.status =110 THEN '回总部待办结'
+				WHEN t.status =111 THEN '已回款待结案'
+				WHEN t.status =112 THEN '正常结案'
+				WHEN t.status =50 THEN '结算待审核'
+				WHEN t.status =51 THEN '待转总部入账'
+				WHEN t.status =1090 THEN '结算待审核'
+				WHEN t.status =1091 THEN '待转总部入账'
+				ELSE ''
+			END) as 'statusText', 
+			t.approvalAmount, 
+			DATE_FORMAT(t.approvalTime,'%Y-%m-%d') as approvalTime , 
+			t.loanDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.queryStatus,
+			(CASE t.queryStatus
+			 WHEN 1 THEN '未查询'
+			 WHEN 2 THEN '查询成功'
+			 WHEN 3 THEN '查询失败'
+			 END) as 'queryStatusText',
+			t.errorMessage,
+			(select sum(t1.lendAmount) from t_treat_loan_record t1 where t1.loanNo = t.loanNo ) as totalAmount,
+			t.contractStatus
+			FROM t_treat_contract t
+		<where>
+			<if test="contractId != null and contractId != ''">
+			  and contractId = #{contractId}
+			 </if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="approvalAmount != null and approvalAmount != ''">
+				and approvalAmount = #{approvalAmount}
+			</if>
+			<if test="approvalTime != null and approvalTime != ''">
+				and approvalTime = #{approvalTime}
+			</if>
+			<if test="loanDesc != null and loanDesc != ''">
+				and loanDesc = #{loanDesc}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and queryStatus = #{queryStatus}
+			</if>
+			<if test="contractStatus != null and contractStatus != ''">
+				and contractStatus = #{contractStatus}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_contract 
+		<where>
+		<if test="contractId != null and contractId != ''">
+		    and contractId = #{contractId}
+		 </if>
+		<if test="loanNo != null and loanNo != ''">
+			and loanNo = #{loanNo}
+		</if>
+		<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="approvalAmount != null and approvalAmount != ''">
+			and approvalAmount = #{approvalAmount}
+		</if>
+		<if test="approvalTime != null and approvalTime != ''">
+			and approvalTime = #{approvalTime}
+		</if>
+		<if test="loanDesc != null and loanDesc != ''">
+			and loanDesc = #{loanDesc}
+		</if>
+		<if test="queryStatus != null and queryStatus != ''">
+			and queryStatus = #{queryStatus}
+		</if>
+		<if test="contractStatus != null and contractStatus != ''">
+			and contractStatus = #{contractStatus}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="contractId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_contract (
+			loanNo,
+			reContractId,
+			applyId,
+			status,
+			approvalAmount,
+			approvalTime,
+			loanDesc,
+			createTime,
+			queryStatus,
+			errorMessage,
+			contractStatus
+		)
+		VALUES ( 
+			#{loanNo, jdbcType=VARCHAR}, 
+			#{reContractId, jdbcType=VARCHAR},
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="approvalAmount !=null ">
+			#{approvalAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="approvalAmount ==null ">
+			0.00 ,
+			</if>
+			#{approvalTime, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{loanDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="queryStatus !=null ">
+			#{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="queryStatus ==null ">
+			1 ,
+			</if>
+			#{errorMessage, jdbcType=VARCHAR},
+			#{contractStatus, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_contract 
+		<where> 
+			contractId = #{contractId}
+		</where>
+	</delete>
+	<delete id="deleteBy" parameterType="map">
+		DELETE FROM t_treat_contract 
+		<where> 
+			applyId = #{applyId}
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_contract  
+		<set>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="approvalAmount != null">
+				approvalAmount = #{approvalAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="approvalTime != null">
+				approvalTime = #{approvalTime, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="loanDesc != null">
+				loanDesc = #{loanDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},
+			</if>
+			<if test="contractStatus != null">
+				contractStatus = #{contractStatus, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  contractId = #{contractId}
+		</where>
+	</update>
+</mapper>

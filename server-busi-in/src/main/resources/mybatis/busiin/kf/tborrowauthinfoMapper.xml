@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWAUTHINFO">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			fund, 
+			social, 
+			carrier, 
+			chsi, 
+			jingdong
+		FROM t_borrow_auth_info
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="fund != null and fund != ''">
+				and fund = #{fund}
+			</if>
+			<if test="social != null and social != ''">
+				and social = #{social}
+			</if>
+			<if test="carrier != null and carrier != ''">
+				and carrier = #{carrier}
+			</if>
+			<if test="chsi != null and chsi != ''">
+				and chsi = #{chsi}
+			</if>
+			<if test="jingdong != null and jingdong != ''">
+				and jingdong = #{jingdong}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_auth_info 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="fund != null and fund != ''">
+			and fund = #{fund}
+		</if>
+		<if test="social != null and social != ''">
+			and social = #{social}
+		</if>
+		<if test="carrier != null and carrier != ''">
+			and carrier = #{carrier}
+		</if>
+		<if test="chsi != null and chsi != ''">
+			and chsi = #{chsi}
+		</if>
+		<if test="jingdong != null and jingdong != ''">
+			and jingdong = #{jingdong}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_borrow_auth_info (
+			customerId,
+			applyId,
+			fund,
+			social,
+			carrier,
+			chsi,
+			jingdong
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{fund, jdbcType=NVARCHAR}, 
+			#{social, jdbcType=NVARCHAR}, 
+			#{carrier, jdbcType=NVARCHAR}, 
+			#{chsi, jdbcType=NVARCHAR}, 
+			#{jingdong, jdbcType=NVARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_auth_info 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_auth_info  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="fund != null">
+				fund = #{fund, jdbcType=NVARCHAR},  
+			</if>
+			<if test="social != null">
+				social = #{social, jdbcType=NVARCHAR},  
+			</if>
+			<if test="carrier != null">
+				carrier = #{carrier, jdbcType=NVARCHAR},  
+			</if>
+			<if test="chsi != null">
+				chsi = #{chsi, jdbcType=NVARCHAR},  
+			</if>
+			<if test="jingdong != null">
+				jingdong = #{jingdong, jdbcType=NVARCHAR}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+</mapper>

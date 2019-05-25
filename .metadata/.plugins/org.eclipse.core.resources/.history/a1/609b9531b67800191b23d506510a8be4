@@ -1,0 +1,229 @@
+package org.xxjr.busi.util.wd;
+
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.IDCardValidate;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.cust.util.info.MapLocaltionUtil;
+import org.xxjr.sys.util.ValidUtils;
+
+public class WdRiskUtil {
+
+	/**
+	 * 编辑民间风控客户
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult addUser(AppParam params) {
+		if (StringUtils.isEmpty(params.getAttr("userName"))) {
+			return CustomerUtil.retErrorMsg("客户姓名不允许为空!");
+		}
+		String cardNo = (String) params.getAttr("cardNo");
+		if (StringUtils.isEmpty(cardNo)) {
+			return CustomerUtil.retErrorMsg("客户身份证号码不允许为空!");
+		}
+		// 验证身份证号码
+		String validResult = IDCardValidate.validCardNoOrLast6(cardNo);
+		if (!StringUtils.isEmpty(validResult)) {
+			return CustomerUtil.retErrorMsg(validResult);
+		}
+		String telephone = (String) params.getAttr("telephone");
+		if (!StringUtils.isEmpty(telephone)
+				&& !ValidUtils.validateTelephone(telephone)) {
+			return CustomerUtil.retErrorMsg("请输入正确的手机号码!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("cityName"))) {
+			return CustomerUtil.retErrorMsg("所在城市不允许为空!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("loanPurpose"))) {
+			return CustomerUtil.retErrorMsg("贷款用途不允许为空!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("loanAmount"))) {
+			return CustomerUtil.retErrorMsg("贷款额度不允许为空!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("loanOrg"))) {
+			return CustomerUtil.retErrorMsg("贷款机构不允许为空!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("loanTime"))) {
+			return CustomerUtil.retErrorMsg("放款日期不允许为空!");
+		}
+		if (StringUtils.isEmpty(params.getAttr("status"))) {
+			return CustomerUtil.retErrorMsg("放款状态不允许为空!");
+		}
+		String ipAddress = DuoduoSession.getClientIp();
+		params.addAttr("ipAddress", ipAddress);
+		params.setService("riskUserService");
+		params.setMethod("addUser");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		return result;
+	}
+
+	/**
+	 * 我的客户详情
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult userDetail(AppParam params) {
+		params.setService("riskUserService");
+		params.setMethod("userDetail");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+
+	/**
+	 * 编辑民间风控贷款记录
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult editLoan(AppParam params) {
+		String ipAddress = DuoduoSession.getClientIp();
+		params.addAttr("ipAddress", ipAddress);
+		boolean custFlag = StringUtils.isEmpty(params.getAttr("loanId"));
+		params.setService("riskLoanService");
+		params.setMethod(custFlag ? "insert" : "update");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		return result;
+	}
+
+	/**
+	 * 民间风控查询过的人
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult searchPeonle(AppParam params) {
+		params.setService("riskQueryDtlService");
+		params.setMethod("searchPeonle");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		return result;
+	}
+
+	/**
+	 * 删除我的客户
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult delMyCustomer(AppParam params) {
+		params.setService("riskUserService");
+		params.setMethod("deleteUser");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+
+	/**
+	 * 删除贷款记录
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult delLoan(AppParam params) {
+		params.setService("riskLoanService");
+		params.setMethod("delete");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 风控查询
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult riskUser(AppParam params,HttpServletRequest request) {
+		if (StringUtils.isEmpty(params.getAttr("userName"))) {
+			return CustomerUtil.retErrorMsg("客户姓名不能为空!");
+		}
+		String cardNo = (String) params.getAttr("cardNo");
+		if (StringUtils.isEmpty(cardNo)) {
+			return CustomerUtil.retErrorMsg("客户身份证号码不允许为空!");
+		}
+		// 验证身份证号码
+		String validResult = IDCardValidate.validCardNoOrLast6(cardNo);
+		if (!StringUtils.isEmpty(validResult)) {
+			return CustomerUtil.retErrorMsg(validResult);
+		}
+		String telephone = (String) params.getAttr("telephone");
+		if (!StringUtils.isEmpty(telephone)
+				&& !ValidUtils.validateTelephone(telephone)) {
+			return CustomerUtil.retErrorMsg("客户手机号码格式不正确!");
+		}
+		Map<String,Object> localMap = MapLocaltionUtil.getLocationInfo(request);
+		String cityName = (String)localMap.get(MapLocaltionUtil.BaiDu_cityName);
+		String ipAddress = DuoduoSession.getClientIp();
+		params.addAttr("ipCity", cityName);
+		params.addAttr("ipAddress", ipAddress);
+		params.setService("riskUserService");
+		params.setMethod("riskUser");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 风控查询历史记录
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult queryHistory(AppParam params) {
+		params.setService("riskQueryService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+	/**
+	 * 查询贷款记录详情
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static AppResult loanDetail(AppParam params) {
+		params.setService("riskLoanService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+	
+	/****
+	 * 身份证号码号码隐藏
+	 * 
+	 * @param phone
+	 * @return
+	 */
+	public static String getHidecardNo(String cardNo) {
+		if (StringUtils.isEmpty(cardNo)) {
+			return "";
+		}
+		if( cardNo.trim().length() == 6){
+			return "**********" + cardNo;
+		}
+		if( cardNo.trim().length() == 18){
+			return "**********" + cardNo.substring(12);
+		}
+		return "";
+	}
+}

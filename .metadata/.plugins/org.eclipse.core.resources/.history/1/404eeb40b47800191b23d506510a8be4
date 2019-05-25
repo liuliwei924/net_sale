@@ -1,0 +1,185 @@
+package org.xxjr.log.util;
+
+import java.net.InetAddress;
+import java.util.Date;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+@Slf4j
+public class ThreadLogUtil {
+
+	private static ThreadPoolTaskExecutor taskExecutor;
+
+	public static ThreadPoolTaskExecutor getInstance(){
+		if(taskExecutor == null){
+			synchronized (ThreadLogUtil.class) {
+				if(taskExecutor == null){
+					taskExecutor = SpringAppContext.getApplicationContext().getBean(ThreadPoolTaskExecutor.class);
+				}
+			}
+		}
+		return taskExecutor;
+	}
+	
+	/***
+	 * 通过线程池添加异常日志信息
+	 * @param param
+	 */
+	public static void addExceptionByNewThread(AppParam param){
+		AppParam exParam = new AppParam("exceptionRecordService","insert");
+		exParam.setAttr(param.getAttr());
+		exParam.addAttr("status", 1);
+		exParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_log));
+		getInstance().execute(new Runnable() {
+			@Override
+			public void run() {
+				try{
+					RemoteInvoke.getInstance().call(exParam);
+				}catch(Exception e){
+					LogerUtil.error(ThreadLogUtil.class, e, "addExceptionByNewThread error");
+				}
+			}
+		});
+	}
+
+	/***
+	 * 通过线程池添加日志信息
+	 * @param param
+	 */
+	public static void addLogByNewThread(AppParam param, ThreadLogEnum logEnum) {
+		try {
+			if (param == null)
+				return;
+			param.setService("xxjrLogService");
+			param.setMethod("insertData");
+			param.addAttr("busiType", logEnum.getLogTable());
+			param.addAttr("endTime", new Date());
+			param.addAttr("status", DuoduoSession.getStatus());
+			param.addAttr("message", DuoduoSession.getMessage());
+			param.addAttr("requestLong", new Date().getTime()-((Date)param.getAttr("startTime")).getTime());
+			param.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_log));
+			getInstance().execute(new Runnable() {
+				@Override
+				public void run() {
+					try{
+						RemoteInvoke.getInstance().call(param);
+					}catch(Exception e){
+						LogerUtil.error(ThreadLogUtil.class, e, "addLogByNewThread error");
+					}
+				}
+			});
+		}catch(Exception e) {
+			LogerUtil.error(ThreadLogUtil.class, e, "addLogByNewThread  execute error");
+		}
+		//保存异常日志
+		if(DuoduoSession.getShowLog().getAttr("exceptionName")!=null){
+			try {
+			 ThreadLogUtil.addExceptionByNewThread(DuoduoSession.getShowLog());
+			}catch(Exception e) {
+				LogerUtil.error(ThreadLogUtil.class, e, "addExceptionByNewThread error");
+			}
+		}
+	}
+
+	/***
+	 * 设置日志参数
+	 * @param url
+	 * @param params
+	 * @param ip
+	 * @param signId
+	 * @param custInfo
+	 * @param request
+	 * @return
+	 */
+	public static AppParam setLogParam(String url,String params,String ip,
+			String signId,Map<String, Object> custInfo,HttpServletRequest request){
+		AppParam param = new AppParam();
+		try{
+			param.addAttr("requestUrl", url);
+			if(custInfo!=null){
+				param.addAttr("customerId", StringUtils.isEmpty(custInfo.get("customerId")) ? custInfo.get("userId"):
+					custInfo.get("customerId"));
+				param.addAttr("telephone", custInfo.get("telephone"));
+				param.addAttr("realName", custInfo.get("realName"));
+			}
+			if(StringUtils.isEmpty(param.getAttr("telephone"))){
+				param.addAttr("telephone", request.getParameter("telephone"));
+			}
+			param.addAttr("uuid", request.getParameter("UUID"));
+			param.addAttr("appVersion", request.getParameter("appVersion"));
+			param.addAttr("signId", signId);
+			param.addAttr("userAgent", subStrLength(request.getHeader("user-agent")));
+			param.addAttr("referer", subStrLength(request.getHeader("Referer")));
+			param.addAttr("ipAddress", ip);
+			param.addAttr("serverIp",InetAddress.getLocalHost().getHostAddress());
+			param.addAttr("startTime", new Date());
+			param.addAttr("params", params);
+			DuoduoSession.setShowLog(param);
+		}catch(Exception e){
+			log.error(" set log error:", e);
+		}
+		return param;
+	}
+	
+	/***
+	 * 获取日志表名
+	 * @param startCreateTime  开始时间，null-默认当前时间
+	 * @param logEnum  项目日志对应日志枚举
+	 */
+	public static String getLogTable(String startCreateTime, ThreadLogEnum logEnum){
+		Date date = null;
+		if(!StringUtils.isEmpty(startCreateTime)){
+			date = DateUtil.toDateByString(startCreateTime, "yyyy-MM");
+			startCreateTime =  DateUtil.toStringByParttern(date, "yyyyMM");
+		}else{
+			startCreateTime = DateUtil.toStringByParttern(new Date(), "yyyyMM");
+		}
+		return logEnum.getLogTable()+startCreateTime;
+	}
+	
+	/***
+	 * 截取字符长度
+	 * @param param
+	 * @return
+	 */
+	public static String subStrLength(String param){
+		if(!StringUtils.isEmpty(param) && param.length() >300){
+			param = param.substring(0,300);
+		}
+		return param;
+	}
+	
+	/***
+	 * 通过线程池发送消息
+	 * @param param
+	 */
+	public static void sendMessageNewThread(AppParam param){
+		getInstance().execute(new Runnable() {
+			@Override
+			public void run() {
+				try{
+					RemoteInvoke.getInstance().call(param);
+				}catch(Exception e){
+					LogerUtil.error(ThreadLogUtil.class, e, "sendMessageNewThread error");
+				}
+			}
+		});
+	}
+}

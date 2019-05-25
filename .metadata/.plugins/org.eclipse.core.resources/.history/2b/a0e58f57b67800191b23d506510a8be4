@@ -1,0 +1,34 @@
+package org.xxjr.hdb.util;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+
+public class HdbCustomerUtil {
+
+	public static AppResult query(AppParam params) {
+		params.setService("hdCustomerService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "hdb"));
+		return RemoteInvoke.getInstance().callNoTx(params);
+	}
+
+	public static AppResult update(AppParam params) {
+		params.setService("hdCustomerService");
+		params.setMethod("update");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "hdb"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+
+	public static AppResult insert(AppParam params) {
+		params.setService("hdCustomerService");
+		params.setMethod("insert");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "hdb"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+}

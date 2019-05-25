@@ -1,0 +1,103 @@
+package org.xxjr.mq.listener.receiver;
+
+import java.util.Map;
+
+import javax.annotation.PreDestroy;
+
+import org.ddq.active.mq.XxjrMqSendUtil;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.mq.rabbitmq.RabbitMqConfig;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.mq.listener.consumer.RabbitMqConsumer;
+import org.xxjr.mq.listener.util.XxjrInitAnnotation;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * mq消息接收
+ * @author Administrator
+ *
+ */
+@Component
+@XxjrInitAnnotation(beanName="wxPosterMsgReceiver",initMethod="init")
+public class WxPosterMsgReceiver extends RabbitMqConsumer{
+
+	@Autowired
+	private RabbitMqConfig rabbitMqConfig;
+	
+	@Value("${rabbit.queue.wxPosterMsg}")
+	private String queueName;
+
+
+	public void onMessage(Map<String, Object> param) {
+		try {
+			LogerUtil.log(WxPosterMsgReceiver.class,"poster message params:" + param.toString());
+			// 生成海报
+			AppParam mqParam = new AppParam();
+			mqParam.setService("sendMqMessageService");
+			mqParam.setMethod("getPosterQrCode");
+			mqParam.addAttrs(param);
+			if (SpringAppContext.getBean("sendMqMessageService") != null) {
+				SoaManager.getInstance().invoke(mqParam);;
+			}else{
+				mqParam.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START +
+								ServiceKey.Key_wx));
+				RemoteInvoke.getInstance().call(mqParam);
+			}
+			// 小小攒钱关注关联信贷经理
+			bindSubscriber(param);
+		} catch (Exception e) {
+			LogerUtil.error(WxPosterMsgReceiver.class, e, "WxPosterMsgReceiver Message params:" + param.toString());
+			XxjrMqSendUtil.saveFailureLog("WxPosterMsgReceiver", param);
+		}
+	}
+	
+	/**
+	 * 绑定关注者
+	 * @param param
+	 */
+	@SuppressWarnings("unchecked")
+	private static void bindSubscriber(Map<String, Object> param){
+		if (!StringUtils.isEmpty(param.get("bindSubscriber"))){
+			Object ticket = param.get("Ticket");
+			String gzhId = StringUtil.getString(param.get("gzhId"));
+			// 根据ticket查询是否是信贷经理二维码
+			AppParam params = new AppParam("custWxTicketService", "bindSubscriber");
+			params.addAttr("ticket", ticket);
+			params.addAttr("gzhId", gzhId);
+			Map<String, Object> wxInfo = (Map<String, Object>) param.get("wxInfo"); // 微信信息
+			params.addAttr("openid", wxInfo.get("openid"));
+			params.addAttr("unionid", wxInfo.get("unionid"));
+			params.addAttr("nickName", wxInfo.get("nickname"));
+			params.addAttr("headImg", wxInfo.get("headimgurl"));
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+			RemoteInvoke.getInstance().call(params);
+		}
+	}
+	
+	@Override
+	public void init(String queueName ,RabbitMqConfig rabbitMqConfig) {
+		super.init(queueName,rabbitMqConfig);
+	}
+	
+    public void init() {
+		init(queueName,rabbitMqConfig);
+	}
+	
+	@PreDestroy
+	public void destroy(){
+		reaseResource();
+	}
+	
+}

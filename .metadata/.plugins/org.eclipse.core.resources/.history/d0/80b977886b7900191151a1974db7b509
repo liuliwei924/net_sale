@@ -1,0 +1,76 @@
+package org.xxjr.mq.listener.receiver;
+
+import java.util.Map;
+
+import javax.annotation.PreDestroy;
+
+import org.ddq.active.mq.XxjrMqSendUtil;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.mq.rabbitmq.RabbitMqConfig;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.mq.listener.consumer.RabbitMqConsumer;
+import org.xxjr.mq.listener.util.XxjrInitAnnotation;
+import org.xxjr.sys.util.active.ActiveUtil;
+
+
+/***
+ * 奖励管理发放
+ * @author qinxcb
+ *
+ */
+@Component
+@XxjrInitAnnotation(beanName="mqActivetyReceiver",initMethod="init")
+public class MqActivetyReceiver extends RabbitMqConsumer{
+	
+	@Autowired
+	private RabbitMqConfig rabbitMqConfig;
+	
+	@Value("${rabbit.queue.custActive}")
+	private String queueName;
+
+	public void onMessage(Map<String, Object> param) {
+		try {
+			LogerUtil.log("Active params:" + param.toString());
+			AppParam appParam = new AppParam();
+			for (String name : param.keySet()) {
+				Object obj = param.get(name);
+				String value = StringUtils.isEmpty(obj) ? "" : obj.toString();
+				if ("service".equals(name)) {
+					appParam.setService(value);
+				} else if ("method".equals(name)) {
+					appParam.setMethod(value);
+				} else {
+					appParam.addAttr(name, value);
+				}
+			}
+			if(!StringUtils.isEmpty(appParam.getAttr("invokeOne"))){
+				ActiveUtil.invokeOneActive(appParam);
+			}else{
+				ActiveUtil.invokeActive(appParam);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(MqActivetyReceiver.class, e, "MqActivetyReceiver execute error!");
+			XxjrMqSendUtil.saveFailureLog("MqActivetyReceiver", param);
+		}
+	}
+	
+	@Override
+	public void init(String queueName ,RabbitMqConfig rabbitMqConfig) {
+		super.init(queueName,rabbitMqConfig);
+	}
+	
+    public void init() {
+		init(queueName,rabbitMqConfig);
+	}
+	
+	@PreDestroy
+	public void destroy(){
+		reaseResource();
+	}
+
+	
+}

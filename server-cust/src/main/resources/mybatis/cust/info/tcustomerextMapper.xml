@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTOMEREXT">
+
+	<select id="queryCustomerId" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			openid,
+			gzhId,
+			userName	
+		FROM
+			t_customer 
+		WHERE
+			telephone = #{telephone}
+	</select>
+    
+    <!-- 修改用户角色类型 -->
+	<update id="batchUpdateRole" parameterType="map">
+		UPDATE t_customer t SET t.roleType = #{roleType}
+		WHERE t.roleType != #{roleType} AND t.telephone in
+		<foreach item="item" index="index" collection="list"  open="(" separator="," close=")">
+             #{item}
+        </foreach>
+	</update>
+	
+	<!-- 查询门店及管理员用户 -->
+	<select id="queryStoreCustList" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t1.cityName,
+			IFNULL(t2.realName,t.userName) as 'userName',
+    		t.telephone,
+			t.roleType,
+			t.authRole as 'roleId',
+			t.userOrgs,
+			t.groupName,
+			t.teamName,
+			t4.orgId,
+			t4.orgNo,
+			t4.orgName,
+		    t7.roleName		
+		FROM
+			t_customer t
+		LEFT JOIN t_cust_info t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify t2 ON t.customerId = t2.customerId
+		LEFT JOIN t_cust_identify_card t3 ON t.customerId = t3.customerId
+		LEFT JOIN t_org t4 ON t4.orgId = t.orgId
+		LEFT JOIN t_sys_role t7 ON t7.roleId =  t.authRole 
+		
+		<include refid="sqlQueryStoreCustList"></include>
+		ORDER by t.registerTime desc
+	</select>
+
+	<select id="queryStoreCustCount" resultType="int" parameterType="map">
+		SELECT count(1)
+		FROM t_customer t
+		LEFT JOIN t_cust_info t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify t2 ON t.customerId = t2.customerId
+		LEFT JOIN t_cust_identify_card t3 ON t.customerId = t3.customerId
+		LEFT JOIN t_org t4 ON t4.orgId = t.orgId
+		LEFT JOIN t_sys_role t7 ON t7.roleId =  t.authRole 
+		<include refid="sqlQueryStoreCustList"></include>
+	</select>
+	
+	<!-- 查询门店所有组 -->
+	<select id="queryOrgGroupList" parameterType="map" resultType="map">
+		select groupName from t_customer t WHERE t.orgId = #{orgId} and groupName != '' GROUP BY groupName
+	</select>
+	<!-- 查询门店组下所有队 -->
+	<select id="queryOrgTeamList" parameterType="map" resultType="map">
+		select teamName from t_customer t WHERE t.orgId = #{orgId} 
+		and t.groupName = #{groupName} and teamName != '' GROUP BY teamName
+	</select>
+	
+	
+	<sql id="sqlQueryStoreCustList">
+		<where>
+			 <if test="telephone != null and telephone != ''">
+			    and t.telephone = #{telephone}
+			 </if>
+			 <if test="customerId != null and customerId != ''">
+			    and t.customerId = #{customerId}
+			 </if>
+		 	 <if test="userName != null and userName != ''">
+			    and t.userName like CONCAT(#{userName},'%')
+			 </if>
+			 <if test="groupName != null and groupName != ''">
+			    and t.groupName like CONCAT(#{groupName},'%')
+			 </if>
+			 <if test="teamName != null and teamName != ''">
+			    and t.teamName like CONCAT(#{teamName},'%')
+			 </if>
+			<if test="roleId != null and roleId != '' ">
+				<![CDATA[ and t.authRole = #{roleId} ]]>
+			</if>
+			<if test="userRoleId != null and userRoleId != '' ">
+				<![CDATA[ and t.roleType = #{userRoleId} ]]>
+			</if>
+			<if test="roleTypeIn != null and roleTypeIn != ''">
+				 and t.roleType in(${roleTypeIn})
+			</if>
+			<if test="authRole != null and authRole != ''">
+				 and t.authRole = #{authRole}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				 and t.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				 and t.orgId in(${userOrgs})
+			</if>		
+			<if test="cityName != null and cityName != ''">
+				<![CDATA[ and t1.cityName like CONCAT(#{cityName},'%') ]]>
+			</if>
+			<if test="leavelCustId != null and leavelCustId != ''">
+				 and t.customerId != #{leavelCustId}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询信贷经理信息 -->
+	<select id="queryManagerInfo" resultType="map" parameterType="map">
+		SELECT
+			t1.customerId,
+			t1.company,
+			t2.telephone,
+			t3.realName,
+			DATE_FORMAT(t2.registerTime,'%Y-%m-%d %H:%i:%s') as registerTime ,
+			DATE_FORMAT(t4.updateTime,'%Y-%m-%d %H:%i:%s') as lastLoginTime ,
+			(
+				SELECT
+					count(referer)
+				FROM
+					t_customer e1
+				WHERE
+					e1.referer = t1.customerId
+			) AS refererCount,
+			(
+				SELECT
+					sum(amount) / 100
+				FROM
+					t_recharge e2
+				WHERE
+					e2.customerId = t1.customerId
+			) AS rechargeAmount
+		FROM
+			t_cust_identify_card t1
+		LEFT JOIN t_customer t2 ON t1.customerId = t2.customerId
+		LEFT JOIN t_cust_identify t3 ON t1.customerId = t3.customerId
+		LEFT JOIN t_cust_signid t4 ON t1.customerId = t4.customerId
+		AND t4.signType = 'appxdjl'
+		WHERE
+			t1.status = 1 and
+			t1.customerId >  #{customerId}
+		ORDER BY
+			t1.customerId ASC
+		<if test="limit != null and limit != ''">
+			LIMIT ${limit}
+		</if>
+	</select>
+	
+	<select id="myRewardCount" resultType="map" parameterType="map">
+		select 
+			(select count(t1.customerId) from t_customer t1 
+				where t1.registerTime > #{startDate} AND <![CDATA[t1.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]> 
+				AND t1.referer = #{customerId})as refererCount,
+			(SELECT count(1) FROM t_cust_rob_record WHERE refererId = #{customerId} ) AS friendRobCount,
+			(select count(1) from t_cust_rob_record where customerId = #{customerId}) as selfRobCount,
+			(select count(1) from t_cust_ticket where customerId = #{customerId} and type = 10 AND activityType =1)as ticketCount
+		from DUAL
+	</select>
+	
+	<select id="myRewardList" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(t2.realName,t1.userName) userName,
+			IFNULL(t2.status,-1) identifyStatus,
+			t1.telephone,
+			date_format(t1.registerTime, '%Y-%m-%d') registerTime,
+			IFNULL((select sum(t.amount/100) from t_recharge t where t.customerId = t1.customerId),0) rechageAmount,
+			IFNULL((select count(1) from t_cust_rob_record where customerId = t1.customerId),0) robCount
+		FROM
+			t_customer t1 
+			LEFT JOIN t_cust_identify t2 ON t1.customerId = t2.customerId
+		WHERE
+			<![CDATA[t1.registerTime > #{startDate}]]>
+		AND <![CDATA[t1.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]>
+		AND t1.referer = #{customerId}
+		ORDER BY t1.registerTime desc
+	</select>
+	
+	<select id="myRewardByInviteFriend" resultType="map" parameterType="map">
+		SELECT 
+			COUNT(DISTINCT(t.customerId)) refererCount,
+			<!-- 奖励邀请人首次充值+工作认证总数 -->
+			IFNULL(
+					(SELECT SUM(IFNULL(refererRechargeReward,0) + IFNULL(refererIdentifyCardReward,0)) 
+						FROM t_cust_activity_record WHERE referer = t.referer 
+						AND createTime<![CDATA[ > ]]>#{startDate} 
+						AND createTime<![CDATA[ < ]]>DATE_ADD(#{endDate},INTERVAL 1 DAY)
+					),0) ticketCount,
+			<!-- 阶梯奖励完成总数 -->		
+			IFNULL((SELECT 
+						count(1) 
+					FROM t_cust_ticket
+					WHERE
+						customerId = t.referer 
+						AND type = 14 
+						AND activityType = 2
+						AND createTime<![CDATA[ > ]]>#{startDate} 
+						AND createTime<![CDATA[ < ]]>DATE_ADD(#{endDate},INTERVAL 1 DAY)
+						),0) as extraTicketCount,
+			COUNT((SELECT DISTINCT(t2.customerId) FROM t_recharge t2 INNER JOIN t_cust_identify_card t3 ON t2.customerId = t3.customerId 
+					WHERE t2.customerId = t.customerId AND t2.status = 1 AND t2.amount >=50000 AND t3.status = 1)) finishCount,
+			IFNULL(t1.days3Reward,0) days3Reward,
+			IFNULL(t1.days7Reward,0) days7Reward			
+		FROM 
+			t_customer t
+		LEFT JOIN t_cust_activity_record t1 ON t.referer = t1.customerId
+		WHERE
+			t.referer = #{customerId}
+		AND <![CDATA[t.registerTime > #{startDate}]]>
+		AND <![CDATA[t.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]>
+	</select>
+	
+	<select id="rewardDetailByInviteFriend" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(IFNULL(t1.realName,t.userName),'') as userName,
+			t.telephone,
+			<!-- 工作认证 -->
+			IF(t2.status = 1,1,0) cardStatus,
+			<!-- 首次充值 -->
+			IF((SELECT COUNT(1) FROM t_recharge e WHERE e.customerId = t.customerId AND e.status = 1 AND e.amount >= 50000 )>0,1,0) rechargeStatus,
+			<!-- 首次充值奖励+工作认证奖励 -->
+			IFNULL(t3.refererRechargeReward,0) + IFNULL(t3.refererIdentifyCardReward,0) ticketCount,
+			IFNULL(t3.refererRechargeReward,0) firstRecharge,
+			IFNULL(t3.refererIdentifyCardReward,0) workIdentify
+		FROM
+			t_customer t
+		LEFT JOIN t_cust_identify t1 ON t.customerId = t1.customerId
+		LEFT JOIN t_cust_identify_card t2 ON t.customerId = t2.customerId
+		LEFT JOIN t_cust_activity_record t3 ON t.customerId = t3.customerId
+		WHERE
+			t.referer = #{customerId}
+		AND <![CDATA[t.registerTime > #{startDate}]]>
+		AND <![CDATA[t.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]>
+		ORDER BY t.registerTime desc
+	</select>
+
+	<select id="inviteActivityOfDay" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT(t.registerTime, '%Y-%m-%d') recordDate,
+			(SELECT count(1) FROM t_share_record WHERE DATE_FORMAT(createTime, '%Y-%m-%d') = recordDate and channel = 4 AND activeType= 2) shareCount,
+			(select count(1) from t_cust_activity_record e where DATE_FORMAT(registerTime, '%Y-%m-%d') =  recordDate and e.activityType = 2) regCount,
+			(select count(1) from t_cust_identify_card e where DATE_FORMAT(auditTime, '%Y-%m-%d') = recordDate and e.status = 1) identifyCardCount,
+			(SELECT COUNT(DISTINCT customerId) FROM t_recharge t WHERE DATE_FORMAT(createTime, '%Y-%m-%d') = recordDate AND `status` = 1 AND amount >= 50000
+				AND NOT EXISTS (SELECT 1 FROM t_recharge e WHERE e.`status` = 1 AND e.amount >= 50000 AND e.customerId = t.customerId AND <![CDATA[e.createTime < recordDate]]>)) firstRechargeCount,
+			(select count(1) from t_cust_ticket where DATE_FORMAT(createTime, '%Y-%m-%d') = recordDate and activityType =2 and type != 10) sendTicketCount,
+			(select count(1) from t_cust_ticket where DATE_FORMAT(useTime, '%Y-%m-%d') = recordDate and activityType =2 and type != 10) useTicketCount, 
+			(select count(1) from t_cust_ticket where DATE_FORMAT(createTime, '%Y-%m-%d') = recordDate and activityType =2 and type = 10) sendFreeTicketCount,
+			(select count(1) from t_cust_ticket where DATE_FORMAT(useTime, '%Y-%m-%d') = recordDate and activityType =2 and type = 10) useFreeTicketCount,
+			(select count(DISTINCT(t2.customerId)) from t_recharge t2 
+				INNER JOIN t_cust_identify_card t3 ON t2.customerId = t3.customerId 
+				where t2.status = 1 and t2.amount >=50000 and t3.status = 1 and DATE_FORMAT(t2.createTime, '%Y-%m-%d') = recordDate) as finishCount
+		 FROM t_customer t
+         <where>
+         	 <![CDATA[t.registerTime >= #{startDate}]]>
+         	 <if test="endDate != null and endDate !=''">
+         	 	AND <![CDATA[t.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]>
+         	 </if>
+         </where>
+     	 GROUP BY recordDate
+	      <if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		  </if>
+	</select>
+	
+	<select id="inviteActivityOfDayCount" parameterType="map" resultType="int">
+          select count(1)from (
+			select count(1) FROM t_customer t
+			<where>
+          	 <![CDATA[t.registerTime > #{startDate}]]>
+          	 <if test="endDate != null and endDate !=''">
+          	 	AND <![CDATA[t.registerTime < DATE_ADD(#{endDate},INTERVAL 1 DAY)]]>
+          	 </if>
+          </where>
+			GROUP BY DATE_FORMAT(t.registerTime, '%Y-%m-%d'))t
+	</select>
+</mapper>

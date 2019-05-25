@@ -1,0 +1,22 @@
+package org.xxjr.job.listener.xxxj;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+@Lazy
+@Component
+public class XjXzSendRewardJob implements BaseExecteJob{
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		XzUtil.sendXzReward(processId);//星座计算分红
+		return result;
+	}
+}

@@ -1,0 +1,1118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMORGBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			orgId, 
+			orgName, 
+			cityName, 
+			feedBackCount, 
+			receiveCount,
+			isNet,
+			onlineCount,
+			recPersonCount,
+			handelTime,
+			applyHandelTime,
+			applyAllotTime
+		FROM t_sum_org_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="feedBackCount != null and feedBackCount != ''">
+				and feedBackCount = #{feedBackCount}
+			</if>
+			<if test="receiveCount != null and receiveCount != ''">
+				and receiveCount = #{receiveCount}
+			</if>
+			<if test="isNet != null and isNet != ''">
+				and isNet = #{isNet}
+			</if>
+			<if test="onlineCount != null and onlineCount != ''">
+				and onlineCount = #{onlineCount}
+			</if>
+			<if test="recPersonCount != null and recPersonCount != ''">
+				and recPersonCount = #{recPersonCount}
+			</if>
+			<if test="handelTime != null and handelTime != ''">
+				and handelTime = #{handelTime}
+			</if>
+			<if test="applyHandelTime != null and applyHandelTime != ''">
+				and applyHandelTime = #{applyHandelTime}
+			</if>
+			<if test="applyAllotTime != null and applyAllotTime != ''">
+				and applyAllotTime = #{applyAllotTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_org_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="feedBackCount != null and feedBackCount != ''">
+			and feedBackCount = #{feedBackCount}
+		</if>
+		<if test="receiveCount != null and receiveCount != ''">
+			and receiveCount = #{receiveCount}
+		</if>
+		<if test="isNet != null and isNet != ''">
+			and isNet = #{isNet}
+		</if>
+		<if test="onlineCount != null and onlineCount != ''">
+			and onlineCount = #{onlineCount}
+		</if>
+		<if test="recPersonCount != null and recPersonCount != ''">
+			and recPersonCount = #{recPersonCount}
+		</if>
+		<if test="handelTime != null and handelTime != ''">
+			and handelTime = #{handelTime}
+		</if>
+		<if test="applyHandelTime != null and applyHandelTime != ''">
+			and applyHandelTime = #{applyHandelTime}
+		</if>
+		<if test="applyAllotTime != null and applyAllotTime != ''">
+			and applyAllotTime = #{applyAllotTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_org_base (
+			recordDate,
+			orgId,
+			orgName,
+			cityName,
+			feedBackCount,
+			dealCount,
+			receiveCount,
+			isNet,
+			onlineCount,
+			recPersonCount,
+			handelTime,
+			applyHandelTime,
+			applyAllotTime
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+				#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="feedBackCount !=null ">
+			#{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feedBackCount ==null ">
+			0 ,
+			</if>
+			<if test="dealCount !=null ">
+			#{dealCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="dealCount ==null ">
+			0 ,
+			</if>
+			<if test="receiveCount !=null ">
+			#{receiveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="receiveCount ==null ">
+			0 ,
+			</if>
+			<if test="isNet !=null ">
+			#{isNet, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="isNet ==null ">
+			0 ,
+			</if>
+			<if test="onlineCount !=null ">
+			#{onlineCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="onlineCount ==null ">
+			0 ,
+			</if>
+			<if test="recPersonCount !=null ">
+			#{recPersonCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="recPersonCount ==null ">
+			0 ,
+			</if>
+			<if test="handelTime !=null ">
+			#{handelTime, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="handelTime ==null ">
+			0.00 ,
+			</if>
+			<if test="applyHandelTime !=null ">
+			#{applyHandelTime, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyHandelTime ==null ">
+			0.00 ,
+			</if>
+			<if test="applyAllotTime !=null ">
+			#{applyAllotTime, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="applyAllotTime ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_org_base 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_org_base  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="feedBackCount != null">
+				feedBackCount = #{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="receiveCount != null">
+				receiveCount = #{receiveCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="isNet != null">
+				isNet = #{isNet, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="recPersonCount != null">
+				recPersonCount = #{recPersonCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="handelTime != null">
+				handelTime = #{handelTime, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyHandelTime != null">
+				applyHandelTime = #{applyHandelTime, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyAllotTime != null">
+				applyAllotTime = #{applyAllotTime, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	<update id="updateOnlineCount" parameterType="map">
+		UPDATE t_sum_org_base  
+		<set>
+			<if test="onlineCount != null">
+				onlineCount = #{onlineCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} and orgId = #{orgId}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_org_base 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_org_base  (
+			recordDate,
+			orgId,
+			orgName,
+			cityName,
+			feedBackCount,
+			dealCount,
+			receiveCount,
+			isNet,
+			recPersonCount,
+			handelTime,
+			applyHandelTime,
+			applyAllotTime
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.cityName}, 
+		  #{item.feedBackCount},
+		  #{item.dealCount},
+		  #{item.receiveCount},
+		  #{item.isNet},
+		  #{item.recPersonCount},
+		  #{item.handelTime},
+		  #{item.applyHandelTime},
+		  #{item.applyAllotTime}
+		  )
+		</foreach>
+  </insert>
+  
+  <sql id="sqlQueryByStore">
+  		<if test="isNet != null and isNet != ''">
+		  and t1.isNet = #{isNet}
+		 </if>
+		<if test="recordDate != null and recordDate != ''">
+		  and t1.recordDate = #{recordDate}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and t1.orgId = #{orgId}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t1.orgId in (${userOrgs})
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t1.cityName like CONCAT('%',#{cityName},'%')
+		</if>
+		<if test="startRecordDate != null and startRecordDate != ''">
+		  	and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+		</if>
+		<if test="endRecordDate != null and endRecordDate != ''">
+		 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+		</if>
+		<if test="startRecordMonth != null and startRecordMonth != ''">
+		  	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+		</if>
+		<if test="endRecordMonth != null and endRecordMonth != ''">
+		 	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+		</if>
+	</sql>
+	
+	 <sql id="sqlQueryByCity">
+		<if test="startRecordDate != null and startRecordDate != ''">
+	  		and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+		</if>
+		<if test="endRecordDate != null and endRecordDate != ''">
+		 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t1.cityName like CONCAT('%',#{cityName},'%')
+		</if>
+		<if test="startRecordMonth != null and startRecordMonth != ''">
+		  	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+		</if>
+		<if test="endRecordMonth != null and endRecordMonth != ''">
+		 	and <![CDATA[DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+		</if>
+	</sql>
+	
+  
+  <!-- 每天门店统计 -->
+	<select id="queryByStore" resultType="map" parameterType="map">
+		SELECT
+			t1.recordDate,
+			t1.orgId,
+			t1.cityName,
+			concat(t6.orgNo,'-',t1.orgName) as orgName,
+			IFNULL(t1.feedBackCount, 0) AS feedBackCount,
+			IFNULL(t1.onlineCount, 0) AS onlineCount,
+			IFNULL(t1.dealCount, 0) AS dealCount,
+			IFNULL(t1.receiveCount, 0) AS receiveCount,
+			IFNULL(t1.recPersonCount, 0) AS recPersonCount,
+			IFNULL(t1.handelTime, 0) AS handelTime,
+			IFNULL(t1.applyHandelTime, 0) AS applyHandelTime,
+			IFNULL(t1.applyAllotTime, 0) AS applyAllotTime,
+			IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+			IFNULL(t2.manualCount, 0) AS manualCount,
+			IFNULL(t3.signingCount, 0) AS signingCount,
+			IFNULL(t3.signingAmt, 0) AS signingAmt,
+			IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+			IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+			IFNULL(t3.failSignCount, 0) AS failSignCount,
+			IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+			IFNULL(t3.totalSignCount, 0) AS totalSignCount,
+			IFNULL(t3.totalSignAmt, 0) AS totalSignAmt,
+			IFNULL(t3.treatyWill, 0) AS treatyWill,
+			IFNULL(t4.retCount, 0) AS retCount,
+			IFNULL(t4.retAmount, 0) AS retAmount,
+			IFNULL(t4.chkRetCount, 0) AS chkRetCount,
+			IFNULL(t4.chkRetAmount, 0) AS chkRetAmount,
+			IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+			IFNULL(t4.sucRetAmount, 0) AS sucRetAmount,
+			IFNULL(t2.visitorCount,0) as visitorCount,
+			IFNULL(t5.againAllto,0) as againAllto,
+			IFNULL(t5.noHandlCount,0) as noHandlCount,
+			IFNULL(t5.costCount,0) as costCount,
+			IFNULL(t5.newApplyCount,0) as newApplyCount,
+			IFNULL(t5.backCostCount,0) as backCostCount,
+			IFNULL(t5.custLabel0, 0) as custLabel0,
+			IFNULL(t5.custLabel1, 0) as custLabel1,
+			IFNULL(t5.custLabel2, 0) as custLabel2,
+			IFNULL(t5.custLabel3, 0) as custLabel3,
+			IFNULL(t5.custLabel4, 0) as custLabel4,
+			IFNULL(t5.custLabel5, 0) as custLabel5
+		FROM
+			t_sum_org_base t1
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.sucBookCount) AS sucBookCount,
+				sum(n.manualCount) AS manualCount,
+				sum(n.visitorCount) AS visitorCount
+			FROM
+				t_sum_book_store n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t2 ON t1.recordDate = t2.recordDate
+		AND t1.orgId = t2.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.signingCount) AS signingCount,
+				sum(n.signingAmt) AS signingAmt,
+				sum(n.sucSignCount) AS sucSignCount,
+				sum(n.sucSignAmt) AS sucSignAmt,
+				sum(n.failSignCount) AS failSignCount,
+				sum(n.failSignAmt) AS failSignAmt,
+				sum(n.totalSignCount) AS totalSignCount,
+				sum(n.totalSignAmt) AS totalSignAmt,
+				sum(n.treatyWill) AS treatyWill
+			FROM
+				t_sum_sign_store n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t3 ON t1.recordDate = t3.recordDate
+		AND t1.orgId = t3.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.retCount) AS retCount,
+				sum(n.retAmount) AS retAmount,
+				sum(n.chkRetCount) AS chkRetCount,
+				sum(n.chkRetAmount) AS chkRetAmount,
+				sum(n.sucRetCount) AS sucRetCount,
+				sum(n.sucRetAmount) AS sucRetAmount
+			FROM
+				t_sum_ret_store n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t4 ON t1.recordDate = t4.recordDate
+		AND t1.orgId = t4.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.againAllto) AS againAllto,
+				sum(n.noHandlCount) AS noHandlCount,
+				sum(n.costCount) AS costCount,
+				sum(n.newApplyCount) AS newApplyCount,
+				sum(n.backCostCount) AS backCostCount,
+				sum(n.custLabel0) AS custLabel0,
+				sum(n.custLabel1) AS custLabel1,
+				sum(n.custLabel2) AS custLabel2,
+				sum(n.custLabel3) AS custLabel3,
+				sum(n.custLabel4) AS custLabel4,
+				sum(n.custLabel5) AS custLabel5
+			FROM
+				t_sum_store_base n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t5 ON t1.recordDate = t5.recordDate
+		AND t1.orgId = t5.orgId
+		JOIN t_org t6 ON t1.orgId = t6.orgId 
+		<where>
+			t1.orgId is not null and t1.orgId !=''
+			<include refid="sqlQueryByStore"/>
+		</where>
+			GROUP BY t1.orgId,t1.recordDate 
+		<if test="orderSql == null">
+		 	ORDER BY t1.recordDate DESC ,CONVERT(t1.orgName using GBK)
+		 </if>
+	 	 <if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(t1.orgName using GBK)
+		 </if>
+	</select>
+	
+	
+	<select id="queryByStoreCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (SELECT
+			count(*)
+		FROM
+			t_sum_org_base t1
+			JOIN t_org t6 ON t1.orgId = t6.orgId 
+		<where>
+			t1.orgId is not null and t1.orgId !=''
+			<include refid="sqlQueryByStore"/>
+		</where>
+		GROUP BY t1.orgId,t1.recordDate) tab1
+	</select>
+	
+	<!-- 门店统计月度查询 -->
+	<select id="queryStoreMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t1.recordDate, '%Y-%m') AS recordDate,
+			t1.orgId,
+			concat(t6.orgNo,'-',t1.orgName) as orgName,
+			t1.cityName,
+			IFNULL(SUM(t1.feedBackCount), 0) AS feedBackCount,
+			IFNULL(SUM(t1.dealCount), 0) AS dealCount,
+			IFNULL(SUM(t1.receiveCount), 0) AS receiveCount,
+			IFNULL(SUM(t1.onlineCount), 0) AS onlineCount,
+			IFNULL(SUM(t1.handelTime), 0) AS handelTime,
+			IFNULL(SUM(t1.applyHandelTime), 0) AS applyHandelTime,
+			IFNULL(SUM(t1.applyAllotTime), 0) AS applyAllotTime,
+			IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+			IFNULL(t2.manualCount, 0) AS manualCount,
+			IFNULL(t3.signingCount, 0) AS signingCount,
+			IFNULL(t3.signingAmt, 0) AS signingAmt,
+			IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+			IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+			IFNULL(t3.failSignCount, 0) AS failSignCount,
+			IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+			IFNULL(t3.totalSignCount, 0) AS totalSignCount,
+			IFNULL(t3.totalSignAmt, 0) AS totalSignAmt,
+			IFNULL(t3.treatyWill, 0) AS treatyWill,
+			IFNULL(t4.retCount, 0) AS retCount,
+			IFNULL(t4.retAmount, 0) AS retAmount,
+			IFNULL(t4.chkRetCount, 0) AS chkRetCount,
+			IFNULL(t4.chkRetAmount, 0) AS chkRetAmount,
+			IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+			IFNULL(t4.sucRetAmount, 0) AS sucRetAmount,
+			IFNULL(t2.visitorCount, 0) AS visitorCount,
+			IFNULL(t5.againAllto, 0) AS againAllto,
+			IFNULL(t5.noHandlCount, 0) AS noHandlCount,
+			IFNULL(t5.costCount, 0) AS costCount,
+			IFNULL(t5.newApplyCount, 0) AS newApplyCount,
+			IFNULL(t5.backCostCount, 0) AS backCostCount,
+			IFNULL(t5.custLabel0, 0) as custLabel0,
+			IFNULL(t5.custLabel1, 0) as custLabel1,
+			IFNULL(t5.custLabel2, 0) as custLabel2,
+			IFNULL(t5.custLabel3, 0) as custLabel3,
+			IFNULL(t5.custLabel4, 0) as custLabel4,
+			IFNULL(t5.custLabel5, 0) as custLabel5
+		FROM
+			t_sum_org_base t1
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.sucBookCount) AS sucBookCount,
+				sum(n.manualCount) AS manualCount,
+				sum(n.visitorCount) AS visitorCount
+			FROM
+				t_sum_book_store_month n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t2 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t2.recordDate
+		AND t1.orgId = t2.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.signingCount) AS signingCount,
+				sum(n.signingAmt) AS signingAmt,
+				sum(n.sucSignCount) AS sucSignCount,
+				sum(n.sucSignAmt) AS sucSignAmt,
+				sum(n.failSignCount) AS failSignCount,
+				sum(n.failSignAmt) AS failSignAmt,
+				sum(n.totalSignCount) AS totalSignCount,
+				sum(n.totalSignAmt) AS totalSignAmt,
+				sum(n.treatyWill) AS treatyWill
+			FROM
+				t_sum_sign_store_month n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t3 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t3.recordDate
+		AND t1.orgId = t3.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.retCount) AS retCount,
+				sum(n.retAmount) AS retAmount,
+				sum(n.chkRetCount) AS chkRetCount,
+				sum(n.chkRetAmount) AS chkRetAmount,
+				sum(n.sucRetCount) AS sucRetCount,
+				sum(n.sucRetAmount) AS sucRetAmount
+			FROM
+				t_sum_ret_store_month n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t4 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t4.recordDate
+		AND t1.orgId = t4.orgId
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.orgId,
+				sum(n.againAllto) AS againAllto,
+				sum(n.noHandlCount) AS noHandlCount,
+				sum(n.costCount) AS costCount,
+				sum(n.newApplyCount) AS newApplyCount,
+				sum(n.backCostCount) AS backCostCount,
+				sum(n.custLabel0) AS custLabel0,
+				sum(n.custLabel1) AS custLabel1,
+				sum(n.custLabel2) AS custLabel2,
+				sum(n.custLabel3) AS custLabel3,
+				sum(n.custLabel4) AS custLabel4,
+				sum(n.custLabel5) AS custLabel5
+			FROM
+				t_sum_store_base_month n
+			GROUP BY
+				n.recordDate,
+				n.orgId
+		) AS t5 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t5.recordDate
+		AND t1.orgId = t5.orgId
+		JOIN t_org t6 ON t1.orgId = t6.orgId
+		<where>
+			t1.orgId is not null and t1.orgId !=''
+			<include refid="sqlQueryByStore"/>
+		</where>
+		GROUP BY DATE_FORMAT(t1.recordDate,'%Y-%m'),t1.orgId
+		<if test="orderSql == null">
+		 	ORDER BY DATE_FORMAT(t1.recordDate,'%Y-%m') DESC,CONVERT(t1.orgName using GBK)
+		</if>
+	 	<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(t1.orgName using GBK)
+		</if>
+	</select>
+	
+	<!-- 门店统计月度查询 -->
+	<select id="queryStoreMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT
+			count(*)
+		FROM
+			t_sum_org_base t1
+			JOIN t_org t6 ON t1.orgId = t6.orgId
+		<where>
+			t1.orgId is not null and t1.orgId !=''
+			<include refid="sqlQueryByStore"/>
+		</where>
+		GROUP BY DATE_FORMAT(t1.recordDate,'%Y-%m'),t1.orgId) tab1
+	</select>
+	
+	<!-- 城市统计 -->
+	<select id="queryByCity" resultType="map" parameterType="map">
+		SELECT
+			t1.recordDate,
+			t1.cityName,
+			IFNULL(SUM(t1.feedBackCount), 0) AS feedBackCount,
+			IFNULL(SUM(t1.receiveCount), 0) AS receiveCount,
+			IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+			IFNULL(t3.signingCount, 0) AS signingCount,
+			IFNULL(t3.signingAmt, 0) AS signingAmt,
+			IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+			IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+			IFNULL(t3.failSignCount, 0) AS failSignCount,
+			IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+			IFNULL(t4.retCount, 0) AS retCount,
+			IFNULL(t4.retAmount, 0) AS retAmount,
+			IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+			IFNULL(t4.sucRetAmount, 0) AS sucRetAmount
+		FROM
+			t_sum_org_base t1
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.cityName,
+				sum(n.sucBookCount) AS sucBookCount
+			FROM
+				t_sum_book_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m-%d'),
+				n.cityName
+		) AS t2 ON t1.recordDate = t2.recordDate
+		AND t1.cityName = t2.cityName
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.cityName,
+				sum(n.signingCount) AS signingCount,
+				sum(n.signingAmt) AS signingAmt,
+				sum(n.sucSignCount) AS sucSignCount,
+				sum(n.sucSignAmt) AS sucSignAmt,
+				sum(n.failSignCount) AS failSignCount,
+				sum(n.failSignAmt) AS failSignAmt
+			FROM
+				t_sum_sign_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m-%d'),
+				n.cityName
+		) AS t3 ON t1.recordDate = t3.recordDate
+		AND t1.cityName = t3.cityName
+		LEFT JOIN (
+			SELECT
+				n.recordDate,
+				n.cityName,
+				sum(n.retCount) AS retCount,
+				sum(n.retAmount) AS retAmount,
+				sum(n.sucRetCount) AS sucRetCount,
+				sum(n.sucRetAmount) AS sucRetAmount
+			FROM
+				t_sum_ret_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m-%d'),
+				n.cityName
+		) AS t4 ON t1.recordDate = t4.recordDate
+		AND t1.cityName = t4.cityName
+		<where>
+			<include refid="sqlQueryByCity"/>
+		</where>
+		GROUP BY t1.recordDate,t1.cityName
+		ORDER BY t1.recordDate DESC
+	</select>
+	
+	<select id="queryByCityCount" resultType="int" parameterType="map">
+	SELECT COUNT(1) FROM 
+		(SELECT COUNT(*) FROM t_sum_org_base t1
+		<where>
+			<include refid="sqlQueryByCity"/>
+		</where>
+		GROUP BY t1.cityName,t1.recordDate) AS TAB1
+	</select>
+	
+	<select id="queryMonthByCity" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t1.recordDate,'%Y-%m') AS recordDate,
+			t1.cityName,
+			IFNULL(SUM(t1.feedBackCount), 0) AS feedBackCount,
+			IFNULL(SUM(t1.receiveCount), 0) AS receiveCount,
+			IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+			IFNULL(t3.signingCount, 0) AS signingCount,
+			IFNULL(t3.signingAmt, 0) AS signingAmt,
+			IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+			IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+			IFNULL(t3.failSignCount, 0) AS failSignCount,
+			IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+			IFNULL(t4.retCount, 0) AS retCount,
+			IFNULL(t4.retAmount, 0) AS retAmount,
+			IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+			IFNULL(t4.sucRetAmount, 0) AS sucRetAmount
+		FROM
+			t_sum_org_base t1
+		LEFT JOIN (
+			SELECT
+				DATE_FORMAT(n.recordDate,'%Y-%m') as 'recordDate',
+				n.cityName,
+				sum(n.sucBookCount) AS sucBookCount
+			FROM
+				t_sum_book_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m'),
+				n.cityName
+		) AS t2 ON DATE_FORMAT(t1.recordDate,'%Y-%m') = t2.recordDate
+		AND t1.cityName = t2.cityName
+		LEFT JOIN (
+			SELECT
+				DATE_FORMAT(n.recordDate,'%Y-%m') as 'recordDate',
+				n.cityName,
+				sum(n.signingCount) AS signingCount,
+				sum(n.signingAmt) AS signingAmt,
+				sum(n.sucSignCount) AS sucSignCount,
+				sum(n.sucSignAmt) AS sucSignAmt,
+				sum(n.failSignCount) AS failSignCount,
+				sum(n.failSignAmt) AS failSignAmt
+			FROM
+				t_sum_sign_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m'),
+				n.cityName
+		) AS t3 ON DATE_FORMAT(t1.recordDate,'%Y-%m') = t3.recordDate
+		AND t1.cityName = t3.cityName
+		LEFT JOIN (
+			SELECT
+				DATE_FORMAT(n.recordDate,'%Y-%m') as 'recordDate',
+				n.cityName,
+				sum(n.retCount) AS retCount,
+				sum(n.retAmount) AS retAmount,
+				sum(n.sucRetCount) AS sucRetCount,
+				sum(n.sucRetAmount) AS sucRetAmount
+			FROM
+				t_sum_ret_store n
+			GROUP BY
+				DATE_FORMAT(n.recordDate,'%Y-%m'),
+				n.cityName
+		) AS t4 ON DATE_FORMAT(t1.recordDate,'%Y-%m') = t4.recordDate
+		AND t1.cityName = t4.cityName
+		<where>
+			<include refid="sqlQueryByCity"/>
+		</where>
+		GROUP BY t1.cityName,DATE_FORMAT(t1.recordDate,'%Y-%m')
+		ORDER BY t1.recordDate DESC
+	</select>
+	
+	<select id="queryMonthByCityCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_org_base t1
+		<where>
+			<include refid="sqlQueryByCity"/>
+		</where>
+		GROUP BY t1.cityName,DATE_FORMAT(t1.recordDate,'%Y-%m')) tab1
+	</select>
+	<!-- 门店统计本月总计查询 -->
+	<select id="queryByStoreTotal" resultType="map" parameterType="map">
+		SELECT
+			SUM(tab1.feedBackCount) AS feedBackCountSum,
+			SUM(tab1.dealCount) AS dealCountSum,
+			SUM(tab1.receiveCount) AS receiveCountSum,
+			SUM(tab1.recPersonCount) recPersonCountSum,
+			SUM(tab1.onlineCount) AS onlineCountSum,
+			TRUNCATE(SUM(tab1.handelTime) / count(*),2) AS handelTimeSum,
+			TRUNCATE(SUM(tab1.applyHandelTime) / count(*),2)AS applyHandelTimeSum,
+			TRUNCATE(SUM(tab1.applyAllotTime) / count(*),2) AS applyAllotTimeSum,
+			SUM(tab1.sucBookCount) AS sucBookCountSum,
+			SUM(tab1.manualCount) AS manualCountSum,
+			SUM(tab1.signingCount) AS signingCountSum,
+			SUM(tab1.signingAmt) AS signingAmtSum,
+			SUM(tab1.sucSignCount) AS sucSignCountSum,
+			SUM(tab1.sucSignAmt) AS sucSignAmtSum,
+			SUM(tab1.failSignCount) AS failSignCountSum,
+			SUM(tab1.failSignAmt) AS failSignAmtSum,
+			SUM(tab1.totalSignCount) AS totalSignCountSum,
+			SUM(tab1.totalSignAmt) AS totalSignAmtSum,
+			SUM(tab1.treatyWill) AS treatyWillSum,
+			SUM(tab1.retCount) AS retCountSum,
+			SUM(tab1.retAmount) AS retAmountSum,
+			SUM(tab1.chkRetCount) AS chkRetCountSum,
+			SUM(tab1.chkRetAmount) AS chkRetAmountSum,
+			SUM(tab1.sucRetCount) AS sucRetCountSum,
+			SUM(tab1.sucRetAmount) AS sucRetAmountSum,
+			SUM(tab1.visitorCount) AS visitorCountSum,
+			SUM(tab1.againAllto) AS againAlltoSum,
+			SUM(tab1.noHandlCount) AS noHandlCountSum,
+			SUM(tab1.costCount) AS costCountSum,
+			SUM(tab1.newApplyCount) AS newApplyCountSum,
+			SUM(tab1.backCostCount) AS backCostCountSum,
+			SUM(tab1.custLabel0) AS custLabel0Sum,
+			SUM(tab1.custLabel1) AS custLabel1Sum,
+			SUM(tab1.custLabel2) AS custLabel2Sum,
+			SUM(tab1.custLabel3) AS custLabel3Sum,
+			SUM(tab1.custLabel4) AS custLabel4Sum,
+			SUM(tab1.custLabel5) AS custLabel5Sum
+		FROM(
+			SELECT
+				IFNULL(t1.feedBackCount, 0) AS feedBackCount,
+				IFNULL(t1.onlineCount, 0) AS onlineCount,
+				IFNULL(t1.dealCount, 0) AS dealCount,
+				IFNULL(t1.receiveCount, 0) AS receiveCount,
+				IFNULL(t1.recPersonCount, 0) AS recPersonCount,
+				IFNULL(t1.handelTime, 0) AS handelTime,
+				IFNULL(t1.applyHandelTime, 0) AS applyHandelTime,
+				IFNULL(t1.applyAllotTime, 0) AS applyAllotTime,
+				IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+				IFNULL(t2.manualCount, 0) AS manualCount,
+				IFNULL(t3.signingCount, 0) AS signingCount,
+				IFNULL(t3.signingAmt, 0) AS signingAmt,
+				IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+				IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+				IFNULL(t3.failSignCount, 0) AS failSignCount,
+				IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+				IFNULL(t3.totalSignCount, 0) AS totalSignCount,
+				IFNULL(t3.totalSignAmt, 0) AS totalSignAmt,
+				IFNULL(t3.treatyWill, 0) AS treatyWill,
+				IFNULL(t4.retCount, 0) AS retCount,
+				IFNULL(t4.retAmount, 0) AS retAmount,
+				IFNULL(t4.chkRetCount, 0) AS chkRetCount,
+				IFNULL(t4.chkRetAmount, 0) AS chkRetAmount,
+				IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+				IFNULL(t4.sucRetAmount, 0) AS sucRetAmount,
+				IFNULL(t2.visitorCount,0) as visitorCount,
+				IFNULL(t5.againAllto,0) as againAllto,
+				IFNULL(t5.noHandlCount,0) as noHandlCount,
+				IFNULL(t5.costCount,0) as costCount,
+				IFNULL(t5.newApplyCount,0) as newApplyCount, 
+				IFNULL(t5.backCostCount,0) as backCostCount,
+				IFNULL(t5.custLabel0, 0) as custLabel0,
+				IFNULL(t5.custLabel1, 0) as custLabel1,
+				IFNULL(t5.custLabel2, 0) as custLabel2,
+				IFNULL(t5.custLabel3, 0) as custLabel3,
+				IFNULL(t5.custLabel4, 0) as custLabel4,
+				IFNULL(t5.custLabel5, 0) as custLabel5
+			FROM
+				t_sum_org_base t1
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.sucBookCount) AS sucBookCount,
+					sum(n.manualCount) AS manualCount,
+					sum(n.visitorCount) AS visitorCount
+				FROM
+					t_sum_book_store n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t2 ON t1.recordDate = t2.recordDate
+			AND t1.orgId = t2.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.signingCount) AS signingCount,
+					sum(n.signingAmt) AS signingAmt,
+					sum(n.sucSignCount) AS sucSignCount,
+					sum(n.sucSignAmt) AS sucSignAmt,
+					sum(n.failSignCount) AS failSignCount,
+					sum(n.failSignAmt) AS failSignAmt,
+					sum(n.totalSignCount) AS totalSignCount,
+					sum(n.totalSignAmt) AS totalSignAmt,
+					sum(n.treatyWill) AS treatyWill
+				FROM
+					t_sum_sign_store n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t3 ON t1.recordDate = t3.recordDate
+			AND t1.orgId = t3.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.retCount) AS retCount,
+					sum(n.retAmount) AS retAmount,
+					sum(n.chkRetCount) AS chkRetCount,
+					sum(n.chkRetAmount) AS chkRetAmount,
+					sum(n.sucRetCount) AS sucRetCount,
+					sum(n.sucRetAmount) AS sucRetAmount
+				FROM
+					t_sum_ret_store n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t4 ON t1.recordDate = t4.recordDate
+			AND t1.orgId = t4.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.againAllto) AS againAllto,
+					sum(n.noHandlCount) AS noHandlCount,
+					sum(n.costCount) AS costCount,
+					sum(n.newApplyCount) AS newApplyCount,
+					sum(n.backCostCount) AS backCostCount,
+					sum(n.custLabel0) AS custLabel0,
+					sum(n.custLabel1) AS custLabel1,
+					sum(n.custLabel2) AS custLabel2,
+					sum(n.custLabel3) AS custLabel3,
+					sum(n.custLabel4) AS custLabel4,
+					sum(n.custLabel5) AS custLabel5
+				FROM
+					t_sum_store_base n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t5 ON t1.recordDate = t5.recordDate
+			AND t1.orgId = t5.orgId
+			JOIN t_org t6 ON t1.orgId = t6.orgId
+			<where>
+				t1.orgId is not null and t1.orgId !=''
+				<include refid="sqlQueryByStore"/>
+			</where>
+				GROUP BY t1.orgId,t1.recordDate 
+			<if test="orderSql == null">
+			 	ORDER BY t1.recordDate DESC ,convert(t1.cityName using GBK),CONVERT(t1.orgName using GBK)
+			 </if>
+		 	 <if test="orderSql != null and orderSql!='' ">
+				ORDER by ${orderSql},CONVERT(t1.orgName using GBK)
+			 </if>
+		)tab1
+	</select>
+	<!-- 门店统计月度总计查询 -->
+	<select id="queryOrgMonthTotal" resultType="map" parameterType="map">
+		SELECT 
+			SUM(tab1.feedBackCount) as feedBackCountSum,
+			SUM(tab1.dealCount) AS dealCountSum,
+			SUM(tab1.receiveCount) AS receiveCountSum,
+			SUM(tab1.onlineCount) AS onlineCountSum,
+			TRUNCATE(SUM(tab1.handelTime) / count(*),2) AS handelTimeSum,
+			TRUNCATE(SUM(tab1.applyHandelTime) / count(*),2) AS applyHandelTimeSum,
+			TRUNCATE(SUM(tab1.applyAllotTime) / count(*),2) AS applyAllotTimeSum,
+			SUM(tab1.sucBookCount) AS sucBookCountSum,
+			SUM(tab1.manualCount) AS manualCountSum,
+			SUM(tab1.signingCount) AS signingCountSum,
+			SUM(tab1.signingAmt) AS signingAmtSum,
+			SUM(tab1.sucSignCount) AS sucSignCountSum,
+			SUM(tab1.sucSignAmt) AS sucSignAmtSum,
+			SUM(tab1.failSignCount) AS failSignCountSum,
+			SUM(tab1.failSignAmt) AS failSignAmtSum,
+			SUM(tab1.totalSignCount) AS totalSignCountSum,
+			SUM(tab1.totalSignAmt) AS totalSignAmtSum,
+			SUM(tab1.treatyWill) AS treatyWillSum,
+			SUM(tab1.retCount) AS retCountSum,
+			SUM(tab1.retAmount) AS retAmountSum,
+			SUM(tab1.chkRetCount) AS chkRetCountSum,
+			SUM(tab1.chkRetAmount) AS chkRetAmountSum,
+			SUM(tab1.sucRetCount) AS sucRetCountSum,
+			SUM(tab1.sucRetAmount) AS sucRetAmountSum,
+			SUM(tab1.visitorCount) AS visitorCountSum,
+			SUM(tab1.againAllto) AS againAlltoSum,
+			SUM(tab1.noHandlCount) AS noHandlCountSum,
+			SUM(tab1.costCount) AS costCountSum,
+			SUM(tab1.newApplyCount) AS newApplyCountSum,
+			SUM(tab1.backCostCount) AS backCostCountSum,
+			SUM(tab1.custLabel0) AS custLabel0Sum,
+			SUM(tab1.custLabel1) AS custLabel1Sum,
+			SUM(tab1.custLabel2) AS custLabel2Sum,
+			SUM(tab1.custLabel3) AS custLabel3Sum,
+			SUM(tab1.custLabel4) AS custLabel4Sum,
+			SUM(tab1.custLabel5) AS custLabel5Sum
+			
+		from (
+			SELECT
+				IFNULL(SUM(t1.feedBackCount), 0) AS feedBackCount,
+				IFNULL(SUM(t1.dealCount), 0) AS dealCount,
+				IFNULL(SUM(t1.receiveCount), 0) AS receiveCount,
+				IFNULL(SUM(t1.onlineCount), 0) AS onlineCount,
+				IFNULL(SUM(t1.handelTime), 0) AS handelTime,
+				IFNULL(SUM(t1.applyHandelTime), 0) AS applyHandelTime,
+				IFNULL(SUM(t1.applyAllotTime), 0) AS applyAllotTime,
+				IFNULL(t2.sucBookCount, 0) AS sucBookCount,
+				IFNULL(t2.manualCount, 0) AS manualCount,
+				IFNULL(t3.signingCount, 0) AS signingCount,
+				IFNULL(t3.signingAmt, 0) AS signingAmt,
+				IFNULL(t3.sucSignCount, 0) AS sucSignCount,
+				IFNULL(t3.sucSignAmt, 0) AS sucSignAmt,
+				IFNULL(t3.failSignCount, 0) AS failSignCount,
+				IFNULL(t3.failSignAmt, 0) AS failSignAmt,
+				IFNULL(t3.totalSignCount, 0) AS totalSignCount,
+				IFNULL(t3.totalSignAmt, 0) AS totalSignAmt,
+				IFNULL(t3.treatyWill, 0) AS treatyWill,
+				IFNULL(t4.retCount, 0) AS retCount,
+				IFNULL(t4.retAmount, 0) AS retAmount,
+				IFNULL(t4.chkRetCount, 0) AS chkRetCount,
+				IFNULL(t4.chkRetAmount, 0) AS chkRetAmount,
+				IFNULL(t4.sucRetCount, 0) AS sucRetCount,
+				IFNULL(t4.sucRetAmount, 0) AS sucRetAmount,
+				IFNULL(t2.visitorCount, 0) AS visitorCount,
+				IFNULL(t5.againAllto, 0) AS againAllto,
+				IFNULL(t5.noHandlCount, 0) AS noHandlCount,
+				IFNULL(t5.costCount, 0) AS costCount,
+				IFNULL(t5.newApplyCount, 0) AS newApplyCount,
+				IFNULL(t5.backCostCount, 0) AS backCostCount,
+				IFNULL(t5.custLabel0, 0) as custLabel0,
+				IFNULL(t5.custLabel1, 0) as custLabel1,
+				IFNULL(t5.custLabel2, 0) as custLabel2,
+				IFNULL(t5.custLabel3, 0) as custLabel3,
+				IFNULL(t5.custLabel4, 0) as custLabel4,
+				IFNULL(t5.custLabel5, 0) as custLabel5
+			FROM
+				t_sum_org_base t1
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.sucBookCount) AS sucBookCount,
+					sum(n.manualCount) AS manualCount,
+					sum(n.visitorCount) AS visitorCount
+				FROM
+					t_sum_book_store_month n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t2 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t2.recordDate
+			AND t1.orgId = t2.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.signingCount) AS signingCount,
+					sum(n.signingAmt) AS signingAmt,
+					sum(n.sucSignCount) AS sucSignCount,
+					sum(n.sucSignAmt) AS sucSignAmt,
+					sum(n.failSignCount) AS failSignCount,
+					sum(n.failSignAmt) AS failSignAmt,
+					sum(n.totalSignCount) AS totalSignCount,
+					sum(n.totalSignAmt) AS totalSignAmt,
+					sum(n.treatyWill) AS treatyWill
+				FROM
+					t_sum_sign_store_month n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t3 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t3.recordDate
+			AND t1.orgId = t3.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.retCount) AS retCount,
+					sum(n.retAmount) AS retAmount,
+					sum(n.chkRetCount) AS chkRetCount,
+					sum(n.chkRetAmount) AS chkRetAmount,
+					sum(n.sucRetCount) AS sucRetCount,
+					sum(n.sucRetAmount) AS sucRetAmount
+				FROM
+					t_sum_ret_store_month n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t4 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t4.recordDate
+			AND t1.orgId = t4.orgId
+			LEFT JOIN (
+				SELECT
+					n.recordDate,
+					n.orgId,
+					sum(n.againAllto) AS againAllto,
+					sum(n.noHandlCount) AS noHandlCount,
+					sum(n.costCount) AS costCount,
+					sum(n.newApplyCount) AS newApplyCount,
+					sum(n.backCostCount) AS backCostCount,
+					sum(n.custLabel0) AS custLabel0,
+					sum(n.custLabel1) AS custLabel1,
+					sum(n.custLabel2) AS custLabel2,
+					sum(n.custLabel3) AS custLabel3,
+					sum(n.custLabel4) AS custLabel4,
+					sum(n.custLabel5) AS custLabel5
+				FROM
+					t_sum_store_base_month n
+				GROUP BY
+					n.recordDate,
+					n.orgId
+			) AS t5 ON DATE_FORMAT(t1.recordDate, '%Y-%m') = t5.recordDate
+			AND t1.orgId = t5.orgId
+			JOIN t_org t6 ON t1.orgId = t6.orgId
+			<where>
+			t1.orgId is not null and t1.orgId !=''
+			<include refid="sqlQueryByStore"/>
+			</where>
+			GROUP BY DATE_FORMAT(t1.recordDate,'%Y-%m'),t1.orgId
+			<if test="orderSql == null">
+			 	ORDER BY DATE_FORMAT(t1.recordDate,'%Y-%m') DESC,convert(t1.cityName using GBK),CONVERT(t1.orgName using GBK)
+			</if>
+		 	<if test="orderSql != null and orderSql!='' ">
+				ORDER by ${orderSql},CONVERT(t1.orgName using GBK)
+			</if>
+		)tab1
+	</select>
+</mapper>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMRETTIME">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			retCount, 
+			retAmount, 
+			sucRetCount, 
+			sucRetAmount
+		FROM t_sum_ret_time
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="retCount != null and retCount != ''">
+				and retCount = #{retCount}
+			</if>
+			<if test="retAmount != null and retAmount != ''">
+				and retAmount = #{retAmount}
+			</if>
+			<if test="sucRetCount != null and sucRetCount != ''">
+				and sucRetCount = #{sucRetCount}
+			</if>
+			<if test="sucRetAmount != null and sucRetAmount != ''">
+				and sucRetAmount = #{sucRetAmount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_ret_time 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="retCount != null and retCount != ''">
+			and retCount = #{retCount}
+		</if>
+		<if test="retAmount != null and retAmount != ''">
+			and retAmount = #{retAmount}
+		</if>
+		<if test="sucRetCount != null and sucRetCount != ''">
+			and sucRetCount = #{sucRetCount}
+		</if>
+		<if test="sucRetAmount != null and sucRetAmount != ''">
+			and sucRetAmount = #{sucRetAmount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_ret_time (
+			recordDate,
+			retCount,
+			retAmount,
+			sucRetCount,
+			sucRetAmount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="retCount !=null ">
+			#{retCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retCount ==null ">
+			0 ,
+			</if>
+			<if test="retAmount !=null ">
+			#{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="sucRetCount !=null ">
+			#{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucRetCount ==null ">
+			0 ,
+			</if>
+			<if test="sucRetAmount !=null ">
+			#{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="sucRetAmount ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_ret_time 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_ret_time  
+		<set>
+			<if test="retCount != null">
+				retCount = #{retCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="retAmount != null">
+				retAmount = #{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetCount != null">
+				sucRetCount = #{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetAmount != null">
+				sucRetAmount = #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_ret_time 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_ret_time(
+			recordDate,
+			retCount, 
+			retAmount, 
+			sucRetCount, 
+			sucRetAmount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.retCount}, 
+		  #{item.retAmount}, 
+		  #{item.sucRetCount}, 
+		  #{item.sucRetAmount}
+		  )
+		</foreach>
+  </insert>
+	
+</mapper>

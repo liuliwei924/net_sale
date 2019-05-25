@@ -1,0 +1,223 @@
+package org.xxjr.cust.member;
+
+import java.util.Date;
+
+import org.ddq.active.mq.activity.RewardUtil;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.web.session.DuoduoSession;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.member.GradeUtils;
+import org.xxjr.sys.util.active.ActiveConstants;
+
+@Lazy
+@Service
+public class GradeScoreService extends BaseService {
+	private static final String NAMESPACE = "GRADESCORE";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryView
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryView(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryView", "queryViewCount");
+	}
+	
+	/**
+	 * queryViewCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryViewCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryViewCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 活动奖励经验值
+	 * @param context
+	 * @return
+	 */
+	public AppResult insertActivity(AppParam context) {
+		AppParam param = new AppParam();
+		int amount = RewardUtil.getRewardValue(context);
+		String operator = context.getAttr(ActiveConstants.KEY_PARAM_operator).toString();
+		if(ActiveConstants.Operator_SIGN.equals(operator)){
+			int signinDays = Integer.valueOf(context.getAttr("signinDays").toString());
+			if(signinDays >= 4){
+				amount = 50;
+			}else{
+				amount = signinDays * amount;
+			}
+		}
+		param.addAttr("customerId", context.getAttr("customerId"));
+		param.addAttr("amount", amount);
+		param.addAttr("type", context.getAttr("type"));
+		param.addAttr("status", "1");
+		param.addAttr("createTime", new Date());
+		param.addAttr("createDesc", context.getAttr("createDesc"));
+		AppResult result = super.insert(param, NAMESPACE);
+		if(result.isSuccess()){
+			// 等级更新
+			GradeUtils.gradeChange(context.getAttr("customerId").toString());
+		}
+		return result;
+	}
+	
+	/**
+	 * 查询客户过期数据
+	 * @param context
+	 * @return
+	 */
+	public AppResult queryOverdue(AppParam context){
+		return super.queryByPage(context, NAMESPACE, "queryOverdue","queryOverdueCount");
+	}
+	
+	/**
+	 * 查询客户经验值概要数据
+	 * @param context
+	 * @return
+	 */
+	public AppResult querySummary(AppParam context) {
+		return super.query(context, NAMESPACE, "querySummary");
+	}
+	
+	/**
+	 * 佣金奖励经验值
+	 * @param param
+	 * @return
+	 */
+	public AppResult rewardInsert(AppParam param){
+		super.getDao().insert(NAMESPACE, "reward", param.getAttr(), param.getDataBase());
+		// 推荐人经验值奖励
+		super.getDao().insert(NAMESPACE, "refererReward", param.getAttr(), param.getDataBase());
+		return new AppResult();
+	}
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("scoreId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("scoreId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	/***
+	 * 批量导入经验值
+	 * @param context
+	 * @return
+	 */
+	public AppResult uploadExcel(AppParam context){
+		AppResult result = new AppResult();
+//		List<Map<String, Object>> list = (List<Map<String, Object>>) context.getAttr("list");
+//		int j = 0;
+//		int row =0;
+//		if (!StringUtils.isEmpty(context.getAttr("list"))) {
+//			for (Map<String, Object> cashMap:list) {
+//				Object userName = cashMap.get("userName");
+//				Object amount = cashMap.get("amount");
+//				Object createDesc = cashMap.get("createDesc");
+//				row ++;
+//				if (!StringUtils.isEmpty(userName) && !StringUtils.isEmpty(amount)) {
+//					Object customerId = RewardUtil.queryCustId(userName.toString());
+//					if (customerId == null) {
+//						throw new SysException("缺少参数，用户名：" + userName +" 在系统中不存在！第" + row +"行" );
+//					}
+//					if(StringUtils.isEmpty(createDesc)){
+//						throw new SysException("缺少参数，描述信息不允许为空,第" + row +"行" );
+//					}
+//					int intScore = new BigDecimal(amount.toString()).intValue();
+//					if(intScore==0){
+//						throw new SysException("成长值不正确，第" + row +"行 为0" );
+//					}
+//					cashMap.put("customerId", customerId);
+//					cashMap.put("amount", intScore);
+//					cashMap.put("createDesc", createDesc);
+//					cashMap.put("type", "10");
+//					cashMap.put("status", "1");
+//					AppParam insetScoreParam = new AppParam();
+//					insetScoreParam.addAttrs(cashMap);
+//					result = this.insert(insetScoreParam);
+//					j++;
+//				}
+//			}
+//		}
+//		result.setMessage("成功处理了"+ j + "条记录!");
+		return result;
+	}
+	
+}

@@ -1,0 +1,80 @@
+package org.xxjr.job.listener.col;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.job.core.BaseExecteJob;
+import org.ddq.job.util.JobConstant;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.sys.util.ServiceKey;
+/**
+ * 小小交租自动任务（每天执行一次）
+ * 
+ * @author Administrator
+ *
+ */
+@Lazy
+@Component
+public class AutoLeaseJob implements BaseExecteJob {
+	private static Logger log = LogManager.getLogger(AutoIncomeSettleJob.class);
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try {
+			//处理逾期订单
+			AppParam overdueParam = new AppParam();
+			overdueParam.setService("tenantPaymentDtlService");
+			overdueParam.setMethod("overdue");
+			overdueParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_col));
+			AppResult overdueResult = RemoteInvoke.getInstance().call(overdueParam);
+			//处理短信发送提醒
+			AppParam msgParam = new AppParam();
+			msgParam.setService("tenantPaymentDtlService");
+			msgParam.setMethod("sendMsg");
+			msgParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_col));
+			AppResult msgResult = RemoteInvoke.getInstance().call(msgParam);
+			JobUtil.addProcessExecute(
+					processId,
+					"AutoLeaseJob success! 处理逾期订单："
+							+ overdueResult
+									.getAttr(DuoduoConstant.DAO_Update_SIZE)
+							+ "条，发送缴费提醒：" + msgResult.getAttr("remindNum")
+							+ "条,发送逾期提醒：" + msgResult.getAttr("overdueNum") + "条");
+			//自动更新借贷人状态
+			autoUpdateDebtorStatus();
+		} catch (Exception e) {
+			log.error("AutoLeaseJob executeJob error:", e);
+			JobUtil.addProcessExecute(processId, "AutoLeaseJob error:" + e.getMessage());
+		}
+		return result;
+	}
+	
+	/**
+	 * 自动更新借贷人状态
+	 */
+	public static void autoUpdateDebtorStatus(){
+		try {
+			//将逾期未还、或未还清的数据改为逾期状态
+			AppParam overdueParam = new AppParam("loanRepayPeriodService","overdueStatusUpdate");
+			overdueParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_col));
+			RemoteInvoke.getInstance().call(overdueParam);
+		} catch (Exception e) {
+			log.error("autoUpdateDebtorStatus executeJob error:", e);
+		}
+
+	}
+}

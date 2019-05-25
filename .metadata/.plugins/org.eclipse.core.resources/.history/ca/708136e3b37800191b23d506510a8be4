@@ -1,0 +1,307 @@
+package org.xxjr.busi.util;
+
+import java.net.URLDecoder;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.page.Page;
+import org.ddq.common.web.page.PageUtil;
+import org.jsoup.Connection;
+import org.jsoup.helper.HttpConnection;
+import org.jsoup.nodes.Document;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import lombok.extern.slf4j.Slf4j;
+
+/***
+ * 随手贷 卡牛数据处理
+ * @author qinxcb
+ *
+ */
+@Slf4j
+public class KaniuApplyUtils{
+	/**主机*/
+	public static final String keyHost="auto.loan.host";
+	/**token*/
+	public static final String keyToken = "auto.loan.token";
+	
+	private static String getHost(){
+		//return "operation.cardniu.com";
+		//return SysParamsUtil.getStringParamByKey("kaniuHost", "operation.cardniu.com");
+		//return AppProperties.getProperties(keyHost);
+		return SysParamsUtil.getStringParamByKey("kaniuHost", "test.cardniu.com");
+	}
+	private static String getToken(){
+		//return "ac640c9757785e1dd016e168d0ab873aeeed7a6bcfbf4496bf0d8a8dba12bf9d";
+		return SysParamsUtil.getStringParamByKey("kaniuToken", "ac640c9757785e1dd016e168d0ab873aeeed7a6bcfbf4496bf0d8a8dba12bf9d");
+		// "ac640c9757785e1dd016e168d0ab873aeeed7a6bcfbf4496bf0d8a8dba12bf9d";
+		//return AppProperties.getProperties(keyToken);
+	}
+	/***
+	 * https连接处理
+	 */
+	public static void trustEveryone() {  
+	        try {  
+	            HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() { 
+					@Override
+					public boolean verify(String arg0, SSLSession arg1) {
+						return true;
+					}  
+	            }); 
+	            SSLContext context = SSLContext.getInstance("TLS");  
+	            context.init(null, new X509TrustManager[] { new X509TrustManager() {
+
+					@Override
+					public void checkClientTrusted(X509Certificate[] chain,
+							String authType) throws CertificateException {
+						
+					}
+					@Override
+					public void checkServerTrusted(X509Certificate[] chain,
+							String authType) throws CertificateException {
+						
+					}
+
+					@Override
+					public X509Certificate[] getAcceptedIssuers() {
+						return null;
+					}  
+	                
+	            } }, new SecureRandom());  
+	            HttpsURLConnection.setDefaultSSLSocketFactory(context.getSocketFactory());  
+	        } catch (Exception e) {  
+	        }  
+	    }  
+	  
+	
+	/***
+	 * 查订单数据
+	 * success true 时返回数据到 rows
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult  listOrder(AppParam param){
+		trustEveryone();
+		AppResult result = new AppResult();
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("token", getToken());
+		if(param.getAttr("orderId")==null){
+			params.put("applyStartTime", param.getAttr("startDate"));
+			params.put("applyEndTime", param.getAttr("endDate"));
+		}else{
+			params.put("orderId", param.getAttr("orderId"));
+		}
+		params.put("page", param.getCurrentPage());
+		params.put("pageSize", param.getEveryPage());
+		Connection conn = HttpConnection.connect("https://" + getHost()+ "/suishoudai-webservice/suishoudaiApi/listOrder.do?json="+
+				JsonUtil.getInstance().object2JSON(params));
+		conn.timeout(10000);
+		conn.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat");
+		conn.ignoreContentType(true);
+		conn.header("X-Requested-With", "XMLHttpRequest");
+		Document doc;
+		try {
+			doc = conn.post();
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(
+					URLDecoder.decode(doc.body().text(),"UTF-8"),Map.class);
+			String datas = all.get("data").toString();
+			all = JsonUtil.getInstance().json2Object(datas,Map.class);
+			Page page = new Page(param.getCurrentPage(), param.getEveryPage());
+			PageUtil.createPage(page, Integer.valueOf(all.get("count").toString()));
+			String dataDetails = all.get("data").toString();
+			List<Map<String, Object>> list = JsonUtil.getInstance().json2Object(dataDetails,List.class);
+			result.setPage(page);
+			result.setRows(list);
+			return result;
+		} catch (Exception e) {
+			LogerUtil.error(KaniuApplyUtils.class, e,"");
+			result.setMessage(e.getMessage());
+			result.setSuccess(Boolean.FALSE);
+		}
+		return result;
+	}
+	
+	/***
+	 * 查订单数据
+	 * success true 时返回数据到 rows
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult  queryByOrderId(String orderId){
+		trustEveryone();
+		AppResult result = new AppResult();
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("token", getToken());
+		params.put("orderId", orderId);
+		params.put("page", 1);
+		params.put("pageSize", 10);
+		Connection conn = HttpConnection.connect("https://" + getHost()+ "/suishoudai-webservice/suishoudaiApi/listOrder.do?json="+
+				JsonUtil.getInstance().object2JSON(params));
+		conn.timeout(10000);
+		conn.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat");
+		conn.ignoreContentType(true);
+		conn.header("X-Requested-With", "XMLHttpRequest");
+		Document doc;
+		try {
+			doc = conn.post();
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(
+					URLDecoder.decode(doc.body().text(),"UTF-8"),Map.class);
+			String datas = all.get("data").toString();
+			all = JsonUtil.getInstance().json2Object(datas,Map.class);
+			String dataDetails = all.get("data").toString();
+			List<Map<String, Object>> list = JsonUtil.getInstance().json2Object(dataDetails,List.class);
+			result.setRows(list);
+			return result;
+		} catch (Exception e) {
+			LogerUtil.error(KaniuApplyUtils.class, e, "");
+			result.setMessage(e.getMessage());
+			result.setSuccess(Boolean.FALSE);
+		}
+		return result;
+	}
+	
+	/***
+	 * 接收订单，并获取相应的手机号码, 订单号以,相连接
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult acceptOrder(String orderIds){
+		trustEveryone();
+		AppResult result = new AppResult();
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("token", getToken());
+		params.put("orderIds",getOrderIds(orderIds));
+		Connection conn = HttpConnection.connect("https://" + getHost()+ "/suishoudai-webservice/suishoudaiApi/acceptOrder.do?json="+
+				JsonUtil.getInstance().object2JSON(params));
+		conn.timeout(10000);
+		conn.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat");
+		conn.ignoreContentType(true);
+		conn.header("X-Requested-With", "XMLHttpRequest");
+		Document doc;
+		try {
+			Date start = new Date();
+			doc = conn.post();
+			String message = URLDecoder.decode(doc.body().text(),"UTF-8");
+			System.out.println("acceptOrder:" + (new Date().getTime()-start.getTime()) + ":" + message);
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(message,Map.class);
+			if("true".equals(all.get("resuleSuccess").toString())){
+				List<Map<String, Object>> list = JsonUtil.getInstance().json2Object(all.get("data").toString(),List.class);
+				result.putAttr("listPhones", list);
+				return result;
+			}
+			result.setSuccess(Boolean.valueOf(all.get("resuleSuccess").toString()));
+			result.setMessage(all.get("resultCodeDescription").toString());
+		} catch (Exception e) {
+			LogerUtil.error(KaniuApplyUtils.class,e,"");
+			result.setMessage(e.getMessage());
+			result.setSuccess(Boolean.FALSE);
+		}
+		return result;
+	}
+	/***
+	 * 接收订单，拒绝订单
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult  rejectOrder(List<Map<String, Object>> list){
+		trustEveryone();
+		AppResult result = new AppResult();
+		Map<String,Object> params = new HashMap<String,Object>();
+		
+		params.put("token", getToken());
+		params.put("orderIds",list);
+		Connection conn = HttpConnection.connect("https://" + getHost()+ "/suishoudai-webservice/suishoudaiApi/rejectOrder.do?json="+
+				JsonUtil.getInstance().object2JSON(params));
+		conn.timeout(20000);
+		conn.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat");
+		conn.ignoreContentType(true);
+		conn.header("X-Requested-With", "XMLHttpRequest");
+		Document doc;
+		try {
+			doc = conn.post();
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(
+					URLDecoder.decode(doc.body().text(),"UTF-8"),Map.class);
+			if("true".equals(all.get("resuleSuccess").toString())){
+				result.putAttr("updateSize", all.get("data"));
+				return result;
+			}
+			result.setSuccess(Boolean.valueOf(all.get("resuleSuccess").toString()));
+			result.setMessage(all.get("resultCodeDescription").toString());
+			return result;
+		} catch (Exception e) {
+			LogerUtil.error(KaniuApplyUtils.class,e,"");
+			result.setMessage(e.getMessage());
+			result.setSuccess(Boolean.FALSE);
+		}
+		return result;
+	}
+	/***
+	 * 修改订单数据
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult  updateOrder(AppParam param){
+		trustEveryone();
+		AppResult result = new AppResult();
+		Map<String,Object> params = new HashMap<String,Object>();
+		params.put("token", getToken());
+		params.put("data", param.getAttr("orderList"));
+		Connection conn = HttpConnection.connect("https://" + getHost()+ "/suishoudai-webservice/suishoudaiApi/updateOrder.do?json="+
+				JsonUtil.getInstance().object2JSON(params));
+		conn.timeout(20000);
+		conn.userAgent("Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36 MicroMessenger/6.5.2.501 NetType/WIFI WindowsWechat");
+		conn.ignoreContentType(true);
+		conn.header("X-Requested-With", "XMLHttpRequest");
+		Document doc;
+		try {
+			doc = conn.post();
+			Map<String, Object> all = JsonUtil.getInstance().json2Object(
+					URLDecoder.decode(doc.body().text(),"UTF-8"),Map.class);
+			if("true".equals(all.get("resuleSuccess").toString())){
+				result.putAttr("updateSize", all.get("data"));
+				return result;
+			}
+			result.setSuccess(Boolean.valueOf(all.get("resuleSuccess").toString()));
+			result.setMessage(all.get("resultCodeDescription").toString());
+			return result;
+		} catch (Exception e) {
+			log.error("addMethods:", e);
+			result.setMessage(e.getMessage());
+			result.setSuccess(Boolean.FALSE);
+		}
+		return result;
+	}
+	
+	
+	public static List<Map<String, Object>> getOrderIds(String orderIds){
+		if(StringUtils.isEmpty(orderIds)){
+			throw new SysException("缺少参数订单ID");
+		}
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+		for(String orderId:orderIds.split(",")){
+			Map<String, Object> map= new HashMap<String, Object>();
+			map.put("orderId", orderId);
+			list.add(map);
+		}
+		return list;
+	}
+	
+}

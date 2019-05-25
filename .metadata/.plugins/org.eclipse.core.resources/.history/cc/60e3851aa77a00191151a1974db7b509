@@ -1,0 +1,16 @@
+spring.profiles.active=test
+#zook
+zook.connectString=192.168.10.182:2182
+zook.registerUrl=http://192.168.10.182:6001/client
+
+#redis
+spring.redis.clusterNodes=192.168.10.196:6381,192.168.10.196:6382,192.168.10.196:6383,192.168.10.198:6381,192.168.10.198:6382,192.168.10.198:6383
+
+###
+spring.rabbitmq.hosts=192.168.10.198
+spring.rabbitmq.ports=5672
+spring.rabbitmq.userName=admin
+spring.rabbitmq.userPwd=admin123
+
+### trigger file
+spring.devtools.restart.trigger-file=trigger.txt

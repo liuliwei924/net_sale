@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="KFBUSIOPTEXT">
+	<!-- 客服转客服处理 -->
+	<update id="transferKefu" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 1,
+			t.kfStatus = 0,
+			t.lockBy = #{lastKf},
+			t.lastKf = #{lastKf},
+			t.lastKfDesc=#{lastKfDesc},
+			t.updateTime = NOW(),
+			t.lastKfTime=NOW(),
+			t.lockTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	<!-- 客服转门店人员处理 -->
+	<update id="transferStoreEmployee" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 2,
+			t.storeStatus = 0,
+			t.lockBy = #{lastStore},
+			t.kfStatus = 2,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.lastKfTime=NOW(),
+			t.orgId = #{orgId},
+			t.stageStatus=1,
+			t.allotFlag = #{netFlag},
+			t.allotTime = NOW(),
+			t.lastStore = #{lastStore},
+			t.updateTime = NOW(),
+			t.lockTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	<!-- 客服转门店处理 -->
+	<update id="transferStore" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 2,
+			t.storeStatus = 0,
+			t.kfStatus = 2,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.stageStatus=1,
+			t.lastKfTime=NOW(),
+			t.lockBy = NULL,
+			t.orgId = #{orgId},
+			t.allotFlag = #{netFlag},
+			t.updateTime = NOW(),
+			t.createTime = NOW(),
+			t.lockTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	<!-- 客服转普通单 -->
+	<update id="transferCommon" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET
+			t.applyType = 2,
+			t.haveDetail = 1,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.stageStatus=1,
+			t.lastKfTime=NOW(),
+			t.kfStatus = 3,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	
+	<!-- 去挂卖-->
+	<update id="transferSale" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 4,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.lastKfTime=NOW(),
+			t.haveDetail = 1,
+			t.stageStatus=1,
+			t.kfStatus = 6,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	
+	<!-- 客服转垃圾单 -->
+	<update id="transferRubbish" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 6,
+			t.applyType = 3,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.lastKfTime=NOW(),
+			t.kfStatus = 4,
+			t.stageStatus=3,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId}
+	</update>
+	<!-- 客服继续跟进 -->
+	<update id="continueFollow" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET 
+			t.kfStatus = 1,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.lastKfTime=NOW(),
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId}
+	</update>
+	<!-- 转换成功 -->
+	<update id="transferSuccess" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 5,
+			t.kfStatus = 7,
+			t.lastKfTime=NOW(),
+			t.stageStatus=1,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId}
+	</update>
+	
+	<!-- 转优质客户-->
+	<update id="transferSeniorCust" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 4,
+			<if test="roleType !=1">
+				t.lastKfDesc=#{lastKfDesc},
+				t.lastKf = #{lastKf},
+			</if>
+			t.lastKfTime=NOW(),
+			t.haveDetail = 1,
+			t.stageStatus=1,
+			t.kfStatus = 8,
+			t.applyType = 7,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId} 
+	</update>
+	
+	<!-- 系统自动挂卖处理 -->
+	<update id="kfDataAutoSale" parameterType="map">
+		UPDATE t_borrow_apply t JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		SET
+			t.`status`=3,
+			t.haveDetail=1,
+			t.kfStatus = 0,
+			t.lockBy = NULL,
+			t.lockTime = NULL,
+			t.lastKf = NULL,
+			t.lastKfTime=NULL,
+			t.updateTime = NOW(),
+			t.lastKfDesc='系统自动挂卖处理'
+		WHERE
+		 t1.loanAmount>0  AND t.`status` in(0,1) AND t.applyName !='内部测试' 
+		 <![CDATA[ AND t.applyTime>= DATE_ADD(NOW(),INTERVAL -7 DAY) 
+		 		  AND t.applyTime< DATE_ADD(NOW(),INTERVAL -2 DAY) 
+		 ]]>
+		 AND t1.cityName !='' AND t.allotFlag !=5 
+		 AND NOT FIND_IN_SET(t1.cityName,(select allotCitys FROM t_base_cfg ))
+	</update>
+	
+	<!-- 查询总未处理量和处理量 -->
+	<select id="queryKFDealCount" resultType="map" parameterType="map">
+		SELECT
+			(SELECT COUNT(1) FROM t_borrow_apply t WHERE t.haveDetail = 0 AND t.`status`=1 AND t.lastKf=#{customerId}) notFillCount,
+			(SELECT COUNT(1) FROM t_borrow_apply t WHERE t.applyType = '1' AND t.`status`=1 AND t.kfStatus=0 AND t.lastKf=#{customerId}) seniorCount
+		FROM DUAL
+	</select>
+	
+	<!-- 客服分单存取过程 -->
+	<update id="kfAllotOrderStart" parameterType="map" statementType="CALLABLE">
+	      {call proc_kf_allot_order_start(
+		      #{startTime,jdbcType=VARCHAR,mode=IN},
+		      #{endTime,jdbcType=VARCHAR,mode=IN}
+		      )
+       	  }
+	</update>
+	
+	<select id="pendCheckList" resultType="map" parameterType="map">
+		SELECT 
+			t.applyId,
+			t.applyName,
+			concat_ws(' ',t1.cityName,t1.cityArea) as locaDesc,
+			t1.loanAmount,
+			t1.loanDeadline,
+			t1.workType,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			(CASE 
+				WHEN t1.workType =2 THEN IFNULL(t2.incomeMonth,0)
+				WHEN t1.workType =3 THEN IFNULL(t2.incomeMonth,0)
+				ELSE IFNULL(t2.income,0)
+			END) as 'income',
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime
+			from t_borrow_apply t 
+			JOIN t_borrow_base t1 ON t.applyId = t1.applyId 
+			LEFT JOIN t_borrow_income t2 ON t.applyId = t2.applyId 
+		<include refid="pendCheckSqlWhere"></include>
+		ORDER by t.applyTime DESC
+	</select>
+	
+	<select id="pendCheckCount" resultType="int" parameterType="map">
+		SELECT  COUNT(t.applyId) from t_borrow_apply t
+		JOIN t_borrow_base t1 ON t.applyId = t1.applyId 
+		LEFT JOIN t_borrow_income t2 ON t.applyId = t2.applyId 
+		<include refid="pendCheckSqlWhere"></include>
+	</select>
+	
+    <sql id="pendCheckSqlWhere">
+   		 <where>
+			<if test="stageStatus != null and stageStatus != ''">
+				and t.stageStatus = #{stageStatus}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and t1.cityName = #{cityName}
+			</if>
+		</where>
+    </sql>
+    <select id="queryMyList" resultType="map" parameterType="map">
+		SELECT 
+			t.applyId,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			t.`status`,
+			(CASE 
+			    WHEN t.`status`=0 THEN '待处理' 
+				WHEN t.`status`=1 THEN '客服审核中' 
+				WHEN t.`status`=3 OR t.`status`=4  THEN '待接单' 
+				WHEN t.`status`=8 THEN '已失效' 
+				WHEN t.`status`=5 THEN '处理完成' 
+				WHEN t.`status`=2 AND t.storeStatus=0 AND lastStore IS NULL THEN '待接单' 
+				WHEN t.`status`=2 AND t.storeStatus=0 AND lastStore IS NOT NULL THEN '待信贷经理联系' 
+				WHEN t.`status`=2 AND t.storeStatus=1 THEN '信贷经理处理中' 
+				WHEN t.`status`=2 AND t.storeStatus=2 THEN '预约处理'
+				WHEN t.`status`=2 AND t.storeStatus=3 THEN '签单处理' 
+			    ELSE '申请失败' 
+		    END ) as 'statusText',    
+			t1.loanAmount,
+			t1.loanDeadline
+			FROM t_borrow_apply t
+			LEFT JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		<include refid="sqlqueryMyList"></include>
+		ORDER by t.applyTime desc
+	</select>
+	
+	<select id="queryMyListCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) 
+		FROM t_borrow_apply t
+		JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		<include refid="sqlqueryMyList"></include>
+	</select>
+	<sql id="sqlqueryMyList">
+		<where>
+			<if test="inStatus != null and inStatus != ''">
+				and t.status in (${inStatus})
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+		</where>
+	</sql>
+		
+	<!-- 客服离职人员处理 -->
+	<update id="leaveDeal" parameterType="map">
+		update t_borrow_apply set lastKf = #{customerId}
+		where lastKf = #{lastKf}
+	</update>
+	
+	<!-- 查询客服订单相关信息 -->
+	<select id="queryOrderInfo" resultType="map" parameterType="map">
+		SELECT
+		t.applyId,
+		t.lastStore,
+		t.lastKf,
+		t1.orgId,
+		t1.groupName,
+		t1.teamName
+		FROM
+		t_borrow_apply t
+		LEFT JOIN t_busi_cust t1 ON t.lastKf = t1.customerId
+		WHERE t.applyId = #{applyId}
+	</select>
+	
+	<!-- 查询待推送的数据 -->
+	<select id="queryWaitPushData" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.applyTime
+		FROM t_borrow_apply t LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId
+		<where>
+	 		 <![CDATA[t.applyTime >= DATE_FORMAT(#{startTime},'%Y-%m-%d') and t.applyTime <= DATE_FORMAT(#{endTime},'%Y-%m-%d')]]>
+		   <if test="applyStatus != null and applyStatus != ''">
+				and t.status=#{applyStatus}
+		   </if>
+		    <if test="inApplyStatus != null and inApplyStatus != ''">
+				and t.status in (${inApplyStatus})
+		    </if>
+		    <if test="pushStatus != null and pushStatus != ''">
+				and t.pushStatus =#{pushStatus}
+		    </if>
+		    <if test="insure != null and insure != ''">
+				and t1.insure =#{insure}
+		    </if>
+		    <if test="netSaleFlag != null and netSaleFlag == 0">
+				and !FIND_IN_SET(IFNULL(t1.cityName,t.cityName),(select allotCitys FROM t_base_cfg )) 
+		    </if>
+		    <if test="netSaleFlag != null and netSaleFlag == 1">
+				and FIND_IN_SET(IFNULL(t1.cityName,t.cityName),(select allotCitys FROM t_base_cfg )) 
+		    </if>
+		</where>
+		limit #{size}
+	</select>
+	
+	<select id="queryLoanCityCount" parameterType="map" resultType="int">
+		SELECT COUNT(cityName) from t_allot_kf_city where cityType = 2 AND cityName = #{cityName}
+	</select>
+</mapper>

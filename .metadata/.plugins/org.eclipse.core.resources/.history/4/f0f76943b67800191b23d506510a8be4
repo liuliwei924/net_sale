@@ -1,0 +1,85 @@
+package org.xxjr.quweitu.util;
+
+import java.util.Date;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+public class FunnyImgUtil {
+
+	/**
+	 * 获取趣图/名片组
+	 * @return
+	 */
+	public static  AppResult getGroupList(AppParam param){
+		param.setService("quweilistService");
+		param.setMethod("queryView");
+		param.addAttr("whoseItem", 2);
+		param.addAttr("flag", 1);
+		param.addAttr("is_mp4", 0);
+		param.addAttr("is_print", 0);
+		param.addAttr("is_gif", 0);
+		param.addAttr("is_napa", 1);
+		param.setOrderBy("id");
+		param.setOrderValue("desc");
+		param.setDataBase("quweitu");
+		Object dayValue = param.getAttr("dayValue");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"quweitu"));
+		if(!StringUtils.isEmpty(dayValue)){
+			Date today = new Date();
+			Date nextDay = DateUtil.getNextDay(today, 0-Integer.parseInt(dayValue.toString()));
+			param.addAttr("startTime", DateUtil.toStringByParttern(nextDay, "yyyy-MM-dd"));
+			param.addAttr("endTime", DateUtil.toStringByParttern(today, "yyyy-MM-dd"));
+		}
+		return RemoteInvoke.getInstance().callNoTx(param);
+	}
+
+	
+	/**
+	 * 收藏趣图
+	 * @param param
+	 */
+	public static AppResult funnyImgCollect(AppParam param){
+		param.setService("funnyimgCollectService");
+		param.setMethod("query");
+		param.setDataBase("quweitu");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"quweitu"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		int size = result.getRows().size();
+		param.setMethod(size == 0 ? "insert" : "update");
+		return RemoteInvoke.getInstance().call(param);
+	}
+	
+	/**
+	 * 取消收藏
+	 * @param param
+	 */
+	public static AppResult cancelCollect(AppParam param){
+		param.setService("funnyimgCollectService");
+		param.setMethod("delete");
+		param.setDataBase("quweitu");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"quweitu"));
+		return RemoteInvoke.getInstance().call(param);
+	}
+	
+	/**
+	 * 我的趣图收藏列表
+	 * @param param
+	 * @return
+	 */
+	public static AppResult myCollectList(AppParam param){
+		param.setService("funnyimgCollectService");
+		param.setMethod("queryView");
+		param.setDataBase("quweitu");
+		param.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"quweitu"));
+		return RemoteInvoke.getInstance().callNoTx(param);
+	}
+}

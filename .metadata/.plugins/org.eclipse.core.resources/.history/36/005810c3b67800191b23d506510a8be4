@@ -1,0 +1,128 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.xxjr.busi.util.CountGradeUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+@PushCode(16)
+public class PushXinUtil implements PushUtil{
+	
+	private static final String url = "https://xin.shudata.net/api/data/add";
+//	private static final String sign_id = "100";
+//	private static final String user_id = "96";
+//	private static final String key = "6FF4D298FDCB9A40A7B20E1339B77513";
+	
+	
+	@Override
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		
+		Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+		
+		if ((!PushPlatformUtils.checkChannelOpen(config))) {
+			LogerUtil.log(PushXinUtil.class, config.get("pushName") + "推送未打开");
+			return 3;
+		}
+		if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+			LogerUtil.log(PushXinUtil.class, config.get("pushName") + "推送已达上限");
+			return 3;
+		}
+		if ((!PushPlatformUtils.checkChannelLimit(row, config))) {
+			LogerUtil.log(PushXinUtil.class, config.get("pushName") + "筛选条件无法通过");
+			return 4;
+		}
+		if ((!PushPlatformUtils.checkStopDate(config))) {
+			LogerUtil.log(PushXinUtil.class, config.get("pushName") + "推送数据推送已暂停");
+			return 5;
+		}
+		int status = 2;
+		try {
+			Map<String, String> connParam = sendData(row);
+			Map<String, Object> resMap = PushPlatformUtils.httpPost(url, connParam, true);
+			if ("200".equals(StringUtil.getString(resMap.get("code")))) {
+				status = 1;
+			}
+			AppParam updateParam = new AppParam("thirdPushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			updateParam.addAttr("message", resMap.get("info"));
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("推送宜信2数据任务 PushXinUtil end");
+		} catch (Exception e) {
+			LogerUtil.error(PushXqbUtil.class, e, "PushXinUtil >>>>>>>>>>>>>>>>>>error");
+		}
+		return status;
+	}
+
+	
+	private Map<String, String> sendData(Map<String, Object> row) {
+		Map<String, String> connParam = new HashMap<String, String>();
+	
+		connParam.put("name", StringUtil.getString(row.get("applyName")));
+		
+		connParam.put("mobile", StringUtil.getString(row.get("telephone")));
+		
+		int sex = NumberUtil.getInt(row.get("sex"), 1);
+		connParam.put("gender", (sex == 1) ? "1" : "2");
+		
+		String birthDay = PushPlatformUtils.getBirthDay(null, NumberUtil.getInt(row.get("age"), 0));
+		connParam.put("birthday", birthDay);
+		connParam.put("loan_amount", (NumberUtil.getInt(row.get("loanAmount"), 1) * 10000) + "");
+		
+		int creditType = NumberUtil.getInt(row.get("creditType"), 2);
+		connParam.put("credit_card", (creditType > 0 && creditType != 2) ? "1" : "0");
+		connParam.put("we_bank", NumberUtil.getInt(row.get("havePinan"), 0) > 0 ? "1" : "0");
+		
+		int houseType = NumberUtil.getInt(row.get("houseType"), 2);
+		connParam.put("house", CountGradeUtil.judgeHouse(houseType) ? "1" : "0");
+		
+		int carType = NumberUtil.getInt(row.get("carType"), 2);
+		connParam.put("car", CountGradeUtil.judgeCar(carType) ? "1" : "0");
+		
+		int socialType = NumberUtil.getInt(row.get("socialType"), 2);
+		connParam.put("social", CountGradeUtil.judgeSocialType(socialType) ? "1" : "0");
+		
+		int fundType = NumberUtil.getInt(row.get("fundType"), 2);
+		connParam.put("fund", CountGradeUtil.judgeFundType(fundType) ? "1" : "0");
+		
+		int insurType = NumberUtil.getInt(row.get("insurType"), 0);
+		connParam.put("insur", CountGradeUtil.judgeInsurType(insurType) ? "1" : "0");
+		
+		int wagesType = NumberUtil.getInt(row.get("wagesType"), 0);
+		connParam.put("wages", (wagesType ==1 || wagesType == 3) ? "1" : "0");
+		
+		connParam.put("city", StringUtil.getString(row.get("cityName")));
+		
+		String sign_id = SysParamsUtil.getStringParamByKey("push_xin_cfg_sign_id", "100");
+		connParam.put("sign_id", sign_id);
+		
+		String timestamp = DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERNYYYYMMDDHHMMSSSSS);
+		
+		connParam.put("sign", sign_id);
+		
+		String key = SysParamsUtil.getStringParamByKey("push_xin_cfg_key", "6FF4D298FDCB9A40A7B20E1339B77513");
+		connParam.put("sign", Md5.getInstance().encrypt(sign_id + key + timestamp));
+		
+		connParam.put("request_time", timestamp);
+		
+		String user_id = SysParamsUtil.getStringParamByKey("push_xin_cfg_user_id", "96");
+		connParam.put("user_id", user_id);
+		return connParam;
+	}
+}

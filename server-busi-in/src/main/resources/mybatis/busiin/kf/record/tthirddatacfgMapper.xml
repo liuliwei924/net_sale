@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="THIRDDATACFG">
+
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			channelCode,
+			maxCount,
+			`enable`,
+			deduction,
+			DATE_FORMAT(createTime, '%Y-%m-%d %H:%i:%S') AS 'createTime',
+			DATE_FORMAT(updateTime, '%Y-%m-%d %H:%i:%S') AS 'updateTime'
+		FROM
+			t_third_data_cfg
+		<include refid="queryParams"></include>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<sql id="queryParams">
+		<where>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="maxCount != null and maxCount != ''">
+				and maxCount = #{maxCount}
+			</if>
+			<if test="startMaxCount != null and startMaxCount != ''">
+				and maxCount >= #{startMaxCount}
+			</if>
+			<if test="endMaxCount != null and endMaxCount != ''">
+				and maxCount <![CDATA[<=]]>
+				#{endMaxCount}
+			</if>
+			<if test="maxCount != null and maxCount != ''">
+				and maxCount = #{maxCount}
+			</if>
+			<if test="enable != null and enable != ''">
+				and enable = #{enable}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="getThirdDataCfg" parameterType="map" resultType="map">
+		SELECT  
+			(CASE 
+			WHEN t.`enable`= 0 THEN -1
+			WHEN IFNULL(t1.sucCount,0)>=t.maxCount THEN 0
+				ELSE 1
+				END
+			) as 'canUse',
+			t.deduction,
+			t.randoms
+			FROM
+			t_third_data_cfg t
+			LEFT JOIN
+			(
+			 SELECT COUNT(1) as 'sucCount',n.sourceChannel as 'channelCode' FROM t_third_data n WHERE 
+			n.sourceChannel = #{channelCode} AND DATE_FORMAT(n.createTime,'%Y-%m-%d')=#{recordDate} AND n.isRepeat=0
+			GROUP BY n.sourceChannel
+			) as t1  ON t.channelCode = t1.channelCode
+		 WHERE t.channelCode = #{channelCode}
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_third_data_cfg
+		<include refid="queryParams"></include>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_third_data_cfg (
+		channelCode,
+		maxCount,
+		enable,
+		createTime,
+		updateTime,
+		deduction,
+		randoms
+		)
+		VALUES
+		(
+		#{channelCode, jdbcType=VARCHAR},
+		#{maxCount, jdbcType=INTEGER,
+		typeHandler=NumberHandler},
+		#{enable, jdbcType=INTEGER,
+		typeHandler=NumberHandler},
+		#{createTime, jdbcType=TIMESTAMP,
+		typeHandler=DateHandler},
+		#{updateTime, jdbcType=TIMESTAMP,
+		typeHandler=DateHandler},
+		#{deduction, jdbcType=INTEGER, typeHandler=NumberHandler},
+		#{randoms, jdbcType=VARCHAR}
+		)
+	</insert>
+	<update id="update" parameterType="map">
+		update t_third_data_cfg
+		<set>
+			<if test="maxCount != null">
+				maxCount = #{maxCount, jdbcType=INTEGER, typeHandler=NumberHandler},
+			</if>
+			<if test="enable != null">
+				enable = #{enable, jdbcType=INTEGER, typeHandler=NumberHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,
+				typeHandler=DateHandler},
+			</if>
+			<if test="deduction != null">
+				deduction = #{deduction, jdbcType=INTEGER, typeHandler=NumberHandler},
+			</if>
+			<if test="randoms != null">
+				randoms = #{randoms, jdbcType=VARCHAR},
+			</if>
+		</set>
+		<where>
+			channelCode = #{channelCode}
+		</where>
+	</update>
+
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_third_data_cfg
+		<where>
+			channelCode = #{channelCode}
+		</where>
+	</delete>
+</mapper>

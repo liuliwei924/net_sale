@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CHANNELORIGSUM">
+
+	<!-- 共用的时间处理sql(t_apply) -->
+	<sql id="commonApplyTimeSql">
+		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+		 <if test="channelCode == null or channelCode == ''">
+			AND n.channelCode !='' 
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			AND n.channelCode = #{channelCode}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(n.channelCode,#{fixChannels})
+		</if>
+	</sql>
+	
+	<!-- 共用的时间处理sql(t_third_data) -->
+	<sql id="commonCreateTimeSql">
+		 n.isRepeat=0 AND <![CDATA[n.createTime>= #{startRecordDate} AND n.createTime<= #{endRecordDate}]]>
+		 <if test="channelCode == null or channelCode == ''">
+			AND n.sourceChannel !='' 
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			AND n.sourceChannel = #{channelCode}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(n.sourceChannel,#{fixChannels})
+		</if>
+	</sql>
+	
+	<!-- 共用的数量查询sql-->
+	<select id="channelBaseCount" resultType="int" parameterType="map">
+	SELECT COUNT(1) FROM(
+			 SELECT 
+					t.channelCode
+			  FROM t_apply t 
+			  LEFT JOIN t_borrow_channel t1 ON t1.channelCode = t.channelCode
+			  <where>
+			   		<![CDATA[t.applyTime>= #{startRecordDate} AND t.applyTime<= #{endRecordDate}]]>
+					<if test="channelCode == null or channelCode == ''">
+						AND t.channelCode !='' 
+					</if>
+					<if test="channelCode != null and channelCode != ''">
+						AND t.channelCode = #{channelCode}
+					</if>
+					<if test="fixChannels != null and fixChannels != ''">
+						AND FIND_IN_SET(t.channelCode,#{fixChannels})
+					</if>
+					<if test="channelName != null and channelName != ''">
+						AND t1.channelName like CONCAT(#{channelName},'%')
+					</if>
+					<if test="teamNo != null and teamNo != ''">
+						AND t1.teamNo= #{teamNo}
+					</if>
+			  </where>
+				GROUP BY t.channelCode,DATE_FORMAT(t.applyTime,#{datePattern})
+			  UNION ALL
+			  SELECT 
+					t.sourceChannel as 'channelCode'
+			  FROM t_third_data t 
+			  LEFT JOIN t_borrow_channel t1 ON t1.channelCode = t.sourceChannel
+			  <where>
+			  
+			  		t.isRepeat=0 AND <![CDATA[t.createTime>= #{startRecordDate} AND t.createTime<= #{endRecordDate}]]>
+					 <if test="channelCode == null or channelCode == ''">
+						AND t.sourceChannel !='' 
+					 </if>
+					<if test="channelCode != null and channelCode != ''">
+						AND t.sourceChannel = #{channelCode}
+					</if>
+					<if test="fixChannels != null and fixChannels != ''">
+						AND FIND_IN_SET(t.sourceChannel,#{fixChannels})
+					</if>
+					<if test="channelName != null and channelName != ''">
+						AND t1.channelName like CONCAT(#{channelName},'%')
+					</if>
+			  </where>
+				GROUP BY t.sourceChannel,DATE_FORMAT(t.createTime,#{datePattern})
+		) tab1 
+	</select>
+	
+	<!-- 共用的条件判断sql -->
+	<sql id="channelBaseSql">
+		
+		<if test="channelCode != null and channelCode != ''">
+			AND t.channelCode = #{channelCode}
+		</if>
+		<if test="fixChannels != null and fixChannels != ''">
+			AND FIND_IN_SET(t.channelCode,#{fixChannels})
+		</if>
+		<if test="channelName != null and channelName != ''">
+			AND t1.channelName like CONCAT(#{channelName},'%')
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND t1.teamNo= #{teamNo}
+		</if>
+	</sql>
+	
+	
+		<!-- 共用的channel cost sql-->
+	<sql id="comChannelCostSql">
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		LEFT JOIN (
+				SELECT n.channelCode, 
+					DATE_FORMAT(n.recordDate,#{datePattern}) as 'recordDate',
+					SUM(n.amount) as 'amount'
+				FROM t_borrow_channel_cost n 
+				<where>
+				<![CDATA[n.recordDate>= #{startRecordDate} AND n.recordDate<= #{endRecordDate}]]>
+					<if test="channelCode != null and channelCode != ''">
+						AND n.channelCode = #{channelCode}
+					</if>
+					<if test="fixChannels != null and fixChannels != ''">
+						AND FIND_IN_SET(n.channelCode,#{fixChannels})
+					</if>
+				</where>
+				GROUP BY n.channelCode,DATE_FORMAT(n.recordDate,#{datePattern})
+		) t2 ON t.channelCode = t2.channelCode AND t.recordDate= t2.recordDate
+	</sql>
+	
+		<!--大渠道基本情况统计(原始) -->
+	<select id="channelBase" resultType="map" parameterType="map">
+	SELECT * FROM (
+		SELECT <![CDATA[
+				t.recordDate,
+				t.channelCode,
+				CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+				t2.amount as 'costAmount',
+				COUNT(1) as 'applyCount',
+				ROUND(t2.amount/COUNT(1),2) as 'costCB',
+				t3.repCount,
+				COUNT(CASE WHEN t.applyType=1 OR t.applyType =6 THEN 1 END) as 'seniorCount',
+				ROUND(COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT allotCitys FROM t_base_cfg))THEN 1 END)/COUNT(1)*100,2) as 'netCityProp',
+				ROUND(COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT callCitys FROM t_base_cfg))THEN 1 END)/COUNT(1)*100,2) as 'callCityProp',
+				ROUND(
+				(COUNT(1)-COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT allotCitys FROM t_base_cfg))THEN 1 END)
+				-COUNT(CASE WHEN FIND_IN_SET(t.cityName,(SELECT callCitys FROM t_base_cfg))THEN 1 END))/COUNT(1)*100
+				,2
+				) as 'otherCityProp',
+				COUNT(CASE WHEN t.loanAmount>=0 AND t.loanAmount<=1 THEN 1 END) as 'amtCount1',
+				COUNT(CASE WHEN t.loanAmount>1 AND t.loanAmount<3 THEN 1 END) as 'amtCount2',
+				COUNT(CASE WHEN t.loanAmount>=3 AND t.loanAmount<5 THEN 1 END) as 'amtCount3',
+				COUNT(CASE WHEN t.loanAmount>=5 AND t.loanAmount<10 THEN 1 END) as 'amtCount4',
+				COUNT(CASE WHEN t.loanAmount>=10 THEN 1 END) as 'amtCount5',
+				COUNT(CASE WHEN t.assetLevel=0 THEN 1 END) as 'noAssetCount',
+				COUNT(CASE WHEN t.assetLevel=1 THEN 1 END) as 'assetCount1',
+				COUNT(CASE WHEN t.assetLevel=2 THEN 1 END) as 'assetCount2',
+				COUNT(CASE WHEN t.assetLevel=3 THEN 1 END) as 'assetCount3',
+				COUNT(CASE WHEN t.assetLevel=4 THEN 1 END) as 'assetCount4'
+			]]>
+		FROM (
+			SELECT 
+				 n.channelCode,
+				 DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				 n.cityName as 'cityName',
+				 IFNULL(n.applyAmount,0) as 'loanAmount',
+				 n.applyType,
+				(IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+				IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+				IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+				IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+				) as 'assetLevel'
+	
+			FROM  t_apply n
+			WHERE
+			<include refid="commonApplyTimeSql"/>
+	   UNION ALL
+			SELECT 
+				 n.sourceChannel as 'channelCode',
+				 DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
+				 n.cityName as 'cityName',
+				 IFNULL(n.loanAmount,0) as 'loanAmount',
+				 n.applyType,
+				(IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+				IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+				IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+				IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+				) as 'assetLevel'
+	
+			FROM  t_third_data n
+			WHERE
+			<include refid="commonCreateTimeSql"/>
+		) as t
+		<include refid="comChannelCostSql"/>	
+		LEFT JOIN (
+			SELECT
+				n.sourceChannel as 'channelCode',
+				DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
+				COUNT(distinct telephone) as repCount
+			FROM
+				t_third_data n
+			WHERE
+				 n.isRepeat=1 AND <![CDATA[n.createTime>= #{startRecordDate} AND n.createTime<= #{endRecordDate}]]>
+				 <if test="channelCode == null or channelCode == ''">
+					AND n.sourceChannel !='' 
+				 </if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.sourceChannel = #{channelCode}
+				</if>
+			GROUP BY channelCode,recordDate	
+		) t3 ON t.channelCode = t3.channelCode
+		AND t.recordDate = t3.recordDate
+		<where>
+		<include refid="channelBaseSql"/>
+		</where>
+		GROUP BY t.channelCode,t.recordDate
+	) t
+	ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	<!-- 金额资质详细情况统计 (原始)-->
+	<select id="channelDtl" resultType="map" parameterType="map">
+	SELECT
+		t.recordDate,
+		t.channelCode,
+		CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+		t.applyCount as 'applyCount',
+		t2.amount as 'costAmount',
+		ROUND(t2.amount/t.applyCount,2) as 'costCB',
+		t.seniorCount 'seniorCount',
+		IFNULL(t3.assetCount1,'0-0-0-0-0') as 'assetCount1',
+		IFNULL(t3.assetCount2,'0-0-0-0-0') as 'assetCount2',
+		IFNULL(t3.assetCount3,'0-0-0-0-0') as 'assetCount3',
+		IFNULL(t3.assetCount4,'0-0-0-0-0') as 'assetCount4',
+		IFNULL(t3.assetCount5,'0-0-0-0-0') as 'assetCount5'
+	FROM (
+	  SELECT 
+			n.channelCode,
+			COUNT(1) as 'applyCount',
+			COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+	    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate'
+	  FROM t_apply n
+	  WHERE  <include refid="commonApplyTimeSql"/>
+		GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,#{datePattern})
+	  UNION ALL
+	  SELECT 
+			n.sourceChannel as 'channelCode',
+			COUNT(1) as 'applyCount',
+			COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+	    DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate'
+	  FROM t_third_data n
+	  WHERE  <include refid="commonCreateTimeSql"/>
+		GROUP BY n.sourceChannel,DATE_FORMAT(n.createTime,#{datePattern})
+	
+	) t 
+	<include refid="comChannelCostSql"/>	
+	LEFT JOIN
+	(
+	SELECT 
+	tmp2.recordDate,
+	tmp2.channelCode,
+	MAX(CASE tmp2.amountLevel WHEN 1 THEN tmp2.assetCount END ) 'assetCount1',
+	MAX(CASE tmp2.amountLevel WHEN 2 THEN tmp2.assetCount END ) 'assetCount2',
+	MAX(CASE tmp2.amountLevel WHEN 3 THEN tmp2.assetCount END ) 'assetCount3',
+	MAX(CASE tmp2.amountLevel WHEN 4 THEN tmp2.assetCount END ) 'assetCount4',
+	MAX(CASE tmp2.amountLevel WHEN 5 THEN tmp2.assetCount END ) 'assetCount5'
+	FROM
+	(
+	SELECT 
+	tmp1.recordDate,
+	tmp1.channelCode,
+	tmp1.amountLevel,
+	CONCAT_WS('-',
+	IFNULL(COUNT(CASE WHEN tmp1.assetLevel=0 THEN 1 END),0),
+	IFNULL(COUNT(CASE WHEN tmp1.assetLevel=1 THEN 1 END),0),
+	IFNULL(COUNT(CASE WHEN tmp1.assetLevel=2 THEN 1 END),0),
+	IFNULL(COUNT(CASE WHEN tmp1.assetLevel=3 THEN 1 END),0),
+	IFNULL(COUNT(CASE WHEN tmp1.assetLevel=4 THEN 1 END),0)
+	) as 'assetCount'
+	FROM ( <![CDATA[
+			SELECT 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				n.channelCode,
+				(CASE WHEN IFNULL(n.applyAmount,0)>0 AND IFNULL(n.applyAmount,0)<=1 THEN 1 
+							WHEN n.applyAmount>1 AND n.applyAmount<3 THEN 2 
+							WHEN n.applyAmount>=3 AND n.applyAmount<5 THEN 3 
+							WHEN n.applyAmount>=5 AND n.applyAmount<10 THEN 4 
+							WHEN n.applyAmount>=10  THEN 5
+							ELSE 0 
+				END) as 'amountLevel',
+			 (IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+			 IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+			 IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+			 IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+			 ) as 'assetLevel'
+			]]>
+			FROM t_apply n 
+			WHERE   <include refid="commonApplyTimeSql"/>
+	    UNION ALL
+		 SELECT  <![CDATA[
+				DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
+				n.sourceChannel as 'channelCode',
+				(CASE WHEN IFNULL(n.loanAmount,0)>0 AND IFNULL(n.loanAmount,0)<=1 THEN 1 
+							WHEN n.loanAmount>1 AND n.loanAmount<3 THEN 2 
+							WHEN n.loanAmount>=3 AND n.loanAmount<5 THEN 3 
+							WHEN n.loanAmount>=5 AND n.loanAmount<10 THEN 4 
+							WHEN n.loanAmount>=10  THEN 5
+							ELSE 0 
+				END) as 'amountLevel',
+			 (IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+			 IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+			 IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+			 IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+			 ) as 'assetLevel'
+			 ]]>
+			FROM t_third_data n 
+			WHERE    <include refid="commonCreateTimeSql"/>
+	) as tmp1 
+	GROUP BY tmp1.channelCode,tmp1.recordDate,tmp1.amountLevel 
+	)as tmp2
+	GROUP BY tmp2.channelCode,tmp2.recordDate 
+	
+	) as t3 ON t3.channelCode = t.channelCode AND t3.recordDate = t.recordDate
+	<where>
+		<include refid="channelBaseSql"/>
+	</where>
+	ORDER BY t.recordDate DESC,t.applyCount DESC,t.channelCode
+	</select>
+	
+	<!-- 大渠道-24小时统计分析(原始数据) 每天凌晨归档 -->
+	<select id="channel24Analysis" resultType="map" parameterType="map">
+		SELECT
+			#{recordDate} as 'recordDate',
+			t.hours,
+			t.channelCode,
+			t1.`type` as 'channelType',
+			team.teamNo,
+			team.teamName,
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			t.applyCount as 'applyCount_',
+			t.seniorCount 'seniorCount_',
+			t2.assetCount1 as 'assetCount1',
+			t2.assetCount2 as 'assetCount2',
+			t2.assetCount3 as 'assetCount3',
+			t2.assetCount4 as 'assetCount4',
+			t2.assetCount5 as 'assetCount5'
+		FROM (
+		  SELECT 
+				n.channelCode,
+				COUNT(1) as 'applyCount',
+				COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+		    DATE_FORMAT(n.applyTime,'%H') as 'hours'
+		  FROM t_apply n
+		  WHERE  <![CDATA[n.applyTime>= #{recordDate} AND n.applyTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+			  	 <if test="channelCode == null or channelCode == ''">
+					AND n.channelCode !='' 
+			 	 </if>
+			 	 <if test="fixChannels != null and fixChannels != ''">
+					AND FIND_IN_SET(n.channelCode,#{fixChannels})
+				</if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.channelCode = #{channelCode}
+				</if>
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,'%Y-%m-%d %H')
+		  UNION ALL
+		  SELECT 
+				n.sourceChannel as 'channelCode',
+				COUNT(1) as 'applyCount',
+				COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+		    DATE_FORMAT(n.createTime,'%H') as 'hours'
+		  FROM t_third_data n
+		  WHERE  <![CDATA[n.createTime>= #{recordDate} AND n.createTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+			  	<if test="channelCode == null or channelCode == ''">
+					AND n.sourceChannel !='' 
+			 	</if>
+			 	<if test="fixChannels != null and fixChannels != ''">
+					AND FIND_IN_SET(n.sourceChannel,#{fixChannels})
+				</if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.sourceChannel = #{channelCode}
+				</if>
+			GROUP BY n.sourceChannel,DATE_FORMAT(n.createTime,'%H')
+		) t 
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON team.teamNo = t1.teamNo
+		LEFT JOIN
+    	(
+			SELECT 
+				tmp2.channelCode,
+				tmp2.hours,
+				MAX(CASE tmp2.amountLevel WHEN 1 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount1',
+				MAX(CASE tmp2.amountLevel WHEN 2 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount2',
+				MAX(CASE tmp2.amountLevel WHEN 3 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount3',
+				MAX(CASE tmp2.amountLevel WHEN 4 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount4',
+				MAX(CASE tmp2.amountLevel WHEN 5 THEN tmp2.assetCount ELSE '0-0-0-0-0' END ) 'assetCount5'
+			FROM
+				(
+				SELECT 
+				tmp1.channelCode,
+				tmp1.amountLevel,
+				DATE_FORMAT(tmp1.recordTime,'%H') as 'hours',
+				CONCAT_WS('-',
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=0 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=1 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=2 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=3 THEN 1 END),0),
+				IFNULL(COUNT(CASE WHEN tmp1.assetLevel=4 THEN 1 END),0)
+				) as 'assetCount'
+				FROM (
+					SELECT <![CDATA[
+						n.applyTime as 'recordTime',
+						n.channelCode,
+						(CASE WHEN IFNULL(n.applyAmount,0)>0 AND IFNULL(n.applyAmount,0)<=1 THEN 1 
+									WHEN n.applyAmount>1 AND n.applyAmount<3 THEN 2 
+									WHEN n.applyAmount>=3 AND n.applyAmount<5 THEN 3 
+									WHEN n.applyAmount>=5 AND n.applyAmount<10 THEN 4 
+									WHEN n.applyAmount>=10  THEN 5
+									ELSE 0 
+						END) as 'amountLevel',
+					 (IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+					 IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+					 IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+					 IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+					 ) as 'assetLevel'
+					]]>
+					FROM t_apply n 
+					WHERE  <![CDATA[n.applyTime>= #{recordDate} AND n.applyTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+						  	 <if test="channelCode == null or channelCode == ''">
+								AND n.channelCode !='' 
+						 	 </if>
+							<if test="channelCode != null and channelCode != ''">
+								AND n.channelCode = #{channelCode}
+							</if>
+							<if test="fixChannels != null and fixChannels != ''">
+								AND FIND_IN_SET(n.channelCode,#{fixChannels})
+							</if>
+					UNION ALL
+				 SELECT <![CDATA[
+						n.createTime as 'recordTime',
+						n.sourceChannel as 'channelCode',
+						(CASE WHEN IFNULL(n.loanAmount,0)>0 AND IFNULL(n.loanAmount,0)<=1 THEN 1 
+									WHEN n.loanAmount>1 AND n.loanAmount<3 THEN 2 
+									WHEN n.loanAmount>=3 AND n.loanAmount<5 THEN 3 
+									WHEN n.loanAmount>=5 AND n.loanAmount<10 THEN 4 
+									WHEN n.loanAmount>=10  THEN 5
+									ELSE 0 
+						END) as 'amountLevel',
+					 (IF(n.houseType !='' AND n.houseType!=0 AND n.houseType!=2,1,0)+
+					 IF(n.carType !='' AND n.carType!=0 AND n.carType!=2,1,0)+
+					 IF(n.insurType !='' AND n.insurType!=0 ,1,0)+
+					 IF(n.wagesType=1,1,IF(n.socialType=1 AND n.fundType=1,1,0))
+					 ) as 'assetLevel'
+					]]>
+					FROM t_third_data n 
+					WHERE <![CDATA[n.createTime>= #{recordDate} AND n.createTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+						  	<if test="channelCode == null or channelCode == ''">
+								AND n.sourceChannel !='' 
+						 	</if>
+						 	<if test="fixChannels != null and fixChannels != ''">
+								AND FIND_IN_SET(n.sourceChannel,#{fixChannels})
+							</if>
+							<if test="channelCode != null and channelCode != ''">
+								AND n.sourceChannel = #{channelCode}
+							</if>
+				) as tmp1 
+				GROUP BY DATE_FORMAT(tmp1.recordTime,'%H'),tmp1.channelCode,tmp1.amountLevel
+			)as tmp2 
+		GROUP BY tmp2.channelCode,tmp2.hours 
+	) as t2 ON t2.channelCode = t.channelCode AND t2.hours = t.hours
+	<where>
+		<if test="channelName != null and channelName != ''">
+			AND t1.channelName like CONCAT(#{channelName},'%')
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND t1.teamNo= #{teamNo}
+		</if>
+	</where>
+	ORDER BY t.hours DESC,t.applyCount DESC
+	</select>
+	
+	<select id="channel24AnalysisCount" resultType="int" parameterType="map">
+	SELECT COUNT(1) FROM
+		(	
+			SELECT 
+				n.channelCode,
+				DATE_FORMAT(n.applyTime,'%H') as 'hours'
+		  FROM t_apply n
+		  WHERE  <![CDATA[n.applyTime>= #{recordDate} AND n.applyTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+			  	 <if test="channelCode == null or channelCode == ''">
+					AND n.channelCode !='' 
+			 	 </if>
+			 	 <if test="fixChannels != null and fixChannels != ''">
+					AND FIND_IN_SET(n.channelCode,#{fixChannels})
+				</if>
+				<if test="channelCode != null and channelCode != ''">
+					AND n.channelCode = #{channelCode}
+				</if>
+			GROUP BY n.channelCode,DATE_FORMAT(n.applyTime,'%Y-%m-%d %H')
+		  UNION ALL
+		  SELECT 
+				n.sourceChannel as 'channelCode',
+				DATE_FORMAT(n.createTime,'%H') as 'hours'
+		  FROM t_third_data n
+		  WHERE    <![CDATA[n.createTime>= #{recordDate} AND n.createTime<= CONCAT_WS(' ',#{recordDate},'23:59:59')]]>
+				  	<if test="channelCode == null or channelCode == ''">
+						AND n.sourceChannel !='' 
+				 	</if>
+					<if test="channelCode != null and channelCode != ''">
+						AND n.sourceChannel = #{channelCode}
+					</if>
+					<if test="fixChannels != null and fixChannels != ''">
+						AND FIND_IN_SET(n.sourceChannel,#{fixChannels})
+					</if>
+			GROUP BY n.sourceChannel,DATE_FORMAT(n.createTime,'%H')
+		) t
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON team.teamNo = t1.teamNo
+		<where>
+			<if test="channelName != null and channelName != ''">
+				AND t1.channelName like CONCAT(#{channelName},'%')
+			</if>
+			<if test="teamNo != null and teamNo != ''">
+				AND t1.teamNo= #{teamNo}
+			</if>
+		</where>
+	</select>
+	
+</mapper>

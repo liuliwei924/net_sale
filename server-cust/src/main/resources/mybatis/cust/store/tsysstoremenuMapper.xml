@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SYSSTOREMENU">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			menuId,
+			orderNum, 
+			menuCode, 
+			menuName, 
+			menuUrl, 
+			level, 
+			parentId, 
+			createBy, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_sys_store_menu
+		<where>
+			<if test="menuId != null and menuId != ''">
+			  and menuId = #{menuId}
+			 </if>
+			<if test="orderNum != null and orderNum != ''">
+				and orderNum = #{orderNum}
+			</if>
+			<if test="menuCode != null and menuCode != ''">
+				and menuCode = #{menuCode}
+			</if>
+			<if test="menuName != null and menuName != ''">
+				and menuName = #{menuName}
+			</if>
+			<if test="menuUrl != null and menuUrl != ''">
+				and menuUrl = #{menuUrl}
+			</if>
+			<if test="level != null and level != ''">
+				and level = #{level}
+			</if>
+			<if test="parentId != null and parentId != ''">
+				and parentId = #{parentId}
+			</if>
+			
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_store_menu 
+		<where>
+		<if test="menuId != null and menuId != ''">
+		    and menuId = #{menuId}
+		 </if>
+		<if test="orderNum != null and orderNum != ''">
+			and orderNum = #{orderNum}
+		</if>
+		<if test="menuCode != null and menuCode != ''">
+			and menuCode = #{menuCode}
+		</if>
+		<if test="menuName != null and menuName != ''">
+			and menuName = #{menuName}
+		</if>
+		<if test="menuUrl != null and menuUrl != ''">
+			and menuUrl = #{menuUrl}
+		</if>
+		<if test="level != null and level != ''">
+			and level = #{level}
+		</if>
+		<if test="parentId != null and parentId != ''">
+			and parentId = #{parentId}
+		</if>
+
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="menuId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sys_store_menu (
+			orderNum,
+			menuCode,
+			menuName,
+			menuUrl,
+			level,
+			parentId,
+			createBy,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{orderNum, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{menuCode, jdbcType=VARCHAR}, 
+			#{menuName, jdbcType=VARCHAR}, 
+			#{menuUrl, jdbcType=VARCHAR}, 
+			#{level, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{parentId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sys_store_menu 
+		<where> 
+			menuId = #{menuId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sys_store_menu  
+		<set>
+			<if test="orderNum != null">
+				orderNum = #{orderNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="menuCode != null">
+				menuCode = #{menuCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="menuName != null">
+				menuName = #{menuName, jdbcType=VARCHAR},  
+			</if>
+			<if test="menuUrl != null">
+				menuUrl = #{menuUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="level != null">
+				level = #{level, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="parentId != null">
+				parentId = #{parentId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  menuId = #{menuId}
+		</where>
+	</update>
+	
+	<!-- 查询所有菜单 -->
+	<select id="queryAllMenusTree" parameterType="map" resultType="map">
+		SELECT 
+			t.menuId,
+			t.menuCode,
+			t.menuName,
+			t.menuUrl,
+			t.`level`,
+			t.parentId,
+			t.orderNum,
+			t1.menuName as parentMenuName
+		from t_sys_store_menu t
+		LEFT JOIN t_sys_store_menu t1 ON t.parentId = t1.menuId
+		<where>
+			<if test="level != null and level !='' ">
+				t.`level` = #{level}
+			</if>
+			<if test="menuName != null and menuName != ''">
+				and t.menuName like CONCAT(#{menuName},'%')
+			</if>
+			<if test="parentMenuName != null and parentMenuName != ''">
+				and t1.menuName like CONCAT(#{parentMenuName},'%')
+			</if>
+		</where>
+		
+	</select>
+	
+	<select id="queryAllMenusCount" parameterType="map" resultType="int">
+		SELECT 
+			count(1) 
+		from t_sys_store_menu t
+		LEFT JOIN t_sys_store_menu t1 ON t.parentId = t1.menuId
+		<where>
+			<if test="level != null and level !='' ">
+				t.`level` = #{level}
+			</if>
+			<if test="menuName != null and menuName != ''">
+				and t.menuName like CONCAT(#{menuName},'%')
+			</if>
+			<if test="parentMenuName != null and parentMenuName != ''">
+				and t1.menuName like CONCAT(#{parentMenuName},'%')
+			</if>
+		</where>
+	</select>
+	
+	<!-- 根据角色查询所有菜单 -->
+	<select id="queryAllMenusByRole" parameterType="map" resultType="map">
+		SELECT
+		t.menuId,t.menuCode,t.menuName,t.menuUrl,t.`level`,t.parentId,
+		(CASE
+			WHEN t1.id is NULL THEN 0
+			ELSE  1
+			END 
+		) AS havMenu,
+		IFNULL(t1.queryAuth,0) as havQuery,
+	  	IFNULL(t1.check,0) as havCheck,
+		IFNULL(t1.modify,0) as havModify
+		FROM
+		t_sys_store_menu t
+		LEFT JOIN t_sys_role_menu t1 ON t.menuId = t1.menuId
+		AND t1.roleId = #{roleId}
+	</select>
+	
+	<!-- 查询用户所有菜单 -->
+	<select id="queryUserMenusTree" parameterType="map" resultType="map">
+		SELECT t.menuId,t.menuCode,t.menuName,t.parentId from t_sys_store_menu t 
+		JOIN t_sys_role_menu t1 ON t.menuId = t1.menuId  AND t1.roleId = #{roleId}
+		ORDER BY t.`level`,t.orderNum
+	</select>
+	
+
+	
+	<!-- 查询用户所有url权限 -->
+	<select id="queryUserMenuUrls" parameterType="map" resultType="map">
+		SELECT GROUP_CONCAT(menuUrl) AS menuUrls  FROM
+	    t_sys_store_menu t
+	    JOIN t_sys_role_menu t1 ON t.menuId = t1.menuId AND t1.roleId = #{roleId}
+        WHERE t.`level` = 3
+	</select>
+	
+	<!-- 查询用户所有审核权限 -->
+	<select id="queryUserCheckUrls" parameterType="map" resultType="map">
+		SELECT DISTINCT
+			GROUP_CONCAT(t.menuUrl) as menuUrls
+			FROM
+			t_sys_store_menu t
+		    JOIN t_sys_role_menu t1 ON t.menuId = t1.menuId 
+			WHERE
+				t.`level` = 3
+			AND t1.`check` = 1
+			AND t1.roleId = #{roleId}
+	</select>
+	
+	<!-- 查询用户所有修改权限 -->
+	<select id="queryUserModifyUrls" parameterType="map" resultType="map">
+		SELECT DISTINCT
+		GROUP_CONCAT(t.menuUrl) as menuUrls
+		FROM
+			t_sys_store_menu t
+		JOIN t_sys_role_menu t1 ON t.menuId = t1.menuId  
+		WHERE
+			t.`level` = 3
+		AND t1.`modify` = 1
+		AND t1.roleId = #{roleId}
+	</select>
+	
+	
+	<!-- 查询按钮菜单的所有url权限 -->
+	<select id="queryAllButtonMenus" parameterType="map" resultType="map">
+		SELECT GROUP_CONCAT(menuUrl) as btnUrls from t_sys_store_menu t WHERE  t.`level` = 4
+			
+	</select>
+	
+	
+</mapper>

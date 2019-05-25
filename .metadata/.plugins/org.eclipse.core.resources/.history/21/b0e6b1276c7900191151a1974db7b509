@@ -1,0 +1,130 @@
+package org.xxjr.job.listener.xxxj;
+
+import java.util.Date;
+import java.util.Map;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+/**
+ * 
+ * @author LHS
+ *
+ */
+public class XzUtil {
+	
+	/**
+	 * 24小时未登录的用户移出星座
+	 * @return
+	 */
+	public static AppResult timingQuitXz(Object processId){
+		AppResult result = new AppResult();
+		try{
+			AppParam param = new AppParam("xjXzRecordService","timingQuitXz");//定时退出星座
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().call(param);
+		} catch(Exception e){
+			LogerUtil.error(XzUtil.class,e, "timingQuitXz error");
+			JobUtil.addProcessExecute(processId, "timingQuitXz 报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	/**
+	 * 30分钟发放一次奖励
+	 * @return
+	 */
+	public static AppResult sendXzReward(Object processId){
+		AppResult result = new AppResult();
+		try{
+			AppParam xzParam = new AppParam("xjXzInfoService","query");
+			xzParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().call(xzParam);
+			for (Map<String, Object> xzInfo : result.getRows()) {
+				Object xzId = xzInfo.get("xzId");
+				Object totalAbilityValue = xzInfo.get("totalAbilityValue");
+				int member = NumberUtil.getInt(xzInfo.get("member"));
+				int maxMember = NumberUtil.getInt(xzInfo.get("maxMember"));
+				if (member < maxMember - SysParamsUtil.getIntParamByKey("XJ_XZ_SEND_REWARD_MEMBER", 0)) {
+					continue;
+				}
+				AppParam param = new AppParam("xjXzRecordService","sendXzReward");
+				param.addAttr("status", 1);
+				param.addAttr("xzId", xzId);
+				param.addAttr("maxMember", maxMember);
+				param.addAttr("totalAbilityValue", totalAbilityValue);
+				param.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_XJ));
+				result = RemoteInvoke.getInstance().call(param);
+			}
+		} catch(Exception e){
+			LogerUtil.error(XzUtil.class,e, "sendXzReward error");
+			JobUtil.addProcessExecute(processId, "sendXzReward 报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	/**
+	 * 一天统计一次星座分红总数
+	 * @return
+	 */
+	public static AppResult sumXzReward(Object processId){
+		AppResult result = new AppResult();
+		try{
+			AppParam xzParam = new AppParam("xjXzInfoService","query");
+			xzParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().call(xzParam);
+			for (Map<String, Object> xzInfo : result.getRows()) {
+				Object xzId = xzInfo.get("xzId");
+				Object customerId = xzInfo.get("customerId");
+				Object xzRewardScale = xzInfo.get("xzRewardScale");
+				AppParam param = new AppParam("xjXzRecordService","sumXzReward");
+				param.addAttr("xzId", xzId);
+				param.addAttr("customerId", customerId);
+				param.addAttr("xzRewardScale", xzRewardScale);
+				param.addAttr("status", 1);
+				param.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_XJ));
+				RemoteInvoke.getInstance().call(param);
+			}
+		} catch(Exception e){
+			LogerUtil.error(XzUtil.class,e, "sendReward error");
+			JobUtil.addProcessExecute(processId, "sendReward 报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	/**
+	 * 一天更新一次用户领取状态
+	 * @return
+	 */
+	public static AppResult updateRecStatus(Object processId){
+		AppResult result = new AppResult();
+		try{
+			AppParam param = new AppParam("xjXzRecordService","updateRecStatus");
+			param.addAttr("recStatus", 0);
+			param.addAttr("updateTime", new Date());
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_XJ));
+			result = RemoteInvoke.getInstance().call(param);
+		} catch(Exception e){
+			LogerUtil.error(XzUtil.class,e, "updateRecStatus error");
+			JobUtil.addProcessExecute(processId, "updateRecStatus 报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+}

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWAGAINCFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			againId,
+			notHandl, 
+			notVisitor, 
+			notSign, 
+			againType
+		FROM t_borrow_again_cfg
+		<where>
+			<if test="againId != null and againId != ''">
+			  and againId = #{againId}
+			 </if>
+			<if test="notHandl != null and notHandl != ''">
+				and notHandl = #{notHandl}
+			</if>
+			<if test="notVisitor != null and notVisitor != ''">
+				and notVisitor = #{notVisitor}
+			</if>
+			<if test="notSign != null and notSign != ''">
+				and notSign = #{notSign}
+			</if>
+			<if test="againType != null and againType != ''">
+				and againType = #{againType}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_again_cfg 
+		<where>
+		<if test="againId != null and againId != ''">
+		    and againId = #{againId}
+		 </if>
+		<if test="notHandl != null and notHandl != ''">
+			and notHandl = #{notHandl}
+		</if>
+		<if test="notVisitor != null and notVisitor != ''">
+			and notVisitor = #{notVisitor}
+		</if>
+		<if test="notSign != null and notSign != ''">
+			and notSign = #{notSign}
+		</if>
+		<if test="againType != null and againType != ''">
+			and againType = #{againType}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_borrow_again_cfg (
+			notHandl,
+			notVisitor,
+			notSign,
+			againType
+		)
+		VALUES ( 
+			<if test="notHandl !=null ">
+			#{notHandl, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notHandl ==null ">
+			0 ,
+			</if>
+			<if test="notVisitor !=null ">
+			#{notVisitor, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notVisitor ==null ">
+			0 ,
+			</if>
+			<if test="notSign !=null ">
+			#{notSign, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notSign ==null ">
+			0 ,
+			</if>
+			<if test="againType !=null ">
+			#{againType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="againType ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_again_cfg 
+		<where> 
+			againId = #{againId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_again_cfg  
+		<set>
+			<if test="notHandl != null">
+				notHandl = #{notHandl, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notVisitor != null">
+				notVisitor = #{notVisitor, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notSign != null">
+				notSign = #{notSign, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="againType != null">
+				againType = #{againType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  againId = #{againId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,711 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMTOTALTEAM">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			teamNo,
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			costAmount, 
+			browseCount, 
+			storeCount, 
+			storeBackCount, 
+			kfReceivedCount, 
+			feedBackCount, 
+			sucBookCount, 
+			totalSignCount, 
+			totalSignAmt, 
+			signingCount, 
+			signingAmt, 
+			sucSignCount, 
+			sucSignAmt, 
+			saleCount, 
+			sucSaleScore, 
+			sucSaleCount, 
+			sucSaleAmount, 
+			failSaleCount, 
+			failSaleScore, 
+			failSaleAmount, 
+			failSignCount, 
+			failSignAmt, 
+			sucRetCount, 
+			sucRetAmount
+		FROM t_sum_total_team
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="teamNo != null and teamNo != ''">
+			  and teamNo = #{teamNo}
+			 </if>
+			<if test="applyCount != null and applyCount != ''">
+				and applyCount = #{applyCount}
+			</if>
+			<if test="seniorCount != null and seniorCount != ''">
+				and seniorCount = #{seniorCount}
+			</if>
+			<if test="notFillCount != null and notFillCount != ''">
+				and notFillCount = #{notFillCount}
+			</if>
+			<if test="costAmount != null and costAmount != ''">
+				and costAmount = #{costAmount}
+			</if>
+			<if test="browseCount != null and browseCount != ''">
+				and browseCount = #{browseCount}
+			</if>
+			<if test="storeCount != null and storeCount != ''">
+				and storeCount = #{storeCount}
+			</if>
+			<if test="storeBackCount != null and storeBackCount != ''">
+				and storeBackCount = #{storeBackCount}
+			</if>
+			<if test="kfReceivedCount != null and kfReceivedCount != ''">
+				and kfReceivedCount = #{kfReceivedCount}
+			</if>
+			<if test="feedBackCount != null and feedBackCount != ''">
+				and feedBackCount = #{feedBackCount}
+			</if>
+			<if test="sucBookCount != null and sucBookCount != ''">
+				and sucBookCount = #{sucBookCount}
+			</if>
+			<if test="totalSignCount != null and totalSignCount != ''">
+				and totalSignCount = #{totalSignCount}
+			</if>
+			<if test="totalSignAmt != null and totalSignAmt != ''">
+				and totalSignAmt = #{totalSignAmt}
+			</if>
+			<if test="signingCount != null and signingCount != ''">
+				and signingCount = #{signingCount}
+			</if>
+			<if test="signingAmt != null and signingAmt != ''">
+				and signingAmt = #{signingAmt}
+			</if>
+			<if test="sucSignCount != null and sucSignCount != ''">
+				and sucSignCount = #{sucSignCount}
+			</if>
+			<if test="sucSignAmt != null and sucSignAmt != ''">
+				and sucSignAmt = #{sucSignAmt}
+			</if>
+			<if test="saleCount != null and saleCount != ''">
+				and saleCount = #{saleCount}
+			</if>
+			<if test="sucSaleScore != null and sucSaleScore != ''">
+				and sucSaleScore = #{sucSaleScore}
+			</if>
+			<if test="sucSaleCount != null and sucSaleCount != ''">
+				and sucSaleCount = #{sucSaleCount}
+			</if>
+			<if test="sucSaleAmount != null and sucSaleAmount != ''">
+				and sucSaleAmount = #{sucSaleAmount}
+			</if>
+			<if test="failSaleCount != null and failSaleCount != ''">
+				and failSaleCount = #{failSaleCount}
+			</if>
+			<if test="failSaleScore != null and failSaleScore != ''">
+				and failSaleScore = #{failSaleScore}
+			</if>
+			<if test="failSaleAmount != null and failSaleAmount != ''">
+				and failSaleAmount = #{failSaleAmount}
+			</if>
+			<if test="failSignCount != null and failSignCount != ''">
+				and failSignCount = #{failSignCount}
+			</if>
+			<if test="failSignAmt != null and failSignAmt != ''">
+				and failSignAmt = #{failSignAmt}
+			</if>
+			<if test="sucRetCount != null and sucRetCount != ''">
+				and sucRetCount = #{sucRetCount}
+			</if>
+			<if test="sucRetAmount != null and sucRetAmount != ''">
+				and sucRetAmount = #{sucRetAmount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_team 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="teamNo != null and teamNo != ''">
+		    and teamNo = #{teamNo}
+		 </if>
+		<if test="applyCount != null and applyCount != ''">
+			and applyCount = #{applyCount}
+		</if>
+		<if test="seniorCount != null and seniorCount != ''">
+			and seniorCount = #{seniorCount}
+		</if>
+		<if test="notFillCount != null and notFillCount != ''">
+			and notFillCount = #{notFillCount}
+		</if>
+		<if test="costAmount != null and costAmount != ''">
+			and costAmount = #{costAmount}
+		</if>
+		<if test="browseCount != null and browseCount != ''">
+			and browseCount = #{browseCount}
+		</if>
+		<if test="storeCount != null and storeCount != ''">
+			and storeCount = #{storeCount}
+		</if>
+		<if test="storeBackCount != null and storeBackCount != ''">
+			and storeBackCount = #{storeBackCount}
+		</if>
+		<if test="kfReceivedCount != null and kfReceivedCount != ''">
+			and kfReceivedCount = #{kfReceivedCount}
+		</if>
+		<if test="feedBackCount != null and feedBackCount != ''">
+			and feedBackCount = #{feedBackCount}
+		</if>
+		<if test="sucBookCount != null and sucBookCount != ''">
+			and sucBookCount = #{sucBookCount}
+		</if>
+		<if test="totalSignCount != null and totalSignCount != ''">
+			and totalSignCount = #{totalSignCount}
+		</if>
+		<if test="totalSignAmt != null and totalSignAmt != ''">
+			and totalSignAmt = #{totalSignAmt}
+		</if>
+		<if test="signingCount != null and signingCount != ''">
+			and signingCount = #{signingCount}
+		</if>
+		<if test="signingAmt != null and signingAmt != ''">
+			and signingAmt = #{signingAmt}
+		</if>
+		<if test="sucSignCount != null and sucSignCount != ''">
+			and sucSignCount = #{sucSignCount}
+		</if>
+		<if test="sucSignAmt != null and sucSignAmt != ''">
+			and sucSignAmt = #{sucSignAmt}
+		</if>
+		<if test="saleCount != null and saleCount != ''">
+			and saleCount = #{saleCount}
+		</if>
+		<if test="sucSaleScore != null and sucSaleScore != ''">
+			and sucSaleScore = #{sucSaleScore}
+		</if>
+		<if test="sucSaleCount != null and sucSaleCount != ''">
+			and sucSaleCount = #{sucSaleCount}
+		</if>
+		<if test="sucSaleAmount != null and sucSaleAmount != ''">
+			and sucSaleAmount = #{sucSaleAmount}
+		</if>
+		<if test="failSaleCount != null and failSaleCount != ''">
+			and failSaleCount = #{failSaleCount}
+		</if>
+		<if test="failSaleScore != null and failSaleScore != ''">
+			and failSaleScore = #{failSaleScore}
+		</if>
+		<if test="failSaleAmount != null and failSaleAmount != ''">
+			and failSaleAmount = #{failSaleAmount}
+		</if>
+		<if test="failSignCount != null and failSignCount != ''">
+			and failSignCount = #{failSignCount}
+		</if>
+		<if test="failSignAmt != null and failSignAmt != ''">
+			and failSignAmt = #{failSignAmt}
+		</if>
+		<if test="sucRetCount != null and sucRetCount != ''">
+			and sucRetCount = #{sucRetCount}
+		</if>
+		<if test="sucRetAmount != null and sucRetAmount != ''">
+			and sucRetAmount = #{sucRetAmount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_total_team (
+			recordDate,
+			teamNo,
+			teamName,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			costAmount,
+			browseCount,
+			storeCount,
+			storeBackCount,
+			kfReceivedCount,
+			feedBackCount,
+			sucBookCount,
+			totalSignCount,
+			totalSignAmt,
+			signingCount,
+			signingAmt,
+			sucSignCount,
+			sucSignAmt,
+			saleCount,
+			sucSaleScore,
+			sucSaleCount,
+			sucSaleAmount,
+			failSaleCount,
+			failSaleScore,
+			failSaleAmount,
+			failSignCount,
+			failSignAmt,
+			sucRetCount,
+			sucRetAmount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE, typeHandler=DateHandler},
+			#{teamNo, jdbcType=VARCHAR},
+			#{teamName, jdbcType=VARCHAR},
+			<if test="applyCount !=null ">
+			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyCount ==null ">
+			0 ,
+			</if>
+			<if test="seniorCount !=null ">
+			#{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="seniorCount ==null ">
+			0 ,
+			</if>
+			<if test="notFillCount !=null ">
+			#{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notFillCount ==null ">
+			0 ,
+			</if>
+			<if test="costAmount !=null ">
+			#{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="costAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="browseCount !=null ">
+			#{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="browseCount ==null ">
+			0 ,
+			</if>
+			<if test="storeCount !=null ">
+			#{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeCount ==null ">
+			0 ,
+			</if>
+			<if test="storeBackCount !=null ">
+			#{storeBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeBackCount ==null ">
+			0 ,
+			</if>
+			<if test="kfReceivedCount !=null ">
+			#{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="kfReceivedCount ==null ">
+			0 ,
+			</if>
+			<if test="feedBackCount !=null ">
+			#{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feedBackCount ==null ">
+			0 ,
+			</if>
+			<if test="sucBookCount !=null ">
+			#{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucBookCount ==null ">
+			0 ,
+			</if>
+			<if test="totalSignCount !=null ">
+			#{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalSignCount ==null ">
+			0 ,
+			</if>
+			<if test="totalSignAmt !=null ">
+			#{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="signingCount !=null ">
+			#{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingCount ==null ">
+			0 ,
+			</if>
+			<if test="signingAmt !=null ">
+			#{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="sucSignCount !=null ">
+			#{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSignAmt !=null ">
+			#{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="saleCount !=null ">
+			#{saleCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="saleCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSaleScore !=null ">
+			#{sucSaleScore, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSaleScore ==null ">
+			0.00 ,
+			</if>
+			<if test="sucSaleCount !=null ">
+			#{sucSaleCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSaleCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSaleAmount !=null ">
+			#{sucSaleAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSaleAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="failSaleCount !=null ">
+			#{failSaleCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSaleCount ==null ">
+			0 ,
+			</if>
+			<if test="failSaleScore !=null ">
+			#{failSaleScore, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSaleScore ==null ">
+			0 ,
+			</if>
+			<if test="failSaleAmount !=null ">
+			#{failSaleAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSaleAmount ==null ">
+			0 ,
+			</if>
+			<if test="failSignCount !=null ">
+			#{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignCount ==null ">
+			0 ,
+			</if>
+			<if test="failSignAmt !=null ">
+			#{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="sucRetCount !=null ">
+			#{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucRetCount ==null ">
+			0 ,
+			</if>
+			<if test="sucRetAmount !=null ">
+			#{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="sucRetAmount ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_total_team 
+		<where> 
+			recordDate = #{recordDate} AND 
+			teamNo = #{teamNo}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_total_team  
+		<set>
+			<if test="teamName != null">
+				teamName = #{teamName, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyCount != null">
+				applyCount = #{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="seniorCount != null">
+				seniorCount = #{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notFillCount != null">
+				notFillCount = #{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeCount != null">
+				storeCount = #{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeBackCount != null">
+				storeBackCount = #{storeBackCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="kfReceivedCount != null">
+				kfReceivedCount = #{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feedBackCount != null">
+				feedBackCount = #{feedBackCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucBookCount != null">
+				sucBookCount = #{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalSignCount != null">
+				totalSignCount = #{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalSignAmt != null">
+				totalSignAmt = #{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingCount != null">
+				signingCount = #{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingAmt != null">
+				signingAmt = #{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSignCount != null">
+				sucSignCount = #{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSignAmt != null">
+				sucSignAmt = #{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="saleCount != null">
+				saleCount = #{saleCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSaleScore != null">
+				sucSaleScore = #{sucSaleScore, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSaleCount != null">
+				sucSaleCount = #{sucSaleCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSaleAmount != null">
+				sucSaleAmount = #{sucSaleAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSaleCount != null">
+				failSaleCount = #{failSaleCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSaleScore != null">
+				failSaleScore = #{failSaleScore, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSaleAmount != null">
+				failSaleAmount = #{failSaleAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignCount != null">
+				failSignCount = #{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignAmt != null">
+				failSignAmt = #{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetCount != null">
+				sucRetCount = #{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetAmount != null">
+				sucRetAmount = #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  teamNo = #{teamNo}
+		</where>
+	</update>
+	
+	<!-- 更新花费  -->
+	<update id="updateTeamCost" parameterType="map">
+		UPDATE t_sum_total_team  
+		<set>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			 recordDate = #{recordDate} AND 
+			  teamNo = #{teamNo}
+		</where>
+	</update>
+	
+	<!-- 更新挂卖失败金额  -->
+	<update id="updateTeamFailSale" parameterType="map">
+		UPDATE t_sum_total_team  
+		<set>
+			<if test="failSaleCount != null">
+				failSaleCount = #{failSaleCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSaleScore != null">
+				failSaleScore = #{failSaleScore, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSaleAmount != null">
+				failSaleAmount = #{failSaleAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			 recordDate = #{recordDate} AND 
+			  teamNo = #{teamNo}
+		</where>
+	</update>
+	<sql id="sqlQuery">
+   		<where>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and recordDate >= #{startRecordDate}
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[recordDate <= #{endRecordDate}]]>
+			 </if>
+			 <if test="teamNo != null and teamNo != ''">
+			 	and teamNo = #{teamNo}
+			 </if>
+		</where>
+    </sql>
+	
+	<select id="queryDay" parameterType="map" resultType="map">
+		SELECT
+			recordDate,
+			teamNo,
+			teamName,
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			IFNULL(ROUND(costAmount/applyCount,2),0) as 'costMoney',
+			costAmount, 
+			browseCount, 
+			storeCount, 
+			storeBackCount, 
+			kfReceivedCount, 
+			feedBackCount, 
+			sucBookCount, 
+			totalSignCount, 
+			totalSignAmt, 
+			signingCount, 
+			signingAmt, 
+			sucSignCount, 
+			sucSignAmt, 
+			saleCount, 
+			sucSaleScore, 
+			sucSaleCount, 
+			sucSaleAmount, 
+			failSaleCount, 
+			failSaleScore, 
+			failSaleAmount, 
+			failSignCount, 
+			failSignAmt, 
+			sucRetCount, 
+			sucRetAmount
+		FROM t_sum_total_team
+		<include refid="sqlQuery"></include>
+		ORDER by recordDate DESC,costAmount DESC
+	</select>
+	
+	<select id="queryDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_team
+		<include refid="sqlQuery"/>
+	</select>
+	
+	<select id="queryMonth" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT(recordDate,'%Y-%m') AS 'recordDate',
+			IFNULL(ROUND(SUM(costAmount)/SUM(applyCount),2),0) as 'costMoney',
+			teamNo,
+			teamName,
+			IFNULL(sum(applyCount),0) as 'applyCount', 
+			IFNULL(sum(seniorCount),0) as 'seniorCount', 
+			IFNULL(sum(notFillCount),0) as 'notFillCount', 
+			IFNULL(sum(costAmount),0) as 'costAmount', 
+			IFNULL(sum(browseCount),0) as 'browseCount', 
+			IFNULL(sum(storeCount),0) as 'storeCount', 
+			IFNULL(sum(storeBackCount),0) as 'storeBackCount', 
+			IFNULL(sum(kfReceivedCount),0) as 'kfReceivedCount', 
+			IFNULL(sum(feedBackCount),0) as 'feedBackCount', 
+			IFNULL(sum(sucBookCount),0) as 'sucBookCount', 
+			IFNULL(sum(totalSignCount),0) as 'totalSignCount', 
+			IFNULL(sum(totalSignAmt),0) as 'totalSignAmt', 
+			IFNULL(sum(signingCount),0) as 'signingCount', 
+			IFNULL(sum(signingAmt),0) as 'signingAmt', 
+			IFNULL(sum(sucSignCount),0) as 'sucSignCount', 
+			IFNULL(sum(sucSignAmt),0) as 'sucSignAmt', 
+			IFNULL(sum(saleCount),0) as 'saleCount', 
+			IFNULL(sum(sucSaleScore),0) as 'sucSaleScore', 
+			IFNULL(sum(sucSaleCount),0) as 'sucSaleCount', 
+			IFNULL(sum(sucSaleAmount),0) as 'sucSaleAmount', 
+			IFNULL(sum(failSaleCount),0) as 'failSaleCount', 
+			IFNULL(sum(failSaleScore),0) as 'failSaleScore', 
+			IFNULL(sum(failSaleAmount),0) as 'failSaleAmount', 
+			IFNULL(sum(failSignCount),0) as 'failSignCount', 
+			IFNULL(sum(failSignAmt),0) as 'failSignAmt', 
+			IFNULL(sum(sucRetCount),0) as 'sucRetCount', 
+			IFNULL(sum(sucRetAmount),0) as 'sucRetAmount'
+		FROM t_sum_total_team
+		<include refid="sqlQuery"></include>
+		GROUP BY teamNo,DATE_FORMAT(recordDate,'%Y-%m')
+		ORDER by recordDate DESC,costAmount DESC
+	</select>
+	
+	<select id="queryMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_total_team
+		<include refid="sqlQuery"/>
+		GROUP BY teamNo,DATE_FORMAT(recordDate,'%Y-%m')) tab1
+	</select>
+	
+	
+	<select id="querySection" parameterType="map" resultType="map">
+		SELECT
+			CONCAT_WS('至',#{startRecordDate},#{endRecordDate}) AS recordDate,
+			IFNULL(ROUND(SUM(costAmount)/SUM(applyCount),2),0) as 'costMoney',
+			teamNo,
+			teamName,
+			IFNULL(sum(applyCount),0) as 'applyCount', 
+			IFNULL(sum(seniorCount),0) as 'seniorCount', 
+			IFNULL(sum(notFillCount),0) as 'notFillCount', 
+			IFNULL(sum(costAmount),0) as 'costAmount', 
+			IFNULL(sum(browseCount),0) as 'browseCount', 
+			IFNULL(sum(storeCount),0) as 'storeCount', 
+			IFNULL(sum(storeBackCount),0) as 'storeBackCount', 
+			IFNULL(sum(kfReceivedCount),0) as 'kfReceivedCount', 
+			IFNULL(sum(feedBackCount),0) as 'feedBackCount', 
+			IFNULL(sum(sucBookCount),0) as 'sucBookCount', 
+			IFNULL(sum(totalSignCount),0) as 'totalSignCount', 
+			IFNULL(sum(totalSignAmt),0) as 'totalSignAmt', 
+			IFNULL(sum(signingCount),0) as 'signingCount', 
+			IFNULL(sum(signingAmt),0) as 'signingAmt', 
+			IFNULL(sum(sucSignCount),0) as 'sucSignCount', 
+			IFNULL(sum(sucSignAmt),0) as 'sucSignAmt', 
+			IFNULL(sum(saleCount),0) as 'saleCount', 
+			IFNULL(sum(sucSaleScore),0) as 'sucSaleScore', 
+			IFNULL(sum(sucSaleCount),0) as 'sucSaleCount', 
+			IFNULL(sum(sucSaleAmount),0) as 'sucSaleAmount', 
+			IFNULL(sum(failSaleCount),0) as 'failSaleCount', 
+			IFNULL(sum(failSaleScore),0) as 'failSaleScore', 
+			IFNULL(sum(failSaleAmount),0) as 'failSaleAmount', 
+			IFNULL(sum(failSignCount),0) as 'failSignCount', 
+			IFNULL(sum(failSignAmt),0) as 'failSignAmt', 
+			IFNULL(sum(sucRetCount),0) as 'sucRetCount', 
+			IFNULL(sum(sucRetAmount),0) as 'sucRetAmount'
+		FROM t_sum_total_team
+		<include refid="sqlQuery"></include>
+		GROUP BY teamNo
+	</select>
+	
+	<select id="querySectionCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_total_team
+		<include refid="sqlQuery"/>
+		GROUP BY teamNo) tab1
+	</select>
+	
+</mapper>

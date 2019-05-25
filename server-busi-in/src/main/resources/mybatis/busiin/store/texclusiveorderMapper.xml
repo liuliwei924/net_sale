@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="EXCLUSIVEORDER">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			orgId, 
+			orderType, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_exclusive_order
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}u
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_exclusive_order 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryExcOrder" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.customerId, 
+			t.orgId, 
+			t.orderType, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			IFNULL(t1.cityName,t2.cityName) as 'cityName',
+			t1.loanAmount,
+			t1.loanDeadline,
+			t2.applyName,
+			f_hide_phone(t2.telephone) as telephone,
+			t2.orderStatus,
+			(CASE 
+			WHEN t2.orderStatus =-1 THEN '待跟进'
+			WHEN t2.orderStatus =0 THEN '跟进中'
+			WHEN t2.orderStatus =1 THEN '未上门待签约'
+			WHEN t2.orderStatus =2 THEN '已上门待签约'
+			WHEN t2.orderStatus =3 THEN '已上门签约'
+			WHEN t2.orderStatus =4 THEN '进件审核中'
+			WHEN t2.orderStatus =5 THEN '银行已放款'
+			WHEN t2.orderStatus =6 THEN '银行已拒绝'
+			WHEN t2.orderStatus =7 THEN '无效客户'
+			WHEN t2.orderStatus =8 THEN '空号/错号'
+			ELSE '未知'
+			END
+			) as orderStatusText,
+			t2.status,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			DATE_FORMAT(t2.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			concat(t4.orgNo,'-',t4.orgName) as orgName,
+			t3.realName as currentDeal,
+			t3.groupName,
+			t3.teamName,
+			t2.custLabel,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			t5.handleDesc,
+			DATE_FORMAT(t5.lastTime,'%Y-%m-%d %H:%i:%s') as 'handleTime',
+			(CASE t7.type
+			   	WHEN 1 THEN '自有平台'
+				WHEN 2 THEN '推广渠道'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN '历史数据'
+				WHEN 5 THEN '推广渠道'
+				WHEN 6 THEN '测试数据'
+		   ELSE 'API接口' END) as 'channelTypeText'
+		FROM t_exclusive_order t  
+		LEFT JOIN t_borrow_base t1 ON t1.applyId = t.applyId
+		JOIN t_borrow_store_apply t2 ON t2.applyId = t.applyId
+		JOIN t_busi_cust t3 ON t3.customerId = t.customerId
+		LEFT JOIN t_org t4 on t4.orgId = t3.orgId
+		LEFT JOIN t_store_handle_record t5 ON t5.applyId = t.applyId
+		LEFT JOIN t_borrow_house t6 ON t.applyId = t6.applyId
+		LEFT JOIN t_borrow_channel t7 ON t2.`channelCode` = t7.`channelCode`
+		<include refid="queryWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryExcOrderCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_exclusive_order t  
+		LEFT JOIN t_borrow_base t1 ON t1.applyId = t.applyId
+		JOIN t_borrow_store_apply t2 ON t2.applyId = t.applyId
+		JOIN t_busi_cust t3 ON t3.customerId = t.customerId
+		LEFT JOIN t_org t4 on t4.orgId = t3.orgId
+		LEFT JOIN t_store_handle_record t5 ON t5.applyId = t.applyId
+		LEFT JOIN t_borrow_house t6 ON t.applyId = t6.applyId
+		LEFT JOIN t_borrow_channel t7 ON t2.`channelCode` = t7.`channelCode`
+		<include refid="queryWhereSql"/>
+	</select>
+	
+	<sql id="queryWhereSql">
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and t.applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t4.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t4.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t3.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t3.teamName = #{teamName}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and t.orderType = #{orderType}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and IFNULL(t1.cityName,t2.cityName) = #{cityName}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t2.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="realName != null and realName != ''">
+				and t3.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t2.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t3.telephone = #{mobile}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t2.orderStatus = #{orderStatus}
+			</if>
+			<if test="searchKey != null and searchKey != ''">
+				and (t2.applyName like CONCAT(#{searchKey},'%') or
+				t2.telephone like CONCAT(#{searchKey},'%'))
+			</if>
+			<if test="storeSearchKey != null and storeSearchKey != ''">
+				and (t3.realName like CONCAT(#{storeSearchKey},'%') or
+				t3.telephone like CONCAT(#{storeSearchKey},'%'))
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.createTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.createTime  < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[and t5.lastTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[and t5.lastTime < DATE_ADD(#{endHandleDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t2.custLabel = #{custLabel}
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and t5.handleDesc like CONCAT('%',#{handleDesc},'%')
+			</if>
+			<if test="houseType == '1'.toString()">
+				and t1.houseType != 2
+				<if test="housePlace1 == '1'.toString() and housePlace2 == '2'.toString()">
+					and (t6.housePlace = 1 or t6.housePlace = 2)
+				</if>
+				<if test="housePlace1 == '1'.toString() and housePlace2 != '2'.toString()"><!--本地房 -->
+					and t6.housePlace = 1
+				</if>
+				<if test="housePlace2 == '2'.toString() and housePlace1 != '1'.toString()"> <!--外地房 -->
+					and t6.housePlace = 2
+				</if>
+			</if>
+			<if test="carType == '2'.toString()"> <!-- 车产 -->
+				and t1.carType in (3,4)
+			</if>
+			<if test="insure == '3'.toString()"> <!-- 保单 -->
+				and t1.insure = 1
+			</if>
+			<if test="socialType == '4'.toString()"> <!-- 社保-->
+				and t1.socialType = 1
+			</if>
+			<if test="fundType == '5'.toString()"> <!-- 公积金 -->
+				and t1.fundType = 1
+			</if>
+			<if test="havePinan == '6'.toString()"> <!-- 微粒贷 -->
+				<![CDATA[and t1.havePinan > 0]]>
+			</if>
+			<if test="custLabelIn != null and custLabelIn != ''">
+				and t2.custLabel in (${custLabelIn})
+			</if>
+			<if test="channelType != null and channelType != ''">
+				AND t7.`type`= #{channelType}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t7.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="applyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_exclusive_order (
+			applyId,
+			customerId,
+			orgId,
+			orderType,
+			createTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="orderType !=null ">
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderType ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_exclusive_order 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<delete id="deleteByCustId" parameterType="map">
+		DELETE FROM t_exclusive_order 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_exclusive_order  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderType != null">
+				orderType = #{orderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+	
+	<!-- 查询超时未处理的专属单 -->
+	<select id="queryNotDeal" parameterType="map"  resultType="map">
+		SELECT
+			t.applyId,
+			t.orgId, 
+			t.orderType, 
+			DATE_FORMAT(t2.lastUpdateTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.customerId,
+			t1.realName,
+			t2.applyName
+		FROM t_exclusive_order t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_borrow_store_apply t2 ON t.applyId = t2.applyId
+		<where>
+			 <![CDATA[  t2.lastUpdateTime <= DATE_FORMAT(DATE_ADD(NOW(),INTERVAL -7 DAY),'%Y-%m-%d') ]]>
+			 AND t1.roleType !=0
+			 <if test="orgId!=null and orgId !=''">
+			 AND t.orgId = #{orgId}
+			 </if>
+		</where>
+	</select>
+	
+	<select id="queryNotDealCount" parameterType="map" resultType="int">
+		SELECT
+		count(*)
+		FROM t_exclusive_order t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_borrow_store_apply t2 ON t.applyId = t2.applyId
+		<where>
+			 <![CDATA[  t2.lastUpdateTime <= DATE_FORMAT(DATE_ADD(NOW(),INTERVAL -7 DAY),'%Y-%m-%d') ]]>
+		</where>
+	</select>
+</mapper>

@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMSIGNSTOREMONTH">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			sucSignCount, 
+			sucSignAmt, 
+			failSignCount, 
+			failSignAmt, 
+			signingCount, 
+			signingAmt, 
+			totalSignCount, 
+			totalSignAmt,
+			treatyWill
+		FROM t_sum_sign_store_month
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="sucSignCount != null and sucSignCount != ''">
+				and sucSignCount = #{sucSignCount}
+			</if>
+			<if test="sucSignAmt != null and sucSignAmt != ''">
+				and sucSignAmt = #{sucSignAmt}
+			</if>
+			<if test="failSignCount != null and failSignCount != ''">
+				and failSignCount = #{failSignCount}
+			</if>
+			<if test="failSignAmt != null and failSignAmt != ''">
+				and failSignAmt = #{failSignAmt}
+			</if>
+			<if test="signingCount != null and signingCount != ''">
+				and signingCount = #{signingCount}
+			</if>
+			<if test="signingAmt != null and signingAmt != ''">
+				and signingAmt = #{signingAmt}
+			</if>
+			<if test="totalSignCount != null and totalSignCount != ''">
+				and totalSignCount = #{totalSignCount}
+			</if>
+			<if test="totalSignAmt != null and totalSignAmt != ''">
+				and totalSignAmt = #{totalSignAmt}
+			</if>
+			<if test="treatyWill != null and treatyWill != ''">
+				and treatyWill = #{treatyWill}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_sign_store_month 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="sucSignCount != null and sucSignCount != ''">
+			and sucSignCount = #{sucSignCount}
+		</if>
+		<if test="sucSignAmt != null and sucSignAmt != ''">
+			and sucSignAmt = #{sucSignAmt}
+		</if>
+		<if test="failSignCount != null and failSignCount != ''">
+			and failSignCount = #{failSignCount}
+		</if>
+		<if test="failSignAmt != null and failSignAmt != ''">
+			and failSignAmt = #{failSignAmt}
+		</if>
+		<if test="signingCount != null and signingCount != ''">
+			and signingCount = #{signingCount}
+		</if>
+		<if test="signingAmt != null and signingAmt != ''">
+			and signingAmt = #{signingAmt}
+		</if>
+		<if test="totalSignCount != null and totalSignCount != ''">
+			and totalSignCount = #{totalSignCount}
+		</if>
+		<if test="totalSignAmt != null and totalSignAmt != ''">
+			and totalSignAmt = #{totalSignAmt}
+		</if>
+		<if test="treatyWill != null and treatyWill != ''">
+			and treatyWill = #{treatyWill}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_sign_store_month (
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			sucSignCount,
+			sucSignAmt,
+			failSignCount,
+			failSignAmt,
+			signingCount,
+			signingAmt,
+			totalSignCount,
+			totalSignAmt,
+			treatyWill
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=VARCHAR}, 
+			</if>
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if> 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="sucSignCount !=null ">
+			#{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSignAmt !=null ">
+			#{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="failSignCount !=null ">
+			#{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignCount ==null ">
+			0 ,
+			</if>
+			<if test="failSignAmt !=null ">
+			#{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="signingCount !=null ">
+			#{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingCount ==null ">
+			0 ,
+			</if>
+			<if test="signingAmt !=null ">
+			#{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="totalSignCount !=null ">
+			#{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalSignCount ==null ">
+			0 ,
+			</if>
+			<if test="totalSignAmt !=null ">
+			#{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="totalSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="treatyWill !=null ">
+			#{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="treatyWill ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_sign_store_month 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_sign_store_month  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="sucSignCount != null">
+				sucSignCount = #{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSignAmt != null">
+				sucSignAmt = #{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignCount != null">
+				failSignCount = #{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignAmt != null">
+				failSignAmt = #{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingCount != null">
+				signingCount = #{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingAmt != null">
+				signingAmt = #{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalSignCount != null">
+				totalSignCount = #{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalSignAmt != null">
+				totalSignAmt = #{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="treatyWill != null">
+				treatyWill = #{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	
+	<delete id="deleteByMonth" parameterType="map">
+		DELETE FROM t_sum_sign_store_month 
+		<where> 
+			recordDate = #{toMonth}
+			<if test="orgId != null and orgId != ''">
+		    	and orgId = #{orgId}
+		 	</if>
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_sign_store_month  (
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			sucSignCount, 
+			sucSignAmt, 
+			failSignCount, 
+			failSignAmt, 
+			signingCount, 
+			signingAmt, 
+			totalSignCount, 
+			totalSignAmt,
+			treatyWill
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.cityName}, 
+		  #{item.sucSignCount}, 
+		  #{item.sucSignAmt},
+		  #{item.failSignCount}, 
+		  #{item.failSignAmt}, 
+		  #{item.signingCount}, 
+		  #{item.signingAmt}, 
+		  #{item.totalSignCount}, 
+		  #{item.totalSignAmt},
+		  #{item.treatyWill}
+		  )
+		</foreach>
+  </insert>
+</mapper>

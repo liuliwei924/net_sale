@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTROLE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			id,
+			roleId, 
+			customerId, 
+			createBy, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_cust_role
+		<where>
+			<if test="id != null and id != ''">
+			  and id = #{id}
+			 </if>
+			<if test="roleId != null and roleId != ''">
+				and roleId = #{roleId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_role 
+		<where>
+		<if test="id != null and id != ''">
+		    and id = #{id}
+		 </if>
+		<if test="roleId != null and roleId != ''">
+			and roleId = #{roleId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="id">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_role (
+			roleId,
+			customerId,
+			createBy,
+			createTime
+		)
+		VALUES ( 
+			#{roleId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_role 
+		<where> 
+			id = #{id}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_role  
+		<set>
+			<if test="roleId != null">
+				roleId = #{roleId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			 <if test="id != null and id !='' ">
+				 id = #{id}
+			</if>
+			<if test="customerId !=null and customerId !='' and roleId !=null and roleId !=''">
+				customerId = #{customerId} and roleId = #{roleId}
+			</if>
+		</where>
+	</update>
+</mapper>

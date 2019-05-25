@@ -1,0 +1,21 @@
+package org.xxjr.store.web.util;
+
+import java.util.Date;
+
+public class Key_SMS {
+
+	/*** 交单跟进平台快捷登录  **/
+	public final static String Key_SMS_STORE_KJ_LOGIN = "StorekjLoginKey";
+
+	/**短信签名*/
+	public final static String SMS_TGW_SINGN_NAME = "天狗窝区块链";
+	
+	/**反馈通知 模板ID*/
+	public final static String TGW_FEED_BACK_TEMPID = "168064";
+
+	
+	public static void main(String[] args) {
+		System.out.println(new Date().getTime());
+	}
+		
+}

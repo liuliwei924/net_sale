@@ -1,0 +1,105 @@
+package org.xxjr.fang.util;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+public class HouseUtil {
+	
+	
+	/**
+	 * 查询楼盘详情(包括户型列表)
+	 * @param houseId
+	 * @param customerId
+	 * @return
+	 */
+	public static Map<String, Object> queryHouseDetail(String houseId,String customerId) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		if (StringUtils.isEmpty(houseId)) {
+			return map;
+		}
+		AppParam params = new AppParam("houseInfoService", "queryDtl");
+		params.addAttr("houseId", houseId);
+		params.addAttr("customerId", customerId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_fang));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		if (result.getRows().size() > 0) {
+			map = result.getRow(0);
+			AppParam roomType = new AppParam("roomTypeService", "query");
+			roomType.addAttr("houseId", houseId);
+			roomType.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_fang));
+			List<Map<String, Object>> roomTypelist = RemoteInvoke.getInstance().callNoTx(roomType).getRows();
+			map.put("roomType", roomTypelist);
+		}
+		return map;
+	}
+
+	/**
+	 * 查询户型详情
+	 * @param id
+	 * @return
+	 */
+	public static Map<String, Object> queryRoomTypeDetail(String id) {
+		Map<String, Object> roomDtl = new HashMap<String, Object>();
+		if (StringUtils.isEmpty(id)) {
+			return roomDtl;
+		}
+		AppParam params = new AppParam("roomTypeService", "query");
+		params.addAttr("id", id);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_fang));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		if (result.getRows().size() > 0) {
+			roomDtl = result.getRow(0);
+		}
+		return roomDtl;
+	}
+	
+	/**
+	 * 查询楼盘户型
+	 * @param houseId
+	 * @return
+	 */
+	public static List<Map<String, Object>> queryRoomTypeList(String houseId) {
+		if (StringUtils.isEmpty(houseId)) {
+			return null;
+		}
+		AppParam params = new AppParam("roomTypeService", "query");
+		params.addAttr("houseId", houseId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_fang));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		return result.getRows();
+	}
+
+	/**
+	 * 
+	 * @param param
+	 * @return
+	 */
+	public static List<Map<String,Object>> queryTopHouse(AppParam param){
+		Object city = param.getAttr("city");
+	    if(StringUtils.isEmpty(city)){
+	    	return null;
+	    }
+	    param.setService("houseInfoService");
+		param.setMethod("query");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_fang));
+		param.setOrderBy("createTime");
+		param.setOrderValue("desc");
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		return result.getRows();
+		
+	}
+}

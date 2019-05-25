@@ -1,0 +1,51 @@
+package org.xxjr.tools.util;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.xxjr.wx.utils.WXRequestUtil;
+import org.xxjr.wx.utils.WXUtil;
+
+/***
+ * 获取微信分享 参数公共类
+ * @author loys
+ *
+ */
+public class PageWxShareUtil {
+	
+	/**
+	 * 获取jssdk auth参数
+	 * @param gzhId
+	 */
+	public static Map<String,Object> getJsAuthParams(Map<String,Object> gzhInfo, HttpServletRequest request){
+		// 获取参数
+		Object appId = gzhInfo.get("appId");
+		Object appSecret = gzhInfo.get("appSecret");
+		String jsApiTicket = WXRequestUtil.getJSApiTicket(gzhInfo.get("gzhId"), appId, appSecret);
+		String url = request.getParameter("url");
+		Map<String,Object> authParams = getJsSDKAuthParams(jsApiTicket, appId, url);
+		return authParams;
+	}
+	
+	/**
+	 * js sdk权限验证参数
+	 * @param request
+	 * @return
+	 */
+	public static Map<String, Object> getJsSDKAuthParams(String jsapiTicket,
+			Object appId, String url) {
+		Map<String, Object> params = new HashMap<String, Object>();
+		String nonceStr = WXUtil.getNonceStr();
+		String timestamp = String.valueOf(new Date().getTime());
+		String signature = WXUtil.getJsSignature(jsapiTicket, nonceStr, timestamp, url);
+		params.put("appid", appId);
+		params.put("signature", signature);
+		params.put("timestamp", timestamp);
+		params.put("nonceStr", nonceStr);
+		return params;
+	}
+
+}

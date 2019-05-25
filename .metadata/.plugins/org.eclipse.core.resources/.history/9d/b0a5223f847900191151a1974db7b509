@@ -1,0 +1,61 @@
+package org.xxjr.job.listener.busi;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.active.mq.message.TransferSaleSend;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+/**
+ * 定时进行信贷经理和马甲包的挂卖数据转换
+ * @author hmj
+ *
+ */
+
+@Lazy
+@Component
+public class AutoTransferSaleJob implements BaseExecteJob {
+	
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try {
+			LogerUtil.log("AutoTransferSaleJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+			transferSale(processId);
+			LogerUtil.log("AutoTransferSaleJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		} catch (Exception e) {
+			LogerUtil.error(AutoTransferSaleJob.class, e, "AutoTransferSaleJob >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "定时进行信贷经理和马甲包的挂卖数据转换" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	/**
+	 * 挂卖数据进行自动转单
+	 * @param processId
+	 * @return
+	 */
+	public AppResult transferSale(Object processId){
+		AppResult result = new AppResult();
+		try {
+			//通知mq执行转单处理
+			TransferSaleSend saleSend = SpringAppContext.getBean(TransferSaleSend.class);
+			Map<String, Object> msg = new HashMap<String, Object>();
+			msg.put("now", new Date());
+			saleSend.sendExecuteMessage(msg);
+		} catch (Exception e) {
+			LogerUtil.error(AutoTransferSaleJob.class, e, "transferSale >>>>>>>>>>>>>>>>>>error");
+		}
+		return result;
+	}
+}

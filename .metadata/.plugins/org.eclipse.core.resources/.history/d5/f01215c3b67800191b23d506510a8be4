@@ -1,0 +1,123 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.StringUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.push.AbstractAllotLoanUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+@PushCode(41)
+public class PushMaLangUtil extends AbstractAllotLoanUtil{
+
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		String url = SysParamsUtil.getStringParamByKey("push_malangjf_cfg_url", "http://admin.jd-money.com/index.php/Admin/Yewu/AcceptData");
+		
+		JSONObject content = new JSONObject();
+		content.put("time", DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
+		content.put("count", 1);
+		JSONArray dataArray = new JSONArray();
+		JSONObject data = new JSONObject();
+		
+		data.put("name", row.get("applyName"));
+		data.put("phone", row.get("telephone"));
+		data.put("amount", row.get("loanAmount"));
+		data.put("city", row.get("cityName"));
+		int workType = NumberUtil.getInt(row.get("workType"), 0);
+		if (workType > 0) {
+			data.put("work", row.get("workType"));
+			if (!StringUtils.isEmpty(row.get("wagesType")) && (workType == 4 || workType == 1)) {
+				data.put("wagestyoe", row.get("wagesType"));
+				double income = NumberUtil.getDouble(row.get("income"), 0);
+				if (income > 0) {
+					int incomeType = 1;
+					if (income >= 2000 && income < 4000) {
+						incomeType = 2;
+					} else if (income >= 4000 && income < 8000) {
+						incomeType = 3;
+					} else if (income >= 8000 && income < 15000) {
+						incomeType = 4;
+					} else if (income >= 15000) {
+						incomeType = 5;
+					}
+					data.put("income", incomeType);
+				}
+				double cashMonth = NumberUtil.getDouble(row.get("cashMonth"), 0);
+				if (cashMonth > 0) {
+					int cashMonthType = 1;
+					if (cashMonth >= 2000 && cashMonth < 4000) {
+						cashMonthType = 2;
+					} else if (cashMonth >= 4000 && cashMonth < 8000) {
+						cashMonthType = 3;
+					} else if (cashMonth >= 8000 && cashMonth < 15000) {
+						cashMonthType = 4;
+					} else if (cashMonth >= 15000) {
+						cashMonthType = 5;
+					}
+					data.put("cashmonth", cashMonthType);
+				}
+			}
+		}
+		
+		String identifyNo = StringUtil.objectToStr(row.get("identifyNo"));
+		String sex = StringUtil.objectToStr(row.get("sex"));
+		String age = StringUtil.objectToStr(row.get("age"));
+		if (!StringUtils.isEmpty(identifyNo)) {
+			data.put("idcard", identifyNo);
+		}else if (!StringUtils.isEmpty(age) && !StringUtils.isEmpty(sex)) {
+			data.put("sex", sex);
+			data.put("age", age);
+		}
+		
+		
+		data.put("social", NumberUtil.getInt(row.get("socialType"), 2));
+		data.put("fund", NumberUtil.getInt(row.get("fundType"), 2));
+		data.put("house", NumberUtil.getInt(row.get("houseType"), 2));
+		
+		int carType = NumberUtil.getInt(row.get("carType"), 2);
+		data.put("car", carType >= 2 ? (carType -1) : 1);
+		
+		int creditType = NumberUtil.getInt(row.get("creditType"), 0);
+		data.put("credit", creditType >= 4 ? (creditType -1) : creditType);
+		
+		int havePinan = NumberUtil.getInt(row.get("havePinan"), 0);
+		int havePinanType = 0;
+		if (havePinan > 100000) {
+			havePinanType = 6;
+		} else if (havePinan >= 50000 && havePinan <= 100000) {
+			havePinanType = 5;
+		} else if (havePinan >= 30000 && havePinan < 50000) {
+			havePinanType = 4;
+		} else if (havePinan >= 10000 && havePinan < 30000) {
+			havePinanType = 2;
+		} else if (havePinan > 0 && havePinan < 10000) {
+			havePinanType = 1;
+		}
+		data.put("haveweili", havePinanType);
+		
+		dataArray.add(data);
+		content.put("data", dataArray);
+		
+		Map<String, Object> resultMap = PushPlatformUtils.httpPost(url, null, content.toJSONString(), true, null);
+		if ("100".equals(StringUtil.objectToStr(resultMap.get("Code")))) {
+			status = 1;
+		}
+		Map<String, Object> resMap = new HashMap<String, Object>();
+		resMap.put("status", status);
+		resMap.put("message", resultMap.get("Message"));
+		return resMap;
+	}
+
+}

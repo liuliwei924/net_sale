@@ -1,0 +1,151 @@
+package org.xxjr.cust.util.auth;
+
+import java.io.File;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.util.LogerUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.auth.util.FileDealUtil;
+import org.xxjr.cust.util.auth.util.GetAccessTokenUtil;
+import org.xxjr.cust.util.auth.util.HttpUtil;
+import org.xxjr.cust.util.auth.util.JXMConvertUtil;
+
+public class HeadAuthUtil {
+
+	/** 头像认证次数 **/
+	public static String CacheKey_HEAD_AUTH_COUNT = "HeadAuthCount";
+	/** 马甲包头像认证次数 **/
+	public static String CacheKey_MJBHEAD_AUTH_COUNT = "Mjb_HeadAuthCount";
+
+	/** 数据保留时长为 1天 **/
+	public static Integer HEAD_AUTH_TIME = 1 * 24 * 60 * 60;
+
+	/**
+	 * 
+	 * @param FaceFile
+	 *            头像
+	 * @param identifyFile
+	 *            身份证
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getHeadResult(File headFile)
+			throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUploadFile(headFile, pictureMap);
+		String headImg = pictureMap.get("photo");
+		// 请求参数
+		String configId = "1";
+		// 人脸对比url
+		String params = "configId=" + configId + "&"
+				+ URLEncoder.encode("images", "UTF-8") + "="
+				+ URLEncoder.encode(headImg, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_HEAD_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.5b74db16d5912fd7645fb7734b9bfba8.2592000.1504076514.282335-9928176";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getHeadAuth();
+		}
+		// 用户头像审核 url
+		String faceAuditUrl = "https://aip.baidubce.com/rest/2.0/solution/v1/face_audit";
+		String resultJson = HttpUtil.post(faceAuditUrl, accessToken, params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.ConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		String error_code = (String) resultHashMap.get("error_code");
+		String error_msg = (String) resultHashMap.get("error_msg");
+		if (!StringUtils.isEmpty(error_code)) {
+			resultMap.put("error_msg", error_msg);
+			resultMap.put("error_code", error_code);
+			return resultMap;
+		}
+
+		List<Map<String, Object>> resultList = (List<Map<String, Object>>) resultHashMap
+				.get("result");
+		if (resultList != null) {
+			Map<String, Object> resMap = resultList.get(0);
+			LogerUtil.log(resMap);
+			Object res_code = resMap.get("res_code");
+			resultMap.put("res_code", res_code);
+		} else {
+			resultMap.put("error_msg", "头像审核失败");
+		}
+		return resultMap;
+	}
+	
+	/**
+	 * 
+	 * @param InputStream 流需要自己关闭
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getHeadResult(InputStream in)
+			throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUpload(in, pictureMap);
+		String headImg = pictureMap.get("photo");
+		// 请求参数
+		String configId = "1";
+		// 人脸对比url
+		String params = "configId=" + configId + "&"
+				+ URLEncoder.encode("images", "UTF-8") + "="
+				+ URLEncoder.encode(headImg, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_HEAD_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.5b74db16d5912fd7645fb7734b9bfba8.2592000.1504076514.282335-9928176";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getHeadAuth();
+		}
+		// 用户头像审核 url
+		String faceAuditUrl = "https://aip.baidubce.com/rest/2.0/solution/v1/face_audit";
+		String resultJson = HttpUtil.post(faceAuditUrl, accessToken, params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.ConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		String error_code = (String) resultHashMap.get("error_code");
+		String error_msg = (String) resultHashMap.get("error_msg");
+		if (!StringUtils.isEmpty(error_code)) {
+			resultMap.put("error_msg", error_msg);
+			resultMap.put("error_code", error_code);
+			return resultMap;
+		}
+
+		List<Map<String, Object>> resultList = (List<Map<String, Object>>) resultHashMap
+				.get("result");
+		if (resultList != null) {
+			Map<String, Object> resMap = resultList.get(0);
+			LogerUtil.log(resMap);
+			Object res_code = resMap.get("res_code");
+			resultMap.put("res_code", res_code);
+		} else {
+			resultMap.put("error_msg", "头像审核失败");
+		}
+		return resultMap;
+	}
+
+	public static void main(String[] args) throws Exception {
+		/*File tempFile = new File(
+				"C:/Users/Administrator/Pictures/youyi-003.jpg");
+		getHeadResult(tempFile);*/
+		System.out.println(8624632 >= 1* 1024 * 1024);
+	}
+}

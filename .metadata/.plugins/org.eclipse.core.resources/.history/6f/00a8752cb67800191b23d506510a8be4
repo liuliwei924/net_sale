@@ -1,0 +1,204 @@
+package org.xxjr.busi.util.recruit;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.RecruitCfgUtil;
+import org.xxjr.busi.util.borrow.BorrowRobUtils;
+import org.xxjr.cust.util.info.CustInfoUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.wx.utils.WXRequestUtil;
+import org.xxjr.wx.utils.WXUtil;
+
+public class RecruitUtil {
+	
+	/**
+	 * 获取置顶价格
+	 * @param days
+	 * @param customerId
+	 * @return
+	 */
+	public static double getTopPrice(int days, String customerId){
+		// 置顶价格配置
+		Map<String,Object> topConfig = RecruitCfgUtil.getRecruitTopCfg();
+		double day1Price = Double.valueOf(topConfig.get("day1Amt").toString());
+		// 判断是否会员
+		if(CustInfoUtil.isVip(customerId)){
+			day1Price = Double.valueOf(topConfig.get("day1VipAmt").toString());
+		}
+		double discount = 10;
+		if(days >= 30){
+			discount = Double.valueOf(topConfig.get("monthDiscount").toString());
+		}else if(days >= 7){
+			discount = Double.valueOf(topConfig.get("weekDiscount").toString());
+		}
+		return new BigDecimal(days * day1Price * discount/10).setScale(2, RoundingMode.HALF_UP).doubleValue();
+	}
+	
+	/**
+	 * 判断是否可置顶
+	 * @param infoId
+	 * @param customerId
+	 * @return
+	 */
+	public static AppResult canTop(String infoId, String customerId){
+		AppResult result = new AppResult();
+		AppParam queryParam = new AppParam();
+		queryParam.setService("recruitInfoService");
+		queryParam.setMethod("query");
+		queryParam.addAttr("infoId", infoId);
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		if(queryResult.getRows().size() == 0){
+			result.setMessage("招聘信息已不存在！");
+			result.setSuccess(false);
+			return result;
+		}
+		
+		Map<String,Object> info = queryResult.getRow(0);
+		String custId = info.get("customerId").toString();
+		if(!customerId.equals(custId)){
+			result.setMessage("请选择自己发布的招聘信息进行置顶操作！");
+			result.setSuccess(false);
+			return result;
+		}
+		// 一个城市最多五条置顶
+		AppParam params = new AppParam();
+		params.setService("recruitInfoService");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		params.setMethod("query");
+		params.addAttr("workCity", info.get("workCity"));
+		params.addAttr("isTop", 1);
+		queryResult = RemoteInvoke.getInstance().callNoTx(params);
+		if(queryResult.getRows().size() >= 5){
+			result.setMessage("同一地区已有5条招聘信息置顶！");
+			result.setSuccess(false);
+			return result;
+		}
+		return result;
+	}
+	
+	/**
+	 * 微信支付置顶
+	 * @param params
+	 * @return
+	 */
+	public static AppResult wxpayTop(AppParam params,HttpServletRequest request) {
+		AppResult result = new AppResult();
+		if(StringUtils.isEmpty(params.getAttr("customerId")) || 
+				StringUtils.isEmpty(params.getAttr("infoId"))){
+			result.setSuccess(Boolean.FALSE);
+			result.setMessage("没有选择要处理的招聘信息");
+			return result;
+		}
+		
+		String customerId = params.getAttr("customerId").toString();
+		int days = Integer.valueOf(params.getAttr("days").toString());
+		Object infoId = params.getAttr("infoId");
+		
+		// 微信支付
+		Object openid = params.getAttr("openid");
+		Object gzhId = params.getAttr("gzhId");
+		Object appId = params.getAttr("appId");
+		Object apiKey = params.getAttr("apiKey");
+		Object mchId = params.getAttr("mchId");
+		boolean fromApp = false;
+		if(!StringUtils.isEmpty(params.getAttr("fromApp"))){
+			fromApp = true;
+		}
+		
+		Integer totalFee = new BigDecimal(getTopPrice(days, customerId)*100).intValue();
+		
+		AppParam wxpayOrderParam = new AppParam(AppProperties.getProperties(
+													DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx),
+											   "wxpayOrderService","insert");
+		wxpayOrderParam.addAttr("businessId", infoId);
+		wxpayOrderParam.addAttr("gzhId", gzhId);
+		wxpayOrderParam.addAttr("customerId", Integer.valueOf(customerId));
+		wxpayOrderParam.addAttr("isApp", fromApp ? "1" : "0");
+		wxpayOrderParam.addAttr("payType", 1);
+		wxpayOrderParam.addAttr("topDays", days);
+		wxpayOrderParam.addAttr("openid", openid);
+		double amount = new BigDecimal(totalFee).divide(new BigDecimal(100)).setScale(2, RoundingMode.HALF_UP).doubleValue();
+		wxpayOrderParam.addAttr("amount", amount);
+		wxpayOrderParam.addAttr("status",0);
+		wxpayOrderParam.addAttr("createTime", new Date());
+		AppResult wxpayOrderResult =  RemoteInvoke.getInstance().call(wxpayOrderParam);
+		
+		if(wxpayOrderResult.isSuccess()){
+			Object orderId = wxpayOrderResult.getAttr("orderId");
+			String notifyUrl = "https://phone.xxjr.com/busi/Thrid/Sys/wxPayBack/"+gzhId;
+			AppParam param = new AppParam();
+			param.addAttr("appid", appId);
+			param.addAttr("mch_id", mchId);
+			param.addAttr("apiKey", apiKey);
+			param.addAttr("openid", openid);
+			param.addAttr("trade_type", "JSAPI");
+			param.addAttr("notify_url", notifyUrl); 
+			param.addAttr("body", "小小金融-信息服务费");
+			param.addAttr("out_trade_no", "zp"+orderId);
+			param.addAttr("total_fee", totalFee);
+			param.addAttr("attach", orderId);
+			Map<String, String> payInfo = new HashMap<String, String>();
+			try {
+				payInfo = WXRequestUtil.unifiedOrder(param);
+			} catch (Exception e) {
+				throw new SysException("微信支付请求失败！");
+			}
+			Object prepayId = payInfo.get("prepay_id");
+			LogerUtil.error(BorrowRobUtils.class,"payInfo=:" + payInfo);
+			if(StringUtils.isEmpty(prepayId)){
+				result.setSuccess(false);
+				result.setMessage("获取微信预支付订单失败，请稍后再试！");
+				return result;
+			}
+			
+			long timeStamp = System.currentTimeMillis() / 1000;
+			String nonceStr =  WXUtil.getNonceStr();
+			Map<String,Object> signParam = new HashMap<String, Object>();
+			String sign = null;
+			if(fromApp){
+				signParam.put("appid", appId);
+				signParam.put("prepayid", prepayId);
+				signParam.put("partnerid", mchId);
+				signParam.put("noncestr", nonceStr);
+				signParam.put("package", "Sign=WXPay");
+				signParam.put("timestamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}else{
+				signParam.put("appId", appId);
+				signParam.put("nonceStr", nonceStr);
+				signParam.put("signType", "MD5");
+				signParam.put("package", "prepay_id="+prepayId);
+				signParam.put("timeStamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}
+			Map<String,Object> payParams = new HashMap<String, Object>();
+			payParams.put("orderId", orderId);
+			payParams.put("appId", appId);
+			payParams.put("sign", sign);
+			payParams.put("prepayId", prepayId);
+			payParams.put("timeStamp", timeStamp);
+			payParams.put("nonceStr", nonceStr);
+			payParams.put("mchId", mchId);
+			result.putAttr("payParams", payParams);
+		}
+		return result;
+	}
+	
+}

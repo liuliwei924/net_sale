@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JOB">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			jobId as "jobId",
+			rmiName,
+			typeCode as "typeCode",  <!-- 任务类型 -->
+			jobName as "jobName",  <!-- 任务名称 -->
+			jobDesc as "jobDesc",  <!-- 任务描述 -->
+			enable as "enable",  
+			executeType as "executeType",  
+			recurrentValue as "recurrentValue",  <!-- 循环值 -->
+			DATE_FORMAT(executeTime,'%Y-%m-%d %H:%i:%s') as "executeTime", <!-- 第一次执行开始时间 -->
+			endType as "endType", 
+			DATE_FORMAT(endDate,'%Y-%m-%d %H:%i:%s') as "endDate", <!-- 结束时间 -->
+			DATE_FORMAT(lastExeTime,'%Y-%m-%d %H:%i:%s') as "lastExeTime", <!-- 上次执行时间 -->
+			lastExeStatus as "lastExeStatus",  
+			DATE_FORMAT(nextExeTime,'%Y-%m-%d %H:%i:%s') as "nextExeTime", <!-- 下次执行时间 -->
+			jobStatus as "jobStatus",  
+			jobParams,
+			createBy as "createBy",
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime", 
+			updateBy as "updateBy",  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime" 
+		FROM t_job
+		<where>
+			<if test="jobId != null and jobId != ''">
+			  and jobId = #{jobId}
+			 </if>
+			<if test="typeCode != null and typeCode != ''">
+				and typeCode like '%${typeCode}%'
+			</if>
+			<if test="jobName != null and jobName != ''">
+				and jobName like '%${jobName}%'
+			</if>
+			<if test="jobDesc != null and jobDesc != ''">
+				and jobDesc = #{jobDesc}
+			</if>
+			<if test="enable != null and enable != ''">
+				and enable = #{enable}
+			</if>
+			<if test="executeType != null and executeType != ''">
+				and executeType = #{executeType}
+			</if>
+			<if test="recurrentValue != null and recurrentValue != ''">
+				and recurrentValue = #{recurrentValue}
+			</if>
+			<if test="executeTime != null and executeTime != ''">
+				and executeTime = #{executeTime}
+			</if>
+			<if test="endType != null and endType != ''">
+				and endType = #{endType}
+			</if>
+			
+			<if test="jobStatus != null and jobStatus != ''">
+				and jobStatus = #{jobStatus}
+			</if>
+			<if test="startLastExeTime != null and startLastExeTime != ''">
+				<![CDATA[ and lastExeTime >= #{startLastExeTime} ]]>
+			</if>
+			<if test="endLastExeTime != null and endLastExeTime != ''">
+				<![CDATA[ and lastExeTime <= #{endLastExeTime} ]]>
+			</if>
+			
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_job 
+		<where>
+		<if test="jobId != null and jobId != ''">
+			  and jobId = #{jobId}
+			 </if>
+			<if test="typeCode != null and typeCode != ''">
+				and typeCode like '%${typeCode}%'
+			</if>
+			<if test="jobName != null and jobName != ''">
+				and jobName like '%${jobName}%'
+			</if>
+			<if test="jobDesc != null and jobDesc != ''">
+				and jobDesc = #{jobDesc}
+			</if>
+			<if test="enable != null and enable != ''">
+				and enable = #{enable}
+			</if>
+			<if test="executeType != null and executeType != ''">
+				and executeType = #{executeType}
+			</if>
+			<if test="recurrentValue != null and recurrentValue != ''">
+				and recurrentValue = #{recurrentValue}
+			</if>
+			<if test="executeTime != null and executeTime != ''">
+				and executeTime = #{executeTime}
+			</if>
+			<if test="endType != null and endType != ''">
+				and endType = #{endType}
+			</if>
+			
+			<if test="jobStatus != null and jobStatus != ''">
+				and jobStatus = #{jobStatus}
+			</if>
+			<if test="startLastExeTime != null and startLastExeTime != ''">
+				<![CDATA[ and lastExeTime >= #{startLastExeTime} ]]>
+			</if>
+			<if test="endLastExeTime != null and endLastExeTime != ''">
+				<![CDATA[ and lastExeTime <= #{endLastExeTime} ]]>
+			</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="jobId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_job (
+			typeCode,
+			jobName,
+			jobDesc,
+			enable,
+			executeType,
+			recurrentValue,
+			executeTime,
+			endType,
+			endDate,
+			lastExeTime,
+			lastExeStatus,
+			nextExeTime,
+			jobStatus,
+			jobParams,
+			createBy,
+			createTime,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{typeCode, jdbcType=VARCHAR}, 
+			#{jobName, jdbcType=VARCHAR}, 
+			#{jobDesc, jdbcType=VARCHAR}, 
+			#{enable, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{executeType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{recurrentValue, jdbcType=VARCHAR}, 
+			#{executeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{endType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{endDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{lastExeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{lastExeStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{nextExeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{jobStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{jobParams, jdbcType=VARCHAR},  
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_job 
+		<where> 
+			jobId = #{jobId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_job  
+		<set>
+			<if test="typeCode != null">
+				typeCode = #{typeCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="jobParams != null">
+				jobParams = #{jobParams, jdbcType=VARCHAR},  
+			</if>
+			
+			<if test="jobName != null">
+				jobName = #{jobName, jdbcType=VARCHAR},  
+			</if>
+			<if test="jobDesc != null">
+				jobDesc = #{jobDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="enable != null">
+				enable = #{enable, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="executeType != null">
+				executeType = #{executeType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recurrentValue != null">
+				recurrentValue = #{recurrentValue, jdbcType=VARCHAR},  
+			</if>
+			<if test="executeTime != null">
+				executeTime = #{executeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="endType != null">
+				endType = #{endType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="endDate != null">
+				endDate = #{endDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="lastExeTime != null">
+				lastExeTime = #{lastExeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="lastExeStatus != null">
+				lastExeStatus = #{lastExeStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="nextExeTime != null">
+				nextExeTime = #{nextExeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="jobStatus != null">
+				jobStatus = #{jobStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  jobId = #{jobId}
+		</where>
+	</update>
+</mapper>

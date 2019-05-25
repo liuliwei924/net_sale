@@ -1,0 +1,30 @@
+package org.xxjr.job.listener.xxxj;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+/**
+ * 自动放弃领取
+ * @author zenghw
+ *
+ */
+@Lazy
+@Component
+public class AutoGiveUpReceiveJob implements BaseExecteJob{
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		//竞拍-自动放弃领取
+		String msg = XjAuctionUtil.autoGiveUpReceive();
+		JobUtil.addProcessExecute(processId, msg);
+		return result;
+	}
+
+}

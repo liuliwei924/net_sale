@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCREDIT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			overdueCount, 
+			haveCurOver, 
+			sumAmount, 
+			useAmount, 
+			cardCount
+		FROM t_borrow_credit
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="overdueCount != null and overdueCount != ''">
+				and overdueCount = #{overdueCount}
+			</if>
+			<if test="haveCurOver != null and haveCurOver != ''">
+				and haveCurOver = #{haveCurOver}
+			</if>
+			<if test="sumAmount != null and sumAmount != ''">
+				and sumAmount = #{sumAmount}
+			</if>
+			<if test="useAmount != null and useAmount != ''">
+				and useAmount = #{useAmount}
+			</if>
+			<if test="cardCount != null and cardCount != ''">
+				and cardCount = #{cardCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_credit 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="overdueCount != null and overdueCount != ''">
+			and overdueCount = #{overdueCount}
+		</if>
+		<if test="haveCurOver != null and haveCurOver != ''">
+			and haveCurOver = #{haveCurOver}
+		</if>
+		<if test="sumAmount != null and sumAmount != ''">
+			and sumAmount = #{sumAmount}
+		</if>
+		<if test="useAmount != null and useAmount != ''">
+			and useAmount = #{useAmount}
+		</if>
+		<if test="cardCount != null and cardCount != ''">
+			and cardCount = #{cardCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+	
+		INSERT INTO t_borrow_credit (
+			applyId,
+			overdueCount,
+			haveCurOver,
+			sumAmount,
+			useAmount,
+			cardCount
+		)
+		VALUES ( 
+			#{applyId},
+			<if test="overdueCount !=null ">
+			#{overdueCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="overdueCount ==null ">
+			0 ,
+			</if>
+			<if test="haveCurOver !=null ">
+			#{haveCurOver, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="haveCurOver ==null ">
+			0 ,
+			</if>
+			<if test="sumAmount !=null ">
+			#{sumAmount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sumAmount ==null ">
+			0 ,
+			</if>
+			<if test="useAmount !=null ">
+			#{useAmount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="useAmount ==null ">
+			0 ,
+			</if>
+			<if test="cardCount !=null ">
+			#{cardCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="cardCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_credit 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_credit  
+		<set>
+			<if test="overdueCount != null">
+				overdueCount = #{overdueCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="haveCurOver != null">
+				haveCurOver = #{haveCurOver, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sumAmount != null">
+				sumAmount = #{sumAmount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="useAmount != null">
+				useAmount = #{useAmount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="cardCount != null">
+				cardCount = #{cardCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

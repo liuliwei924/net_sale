@@ -1,0 +1,1008 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWSTORERECORD">
+    <sql id="sqlQueryWhere">
+    	<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="robWay != null and robWay != ''">
+				and robWay = #{robWay}
+			</if>
+			<if test="storeBy != null and storeBy != ''">
+				and storeBy = #{storeBy}
+			</if>
+			<if test="handleType != null and handleType != ''">
+				and handleType = #{handleType}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}
+			</if>
+		</where>
+    
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			applyId, 
+			storeBy, 
+			handleDesc, 
+			handleType,
+			score,
+			amount,
+			robWay,
+			readFlag,
+			orderType,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			isFeedback
+		FROM ${tableName}
+		<include refid="sqlQueryWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM ${tableName} 
+		<include refid="sqlQueryWhere"/>
+	</select>
+	
+	<select id="queryStoreRecord" resultType="map" parameterType="map">
+		SELECT
+			tab1.recordId,
+			tab1.applyId, 
+			tab1.storeBy, 
+			tab1.handleDesc, 
+			tab1.handleType,
+			tab1.score,
+			tab1.amount,
+			tab1.robWay,
+			tab1.readFlag,
+			tab1.orderType,
+			tab1.createTime,
+			tab1.name,
+			tab1.orgId
+		 FROM 
+		(SELECT
+			t.recordId,t.applyId, t.storeBy, t.handleDesc, t.handleType,
+			t.score,t.amount,t.robWay,t.readFlag,t.orderType,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName as name,t2.orgId
+			FROM ${tableName} t
+			LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+			LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+			<include refid="recordSqlQueryWhere"/>
+		<if test="tableName1 !=null and tableName1 !=''">
+			UNION ALL
+			SELECT
+			t.recordId,t.applyId, t.storeBy, t.handleDesc, t.handleType,
+			t.score,t.amount,t.robWay,t.readFlag,t.orderType,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName as name,t2.orgId
+			FROM ${tableName1} t
+			LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+			LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+			<include refid="recordSqlQueryWhere"/>
+		</if>
+		<if test="tableName2 !=null and tableName2 !=''">
+			UNION ALL
+			SELECT
+			t.recordId,t.applyId, t.storeBy, t.handleDesc, t.handleType,
+			t.score,t.amount,t.robWay,t.readFlag,t.orderType,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName as name,t2.orgId
+			FROM ${tableName2} t
+			LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+			LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+			<include refid="recordSqlQueryWhere"/>
+		</if>	
+		) as tab1
+		ORDER BY tab1.createTime desc
+	</select>
+	<sql id="recordSqlQueryWhere">
+    	<where>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="storeBy != null and storeBy != ''">
+				and t.storeBy = #{storeBy}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t2.orgId = #{orgId}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and t.createTime >= #{applyTime} ]]>
+			</if>
+			<if test="handleTypeFlag != null and handleTypeFlag != ''">
+				and t.handleType != 0
+			</if>
+		</where>
+    </sql>
+	<select id="queryStoreRecordCount" resultType="int" parameterType="map">
+		SELECT SUM(tab1.count) FROM (
+			SELECT COUNT(*) as count FROM ${tableName} t
+			LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+			LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+			<include refid="recordSqlQueryWhere"/>
+			<if test="tableName1 !=null and tableName1 !=''">
+			    UNION ALL
+				SELECT COUNT(*) as count FROM ${tableName1} t
+				LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+				LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+				<include refid="recordSqlQueryWhere"/>
+			</if>
+		   <if test="tableName2 !=null and tableName2 !=''">
+				UNION ALL
+				SELECT COUNT(*) as count FROM ${tableName2} t
+				LEFT JOIN t_busi_cust t1 ON t1.customerId = t.storeBy
+				LEFT JOIN t_org t2 ON t2.orgId = t1.orgId
+				<include refid="recordSqlQueryWhere"/>
+		   </if>
+		) as tab1
+		
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.applyId, 
+			t.storeBy, 
+			t1.realName,
+			t.handleDesc, 
+			(CASE t.handleType 
+			WHEN 0 THEN '接单'
+			WHEN 1 THEN '跟进中'
+			WHEN 2 THEN '预约客户'
+			WHEN 3 THEN '签单'
+			WHEN 4 THEN '放款'
+			WHEN 5 THEN '不能做'
+			WHEN 6 THEN '办理完成'
+			WHEN 7 THEN '门店退款成功'
+			WHEN 8 THEN '门店退款失败'
+			WHEN 9 THEN '已上门'
+			WHEN 10 THEN '预约未上门'
+			WHEN 11 THEN '签约失败'
+			WHEN 12 THEN '门店回款成功'
+			WHEN 13 THEN '门店回款失败'
+			WHEN 14 THEN '门店处理不需要'
+			WHEN 15 THEN '设置专属单'
+			WHEN 16 THEN '取消专属单'
+			WHEN 17 THEN '跟进中继续跟进'
+			WHEN 18 THEN '预约中继续跟进'
+			WHEN 19 THEN '已上门继续跟进'
+			WHEN 20 THEN '签单中继续跟进'
+			WHEN 21 THEN '跟进中'
+			WHEN 22 THEN '已上门待签约'
+			WHEN 23 THEN '已上门签约'
+			WHEN 24 THEN '进件审核中'
+			WHEN 25 THEN '银行已放款'
+			WHEN 26 THEN '银行已拒绝'
+			WHEN 27 THEN '无效客户'
+			WHEN 28 THEN '空号/错号'
+			WHEN 29 THEN '订单回收'
+			WHEN 30 THEN '放弃跟进'
+			WHEN 31 THEN '历史数据 '
+			WHEN 32 THEN '未上门待签约 '
+			END
+			) handleType, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM ${tableName} t
+		LEFT JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		<include refid="showWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(1)
+		FROM ${tableName} t
+		LEFT JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		<include refid="showWhereSql"></include>
+	</select>
+	<sql id="showWhereSql">
+		<where>
+			t.handleType !=-1
+			<if test="recordId != null and recordId != ''">
+			  and t.recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="storeBy != null and storeBy != ''">
+				and t.storeBy = #{storeBy}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="feedbackList" resultType="map" parameterType="map">
+		SELECT
+			t1.realName as 'storeRealName',
+			t4.realName as 'recorderName',
+			t1.telephone,
+			t2.applyName,
+			f_hide_phone(t2.telephone) as 'borrowTel',
+			t3.orgName,
+			t3.orgNo,
+			t3.orgId,
+			t3.cityName,
+			t.recordId,
+			t.applyId, 
+			t.handleDesc, 
+			t.readFlag,
+			(CASE t2.applyType
+				WHEN 1 THEN '优质单'
+				WHEN 2 THEN '普通单'
+				WHEN 3 THEN '垃圾单'
+				WHEN 4 THEN '小贷客户'
+				WHEN 5 THEN '微店单'
+				WHEN 6 THEN '准优质单'
+				WHEN 7 THEN '优质客户'
+				ELSE '未知'
+				END
+			 ) as 'applyTypeText',
+			 
+			 t2.channelDetail,
+			(CASE t.readFlag
+			WHEN 0 THEN '未读'
+			WHEN 1 THEN '已读'
+			END
+			) readFlagText, 
+			(CASE t.handleType 
+			WHEN 0 THEN '接单'
+			WHEN 1 THEN '跟进中'
+			WHEN 2 THEN '预约客户'
+			WHEN 3 THEN '签单'
+			WHEN 4 THEN '放款'
+			WHEN 5 THEN '不能做'
+			WHEN 6 THEN '办理完成'
+			WHEN 7 THEN '门店退款成功'
+			WHEN 8 THEN '门店退款失败'
+			WHEN 9 THEN '已上门'
+			WHEN 10 THEN '预约未上门'
+			WHEN 11 THEN '签约失败'
+			WHEN 12 THEN '门店回款成功'
+			WHEN 13 THEN '门店回款失败'
+			WHEN 14 THEN '门店处理不需要'
+			WHEN 15 THEN '设置专属单'
+			WHEN 16 THEN '取消专属单'
+			WHEN 17 THEN '跟进中继续跟进'
+			WHEN 18 THEN '预约中继续跟进'
+			WHEN 19 THEN '已上门继续跟进'
+			WHEN 20 THEN '签单中继续跟进'
+			WHEN 21 THEN '跟进中'
+			WHEN 22 THEN '待签约'
+			WHEN 23 THEN '已上门签约'
+			WHEN 24 THEN '进件审核中'
+			WHEN 25 THEN '银行已放款'
+			WHEN 26 THEN '银行已拒绝'
+			WHEN 27 THEN '无效客户'
+			WHEN 28 THEN '空号/错号'
+			ELSE '未知'
+			END
+			) handleType, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM ${tableName} t
+		LEFT JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		LEFT JOIN t_borrow_apply t2 ON t.applyId = t2.applyId
+		LEFT JOIN t_org t3 ON t1.orgId = t3.orgId
+		LEFT JOIN t_busi_cust t4 ON t2.recorder = t4.customerId
+		<include refid="feedbackSql"></include>
+		ORDER by t.createTime DESC
+	</select>
+	<select id="feedbackCount" resultType="int" parameterType="map">
+		SELECT COUNT(1)
+		FROM ${tableName} t
+		LEFT JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		LEFT JOIN t_borrow_apply t2 ON t.applyId = t2.applyId
+		LEFT JOIN t_org t3 ON t1.orgId = t3.orgId
+		LEFT JOIN t_busi_cust t4 ON t2.recorder = t4.customerId
+		<include refid="feedbackSql"></include>
+	</select>
+	<sql id="feedbackSql">
+		<where>
+			t.handleType !=-1 
+			<if test="applyName != null and applyName != ''">
+				and t2.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t2.telephone=#{telephone}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t2.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t2.applyType = #{applyType}
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				and (t1.telephone like  CONCAT(#{storeRealName},'%') or t1.realName like CONCAT(#{storeRealName},'%'))
+			</if>
+
+			<if test="cityName != null and cityName != ''">
+				and t3.cityName like CONCAT(#{cityName},'%')
+			</if>
+			<if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t2.channelDetail,#{fixChannels})
+			</if>
+			<if test="readFlag != null and readFlag != ''">
+				and t.readFlag = #{readFlag}
+			</if>
+			<if test="recorderName != null and recorderName != ''">
+				and t4.realName like CONCAT('%',#{recorderName},'%')
+			</if>
+			<if test="handleType != null and handleType != ''">
+				and t.handleType = #{handleType}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t3.orgId = #{orgId}
+			</if>
+		</where>
+	</sql>
+	
+	
+	<!-- 判断表结构是否存在 -->
+	<select id="isExsitTable" parameterType="map" resultType="int">
+		select count(*) from information_schema.TABLES  WHERE TABLE_NAME = #{tableName}
+	</select>
+	
+	<!-- 创建表 -->
+	<update id="createNewTable" parameterType="map">
+		CREATE TABLE ${tableName} (
+		  `recordId` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+		  `applyId` bigint(20) DEFAULT '0' COMMENT '申请ID',
+		  `storeBy` bigint(20) DEFAULT NULL COMMENT '门店人员',
+		  `orgId` bigint(20) DEFAULT NULL,
+		  `robWay` smallint(1) DEFAULT '0' COMMENT '0-无操作 1免费抢 2积分抢 3现金抢 4高级抢5余额抢',
+		  `score` int(10) DEFAULT '0' COMMENT '花费积分',
+		  `amount` decimal(15,0) DEFAULT '0' COMMENT '抢单金额',
+		  `readFlag` smallint(1) DEFAULT '0' COMMENT '是否读标识 0-未读 1-已读',
+		  `handleType` smallint(2) DEFAULT NULL COMMENT '-1客服转门店 0-接单 1-继续跟进 2-客户预约 3-签单 4-回款  5-不能做(退单)，失败 6-签单办理完成 7-门店退款成功 8-门店退款失败 9-已上门 10-预约未上门 11-签约失败 12-门店回款成功 13- 门店回款失败 14-不需要 15-设置专属单 16-取消专属单 17-跟进中继续跟进 18-预约中继续跟进 19-已上门继续跟进 20-签单中继续跟进 21-跟进中 22-已上门待签约 23-已上门签约 24-进件审核中 25-银行已放款 26-银行已拒绝 27-无效客户28-空号/错号 29-订单回收 30-放弃跟进 31-手动导入门店历史数据 32-未上门待签约 33-退单处理',
+		  `handleDesc` varchar(255) DEFAULT NULL COMMENT '处理描述',
+		  `createTime` datetime DEFAULT NULL COMMENT '创建时间',
+		  `orderType` smallint(1) DEFAULT '1' COMMENT '1-新单  2 再分配单',
+		  `isFeedback` smallint(1) DEFAULT '0' COMMENT '是否算反馈(1-是 0-否)',
+		  PRIMARY KEY (`recordId`),
+		  KEY `readFlag_idx` (`readFlag`) USING BTREE,
+		  KEY `applyId_idx` (`applyId`) USING BTREE,
+		  KEY `handleType_createTime_storeBy_idx` (`handleType`,`storeBy`) USING BTREE,
+		  KEY `createTime` (`createTime`),
+		  KEY `storeBy` (`storeBy`),
+		  KEY `orgId` (`orgId`)
+		) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4 COMMENT='门店跟进记录'
+	</update>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO ${tableName} (
+			applyId,
+			storeBy,
+			orgId,
+			robWay,
+			amount,
+			score,
+			readFlag,
+			isFeedback,
+			orderType,
+			handleDesc,
+			handleType,
+			createTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{storeBy, jdbcType=VARCHAR}, 
+			#{orgId, jdbcType=VARCHAR}, 
+			#{robWay, jdbcType=INTEGER,typeHandler=NumberHandler},
+		    <if test="amount !=null ">
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="amount ==null ">
+			0 ,
+			</if>
+			<if test="score !=null ">
+			#{score, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="score ==null ">
+			0 ,
+			</if>
+			<if test="readFlag !=null ">
+			#{readFlag, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="readFlag ==null ">
+			0 ,
+			</if>
+			<if test="isFeedback !=null ">
+			#{isFeedback, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isFeedback ==null ">
+			0 ,
+			</if>
+			<if test="orderType !=null ">
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderType ==null ">
+			1 ,
+			</if>
+			#{handleDesc, jdbcType=VARCHAR}, 
+			#{handleType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM ${tableName} 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	
+	<!-- 通过applyId删除 -->
+	<delete id="deleteByApplyId" parameterType="map">
+		DELETE FROM ${tableName} 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE ${tableName}  
+		<set>
+			<if test="handleDesc != null">
+				handleDesc = #{handleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="readFlag != null">
+				#{readFlag, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="handleType != null">
+				handleType = #{handleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	<update id="updateReadFlag" parameterType="map">
+		UPDATE ${tableName}  
+		SET readFlag = 1
+		WHERE recordId in(${recordIds})
+	</update>
+	
+	<!-- 查询门店用户退款信息 -->
+	<select id="queryBackInfo" resultType="map" parameterType="map">
+		select
+			t.backStatus,
+			t.applyName,
+			t1.robWay, 
+			t1.amount,
+			t1.score, 
+			t1.storeBy
+		from t_borrow_apply t
+		JOIN ${tableName} t1 ON t.applyId = t1.applyId and t.lastStore = t1.storeBy and t1.handleType=0
+		where t.applyId=#{applyId}
+		ORDER by t1.createTime DESC
+	</select>
+	
+	<!-- 门店处理相关的查询列表 -->
+	<select id="queryStoreHandleList" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.applyName,
+			f_hide_phone(t.telephone) as telephone,
+			t1.loanAmount,
+			t1.loanDeadline,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			IFNULL(t1.cityName,t.cityName) as 'cityName',
+			t.applyType,
+			t.stageStatus,
+			(CASE t.applyType
+					WHEN 1 THEN '优质单'
+					WHEN 2 THEN '普通单'
+					WHEN 3 THEN '垃圾单'
+					WHEN 4 THEN '小贷客户'
+					WHEN 5 THEN '微店单'
+					WHEN 6 THEN '准优质单'
+					WHEN 7 THEN '转优质客户'
+					ELSE '未知'
+					END
+			 ) as 'applyTypeText', 
+			 t.channelDetail,
+			 (CASE t.`status`
+					WHEN 0 THEN '待处理'
+					WHEN 1 THEN '客服锁定中'
+					WHEN 2 THEN '门店锁定中'
+					WHEN 3 THEN '可转信贷经理'
+					WHEN 4 THEN '转信贷经理中'
+					WHEN 5 THEN '转信贷经理成功'
+					WHEN 6 THEN '转信贷经理失败'
+					WHEN 7 THEN '门店退回'
+					WHEN 8 THEN '过期失效'
+					WHEN 9 THEN '待自动分配门店'
+					WHEN 10 THEN '二次单待分配'
+					ELSE '未知'
+					END
+			 ) as 'status', 
+			 t.applyCount,
+			 t.`backStatus`,
+ 		    (CASE t.`backStatus`
+					WHEN 0 THEN '退单待审'
+					WHEN 1 THEN '退单成功'
+					WHEN 2 THEN '退单失败'
+					ELSE '未知'
+					END
+			 ) as 'backStatusText', 
+			(CASE t.`kfStatus` 
+					WHEN 0 THEN '未跟进'
+					WHEN 1 THEN '跟进中'
+					WHEN 2 THEN '转门店'
+					WHEN 3 THEN '转普通单'
+					WHEN 4 THEN '转黑名单'
+					WHEN 5 THEN '跟进受阻'
+					WHEN 6 THEN '转信贷经理'
+					WHEN 7 THEN '转其他小贷'
+					ELSE '未知'
+					END
+			 ) as 'kfStatus', 
+		 	(CASE t.`storeStatus`
+					WHEN 0 THEN '未跟进'
+					WHEN 1 THEN '继续跟进'
+					WHEN 2 THEN '成功预约'
+					WHEN 3 THEN '签单'
+					WHEN 4 THEN '已回款'
+					WHEN 5 THEN '失败'
+					WHEN 6 THEN '签单完成'
+					WHEN 7 THEN '不需要'
+					ELSE '未知'
+					END
+			 ) as 'storeStatus', 
+			t.lastKfDesc,
+			t2.realName AS kfRealName,
+			DATE_FORMAT(t.lastKfTime,'%Y-%m-%d %H:%i:%s') as lastKfTime,
+			t3.realName AS storeRealName,
+			t4.orgName,
+			<if test="status != null and status ==7">
+		    (SELECT n1.handleDesc FROM ${tableName} n1 WHERE t.applyId=n1.applyId AND t.lastStore=n1.storeBy AND n1.handleType=5 ORDER BY n1.createTime DESC limit 1) as 'backReason',
+		    (CASE t8.`status`
+					WHEN 1 THEN '预约中'
+					WHEN 2 THEN '未上门 '
+					WHEN 3 THEN '已上门'
+					ELSE '未知'
+					END
+			 ) as 'bookStatus', 
+		    </if>
+		    <if test="storeStatus != null and storeStatus ==2">
+			(CASE t5.`status`
+					WHEN 1 THEN '预约中'
+					WHEN 2 THEN '未上门 '
+					WHEN 3 THEN '已上门'
+					ELSE '未知'
+					END
+			 ) as 'bookStatus', 
+		     t5.address as 'bookAddr',
+			 t5.bookDesc,
+			 DATE_FORMAT(t5.bookTime,'%Y-%m-%d %H:%i:%s') as 'bookTime',
+			 DATE_FORMAT(t5.createTime,'%Y-%m-%d %H:%i:%s') as 'bookCreateTime',
+			 </if>
+			 <if test="storeStatus != null and storeStatus ==3">
+			 t6.signAmount,
+			 (CASE t6.`status`
+					 WHEN 1 THEN '提交按揭中'
+					 WHEN 2 THEN '结案'
+					 WHEN 5 THEN '贷款未提交'
+					END
+			 ) as 'signStatus', 
+			DATE_FORMAT(t6.createTime,'%Y-%m-%d %H:%i:%s') as 'signTime',
+			t6.handleDesc as 'signHandleDesc',
+			 </if>
+			f_asset_info_new(t.applyId) as 'assetInfo'
+		FROM t_borrow_apply t
+		LEFT JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_busi_cust t2 ON t.lastKf = t2.customerId
+		LEFT JOIN t_busi_cust t3 ON t.lastStore = t3.customerId
+		LEFT JOIN t_busi_cust t7 ON t.recorder = t7.customerId
+		LEFT JOIN t_org t4 ON t3.orgId = t4.orgId
+		<if test="storeStatus != null and storeStatus ==2">
+		LEFT JOIN t_treat_book t5 ON t.applyId = t5.applyId
+		</if>
+		<if test="storeStatus != null and storeStatus ==3">
+		LEFT JOIN t_treat_info t6 ON t.applyId = t6.applyId
+		</if>
+		<if test="status != null and status ==7">
+		LEFT JOIN t_treat_book t8 ON t.applyId = t8.applyId 
+		</if>
+		<include refid="storeHandleSql"/>
+		ORDER BY 
+		<if test="status != null and status ==7">t.updateTime DESC,t.backStatus ASC,</if>
+		<if test="storeStatus != null and storeStatus ==2">t5.createTime DESC,</if>
+		 t.applyTime DESC
+	</select>
+	
+	<select id="queryStoreHandleCount" resultType="int" parameterType="map">
+		SELECT COUNT(t.applyId) FROM t_borrow_apply t
+		LEFT JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_busi_cust t2 ON t.lastKf = t2.customerId
+		LEFT JOIN t_busi_cust t3 ON t.lastStore = t3.customerId
+		LEFT JOIN t_busi_cust t7 ON t.recorder = t7.customerId
+		LEFT JOIN t_org t4 ON t3.orgId = t4.orgId
+		<if test="storeStatus != null and storeStatus ==2">
+		LEFT JOIN t_treat_book t5 ON t.applyId = t5.applyId
+		</if>
+		<if test="storeStatus != null and storeStatus ==3">
+		LEFT JOIN t_treat_info t6 ON t.applyId = t6.applyId
+		</if>
+		<if test="status != null and status ==7">
+		LEFT JOIN t_treat_book t8 ON t.applyId = t8.applyId 
+		</if>
+		<include refid="storeHandleSql"/>
+	</select>
+	
+	<sql id="storeHandleSql">
+		<where>
+			<if test="applyId != null and applyId != ''">
+			    and t.applyId = #{applyId}
+			 </if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone=#{telephone}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t.applyType = #{applyType}
+			</if>
+			<if test="inApplyType != null and inApplyType != ''">
+				and t.applyType in (${inApplyType})
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and t1.cityName=#{cityName}
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="backStatus != null and backStatus != ''">
+				and t.backStatus = #{backStatus}
+			</if>
+			<if test="inStatus != null and inStatus != ''">
+				and t.status in (${inStatus})
+			</if>
+			<if test="kfStatus != null and kfStatus != ''">
+				and t.kfStatus = #{kfStatus}
+			</if>
+			<if test="stageStatus != null and stageStatus != ''">
+			    and t.stageStatus = #{stageStatus}
+			 </if>
+		 	<if test="inStageStatus != null and inStageStatus != ''">
+				and t.stageStatus in (${inStageStatus})
+			</if>
+			<if test="lastKf != null and lastKf != ''">
+				and t.lastKf = #{lastKf}
+			</if>
+			<if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t.channelDetail,#{fixChannels})
+			</if>
+			<if test="storeNotNull != null and storeNotNull == 1">
+				and (t.lastStore is not null and t.lastStore !='')
+			</if>
+			<if test="storeNull != null and storeNull == 1">
+				and (t.lastStore is null OR t.lastStore ='')
+			</if>
+			<if test="kfName != null and kfName != ''">
+				and t2.realName like CONCAT('%',#{kfName},'%')
+			</if>
+			<if test="recorderName != null and recorderName != ''">
+				and t7.realName like CONCAT('%',#{recorderName},'%')
+			</if>
+			<if test="orgId != null and orgId != ''">
+			     and t4.orgId = #{orgId}
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				and (t3.telephone like  CONCAT(#{storeRealName},'%') or t3.realName like CONCAT(#{storeRealName},'%'))
+			</if>
+			<if test="recorder != null and recorder != ''">
+				and t.recorder = #{recorder}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="seniorPendRob != null and seniorPendRob == 1">
+				and (t.`status`=2 OR (t.applyType='6' AND t.status=0)) and t.stageStatus=1 and t.lastStore is null
+			</if>
+			<if test="storeStatus != null and storeStatus != ''">
+				and t.storeStatus = #{storeStatus}
+			</if>
+			<if test="inStoreStatus != null and inStoreStatus != ''">
+				and t.storeStatus in (${inStoreStatus})
+			</if>
+			<if test="bookStatus != null and bookStatus != '' and status !=7 ">
+				and t5.status = #{bookStatus}
+			</if>
+			<if test="bookStatus != null and bookStatus != '' and status ==7 ">
+				and t8.status = #{bookStatus}
+			</if>
+			<if test="signStatus != null and signStatus != ''">
+				and t6.status = #{signStatus}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.applyTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.applyTime <= #{endTime} ]]>
+			</if>
+			<if test="startUpdateTime != null and startUpdateTime != ''">
+				<![CDATA[ and t.updateTime >= #{startUpdateTime} ]]>
+			</if>
+			<if test="endUpdateTime != null and endUpdateTime != ''">
+				<![CDATA[ and t.updateTime <= #{endUpdateTime} ]]>
+			</if>
+			<if test="startBookTime != null and startBookTime != ''">
+				<![CDATA[ and t5.bookTime >= #{startBookTime} ]]>
+			</if>
+			<if test="endBookTime != null and endBookTime != ''">
+				<![CDATA[ and t5.bookTime <= #{endBookTime} ]]>
+			</if>
+			<if test="startCreateBookTime != null and startCreateBookTime != ''">
+				<![CDATA[ and t5.createTime >= #{startCreateBookTime} ]]>
+			</if>
+			<if test="endCreateBookTime != null and endCreateBookTime != ''">
+				<![CDATA[ and t5.createTime <= #{endCreateBookTime} ]]>
+			</if>
+			<if test="startSignTime != null and startSignTime != ''">
+				<![CDATA[ and t6.createTime >= #{startSignTime} ]]>
+			</if>
+			<if test="endSignTime != null and endSignTime != ''">
+				<![CDATA[ and t6.createTime <= #{endSignTime} ]]>
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询待处理，上门量，签单量，成功量等统计 -->
+	<select id="queryOrderCount" parameterType="map" resultType="map">
+		SELECT
+			  (SELECT count(1) from t_work_list t2 JOIN t_busi_cust t3 ON t2.customerId =  t3.customerId
+			  		<where>
+						<if test="customerId !=null and customerId != '' ">
+							and t2.customerId = #{customerId}
+						</if>
+						<if test="userOrgs !=null and userOrgs  != '' ">
+							and t3.orgId in (${userOrgs})
+						</if>
+						<if test="orgId !=null and orgId != '' ">
+							and t3.orgId = #{orgId}
+						</if>
+						<if test="groupName != null and groupName != ''">
+							and t3.groupName = #{groupName}
+						</if>
+					</where>
+			   ) as dealCount,
+			  count(case WHEN t.handleType = 3 THEN ''  END ) as 'signCount',
+			  count(case WHEN t.handleType = 9 THEN ''  END ) as 'visitCount',
+			  count(case WHEN t.handleType = 4 THEN ''  END ) as 'backCount',
+			  count(case WHEN t.orderType = 1  THEN ''  END ) as 'totalCount1',
+			  count(case WHEN t.handleType = 3 AND t.orderType =1  THEN ''  END ) as 'signCount1',
+			  count(case WHEN t.handleType = 9 AND t.orderType =1  THEN ''  END ) as 'visitCount1',
+			  count(case WHEN t.handleType = 4 AND t.orderType =1  THEN ''  END ) as 'backCount1',
+			  count(case WHEN t.orderType = 2  THEN ''  END ) as 'totalCount2',
+			  count(case WHEN t.handleType = 3 AND t.orderType =2  THEN ''  END ) as 'signCount2',
+			  count(case WHEN t.handleType = 9 AND t.orderType =2  THEN ''  END ) as 'visitCount2',
+			  count(case WHEN t.handleType = 4 AND t.orderType =2  THEN ''  END ) as 'backCount2',
+			  count(case WHEN t.orderType = 3  THEN ''  END ) as 'totalCount3',
+			  count(case WHEN t.handleType = 3 AND t.orderType =3  THEN ''  END ) as 'signCount3',
+			  count(case WHEN t.handleType = 9 AND t.orderType =3  THEN ''  END ) as 'visitCount3',
+			  count(case WHEN t.handleType = 4 AND t.orderType =3  THEN ''  END ) as 'backCount3',
+			  count(case WHEN t.orderType = 4  THEN ''  END ) as 'totalCount4',
+			  count(case WHEN t.handleType = 3 AND t.orderType =4  THEN ''  END ) as 'signCount4',
+			  count(case WHEN t.handleType = 9 AND t.orderType =4  THEN ''  END ) as 'visitCount4',
+			  count(case WHEN t.handleType = 4 AND t.orderType =4  THEN ''  END ) as 'backCount4'
+			FROM
+			${tableName} t JOIN t_busi_cust t1 ON t.storeBy = t1.customerId 
+			<where>
+				<if test="customerId !=null and customerId != '' ">
+					and t.storeBy = #{customerId}
+				</if>
+				<if test="userOrgs !=null and userOrgs  != '' ">
+					and t1.orgId in (${userOrgs})
+				</if>
+				<if test="orgId !=null and orgId != '' ">
+					and t1.orgId = #{orgId}
+				</if>
+				<if test="groupName != null and groupName != ''">
+					and t1.groupName = #{groupName}
+				</if>
+			</where>
+    </select>
+    
+    
+    <!-- 查询门店接单记录 -->
+    <select id="queryStoreRecRecord" parameterType="map" resultType="map">
+    	SELECT 
+			t.recordId,
+			t.applyId,
+			t1.realName as storeRealName,
+			t1.groupName,
+			t1.teamName,
+			t2.applyName,
+			f_hide_phone(t2.telephone) as telephone,
+			t3.loanAmount,
+			t3.loanDeadline,
+			IFNULL(t3.cityName,t2.cityName) as cityName,
+			CONCAT(t4.orgNo,'-',t4.orgName) as orgName,
+			(CASE t2.`status`
+					WHEN 0 THEN '待处理'
+					WHEN 1 THEN '客服锁定中'
+					WHEN 2 THEN '门店锁定中'
+					WHEN 3 THEN '可转信贷经理'
+					WHEN 4 THEN '转信贷经理中'
+					WHEN 5 THEN '转信贷经理成功'
+					WHEN 6 THEN '转信贷经理失败'
+					WHEN 7 THEN '门店退回'
+					WHEN 8 THEN '过期失效'
+					WHEN 9 THEN '待自动分配门店'
+					WHEN 10 THEN '二次单待分配'
+					ELSE '未知'
+					END
+			 ) as 'statusText', 
+			 t2.status as 'status',
+			(CASE t2.`orderStatus`
+					WHEN -1 THEN '待处理'
+					WHEN 0 THEN '跟进中'
+					WHEN 1 THEN '未上门待签约'
+					WHEN 2 THEN '已上门待签约'
+					WHEN 3 THEN '已上门签约'
+					WHEN 4 THEN '进件审核中'
+					WHEN 5 THEN '银行已放款'
+					WHEN 6 THEN '银行已拒绝'
+					WHEN 7 THEN '无效客户'
+					WHEN 8 THEN '空号/错号'
+					END
+			 ) as 'orderStatusText', 
+			DATE_FORMAT(t2.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as receiveTime,
+			t.`orderType`,
+			t.handleDesc,
+			t5.`channelCode`,
+			t5.`channelName`,
+			(CASE t5.type
+			   	WHEN 1 THEN '自有平台'
+				WHEN 2 THEN '推广渠道'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN '历史数据'
+				WHEN 5 THEN '推广渠道'
+				WHEN 6 THEN '测试数据'
+			 ELSE 'API接口' END) as 'channelTypeText'
+   		FROM ${tableName} t USE INDEX(createTime)
+    	 	JOIN  t_busi_cust t1 ON t.storeBy = t1.customerId
+	  	LEFT JOIN t_borrow_store_apply t2 on t.applyId = t2.applyId
+	 	LEFT JOIN t_borrow_base t3 on t.applyId = t3.applyId
+	 	JOIN t_org t4 ON t1.orgId = t4.orgId
+	 	LEFT JOIN t_borrow_channel t5 on t2.`channelCode` = t5.`channelCode`
+		<where>
+			t.handleType = 0
+			<include refid="storeRecordSQL"></include>
+		</where>	
+		ORDER BY t.createTime DESC
+    </select>
+    
+    <select id="queryStoreRecRecordCount" parameterType="map" resultType="int">
+    	SELECT 
+    		COUNT(1)
+    	FROM ${tableName} t USE INDEX(createTime)
+    	JOIN  t_busi_cust t1 ON t.storeBy = t1.customerId
+	  	LEFT JOIN t_borrow_store_apply t2 on t.applyId = t2.applyId
+	 	LEFT JOIN t_borrow_base t3 on t.applyId = t3.applyId
+		JOIN t_org t4 ON t1.orgId = t4.orgId
+		LEFT JOIN t_borrow_channel t5 on t2.`channelCode` = t5.`channelCode`
+		<where>
+			t.handleType = 0
+			<include refid="storeRecordSQL"></include>
+		</where>	
+    </select>
+    
+    <sql id="storeRecordSQL">
+    	<if test="customerId !=null and customerId != '' ">
+			and t.storeBy = #{customerId}
+		</if>
+		<if test="storeRealName !=null and storeRealName  != '' ">
+			and t1.realName like CONCAT(#{storeRealName},'%')
+		</if>
+		<if test="userOrgs !=null and userOrgs  != '' ">
+			and t4.orgId in (${userOrgs})
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t1.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t1.teamName = #{teamName}
+		</if>
+		<if test="orgId !=null and orgId  != '' ">
+			and t4.orgId = #{orgId}
+		</if>
+		<if test="orderStatus !=null and orderStatus  != '' ">
+			and t2.orderStatus = #{orderStatus}
+		</if>
+		<if test="status !=null and status  != '' ">
+			and t2.status = #{status}
+		</if>
+		<if test="applyName !=null and applyName  != '' ">
+			and t2.applyName like CONCAT(#{applyName},'%')
+		</if>
+		<if test="telephone !=null and telephone  != '' ">
+			and t2.telephone = #{telephone}
+		</if>
+		<if test="cityName !=null and cityName  != '' ">
+			and (t3.cityName = #{cityName} or t2.cityName = #{cityName} )
+		</if>
+		<if test="startReceviceDate != null and startReceviceDate != ''">
+			<![CDATA[ and t.createTime >= #{startReceviceDate} ]]>
+		</if>
+		<if test="endReceviceDate != null and endReceviceDate != ''">
+			<![CDATA[ and t.createTime < DATE_ADD(#{endReceviceDate},INTERVAL 1 day)]]>
+		</if>
+		<if test="startApplyDate != null and startApplyDate != ''">
+			<![CDATA[ and t2.applyTime >= #{startApplyDate} ]]>
+		</if>
+		<if test="endApplyDate != null and endApplyDate != ''">
+			<![CDATA[ and t2.applyTime < DATE_ADD(#{endApplyDate},INTERVAL 1 day)]]>
+		</if>
+    	<if test="orderType !=null and orderType  != '' ">
+			and t.orderType = #{orderType}
+		</if>
+		<if test="handleDesc != null and handleDesc != ''">
+			and t.handleDesc like CONCAT('%',#{handleDesc},'%')
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and t2.channelDetail like CONCAT(#{channelDetail},'%')
+		</if>
+		<if test="channelType != null and channelType != ''">
+			AND t5.`type`= #{channelType}
+		</if>
+		<if test="queryChannelType != null and queryChannelType != ''">
+			AND t5.`type` = #{queryChannelType}
+		</if>
+    </sql>
+    
+    <select id="queryOrgAllotCount" parameterType="map" resultType="int">
+    	SELECT
+		count(*)
+		FROM
+			${tableName} t
+		LEFT JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		LEFT JOIN t_borrow_store_apply t2 ON t.applyId = t2.applyId
+		WHERE
+			t.createTime >= CURDATE()
+		AND t.handleType = 0
+		AND t1.orgId = #{orgId}
+		AND t.orderType = 1
+		<if test="channelCodeIn != null and channelCodeIn != ''">
+			AND t2.channelCode NOT IN (${channelCodeIn})
+		</if>
+    </select>
+	<select id="queryCustAllotRecord" parameterType="map" resultType="map">
+		SELECT
+			applyId,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime
+		FROM
+			${tableName} t
+		WHERE
+			t.createTime >= CURDATE()
+		AND t.handleType = 0
+		AND t.storeBy = #{customerId}
+		AND t.orderType = 1
+		order by t.createTime DESC
+		limit 1
+	</select>
+	
+</mapper>

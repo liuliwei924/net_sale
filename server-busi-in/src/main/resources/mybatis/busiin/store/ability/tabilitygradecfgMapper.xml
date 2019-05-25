@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ABILITYGRADECFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			gradeCode ,
+			gradeName ,  
+			gradeImg ,  
+			gradeImg2 ,  
+			gradeDesc ,  
+			minScore ,  
+			maxScore ,  
+			successCount ,  
+			createBy ,  
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime",
+			updateBy ,  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime"
+		FROM t_ability_grade_cfg
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_ability_grade_cfg 
+		<include refid="queryWhereSql"></include>
+	</select>
+
+	<sql id="queryWhereSql">
+		<where>
+			<if test="gradeCode != null and gradeCode != ''">
+			  and gradeCode = #{gradeCode}
+			 </if>
+			<if test="gradeName != null and gradeName != ''">
+				and gradeName = #{gradeName}
+			</if>
+			<if test="gradeImg != null and gradeImg != ''">
+				and gradeImg = #{gradeImg}
+			</if>
+			<if test="gradeImg2 != null and gradeImg2 != ''">
+				and gradeImg2 = #{gradeImg2}
+			</if>
+			<if test="gradeDesc != null and gradeDesc != ''">
+				and gradeDesc = #{gradeDesc}
+			</if>
+			<if test="minScore != null and minScore != ''">
+				and minScore = #{minScore}
+			</if>
+			<if test="maxScore != null and maxScore != ''">
+				and maxScore = #{maxScore}
+			</if>
+			<if test="successCount != null and successCount != ''">
+				and successCount = #{successCount}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.String" order="AFTER" keyProperty="gradeCode">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_ability_grade_cfg (
+			gradeCode,
+			gradeName,
+			gradeImg,
+			gradeImg2,
+			gradeDesc,
+			minScore,
+			maxScore,
+			successCount,
+			createBy,
+			createTime,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{gradeCode, jdbcType=VARCHAR}, 
+			#{gradeName, jdbcType=VARCHAR}, 
+			#{gradeImg, jdbcType=VARCHAR}, 
+			#{gradeImg2, jdbcType=VARCHAR}, 
+			#{gradeDesc, jdbcType=VARCHAR}, 
+			#{minScore, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{maxScore, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="successCount !=null ">
+			#{successCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="successCount ==null ">
+			0 ,
+			</if>
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_ability_grade_cfg 
+		<where> 
+			gradeCode = #{gradeCode}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_ability_grade_cfg  
+		<set>
+			<if test="gradeName != null">
+				gradeName = #{gradeName, jdbcType=VARCHAR},  
+			</if>
+			<if test="gradeImg != null">
+				gradeImg = #{gradeImg, jdbcType=VARCHAR},  
+			</if>
+			<if test="gradeImg2 != null">
+				gradeImg2 = #{gradeImg2, jdbcType=VARCHAR},  
+			</if>
+			<if test="gradeDesc != null">
+				gradeDesc = #{gradeDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="minScore != null">
+				minScore = #{minScore, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="maxScore != null">
+				maxScore = #{maxScore, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="successCount != null">
+				successCount = #{successCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  gradeCode = #{gradeCode}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,161 @@
+package org.xxjr.cust.util.info;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.FundConstant;
+import org.xxjr.wx.utils.WXRequestUtil;
+import org.xxjr.wx.utils.WXUtil;
+
+/**
+ * 充值工具类
+ * @author Administrator
+ *
+ */
+public class CustRechargeUtil {
+
+	/**
+	 * 微信充值
+	 * @param params
+	 * @return
+	 */
+	public static AppResult wxRecharge(AppParam params) {
+		AppResult result = new AppResult();
+		Object gzhId = params.getAttr("gzhId");
+		Object payOpenId = params.getAttr("payOpenId");
+		Object payGzhId = params.getAttr("payGzhId");
+		Object customerId = params.getAttr("customerId");
+		Object couponId = params.getAttr("couponId");
+		boolean fromApp = false;
+		if(!StringUtils.isEmpty(params.getAttr("fromApp"))){
+			fromApp = true;
+			if(StringUtils.isEmpty(customerId)){
+				result.setSuccess(Boolean.FALSE);
+				result.setMessage("缺少用户信息");
+				return result;
+			}
+		}else{
+			if(StringUtils.isEmpty(gzhId)){
+				result.setSuccess(Boolean.FALSE);
+				result.setMessage("缺少微信相关信息");
+				return result;
+			}
+		}
+		Object rechargeType = params.getAttr("rechargeType");
+		rechargeType = StringUtils.isEmpty(rechargeType) ? FundConstant.RECHARGE_TYPE_R
+				: rechargeType.toString();
+		Map<String,String> paramMap = new HashMap<String, String>();
+		
+		double amount = Double.valueOf(params.getAttr("amount").toString());
+		BigDecimal price = new BigDecimal(amount).setScale(2, RoundingMode.HALF_UP);
+		Integer totalFee = price.multiply(new BigDecimal(100)).intValue();
+		if(totalFee == 0){
+			result.setSuccess(Boolean.FALSE);
+			result.setMessage("微信支付失败，请联系客服人员");
+			return result;
+		} 
+		
+		// 初始订单
+		AppParam rechargeParam = new AppParam();
+		rechargeParam.setService("rechargeService");
+		rechargeParam.setMethod("insert");
+		rechargeParam.addAttr("customerId", customerId);
+		rechargeParam.addAttr("couponId", couponId);
+		rechargeParam.addAttr("rechargeType", rechargeType);
+		rechargeParam.addAttr("rechargeChannel", "wx");
+		rechargeParam.addAttr("gzhId", gzhId);
+		rechargeParam.addAttr("isApp", !StringUtils.isEmpty(params.getAttr("isApp")) ? "1" : "0");
+		rechargeParam.addAttr("amount", totalFee);
+		rechargeParam.addAttr("params", JsonUtil.getInstance().object2JSON(paramMap));
+		rechargeParam.addAttr("status", "0");
+		rechargeParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+		AppResult rechargeResult = RemoteInvoke.getInstance().call(rechargeParam);
+		if(rechargeResult.isSuccess()){
+			Object rechargeId = rechargeResult.getAttr("rechargeId");
+			Object orderId = "d" + rechargeType + rechargeId;
+			
+			// 微信支付
+			Object appId = params.getAttr("appId");
+			Object apiKey = params.getAttr("apiKey");
+			Object mchId = params.getAttr("mchId");
+			AppParam param = new AppParam();
+			param.addAttr("appid", appId);
+			param.addAttr("mch_id", mchId);
+			param.addAttr("apiKey", apiKey);
+			param.addAttr("openid", payOpenId);
+			param.addAttr("trade_type", "JSAPI");
+			if(fromApp){
+				param.addAttr("trade_type", "APP");
+				orderId = "a" + rechargeType + rechargeId;
+				param.removeAttr("openid");
+			}
+			/*String url = AppProperties.getProperties("system.url");
+			if(url.indexOf("app")>=0){
+				url = "https://phone.xxjr.com";
+			}*/
+			String url = "https://phone.xxjr.com/busi";
+			String notifyUrl = url + "/Thrid/Sys/wxRechargeReceiver/" + payGzhId;
+			param.addAttr("notify_url", notifyUrl); 
+			param.addAttr("body", "信息服务费");
+			param.addAttr("out_trade_no", orderId);
+			param.addAttr("total_fee", totalFee);
+			param.addAttr("attach", rechargeId);
+			Map<String, String> payInfo = new HashMap<String, String>();
+			try {
+				payInfo = WXRequestUtil.unifiedOrder(param);
+			} catch (Exception e) {
+				throw new SysException("微信支付请求失败！");
+			}
+			Object prepayId = payInfo.get("prepay_id");
+			LogerUtil.error(CustRechargeUtil.class, "payInfo=:" + payInfo);
+			if(StringUtils.isEmpty(prepayId)){
+				result.setSuccess(false);
+				result.setMessage("获取微信预支付订单失败，请稍后再试！");
+				return result;
+			}
+			
+			long timeStamp = System.currentTimeMillis() / 1000;
+			String nonceStr =  WXUtil.getNonceStr();
+			Map<String,Object> signParam = new HashMap<String, Object>();
+			String sign = null;
+			if(fromApp){
+				signParam.put("appid", appId);
+				signParam.put("prepayid", prepayId);
+				signParam.put("partnerid", mchId);
+				signParam.put("noncestr", nonceStr);
+				signParam.put("package", "Sign=WXPay");
+				signParam.put("timestamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}else{
+				signParam.put("appId", appId);
+				signParam.put("nonceStr", nonceStr);
+				signParam.put("signType", "MD5");
+				signParam.put("package", "prepay_id="+prepayId);
+				signParam.put("timeStamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}
+			Map<String,Object> payParams = new HashMap<String, Object>();
+			payParams.put("orderId", rechargeResult.getAttr("rechargeId"));
+			payParams.put("appId", appId);
+			payParams.put("sign", sign);
+			payParams.put("prepayId", prepayId);
+			payParams.put("timeStamp", timeStamp);
+			payParams.put("nonceStr", nonceStr);
+			payParams.put("mchId", mchId);
+			result.putAttr("payParams", payParams);
+		}
+		return result;
+	}
+}

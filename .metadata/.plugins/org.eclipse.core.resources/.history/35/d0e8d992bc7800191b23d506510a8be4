@@ -1,0 +1,198 @@
+package org.xxjr.summary.base;
+
+import java.util.Date;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.PageCountUtil;
+import org.xxjr.sys.util.NumberUtil;
+
+@Lazy
+@Service
+public class BorrowUvRecordService extends BaseService {
+	private static final String NAMESPACE = "BORROWUVRECORD";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	public AppResult queryChannelDtlMonthUv(AppParam param) {
+		AppResult result = new AppResult();
+		AppResult queryResult = super.query(param, NAMESPACE, "queryChannelDtlMonthUv");
+		int uv = 0;
+		Object pageReferer = null;
+		if (queryResult.getRows().size() > 0) {
+			uv = NumberUtil.getInt(queryResult.getRow(0).get("recordCount"), 0);
+			pageReferer = queryResult.getRow(0).get("pageReferer");
+			
+		}
+		result.putAttr("uv", uv);
+		result.putAttr("pageReferer", pageReferer);
+		return result;
+	}
+	
+	public AppResult queryChannelDtlDayUv(AppParam param) {
+		AppResult result = new AppResult();
+		AppResult queryResult = super.query(param, NAMESPACE, "queryChannelDtlDayUv");
+		int uv = 0;
+		if (queryResult.getRows().size() > 0) {
+			uv = NumberUtil.getInt(queryResult.getRow(0).get("recordCount"), 0);
+		}
+		result.putAttr("uv", uv);
+		return result;
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("recordId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("recordId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	public AppResult recordCount (AppParam param) {
+		/*Date recordTime = DateUtil.toDateByString(DateUtil.toStringByParttern(new Date(),"yyyy-MM-dd"),"yyyy-MM-dd");
+		param.addAttr("createTime", recordTime);*/
+		AppResult result = new AppResult();
+		
+		if (StringUtils.isEmpty(param.getAttr("pageReferer")) || StringUtils.isEmpty(param.getAttr("channelDetail"))) {
+			result.setSuccess(false);
+			result.setMessage("页面名称或小渠道名称不能为空!");
+			return result;
+		}
+		/*String channelDetail = StringUtil.getString(param.getAttr("channelDetail"));
+		String channelCode = BorrowChannelUtil.getChannelByStartCode(channelDetail);
+		param.addAttr("channelCode", channelCode);
+		AppResult queryResult = this.query(param);
+		if (queryResult.getRows().size() > 0) {
+			param.addAttr("updateCount", 1);
+			result = this.update(param);
+		}else {
+			result = this.insert(param);
+		}*/
+		param.addAttr("sumType", "uv");
+		return PageCountUtil.pageCount(param);
+	}
+	
+	/**
+	 * 根据日期查询recordCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryChannelByDay(AppParam params) {
+		return super.query(params, NAMESPACE,"queryChannelByDay");
+	}
+	/**
+	 * 根据月度查询recordCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryChannelByMonth(AppParam params) {
+		return super.query(params, NAMESPACE,"queryChannelByMonth");
+	}
+	
+	/**
+	 * 区间查询
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryChannelDtlRangeUv(AppParam params) {
+		AppResult result = new AppResult();
+		AppResult queryResult = super.query(params, NAMESPACE, "queryChannelDtlRangeUv");
+		int uv = 0;
+		if (queryResult.getRows().size() > 0) {
+			uv = NumberUtil.getInt(queryResult.getRow(0).get("recordCount"), 0);
+		}
+		result.putAttr("uv", uv);
+		return result;
+	}
+	
+	/**
+	 * queryList
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryList(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"queryList","queryListCount");
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryListCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryListCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+}

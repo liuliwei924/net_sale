@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWINSURE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			insurType, 
+			insurMonth, 
+			insurMonthAmt, 
+			insurSelf,
+			companyName,
+			insurPayType,
+			insurYearAmt
+		FROM T_BORROW_INSURE
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="insurType != null and insurType != ''">
+				and insurType = #{insurType}
+			</if>
+			<if test="insurMonth != null and insurMonth != ''">
+				and insurMonth = #{insurMonth}
+			</if>
+			<if test="insurMonthAmt != null and insurMonthAmt != ''">
+				and insurMonthAmt = #{insurMonthAmt}
+			</if>
+			<if test="insurSelf != null and insurSelf != ''">
+				and insurSelf = #{insurSelf}
+			</if>
+			<if test="insurYearAmt != null and insurYearAmt != ''">
+				and insurYearAmt = #{insurYearAmt}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_INSURE 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="insurType != null and insurType != ''">
+			and insurType = #{insurType}
+		</if>
+		<if test="insurMonth != null and insurMonth != ''">
+			and insurMonth = #{insurMonth}
+		</if>
+		<if test="insurMonthAmt != null and insurMonthAmt != ''">
+			and insurMonthAmt = #{insurMonthAmt}
+		</if>
+		<if test="insurSelf != null and insurSelf != ''">
+			and insurSelf = #{insurSelf}
+		</if>
+		<if test="insurYearAmt != null and insurYearAmt != ''">
+			and insurYearAmt = #{insurYearAmt}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO T_BORROW_INSURE (
+			applyId,
+			insurType,
+			insurMonth,
+			insurMonthAmt,
+			insurSelf,
+			companyName,
+			insurPayType,
+			insurYearAmt
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="insurType !=null ">
+			#{insurType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insurType ==null ">
+			0 ,
+			</if>
+			<if test="insurMonth !=null ">
+			#{insurMonth, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insurMonth ==null ">
+			0 ,
+			</if>
+			<if test="insurMonthAmt !=null ">
+			#{insurMonthAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insurMonthAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="insurSelf !=null ">
+			#{insurSelf, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="insurSelf ==null ">
+			0 ,
+			</if>
+			#{companyName, jdbcType=VARCHAR},
+			#{insurPayType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="insurYearAmt !=null ">
+			#{insurYearAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="insurYearAmt ==null ">
+			0.00
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_BORROW_INSURE 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE T_BORROW_INSURE  
+		<set>
+			<if test="insurType != null">
+				insurType = #{insurType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insurMonth != null">
+				insurMonth = #{insurMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insurMonthAmt != null">
+				insurMonthAmt = #{insurMonthAmt, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insurSelf != null">
+				insurSelf = #{insurSelf, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="insurPayType != null">
+				insurPayType = #{insurPayType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="companyName != null">
+				companyName = #{companyName, jdbcType=VARCHAR},
+			</if>
+			<if test="insurYearAmt != null">
+				insurYearAmt = #{insurYearAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

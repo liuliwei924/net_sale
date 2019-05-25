@@ -1,0 +1,132 @@
+package org.xxjr.job.listener.xxxj;
+
+import java.util.Date;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 数据处理
+ * @author zenghw
+ *
+ */
+public class XjDataUtil {
+	
+	/**
+	 * 清除今日任务图片数据记录
+	 * @return
+	 */
+	public static String cleanToDayScreenRecord(){
+		StringBuffer msgBuf = new StringBuffer();
+		LogerUtil.log("XjDataUtil cleanToDayTaskData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		try{
+			String dateStr = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-5), DateUtil.DATE_PATTERN_YYYY_MM_DD);//前一天时间
+			AppParam param = new AppParam("xjTodayTaskScreenRecordService","delete");
+			param.addAttr("recordDate", dateStr);
+			param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_XJ));
+			AppResult result = RemoteInvoke.getInstance().call(param);
+			int deleteSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Delete_SIZE),0);
+			if(deleteSize > 0){
+				msgBuf.append("清除今日任务图片数据记录成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【清除今日任务图片数据记录")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjGameUtil.class,ex, "cleanToDayTaskData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> error");
+		}
+		LogerUtil.log("XjDataUtil cleanToDayTaskData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		return msgBuf.toString();
+	}
+	
+	
+	/**
+	 * 清除今日任务记录
+	 * @return
+	 */
+	public static String cleanToDayTask(){
+		StringBuffer msgBuf = new StringBuffer();
+		LogerUtil.log("XjDataUtil cleanToDayTask>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		try{
+			String dateStr = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-5), DateUtil.DATE_PATTERN_YYYY_MM_DD);//前一天时间
+			AppParam param = new AppParam("xjTodayTaskService","delete");
+			param.addAttr("recordDate", dateStr);
+			param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_XJ));
+			AppResult result = RemoteInvoke.getInstance().call(param);
+			int deleteSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Delete_SIZE),0);
+			if(deleteSize > 0){
+				msgBuf.append("清除今日任务记录成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【清除今日任务记录")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjGameUtil.class,ex, "cleanToDayTask>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> error");
+		}
+		LogerUtil.log("XjDataUtil sendTgcyGameReward>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		return msgBuf.toString();
+	}
+	
+	
+	/**
+	 * 清除天狗吃月游戏记录数据
+	 * @return
+	 */
+	public static String cleanGameRecordData(){
+		StringBuffer msgBuf = new StringBuffer();
+		LogerUtil.log("XjDataUtil cleanGameRecordData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		try{
+			String dateStr = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-5), DateUtil.DATE_PATTERN_YYYY_MM_DD);//前一天时间
+			AppParam param = new AppParam("xjTgcyRecordService","delete");
+			param.addAttr("createTime", dateStr);
+			param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_XJ));
+			AppResult result = RemoteInvoke.getInstance().call(param);
+			int deleteSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Delete_SIZE),0);
+			if(deleteSize > 0){
+				msgBuf.append("清除天狗吃月游戏记录数据成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【清除天狗吃月游戏记录数据错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjGameUtil.class,ex, "cleanGameRecordData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> error");
+		}
+		LogerUtil.log("XjDataUtil cleanGameRecordData>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		return msgBuf.toString();
+	}
+	
+	
+	/**
+	 * 清除天狗吃月游戏排行记录
+	 * @return
+	 */
+	public static String cleanGameOWnRanking(){
+		StringBuffer msgBuf = new StringBuffer();
+		LogerUtil.log("XjDataUtil cleanGameOWnRanking>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		try{
+			String dateStr = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-5), DateUtil.DATE_PATTERN_YYYY_MM_DD);//前一天时间
+			AppParam param = new AppParam("xjTgcyOwnService","delete");
+			param.addAttr("createTime", dateStr);
+			param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_XJ));
+			AppResult result = RemoteInvoke.getInstance().call(param);
+			int deleteSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Delete_SIZE),0);
+			if(deleteSize > 0){
+				msgBuf.append("清除天狗吃月游戏排行记录成功");
+			}
+		} catch(Exception ex){
+			msgBuf.append("【清除天狗吃月游戏排行记录错误")
+			.append(",错误信息：").append(ex.toString()).append("】,");
+			LogerUtil.error(XjGameUtil.class,ex, "cleanGameOWnRanking>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> error");
+		}
+		LogerUtil.log("XjDataUtil cleanGameOWnRanking>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		return msgBuf.toString();
+	}
+}

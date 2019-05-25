@@ -1,0 +1,69 @@
+package org.xxjr.busi.util;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.core.service.SoaManager;
+import org.llw.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ *  短信获客 申请模板
+ * @author Administrator
+ *
+ */
+public class ApplyTemplateUtil {
+	
+	private static final String APPLYTEMPLATE = "applyTemplateInfo";
+
+	/**
+	 * 获取模板信息
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getApplyTemplate(){
+		List<Map<String, Object>> applyTemplateInfo = (List<Map<String, Object>>) RedisUtils.getRedisService().get(APPLYTEMPLATE);
+		if (applyTemplateInfo == null) {
+			applyTemplateInfo = refreshApplyTemplate();
+		}
+		return applyTemplateInfo;
+	}
+	 
+	
+	/**
+	 * 根据id获取模板信息
+	 * @return
+	 */
+	public static Map<String, Object> getApplyTemplateByTempId(String applyTempId){
+		Map<String,Object> map = new HashMap<String, Object>();
+		if(StringUtils.isEmpty(applyTempId)){
+			return map;
+		}
+		List<Map<String, Object>> templates = getApplyTemplate();
+		for(Map<String, Object> row : templates){
+			if(applyTempId.equals(row.get("applyTempId").toString())){
+				return row;
+			}
+		}
+		return map;
+	}
+	
+	/**
+	 * 删除缓存
+	 * @param appVersion
+	 */
+	public static void delApplyTemplateByTempId(Object applyTempId) {
+		RedisUtils.getRedisService().del(APPLYTEMPLATE + applyTempId);
+	}
+}
+

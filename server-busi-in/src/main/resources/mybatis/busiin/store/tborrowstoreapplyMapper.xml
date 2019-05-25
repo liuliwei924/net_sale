@@ -1,0 +1,994 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWSTOREAPPLY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			applyName, 
+			applyCount, 
+			telephone, 
+			cityName, 
+			channelCode, 
+			channelDetail, 
+			haveDetail, 
+			status, 
+			orderStatus, 
+			lastStore, 
+			recorder, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			custLabel, 
+			orderType, 
+			orgId, 
+			DATE_FORMAT(allotTime,'%Y-%m-%d %H:%i:%s') as allotTime,
+			allotBy, 
+			allotDesc, 
+			grade,
+			applyType,
+			DATE_FORMAT(lastUpdateTime,'%Y-%m-%d %H:%i:%s') as lastUpdateTime,
+			isHideFlag,
+			backStatus,
+			backDesc,
+			backReDesc,
+			muLoanStatus,
+			orderRate,
+			DATE_FORMAT(orderTypeUpdateTime,'%Y-%m-%d %H:%i:%s') as orderTypeUpdateTime,
+			DATE_FORMAT(custLabelUpTime,'%Y-%m-%d %H:%i:%s') as custLabelUpTime
+		FROM t_borrow_store_apply
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="applyCount != null and applyCount != ''">
+				and applyCount = #{applyCount}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and channelDetail = #{channelDetail}
+			</if>
+			<if test="haveDetail != null and haveDetail != ''">
+				and haveDetail = #{haveDetail}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and orderStatus = #{orderStatus}
+			</if>
+			<if test="inOrderStatus != null and inOrderStatus != ''">
+				and orderStatus in(${inOrderStatus})
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and lastStore = #{lastStore}
+			</if>
+			<if test="recorder != null and recorder != ''">
+				and recorder = #{recorder}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and custLabel = #{custLabel}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="allotTime != null and allotTime != ''">
+				and allotTime = #{allotTime}
+			</if>
+			<if test="allotBy != null and allotBy != ''">
+				and allotBy = #{allotBy}
+			</if>
+			<if test="allotDesc != null and allotDesc != ''">
+				and allotDesc = #{allotDesc}
+			</if>
+			<if test="grade != null and grade != ''">
+				and grade = #{grade}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and applyType = #{applyType}
+			</if>
+			<if test="lastUpdateTime != null and lastUpdateTime != ''">
+				and lastUpdateTime = #{lastUpdateTime}
+			</if>
+			<if test="isHideFlag != null and isHideFlag != ''">
+				and isHideFlag = #{isHideFlag}
+			</if>
+			<if test="backStatus != null and backStatus != ''">
+				and backStatus = #{backStatus}
+			</if>
+			<if test="backDesc != null and backDesc != ''">
+				and backDesc = #{backDesc}
+			</if>
+			<if test="backReDesc != null and backReDesc != ''">
+				and backReDesc = #{backReDesc}
+			</if>
+			<if test="muLoanStatus != null and muLoanStatus != ''">
+				and muLoanStatus = #{muLoanStatus}
+			</if>
+			<if test="dealOrderType != null and dealOrderType != ''">
+				and dealOrderType = #{dealOrderType}
+			</if>
+			<if test="orderRate != null and orderRate != ''">
+				and orderRate = #{orderRate}
+			</if>
+			<if test="orderTypeUpdateTime != null and orderTypeUpdateTime != ''">
+				and orderTypeUpdateTime = #{orderTypeUpdateTime}
+			</if>
+			<if test="custLabelUpTime != null and custLabelUpTime != ''">
+				and custLabelUpTime = #{custLabelUpTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_store_apply 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="applyCount != null and applyCount != ''">
+			and applyCount = #{applyCount}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if test="haveDetail != null and haveDetail != ''">
+			and haveDetail = #{haveDetail}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="orderStatus != null and orderStatus != ''">
+			and orderStatus = #{orderStatus}
+		</if>
+		<if test="lastStore != null and lastStore != ''">
+			and lastStore = #{lastStore}
+		</if>
+		<if test="recorder != null and recorder != ''">
+			and recorder = #{recorder}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="custLabel != null and custLabel != ''">
+			and custLabel = #{custLabel}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="allotTime != null and allotTime != ''">
+			and allotTime = #{allotTime}
+		</if>
+		<if test="allotBy != null and allotBy != ''">
+			and allotBy = #{allotBy}
+		</if>
+		<if test="allotDesc != null and allotDesc != ''">
+			and allotDesc = #{allotDesc}
+		</if>
+		<if test="grade != null and grade != ''">
+			and grade = #{grade}
+		</if>
+		<if test="applyType != null and applyType != ''">
+			and applyType = #{applyType}
+		</if>
+		<if test="lastUpdateTime != null and lastUpdateTime != ''">
+			and lastUpdateTime = #{lastUpdateTime}
+		</if>
+		<if test="isHideFlag != null and isHideFlag != ''">
+			and isHideFlag = #{isHideFlag}
+		</if>
+		<if test="backStatus != null and backStatus != ''">
+			and backStatus = #{backStatus}
+		</if>
+		<if test="backDesc != null and backDesc != ''">
+			and backDesc = #{backDesc}
+		</if>
+		<if test="nowAllotDate != null and nowAllotDate != ''">
+			and DATE_FORMAT(allotTime,'%Y-%m-%d') = #{nowAllotDate}
+		</if>
+		<if test="backReDesc != null and backReDesc != ''">
+			and backReDesc = #{backReDesc}
+		</if>
+		<if test="muLoanStatus != null and muLoanStatus != ''">
+			and muLoanStatus = #{muLoanStatus}
+		</if>
+		<if test="dealOrderType != null and dealOrderType != ''">
+			and dealOrderType = #{dealOrderType}
+		</if>
+		<if test="orderRate != null and orderRate != ''">
+			and orderRate = #{orderRate}
+		</if>
+		<if test="orderTypeUpdateTime != null and orderTypeUpdateTime != ''">
+			and orderTypeUpdateTime = #{orderTypeUpdateTime}
+		</if>
+		<if test="custLabelUpTime != null and custLabelUpTime != ''">
+			and custLabelUpTime = #{custLabelUpTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.applyName, 
+			t.haveDetail,
+			t.applyCount,
+			t.custLabel,
+			f_hide_phone(t.telephone) as telephone,
+			t.grade, 
+	 		(CASE t.`status`
+					WHEN 0 THEN '待处理'
+					WHEN 1 THEN '客服锁定中'
+					WHEN 2 THEN '门店锁定中'
+					WHEN 3 THEN '可转信贷经理'
+					WHEN 4 THEN '转信贷经理中'
+					WHEN 5 THEN '转信贷经理成功'
+					WHEN 6 THEN '转信贷经理失败'
+					WHEN 7 THEN '门店退回'
+					WHEN 8 THEN '过期失效'
+					WHEN 9 THEN '待自动分配门店'
+					WHEN 10 THEN '二次单待分配'
+					ELSE '未知'
+					END
+			 ) as 'status',  
+			t.channelDetail,
+			 (CASE t.`orderStatus`
+					WHEN -1 THEN '待跟进'
+					WHEN 0 THEN '跟进中'
+					WHEN 1 THEN '未上门待签约'
+					WHEN 2 THEN '已上门待签约'
+					WHEN 3 THEN '已上门签约'
+					WHEN 4 THEN '进件审核中'
+					WHEN 5 THEN '银行已放款'
+					WHEN 6 THEN '银行已拒绝'
+					WHEN 7 THEN '无可贷点'
+					WHEN 8 THEN '空号/错号'
+					ELSE '未知'
+					END
+			 ) as 'orderStatus', 
+		 	(CASE t1.`workType`
+					WHEN 2 THEN CONCAT(t2.incomeMonth,'万')
+					WHEN 3 THEN CONCAT(t2.incomeMonth,'万')
+					ELSE CONCAT(t2.income,'元')
+					END
+			 ) as 'incomeText', 
+			(CASE t.applyType
+					WHEN 1 THEN '优质单'
+					WHEN 2 THEN '普通单'
+					WHEN 3 THEN '垃圾单'
+					WHEN 4 THEN '小贷客户'
+					WHEN 5 THEN '微店单'
+					WHEN 6 THEN '准优质单'
+					WHEN 7 THEN '优质客户'
+					ELSE '未知'
+					END
+			 ) as 'applyTypeText',
+			IFNULL(t1.cityName,t.cityName) as 'cityName', 
+			IF(t1.havePinan>0,t1.havePinan,'') as 'haveWeiLi',
+			IF(t1.zimaScore>0,t1.zimaScore,'') as 'zimaScore',
+			t1.loanAmount,
+			t1.loanDeadline,
+			t.grade,
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			t1.houseType,
+		  t1.carType,
+		  t1.insure,
+		  t1.fundType,
+		  t1.socialType,
+		  t2.wagesType
+		FROM t_borrow_store_apply t
+		LEFT JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 ON t.applyId = t2.applyId
+		JOIN t_org t3 ON t.orgId = t3.orgId
+		<include refid="showWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(1)
+		FROM t_borrow_store_apply t
+		LEFT JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 ON t.applyId = t2.applyId
+		JOIN t_org t3 ON t.orgId = t3.orgId
+		<include refid="showWhereSql"></include>
+	</select>
+
+	<sql id="showWhereSql">
+		<where>
+			<if test="applyId != null and applyId != ''">
+			    and t.applyId = #{applyId}
+			 </if>
+			 <if test="customerId != null and customerId != ''">
+			    and t.customerId = #{customerId}
+			 </if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone=#{telephone}
+			</if>
+			<if test="applyType != null and applyType != ''">
+				and t.applyType = #{applyType}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and (t1.cityName like CONCAT(#{cityName},'%') or t.cityName like CONCAT(#{cityName},'%'))
+			</if>
+			<if test="haveDetail != null and haveDetail != ''">
+				and t.haveDetail = #{haveDetail}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and t.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and t.orderStatus = #{orderStatus}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and t.lastStore = #{lastStore}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and t.custLabel = #{custLabel}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.applyTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.applyTime <= #{endTime} ]]>
+			</if>
+			<if test="grade != null and grade != ''">
+				and t.grade = #{grade}
+			</if>
+			<if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t.channelCode,#{fixChannels})
+			</if>
+			<if test="joinStatus != null and joinStatus == 1">
+				and t.`status`!=5
+			</if>
+			<if test="houseType != null and houseType != ''">
+				and t1.houseType = #{houseType}
+			</if>
+			<if test="carType != null and carType != ''">
+				and t1.carType = #{carType}
+			</if>
+			<if test="insure != null and insure != ''">
+				and t1.insure = #{insure}
+			</if>
+			<if test="loanAmount != null and loanAmount != ''">
+				<if test="loanAmount == '1'.toString()">
+					<![CDATA[and t1.loanAmount < 1]]>
+				</if>
+				<if test="loanAmount == '2'.toString()">
+					<![CDATA[and t1.loanAmount >= 1 and t1.loanAmount <= 3]]>
+				</if>
+				<if test="loanAmount == '3'.toString()">
+					<![CDATA[and t1.loanAmount >= 3 and t1.loanAmount <= 5]]>
+				</if>
+				<if test="loanAmount == '4'.toString()">
+					<![CDATA[and t1.loanAmount > 5]]>
+				</if>
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and t1.cityName = #{cityName}
+			</if>
+			<if test="havePinan != null and havePinan != ''">
+				<if test="havePinan == '1'.toString()">
+					<![CDATA[and t1.havePinan < 10000]]>
+				</if>
+				<if test="havePinan == '2'.toString()">
+					<![CDATA[and t1.havePinan >= 10000 and t1.havePinan <= 30000]]>
+				</if>
+				<if test="havePinan == '3'.toString()">
+					<![CDATA[and t1.havePinan >= 30000 and t1.havePinan <= 50000]]>
+				</if>
+				<if test="havePinan == '4'.toString()">
+					<![CDATA[and t1.havePinan > 50000]]>
+				</if>
+			</if>
+			<if test="fundType != null and fundType != ''">
+				and t1.fundType = #{fundType}
+			</if>
+			<if test="socialType != null and socialType != ''">
+				and t1.socialType = #{socialType}
+			</if>
+			<if test="wagesType != null and wagesType != ''">
+				and t2.wagesType = #{wagesType}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询订单简单信息  -->
+	<select id="querySimpleInfo" resultType="map" parameterType="map">
+		SELECT
+			t.applyName,
+			t.status,
+			(CASE t.`status` 
+			WHEN 0 THEN '待处理'
+			WHEN 1 THEN '客服锁定中'
+			WHEN 2 THEN '门店锁定中'
+			WHEN 3 THEN '可转化'
+			WHEN 4 THEN '转化中'
+			WHEN 5 THEN '转化成功'
+			WHEN 6 THEN '转化失败'
+			WHEN 7 THEN '门店退回'
+			WHEN 8 THEN '过期失效'
+			ELSE '未知'
+			END
+			) statusDesc,
+			t.telephone,
+			t.applyCount,
+			t.applyType,
+			IFNULL(t.orderStatus,0) orderStatus,
+			t.channelDetail,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime ,
+			t.orderType,
+			t.lastStore as storeCustId
+		FROM t_borrow_store_apply t
+		<where>
+			<if test="applyId != null and applyId != ''">
+			    and t.applyId = #{applyId}
+			 </if>
+			 <if test="telephone != null and telephone != ''">
+			    and t.telephone = #{telephone}
+			 </if>
+			 <if test="checkTelephone != null and checkTelephone != ''">
+				and ( t.telephone = #{checkTelephone} and t.applyId !=
+				#{checkApplyId} )
+			</if>
+		</where>
+	</select>
+	<select id="queryMainBaseInfo" resultType="map" parameterType="map">
+		SELECT
+			b.loanAmount, 
+			b.loanDeadline, 
+			b.loanPurpose, 
+			b.cityName,
+			IFNULL(a.orderStatus,-1) as orderStatus,
+			a.applyName,
+			a.telephone,
+			a.custLabel,
+			DATE_FORMAT(a.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			b.`desc`,
+			a.applyType,
+			a.channelCode,
+			a.channelDetail,
+			a.custLabel,
+			IFNULL(a.dealOrderType,-1) as dealOrderType,
+			IFNULL(a.orderRate,0) as orderRate,
+			a.applyId,
+			c.`status` as bookStatus,
+			d.channelCode,
+			d.type,
+			(CASE d.type
+		   WHEN 1 THEN '自有平台'
+		   WHEN 2 THEN '推广渠道'
+		   WHEN 3 THEN 'API接口'
+		   WHEN 4 THEN '历史数据'
+		   WHEN 5 THEN '推广渠道'
+		   WHEN 6 THEN '测试数据'
+		   ELSE 'API接口' END) as 'channelTypeText',
+		   DATE_FORMAT(a.lastUpdateTime,'%Y-%m-%d %H:%i:%s') as lastUpdateTime,
+		   (case when #{roleType} = 1 then a.telephone else null end ) as noHideMobile
+		FROM T_BORROW_STORE_APPLY a
+		LEFT JOIN T_BORROW_BASE b ON a.applyId = b.applyId
+		LEFT JOIN t_treat_book c ON a.applyId = c.applyId
+		LEFT JOIN t_borrow_channel d ON a.channelCode = d.channelCode
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and a.applyId = #{applyId}
+			 </if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryViolateOrder" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 0
+		AND t.orderStatus NOT IN (-1, 0, 7, 8)
+		<include refid="violateOrderSql"/>
+		UNION
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 1
+		AND t.orderStatus NOT IN (7, 8)
+		<include refid="violateOrderSql"/>
+		UNION
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 2
+		AND t.orderStatus NOT IN (1, 2, 7)
+		<include refid="violateOrderSql"/>
+		UNION
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 3
+		AND t.orderStatus NOT IN (2, 7)
+		<include refid="violateOrderSql"/>
+		UNION
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+			t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 4
+		AND t.orderStatus NOT IN (1, 2, 3, 4, 5, 6, 7)
+		<include refid="violateOrderSql"/>
+		UNION
+		SELECT
+			t.applyId,
+			t.custLabel,
+			t.orderStatus,
+			t.lastStore,
+			t.allotTime
+		FROM
+			t_borrow_store_apply t
+		WHERE
+		t.lastStore IS NOT NULL AND t.lastStore != ''
+		AND t.custLabel = 5
+		AND t.orderStatus NOT IN (1, 2, 3, 4, 5, 6, 7)
+		<include refid="violateOrderSql"/>
+	</select>
+	<sql id="violateOrderSql">
+		<![CDATA[AND t.allotTime < DATE_SUB(CURDATE(),INTERVAL 1 day)]]>
+		<if test="lastStore != null and lastStore != ''">
+			AND t.`lastStore` = #{lastStore}
+		</if>
+		<if test="startAllotTime != null and startAllotTime != ''">
+			<![CDATA[AND t.`allotTime` >= #{startAllotTime}]]>
+		</if>
+	</sql>
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="applyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_store_apply (
+			applyId,
+			customerId,
+			applyName,
+			applyCount,
+			telephone,
+			cityName,
+			channelCode,
+			channelDetail,
+			haveDetail,
+			status,
+			orderStatus,
+			lastStore,
+			recorder,
+			createTime,
+			applyTime,
+			updateTime,
+			custLabel,
+			orderType,
+			orgId,
+			allotTime,
+			allotBy,
+			allotDesc,
+			grade,
+			applyType,
+			muLoanStatus
+		)
+		VALUES ( 
+		    #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			<if test="applyCount !=null ">
+			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyCount ==null ">
+			1 ,
+			</if>
+			#{telephone, jdbcType=CHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{channelCode, jdbcType=VARCHAR}, 
+			#{channelDetail, jdbcType=VARCHAR}, 
+			<if test="haveDetail !=null ">
+			#{haveDetail, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="haveDetail ==null ">
+			0 ,
+			</if>
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			<if test="orderStatus !=null ">
+			#{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderStatus ==null ">
+			-1 ,
+			</if>
+			#{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{recorder, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			<if test="custLabel !=null ">
+			#{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="custLabel ==null ">
+			0 ,
+			</if>
+			<if test="orderType !=null ">
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderType ==null ">
+			1 ,
+			</if>
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{allotBy, jdbcType=VARCHAR}, 
+			#{allotDesc, jdbcType=VARCHAR}, 
+			#{grade, jdbcType=VARCHAR},
+			<if test="applyType !=null ">
+			#{applyType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyType ==null ">
+			2,
+			</if>
+			<if test="muLoanStatus !=null ">
+			#{muLoanStatus, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="muLoanStatus ==null ">
+			1
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_store_apply 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_store_apply  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyCount != null">
+				applyCount = #{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=CHAR},  
+			</if>
+			<if test="cityName != null and cityName != ''">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR},  
+			</if>
+			<if test="haveDetail != null">
+				haveDetail = #{haveDetail, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderStatus != null">
+				orderStatus = #{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="lastStore != null">
+				lastStore = #{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="recorder != null">
+				recorder = #{recorder, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="custLabel != null">
+				custLabel = #{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderType != null">
+				orderType = #{orderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyType != null">
+				applyType = #{applyType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="allotTime != null">
+				allotTime = #{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="allotBy != null">
+				allotBy = #{allotBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotDesc != null">
+				allotDesc = #{allotDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="grade != null">
+				grade = #{grade, jdbcType=VARCHAR},
+			</if>
+			<if test="lastUpdateTime != null">
+				lastUpdateTime = #{lastUpdateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="isHideFlag != null">
+				isHideFlag = #{isHideFlag, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backStatus != null">
+				backStatus = #{backStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backDesc != null">
+				backDesc = #{backDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="backReDesc != null">
+				backReDesc = #{backReDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="muLoanStatus != null">
+				muLoanStatus = #{muLoanStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="dealOrderType != null">
+				dealOrderType = #{dealOrderType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderRate != null">
+				orderRate = #{orderRate, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderTypeUpdateTime != null">
+				orderTypeUpdateTime = #{orderTypeUpdateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="custLabelUpTime != null">
+				custLabelUpTime = #{custLabelUpTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  <if test="applyId != null">
+			  	applyId = #{applyId}
+			  </if>
+			  <if test="oldLastStore != null">
+			  	AND lastStore = #{oldLastStore}
+			  </if>
+		</where>
+	</update>
+	
+	<insert id="insertByBorrowApply" parameterType="map">
+	insert into t_borrow_store_apply (
+			applyId,
+			customerId,
+			applyName,
+			applyCount,
+			applyType,
+			telephone,
+			cityName,
+			channelCode,
+			channelDetail,
+			haveDetail,
+			status,
+			orderStatus,
+			recorder,
+			createTime,
+			applyTime,
+			updateTime,
+			custLabel,
+			orderType,
+			orgId,
+			allotTime,
+			allotBy,
+			allotDesc,
+			grade
+		)
+		SELECT
+			applyId,
+			customerId,
+			applyName,
+			applyCount,
+			applyType,
+			telephone,
+			cityName,
+			channelCode,
+			channelDetail,
+			haveDetail,
+			2,
+			orderStatus,
+			recorder,
+			now(),
+			applyTime,
+			now(),
+			custLabel,
+			orderType,
+			orgId,
+			allotTime,
+			allotBy,
+			allotDesc,
+			grade
+		FROM
+			t_borrow_apply t
+		WHERE t.applyId = #{applyId}
+	</insert>
+	
+	<update id="updateByBorrowApply" parameterType="map">
+		update t_borrow_store_apply t join t_borrow_apply t1 on t.applyId = t1.applyId 
+		set t.customerId = t1.customerId,
+			t.applyName = t1.applyName,
+			t.applyCount = t1.applyCount,
+			t.applyType = t1.applyType,
+			t.cityName = t1.cityName,
+			t.channelCode = t1.channelCode,
+			t.channelDetail = t1.channelDetail,
+			t.haveDetail = t1.haveDetail,
+			t.updateTime = now(),
+			t.orderType = t1.orderType,
+			t.orderStatus = t1.orderStatus,
+			t.applyTime = t1.applyTime,
+			t.createTime = now(),
+			t.orgId = t1.orgId,
+			t.grade = t1.grade
+		WHERE t.applyId = #{applyId}
+	</update>
+	
+	<select id="querySeniorCount" resultType="map" parameterType="map">
+		SELECT 
+			(SELECT count(1) FROM t_borrow_store_apply e where e.lastStore = #{customerId} AND e.applyType = 1) AS totalSeniorNums,
+			(SELECT count(1) FROM t_borrow_store_apply e where e.lastStore = #{customerId} AND e.applyType = 1 AND e.orderStatus = -1) AS newSeniorNums
+		FROM
+			DUAL
+	</select>
+	
+	<!-- 查询发送短信相关信息 -->
+	<select id="queryMessageInfo" parameterType="map" resultType="map">
+		SELECT 
+		t.applyName,
+		t.telephone,
+		t.lastStore,
+		t1.realName as manaName,
+		t1.telephone as manaTel,
+		(CASE t2.type
+		   WHEN 1 THEN '自有平台'
+		   WHEN 2 THEN '推广渠道'
+		   WHEN 3 THEN 'API接口'
+		   WHEN 4 THEN '历史数据'
+		   WHEN 5 THEN '推广渠道'
+		   WHEN 6 THEN '测试数据'
+		   ELSE 'API接口'  END) as 'channelTypeText'
+		FROM t_borrow_store_apply t 
+		join t_busi_cust t1 on t.lastStore = t1.customerId
+		LEFT JOIN t_borrow_channel t2 ON t2.channelCode = t.channelCode
+		WHERE
+		t.applyId = #{applyId}
+	</select>
+	
+	<select id="queryStoreCustBaseInfo" resultType="map" parameterType="map">
+		SELECT
+			t.orderStatus,
+			(CASE t.orderStatus
+			   WHEN -1 THEN '待跟进'
+			   WHEN 0 THEN '跟进过'
+			   WHEN 1 THEN '未上门待签约'
+			   WHEN 2 THEN '已上门待签约'
+			   WHEN 3 THEN '已上门签约'
+			   WHEN 4 THEN '进件审核中'
+			   WHEN 5 THEN '银行已放款'
+			   WHEN 6 THEN '银行已拒绝'
+			   WHEN 7 THEN '无效客户'
+			   WHEN 8 THEN '空号/错号'
+			   END)  as orderStatusText,
+			DATE_FORMAT(t.applyTime,'%Y/%m/%d') as applyTime,
+			t2.loanAmount,
+			t2.loanDeadline,
+			t1.realName,
+			t1.telephone
+		FROM t_borrow_store_apply t
+		JOIN t_busi_cust t1 ON t1.customerId = t.lastStore
+		LEFT JOIN t_borrow_base t2 ON t.applyId = t2.applyId
+		<where>
+			  <if test="applyName != null and applyName != ''">
+				AND t.applyName = #{applyName}
+				</if>
+			  <if test="telephone != null and telephone != ''">
+				AND t.telephone = #{telephone}
+			  </if>
+		</where>
+	</select>
+	
+</mapper>

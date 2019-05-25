@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RECEIVEREWARDRECORD">
+
+	<sql id="queryWhere">
+		<if test="id != null and id != ''">
+		  and id = #{id}
+		 </if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="amount != null and amount != ''">
+			and amount = #{amount}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="receiveStatus != null and receiveStatus != ''">
+			and receiveStatus = #{receiveStatus}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="activeType != null and activeType != ''">
+			and activeType = #{activeType}
+		</if>
+	</sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			id,
+			applyName, 
+			telephone, 
+			cityName, 
+			amount, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			receiveStatus,
+			updateBy,
+			updateTime,
+			activeType
+		FROM t_receive_reward_record
+		<where>
+			<include refid="queryWhere"></include>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_receive_reward_record 
+		<where>
+		<include refid="queryWhere"></include>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="id">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_receive_reward_record (
+			applyName,
+			telephone,
+			cityName,
+			amount,
+			createTime,
+			receiveStatus,
+			updateBy,
+			updateTime,
+			activeType
+		)
+		VALUES ( 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=CHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="amount !=null ">
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="amount ==null ">
+			0.00 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="receiveStatus !=null ">
+			#{receiveStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="receiveStatus ==null ">
+			0 ,
+			</if>
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="activeType != null">
+			#{activeType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="activeType == null">
+			1
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_receive_reward_record 
+		<where> 
+			id = #{id}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_receive_reward_record  
+		<set>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=CHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="amount != null">
+				amount = #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="activeType != null">
+				activeType = #{activeType, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="receiveStatus != null and receiveStatus != ''">
+				receiveStatus = #{receiveStatus, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				updateBy = #{updateBy, jdbcType=VARCHAR}, 
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  id = #{id}
+		</where>
+	</update>
+	
+	
+	<select id="queryWinReceiveList" resultType="map" parameterType="map">
+		SELECT
+			id,
+			applyName, 
+			f_hide_phone(telephone) as 'telephone',
+			cityName, 
+			amount, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			receiveStatus,
+			updateBy,
+			activeType,
+			if(LENGTH(telephone) = 11,SUBSTR(telephone,7,4),null) as 'lastPhone',
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM t_receive_reward_record
+		<where>
+			<include refid="queryWhere"></include>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryWinReceiveListCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_receive_reward_record 
+		<where>
+		<include refid="queryWhere"></include>
+		</where>
+	</select>
+	
+	
+	<select id="queryWinReceive" resultType="map" parameterType="map">
+		SELECT ROUND(SUM(amount)) AS 'totalAmount', COUNT(*) AS 'totalCount' FROM t_receive_reward_record
+		<where>
+		<include refid="queryWhere"></include>
+		</where>
+	</select>
+	
+	
+	<select id="queryWinPrize" resultType="map" parameterType="map">
+		SELECT
+			t.id,
+			t.applyName, 
+			f_hide_phone(t.telephone) telephone,
+			t.cityName, 
+			t.activeType,
+			t.amount, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.receiveStatus,
+			t.updateBy,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t1.realName,
+			t1.telephone updateTel  
+		FROM t_receive_reward_record t
+		LEFT JOIN t_busi_cust t1 on t.updateBy = t1.customerId
+		<include refid="queyWinWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryWinPrizeCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_receive_reward_record t
+		LEFT JOIN t_busi_cust t1 on t.updateBy = t1.customerId
+		<include refid="queyWinWhere"/>
+	</select>
+	
+	<sql id="queyWinWhere">
+		<where>
+		<if test="id != null and id != ''">
+		    and t.id = #{id}
+		 </if>
+		<if test="applyName != null and applyName != ''">
+			and t.applyName like concat(concat("%",#{applyName}),"%")
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and t.telephone = #{telephone}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t.cityName like concat(concat("%",#{cityName}),"%")
+		</if>
+		<if test="amount != null and amount != ''">
+			and t.amount = #{amount}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="receiveStatus != null and receiveStatus != ''">
+			and t.receiveStatus = #{receiveStatus}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and t.updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and t.updateTime = #{updateTime}
+		</if>
+		<if test="startDate != null and startDate != ''">
+		 	<![CDATA[and t.createTime  >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.createTime  < #{endDate}]]>
+		</if>
+		<if test="realName != null and realName != ''">
+			and t1.realName = #{realName}
+		</if>
+		<if test="updateTel != null and updateTel != ''">
+			and t1.telephone = #{updateTel}
+		</if>
+		<if test="activeType != null and activeType != ''">
+			and t.activeType = #{activeType}
+		</if>
+		</where>
+	</sql>
+</mapper>

@@ -1,0 +1,43 @@
+package org.xxjr.job.listener.busi.sms;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.job.listener.busi.sms.util.UpdateUserUtil;
+
+/**
+ * 更新登录用户信息任务
+ * @author sty
+ *
+ */
+@Lazy
+@Component
+public class UpdateUserInfoJob implements BaseExecteJob {
+	private static Logger log = LogManager.getLogger(UpdateUserInfoJob.class);
+	
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try{
+			LogerUtil.log("UpdateUserInfoJob>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+			//UpdateUserUtil.upderOrInsert();
+			UpdateUserUtil.setYys();
+			LogerUtil.log("UpdateUserInfoJob>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		} catch (Exception e) {
+			log.error("updateUserInfo error:", e);
+			result.setSuccess(Boolean.FALSE);
+			result.setMessage(e.getMessage());
+			JobUtil.addProcessExecute(processId,
+					"updateUserInfo error :" + e.getMessage());
+		}
+		return result;
+	}
+}

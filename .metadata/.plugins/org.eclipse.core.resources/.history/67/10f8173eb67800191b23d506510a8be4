@@ -1,0 +1,138 @@
+package org.xxjr.cust.util.auth;
+
+import java.io.File;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.util.LogerUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.auth.util.FileDealUtil;
+import org.xxjr.cust.util.auth.util.GetAccessTokenUtil;
+import org.xxjr.cust.util.auth.util.HttpUtil;
+import org.xxjr.cust.util.auth.util.JXMConvertUtil;
+
+public class FaceComparisonUtil {
+
+	/**
+	 * 
+	 * @param FaceFile
+	 *            人脸
+	 * @param identifyFile
+	 *            身份证
+	 * @return
+	 * @throws Exception
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getComparisonResult(File FaceFile,
+			File identifyFile) throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUploadFile(FaceFile, pictureMap);
+		String headImg = pictureMap.get("photo");
+		pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUploadFile(identifyFile, pictureMap);
+		String identifyImg = pictureMap.get("photo");
+		// 人脸对比url
+		String matchUrl = "https://aip.baidubce.com/rest/2.0/face/v2/match";
+		// image_liveness=faceliveness,表示对第一张照片进行活体检测
+		String params = "image_liveness=faceliveness,&"
+				+ URLEncoder.encode("images", "UTF-8") + "="
+				+ URLEncoder.encode(headImg + "," + identifyImg, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.0ddd41c7e07da9101ba3e693f410a8a0.2592000.1503647436.282335-9924368";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getAuth();
+		}
+
+		String resultJson = HttpUtil.post(matchUrl, accessToken, params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.JsonConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		List<Map<String, Object>> resultList = (List<Map<String, Object>>) resultHashMap
+				.get("result");
+		if (resultList != null) {
+			Map<String, Object> scoreMap = resultList.get(0);
+			Object score = scoreMap.get("score");
+			String faceliveness = (String) resultHashMap.get("faceliveness");
+			resultMap.put("score", score);
+			resultMap.put("faceliveness", faceliveness);
+		} else {
+			resultMap.put("errorMessage", " 没有认出你来，请拍本人正脸照片");
+		}
+		return resultMap;
+	}
+	
+	/**
+	 * 
+	 * @param faceStream
+	 *            人脸
+	 * @param identifyStream
+	 *            身份证
+	 *  流需要自己关闭
+	 * @return
+	 * @throws Exception
+	 */
+	public static Map<String, Object> getComparisonResult(InputStream faceStream,
+			InputStream identifyStream) throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, String> pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUpload(faceStream, pictureMap);
+		String headImg = pictureMap.get("photo");
+		pictureMap = new HashMap<String, String>();
+		FileDealUtil.processUpload(identifyStream, pictureMap);
+		String identifyImg = pictureMap.get("photo");
+		// 人脸对比url
+		String matchUrl = "https://aip.baidubce.com/rest/2.0/face/v2/match";
+		// image_liveness=faceliveness,表示对第一张照片进行活体检测
+		String params = "image_liveness=faceliveness,&"
+				+ URLEncoder.encode("images", "UTF-8") + "="
+				+ URLEncoder.encode(headImg + "," + identifyImg, "UTF-8");
+		/**
+		 * 线上环境access_token有过期时间， 客户端可自行缓存，过期后重新获取。
+		 */
+		String accessToken = (String) RedisUtils.getRedisService().get(
+				GetAccessTokenUtil.CacheKey_ACCESS_TOKEN);
+		// String accessToken =
+		// "24.0ddd41c7e07da9101ba3e693f410a8a0.2592000.1503647436.282335-9924368";
+		if (StringUtils.isEmpty(accessToken)) {
+			accessToken = GetAccessTokenUtil.getAuth();
+		}
+
+		String resultJson = HttpUtil.post(matchUrl, accessToken, params);
+		LogerUtil.log(resultJson);
+		Map<String, Object> resultHashMap = JXMConvertUtil
+				.JsonConvertHashMap(resultJson);
+		LogerUtil.log(resultHashMap);
+		@SuppressWarnings("unchecked")
+		List<Map<String, Object>> resultList = (List<Map<String, Object>>) resultHashMap
+				.get("result");
+		if (resultList != null) {
+			Map<String, Object> scoreMap = resultList.get(0);
+			Object score = scoreMap.get("score");
+			String faceliveness = (String) resultHashMap.get("faceliveness");
+			resultMap.put("score", score);
+			resultMap.put("faceliveness", faceliveness);
+		} else {
+			resultMap.put("errorMessage", " 没有认出你来，请拍本人正脸照片");
+		}
+		return resultMap;
+	}
+	
+	public static void main(String[] args) throws Exception {
+		String head = "C:/Users/Administrator/Pictures/23534.jpg";
+		String identify = "C:/Users/Administrator/Pictures/IMG_20170724_172232.jpg";
+		File headFile = new File(head);
+		File identifyFile = new File(identify);
+		getComparisonResult(headFile, identifyFile);
+	}
+}

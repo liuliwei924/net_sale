@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="INFONOTIFYFISH">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			notifyId,
+			applyId, 
+			customerId, 
+			applyName, 
+			type, 
+			notifyTime, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_info_notify_fish
+		<where>
+			<if test="notifyId != null and notifyId != ''">
+			  and notifyId = #{notifyId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="type != null and type != ''">
+				and type = #{type}
+			</if>
+			<if test="notifyTime != null and notifyTime != ''">
+				and notifyTime = #{notifyTime}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_info_notify_fish 
+		<where>
+		<if test="notifyId != null and notifyId != ''">
+		    and notifyId = #{notifyId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="type != null and type != ''">
+			and type = #{type}
+		</if>
+		<if test="notifyTime != null and notifyTime != ''">
+			and notifyTime = #{notifyTime}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_info_notify_fish (
+			notifyId,
+			applyId,
+			customerId,
+			applyName,
+			type,
+			notifyTime,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{notifyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			<if test="type !=null ">
+			#{type, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="type ==null ">
+			1 ,
+			</if>
+			#{notifyTime, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_info_notify_fish 
+		<where> 
+			notifyId = #{notifyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_info_notify_fish  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="type != null">
+				type = #{type, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notifyTime != null">
+				notifyTime = #{notifyTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  notifyId = #{notifyId}
+		</where>
+	</update>
+	
+	<!-- 查询已处理通知列表 -->
+	<select id="queryOldNotifyList" parameterType="map" resultType="map">
+		SELECT
+		t.notifyId,
+		t.applyId,
+		(case 
+		 when t.type = 1 then '预约跟进'
+		 when t.type = 2 then '预约上门'
+		 when t.type = 3 then '预约回访'
+		 when t.type = 4 then '还款提醒'
+		 end) as typeText, 
+		DATE_FORMAT(t.notifyTime,'%m月%d日 %H:%i') as siNotifyTime,
+		t.applyName
+		FROM
+		t_info_notify_fish t
+		<where>
+			<include refid="notifySql"></include>
+		</where>
+		ORDER BY t.notifyTime DESC
+	</select>
+	
+	<select id="queryOldNotifyListCount" parameterType="map" resultType="int">
+		SELECT
+		COUNT(1) FROM
+		t_info_notify_fish t
+		<where>
+			<include refid="notifySql"></include>
+		</where>
+	</select>
+	
+	<sql id="notifySql">
+		<if test="customerId != null and customerId !=''">
+			and t.customerId = #{customerId}
+		</if>
+		<if test="customerId != null and customerId !=''">
+			and t.customerId = #{customerId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			<![CDATA[ and t.applyName like CONCAT(#{applyName},'%') ]]>
+		</if>
+		<if test="startNotifyDate != null  and startNotifyDate !='' ">
+			<![CDATA[ and DATE_FORMAT(t.notifyTime,'%Y-%m-%d') >= #{startNotifyDate} ]]>
+		</if>
+		<if test="endNotifyDate != null  and endNotifyDate !='' ">
+			<![CDATA[and DATE_FORMAT(t.notifyTime,'%Y-%m-%d') <= #{startNotifyDate} ]]>
+		</if>
+	</sql>
+</mapper>

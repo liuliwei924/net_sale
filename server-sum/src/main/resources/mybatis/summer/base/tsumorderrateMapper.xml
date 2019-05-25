@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMORDERRATE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			rateOneCount, 
+			rateTwoCount, 
+			rateThreeCount, 
+			rateFourCount,  
+			rateFiveCount, 
+			totalCount
+		FROM t_sum_orderrate
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="rateOneCount != null and rateOneCount != ''">
+				and rateOneCount = #{rateOneCount}
+			</if>
+			<if test="rateTwoCount != null and rateTwoCount != ''">
+				and rateTwoCount = #{rateTwoCount}
+			</if>
+			<if test="rateThreeCount != null and rateThreeCount != ''">
+				and rateThreeCount = #{rateThreeCount}
+			</if>
+			<if test="rateFourCount != null and rateFourCount != ''">
+				and rateFourCount = #{rateFourCount}
+			</if>
+			<if test="rateFiveCount != null and rateFiveCount != ''">
+				and rateFiveCount = #{rateFiveCount}
+			</if>
+			<if test="totalCount != null and totalCount != ''">
+				and totalCount = #{totalCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_orderrate 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="rateOneCount != null and rateOneCount != ''">
+			and rateOneCount = #{rateOneCount}
+		</if>
+		<if test="rateTwoCount != null and rateTwoCount != ''">
+			and rateTwoCount = #{rateTwoCount}
+		</if>
+		<if test="rateThreeCount != null and rateThreeCount != ''">
+			and rateThreeCount = #{rateThreeCount}
+		</if>
+		<if test="rateFourCount != null and rateFourCount != ''">
+			and rateFourCount = #{rateFourCount}
+		</if>
+		<if test="rateFiveCount != null and rateFiveCount != ''">
+			and rateFiveCount = #{rateFiveCount}
+		</if>
+		<if test="totalCount != null and totalCount != ''">
+			and totalCount = #{totalCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordDate">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sum_orderrate (
+			rateOneCount,
+			rateTwoCount,
+			rateThreeCount,
+			rateFourCount,
+			rateFiveCount,
+			totalCount
+		)
+		VALUES ( 
+			<if test="rateOneCount !=null ">
+			#{rateOneCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rateOneCount ==null ">
+			0 ,
+			</if>
+			<if test="rateTwoCount !=null ">
+			#{rateTwoCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rateTwoCount ==null ">
+			0 ,
+			</if>
+			<if test="rateThreeCount !=null ">
+			#{rateThreeCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rateThreeCount ==null ">
+			0 ,
+			</if>
+			<if test="rateFourCount !=null ">
+			#{rateFourCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rateFourCount ==null ">
+			0 ,
+			</if>
+			<if test="rateFiveCount !=null ">
+			#{rateFiveCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rateFiveCount ==null ">
+			0 ,
+			</if>
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="totalCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_orderrate 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_orderrate  
+		<set>
+			<if test="rateOneCount != null">
+				rateOneCount = #{rateOneCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rateTwoCount != null">
+				rateTwoCount = #{rateTwoCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rateThreeCount != null">
+				rateThreeCount = #{rateThreeCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rateFourCount != null">
+				rateFourCount = #{rateFourCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rateFiveCount != null">
+				rateFiveCount = #{rateFiveCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	<!-- 批量插入 -->
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_orderrate (
+			recordDate,
+			orgId,
+			orgName,
+			rateOneCount,
+			rateTwoCount,
+			rateThreeCount,
+			rateFourCount,
+			rateFiveCount,
+			totalCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.rateOneCount}, 
+		  #{item.rateTwoCount}, 
+		  #{item.rateThreeCount}, 
+		  #{item.rateFourCount}, 
+		  #{item.rateFiveCount}, 
+		  #{item.totalCount}
+		  )
+		</foreach>
+ 	 </insert>
+    <select id="queryRateDay" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.orgId,
+			t.orgName,
+			IFNULL(t.rateOneCount,0) as rateOneCount,
+			IFNULL(t.rateTwoCount,0) as rateTwoCount,
+			IFNULL(t.rateThreeCount,0) as rateThreeCount,
+			IFNULL(t.rateFourCount,0) as rateFourCount,
+			IFNULL(t.rateFiveCount,0) as rateFiveCount,
+			IFNULL(t.totalCount,0) as totalCount
+		FROM
+			t_sum_orderrate t
+			<include refid="sqlQuery"/>
+			GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m-%d'),t.orgId
+		  <if test="orderSql == null">
+			ORDER by recordDate DESC
+		  </if>
+		  <if test="orderSql != null and orderSql !='' ">
+			ORDER by ${orderSql}
+		  </if>
+	</select>
+		<select id="queryRateDayCount" resultType="int" parameterType="map">
+		SELECT
+			count(*)
+		FROM
+			t_sum_orderrate t
+		<include refid="sqlQuery"/>
+	</select>
+	<sql id="sqlQuery">
+   		<where>
+			 <if test="recordDate != null and recordDate != ''">
+			  	and t.recordDate = #{recordDate}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			 </if>
+ 		     <if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+			 <if test="orgName != null and orgName != ''">
+			 	and t.orgName like CONCAT(#{orgName},'%')
+			 </if>
+			 <if test="orgId != null and orgId != ''">
+			 	and t.orgId = #{orgId}
+			 </if>
+		</where>
+    </sql>
+    <select id="queryRateDaySum" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			IFNULL(SUM(t.rateOneCount),0) as rateOneCountSum,
+			IFNULL(SUM(t.rateTwoCount),0) as rateTwoCountSum,
+			IFNULL(SUM(t.rateThreeCount),0) as rateThreeCountSum,
+			IFNULL(SUM(t.rateFourCount),0) as rateFourCountSum,
+			IFNULL(SUM(t.rateFiveCount),0) as rateFiveCountSum,
+			IFNULL(SUM(t.totalCount),0) as totalCountSum
+		FROM
+			t_sum_orderrate t
+		<include refid="sqlQuery"/>
+	</select>
+	<select id="queryRateMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') as recordDate,
+			t.orgId,
+			t.orgName,
+			IFNULL(SUM(t.rateOneCount),0) as rateOneCount,
+			IFNULL(SUM(t.rateTwoCount),0) as rateTwoCount,
+			IFNULL(SUM(t.rateThreeCount),0) as rateThreeCount,
+			IFNULL(SUM(t.rateFourCount),0) as rateFourCount,
+			IFNULL(SUM(t.rateFiveCount),0) as rateFiveCount,
+			IFNULL(SUM(t.totalCount),0) as totalCount
+		FROM
+			t_sum_orderrate t
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),t.orgId
+		  <if test="orderSql == null">
+			ORDER by recordDate DESC
+		  </if>
+		  <if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		  </if>
+	</select>
+	<select id="queryRateMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (SELECT COUNT(1) FROM t_sum_orderrate t
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),t.orgId) tab1
+	</select>
+	<select id="queryRateMonthSum" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') as recordDateSum,
+			IFNULL(SUM(t.rateOneCount),0) as rateOneCountSum,
+			IFNULL(SUM(t.rateTwoCount),0) as rateTwoCountSum,
+			IFNULL(SUM(t.rateThreeCount),0) as rateThreeCountSum,
+			IFNULL(SUM(t.rateFourCount),0) as rateFourCountSum,
+			IFNULL(SUM(t.rateFiveCount),0) as rateFiveCountSum,
+			IFNULL(SUM(t.totalCount),0) as totalCountSum
+		FROM
+			t_sum_orderrate t
+		<include refid="sqlQuery"/>
+	</select>
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_orderrate
+		<where> 
+			recordDate = #{recordDate}
+			<if test="orgId !=null and orgId !=''">
+			 	AND orgId = #{orgId}
+			</if>
+		</where>
+	</delete>
+</mapper>

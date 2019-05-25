@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTEMAIL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			changeId,
+			customerId, 
+			oldEmail, 
+			newEmail, 
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime ,
+			customerIp, 
+			auditBy, 
+			DATE_FORMAT(auditTime,'%Y-%m-%d %H:%i:%s') auditTime,
+			auditDesc
+		FROM t_cust_email
+		<where>
+			<if test="changeId != null and changeId != ''">
+			  and changeId = #{changeId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="oldEmail != null and oldEmail != ''">
+				and oldEmail = #{oldEmail}
+			</if>
+			<if test="newEmail != null and newEmail != ''">
+				and newEmail = #{newEmail}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="customerIp != null and customerIp != ''">
+				and customerIp = #{customerIp}
+			</if>
+			<if test="auditBy != null and auditBy != ''">
+				and auditBy = #{auditBy}
+			</if>
+			<if test="auditTime != null and auditTime != ''">
+				and auditTime = #{auditTime}
+			</if>
+			<if test="auditDesc != null and auditDesc != ''">
+				and auditDesc = #{auditDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_email 
+		<where>
+		<if test="changeId != null and changeId != ''">
+		    and changeId = #{changeId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="oldEmail != null and oldEmail != ''">
+			and oldEmail = #{oldEmail}
+		</if>
+		<if test="newEmail != null and newEmail != ''">
+			and newEmail = #{newEmail}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="customerIp != null and customerIp != ''">
+			and customerIp = #{customerIp}
+		</if>
+		<if test="auditBy != null and auditBy != ''">
+			and auditBy = #{auditBy}
+		</if>
+		<if test="auditTime != null and auditTime != ''">
+			and auditTime = #{auditTime}
+		</if>
+		<if test="auditDesc != null and auditDesc != ''">
+			and auditDesc = #{auditDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="changeId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_email (
+			customerId,
+			oldEmail,
+			newEmail,
+			status,
+			createTime,
+			customerIp,
+			auditBy,
+			auditTime,
+			auditDesc
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{oldEmail, jdbcType=VARCHAR}, 
+			#{newEmail, jdbcType=VARCHAR}, 
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{customerIp, jdbcType=VARCHAR}, 
+			#{auditBy, jdbcType=VARCHAR}, 
+			#{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{auditDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_email 
+		<where> 
+			changeId = #{changeId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_email  
+		<set>
+			
+			<if test="oldEmail != null">
+				oldEmail = #{oldEmail, jdbcType=VARCHAR},  
+			</if>
+			<if test="newEmail != null">
+				newEmail = #{newEmail, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			
+			<if test="customerIp != null">
+				customerIp = #{customerIp, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="auditDesc != null">
+				auditDesc = #{auditDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  changeId = #{changeId}
+		</where>
+	</update>
+	
+	<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t1.telephone,
+			t2.realName,
+			t.changeId,
+			t.customerId, 
+			t.oldEmail, 
+			t.newEmail, 
+			t.status, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') createTime,
+			t.customerIp, 
+			t.auditBy, 
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') auditTime,
+			t.auditDesc 
+			from t_cust_email t
+			LEFT JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			 
+		</where>
+		ORDER by createTime desc
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+			from t_cust_email t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			 
+		</where>
+	</select>
+</mapper>

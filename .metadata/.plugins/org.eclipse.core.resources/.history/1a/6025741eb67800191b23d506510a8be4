@@ -1,0 +1,52 @@
+package org.xxjr.busi.util.novel;
+
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.page.PageUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.zk.service.RemoteInvoke;
+import org.xxjr.sys.util.ServiceKey;
+
+
+public class HotProdUtil {
+	
+	
+	/**
+	 * 热门产品列表
+	 * 
+	 * @param novelId
+	 * @param typeId
+	 * @return
+	 */
+	public static List<Map<String, Object>> queryHotProd() {
+		
+		AppResult result = new AppResult();
+		try{
+			AppParam param = new AppParam();
+			param.setEveryPage(2);
+			param.addAttr("showType", "WX");
+			param.setService("prodService");
+			param.setMethod("queryProdList");
+			param.addAttr("status",1);
+			param.addAttr("type", 2);
+			param.addAttr("isHot", 1);
+			param.setOrderBy("indexNum");
+			param.setOrderValue(PageUtil.ORDER_ASC);
+			param.setRmiServiceName(AppProperties.
+					getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_open));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+		}catch(Exception e){
+			LogerUtil.error(HotProdUtil.class, e, "HotProdUtil error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result.getRows();
+	}
+	
+}

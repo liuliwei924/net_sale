@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREHANDLERECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			handleDesc, 
+			DATE_FORMAT(lastTime,'%Y-%m-%d %H:%i:%s') as lastTime  
+		FROM t_store_handle_record
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and handleDesc = #{handleDesc}
+			</if>
+			<if test="lastTime != null and lastTime != ''">
+				and lastTime = #{lastTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_handle_record 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="handleDesc != null and handleDesc != ''">
+			and handleDesc = #{handleDesc}
+		</if>
+		<if test="lastTime != null and lastTime != ''">
+			and lastTime = #{lastTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="applyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_handle_record (
+			applyId,
+			customerId,
+			handleDesc,
+			lastTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{handleDesc, jdbcType=VARCHAR}, 
+			#{lastTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_handle_record 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_handle_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="handleDesc != null">
+				handleDesc = #{handleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="lastTime != null">
+				lastTime = #{lastTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

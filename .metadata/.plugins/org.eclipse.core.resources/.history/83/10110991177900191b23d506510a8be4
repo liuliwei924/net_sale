@@ -1,0 +1,153 @@
+package org.xxjr.store.web.action.account.sms;
+
+import java.io.UnsupportedEncodingException;
+import javax.servlet.http.HttpServletRequest;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.common.web.session.RequestUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 短信渠道
+ * 
+ * @author gongww
+ *
+ */
+@Controller()
+@RequestMapping("/account/sms/smsChannel")
+public class SmsChannelAction {
+
+	/**
+	 * 分页查询短信渠道列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("querySmsChannelList")
+	@ResponseBody
+	public AppResult querySmsChannelList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam param = new AppParam("smsChannelService","queryByPage");
+			RequestUtil.setAttr(param, request);
+			param.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sys));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+		} catch (Exception e) {
+			LogerUtil.error(SmsChannelAction.class, e, "querySmsChannelList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 查询短信渠道列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("querySmsChannelInfo")
+	@ResponseBody
+	public AppResult querySmsChannelInfo(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam param = new AppParam("smsChannelService","query");
+			RequestUtil.setAttr(param, request);
+			param.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sys));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+		} catch (Exception e) {
+			LogerUtil.error(SmsChannelAction.class, e, "querySmsChannelInfo error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+
+	
+	/**
+	 * 添加短信渠道信息
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("addSmsChannelInfo")
+	@ResponseBody
+	public AppResult addSmsChannelInfo(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam param = new AppParam("smsChannelService","insert");
+			RequestUtil.setAttr(param, request);
+			param.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sys));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+		} catch (Exception e) {
+			LogerUtil.error(SmsChannelAction.class, e, "addSmsChannelInfo error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 修改短信渠道信息
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("modifySmsChannelInfo")
+	@ResponseBody
+	public AppResult modifySmsChannelInfo(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			Object channelId = request.getParameter("channelId");
+			if (StringUtils.isEmpty(channelId)) {
+				result.setMessage("短信渠道ID为空！");
+				result.setSuccess(Boolean.FALSE);
+				return result;
+			}
+			AppParam param = new AppParam("smsChannelService","update");
+			RequestUtil.setAttr(param, request);
+			param.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_sys));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+		} catch (Exception e) {
+			LogerUtil.error(SmsChannelAction.class, e, "modifySmsChannelInfo error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/***
+	 * 删除短信渠道信息
+	 * 
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("deleteSmsChannelInfo")
+	@ResponseBody
+	public AppResult deleteSmsChannelInfo(HttpServletRequest request) throws UnsupportedEncodingException {
+		AppResult result = new AppResult();
+		try {
+			Object channelId = request.getParameter("channelId");
+			if (StringUtils.isEmpty(channelId)) {
+				result.setMessage("短信渠道ID为空！");
+				result.setSuccess(Boolean.FALSE);
+				return result;
+			}
+			AppParam param = new AppParam("smsChannelService","delete");
+			RequestUtil.setAttr(param, request);
+			param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_open));
+			result = RemoteInvoke.getInstance().call(param);
+		} catch (Exception e) {
+			LogerUtil.error(SmsChannelAction.class, e, "deleteProdInfo error ");
+			ExceptionUtil.setExceptionMessage(e, result,DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+}

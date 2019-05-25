@@ -1,0 +1,60 @@
+package org.xxjr.mq.listener.receiver;
+
+import java.util.Map;
+
+import javax.annotation.PreDestroy;
+
+import org.ddq.active.mq.XxjrMqSendUtil;
+import org.ddq.common.util.LogerUtil;
+import org.llw.mq.rabbitmq.RabbitMqConfig;
+import org.llw.xxjr.cust.util.member.ScoreUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.mq.listener.consumer.RabbitMqConsumer;
+import org.xxjr.mq.listener.util.XxjrInitAnnotation;
+
+@Component
+@XxjrInitAnnotation(beanName="rewardReceiver",initMethod="init")
+public class RewardReceiver extends RabbitMqConsumer{
+	
+	@Autowired
+	private RabbitMqConfig rabbitMqConfig;
+	
+	@Value("${rabbit.queue.wxReward}")
+	private String queueName;
+
+	public void onMessage(Map<String, Object> param) {
+		try {
+			LogerUtil.log(WxMessageReceiver.class,"wxReward message params:" + param.toString());
+			Object openid = param.get("openid");
+			// 微信端奖励
+			if(!StringUtils.isEmpty(openid)){
+				Object gzhId = param.get("gzhId");
+				Integer score = Integer.valueOf(param.get("score").toString());
+				Integer scoreType = Integer.valueOf(param.get("scoreType").toString());
+				Object createDesc = param.get("createDesc");
+				ScoreUtils.scoreChangeOpenid(openid.toString(), gzhId.toString(), score, scoreType, createDesc.toString());
+			}
+		} catch (Exception e) {
+			LogerUtil.error(RewardReceiver.class, e, "wxadmin RewardReceiver reward params:" + param.toString());
+			XxjrMqSendUtil.saveFailureLog("RewardReceiver", param);
+		}
+	}
+
+	@Override
+	public void init(String queueName ,RabbitMqConfig rabbitMqConfig) {
+		super.init(queueName,rabbitMqConfig);
+	}
+	
+    public void init() {
+		init(queueName,rabbitMqConfig);
+	}
+	
+	@PreDestroy
+	public void destroy(){
+		reaseResource();
+	}
+	
+}

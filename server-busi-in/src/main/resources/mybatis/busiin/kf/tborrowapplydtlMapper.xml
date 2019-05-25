@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWAPPLYDTL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			referer, 
+			telephone, 
+			applyName, 
+			channelDetail, 
+			kf, 
+			kfDesc, 
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_borrow_apply_dtl
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="referer != null and referer != ''">
+				and referer = #{referer}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and channelDetail = #{channelDetail}
+			</if>
+			<if test="kf != null and kf != ''">
+				and kf = #{kf}
+			</if>
+			<if test="kfDesc != null and kfDesc != ''">
+				and kfDesc = #{kfDesc}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="createDate != null and createDate != ''">
+				and DATE_FORMAT(createTime,'%Y-%m-%d') = #{createDate}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_apply_dtl 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="referer != null and referer != ''">
+			and referer = #{referer}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if test="kf != null and kf != ''">
+			and kf = #{kf}
+		</if>
+		<if test="kfDesc != null and kfDesc != ''">
+			and kfDesc = #{kfDesc}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="createDate != null and createDate != ''">
+			and DATE_FORMAT(createTime,'%Y-%m-%d') = #{createDate}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_apply_dtl (
+			referer,
+			telephone,
+			applyName,
+			channelDetail,
+			kf,
+			kfDesc,
+			status,
+			createTime
+		)
+		VALUES ( 
+			<if test="referer !=null ">
+			#{referer, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="referer ==null ">
+			0 ,
+			</if>
+			#{telephone, jdbcType=VARCHAR}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{channelDetail, jdbcType=VARCHAR}, 
+			#{kf, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{kfDesc, jdbcType=VARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_apply_dtl 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_apply_dtl  
+		<set>
+			<if test="referer != null">
+				referer = #{referer, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR},  
+			</if>
+			<if test="kf != null">
+				kf = #{kf, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="kfDesc != null">
+				kfDesc = #{kfDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

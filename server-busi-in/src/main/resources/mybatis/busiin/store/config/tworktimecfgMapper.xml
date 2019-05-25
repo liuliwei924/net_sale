@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="WORKTIMECFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			cityName, 
+			orgId, 
+			amBeginWorkTime, 
+			amEndWordTime, 
+			pmBeginWorkTime, 
+			pmEndWordTime, 
+			evesBeginWorkTime, 
+			evesEndWordTime,
+			startAllotTime,
+			endAllotTime,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			orgMaxCount,
+			monthMaxCost
+		FROM t_worktime_cfg
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="amBeginWorkTime != null and amBeginWorkTime != ''">
+				and amBeginWorkTime = #{amBeginWorkTime}
+			</if>
+			<if test="amEndWordTime != null and amEndWordTime != ''">
+				and amEndWordTime = #{amEndWordTime}
+			</if>
+			<if test="pmBeginWorkTime != null and pmBeginWorkTime != ''">
+				and pmBeginWorkTime = #{pmBeginWorkTime}
+			</if>
+			<if test="pmEndWordTime != null and pmEndWordTime != ''">
+				and pmEndWordTime = #{pmEndWordTime}
+			</if>
+			<if test="evesBeginWorkTime != null and evesBeginWorkTime != ''">
+				and evesBeginWorkTime = #{evesBeginWorkTime}
+			</if>
+			<if test="evesEndWordTime != null and evesEndWordTime != ''">
+				and evesEndWordTime = #{evesEndWordTime}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="orgMaxCount != null and orgMaxCount != ''">
+				and orgMaxCount = #{orgMaxCount}
+			</if>
+			<if test="monthMaxCost != null and monthMaxCost != ''">
+				and monthMaxCost = #{monthMaxCost}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_worktime_cfg 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="amBeginWorkTime != null and amBeginWorkTime != ''">
+			and amBeginWorkTime = #{amBeginWorkTime}
+		</if>
+		<if test="amEndWordTime != null and amEndWordTime != ''">
+			and amEndWordTime = #{amEndWordTime}
+		</if>
+		<if test="pmBeginWorkTime != null and pmBeginWorkTime != ''">
+			and pmBeginWorkTime = #{pmBeginWorkTime}
+		</if>
+		<if test="pmEndWordTime != null and pmEndWordTime != ''">
+			and pmEndWordTime = #{pmEndWordTime}
+		</if>
+		<if test="evesBeginWorkTime != null and evesBeginWorkTime != ''">
+			and evesBeginWorkTime = #{evesBeginWorkTime}
+		</if>
+		<if test="evesEndWordTime != null and evesEndWordTime != ''">
+			and evesEndWordTime = #{evesEndWordTime}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="orgMaxCount != null and orgMaxCount != ''">
+			and orgMaxCount = #{orgMaxCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_worktime_cfg (
+			cityName,
+			orgId,
+			amBeginWorkTime,
+			amEndWordTime,
+			pmBeginWorkTime,
+			pmEndWordTime,
+			evesBeginWorkTime,
+			evesEndWordTime,
+			startAllotTime,
+			endAllotTime,
+			createTime,
+			orgMaxCount,
+			monthMaxCost
+		)
+		VALUES ( 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{amBeginWorkTime, jdbcType=VARCHAR}, 
+			#{amEndWordTime, jdbcType=VARCHAR}, 
+			#{pmBeginWorkTime, jdbcType=VARCHAR}, 
+			#{pmEndWordTime, jdbcType=VARCHAR}, 
+			#{evesBeginWorkTime, jdbcType=VARCHAR}, 
+			#{evesEndWordTime, jdbcType=VARCHAR}, 
+			#{startAllotTime, jdbcType=VARCHAR}, 
+			#{endAllotTime, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{orgMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{monthMaxCost, jdbcType=INTEGER,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_worktime_cfg 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_worktime_cfg  
+		<set>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="amBeginWorkTime != null">
+				amBeginWorkTime = #{amBeginWorkTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="amEndWordTime != null">
+				amEndWordTime = #{amEndWordTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="pmBeginWorkTime != null">
+				pmBeginWorkTime = #{pmBeginWorkTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="pmEndWordTime != null">
+				pmEndWordTime = #{pmEndWordTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="evesBeginWorkTime != null">
+				evesBeginWorkTime = #{evesBeginWorkTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="evesEndWordTime != null">
+				evesEndWordTime = #{evesEndWordTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="startAllotTime != null">
+				startAllotTime = #{startAllotTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="endAllotTime != null">
+				endAllotTime = #{endAllotTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="orgMaxCount != null">
+				orgMaxCount = #{orgMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="monthMaxCost != null">
+				monthMaxCost = #{monthMaxCost, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	<select id="queryWorkTime" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.cityName, 
+			t.orgId, 
+			t.amBeginWorkTime, 
+			t.amEndWordTime, 
+			t.pmBeginWorkTime, 
+			t.pmEndWordTime, 
+			t.evesBeginWorkTime, 
+			t.evesEndWordTime,
+			t.startAllotTime,
+			t.endAllotTime, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.orgName,
+			t.orgMaxCount,
+			t.monthMaxCost
+		FROM t_worktime_cfg t
+		LEFT JOIN t_org t1
+		ON t.orgId = t1.orgId 
+		<include refid="querySql"/>
+		ORDER BY CONVERT(t.cityName USING GBK)
+	</select>
+
+	<select id="queryWorkTimeCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(1)
+		FROM t_worktime_cfg t
+		LEFT JOIN t_org t1
+		ON t.orgId = t1.orgId 
+		<include refid="querySql"/>
+	</select>
+	
+	<sql id="querySql">
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and t.recordId = #{recordId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and t.cityName = #{cityName}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and t.orgId = #{orgId}
+		</if>
+		<if test="amBeginWorkTime != null and amBeginWorkTime != ''">
+			and t.amBeginWorkTime = #{amBeginWorkTime}
+		</if>
+		<if test="amEndWordTime != null and amEndWordTime != ''">
+			and t.amEndWordTime = #{amEndWordTime}
+		</if>
+		<if test="pmBeginWorkTime != null and pmBeginWorkTime != ''">
+			and t.pmBeginWorkTime = #{pmBeginWorkTime}
+		</if>
+		<if test="pmEndWordTime != null and pmEndWordTime != ''">
+			and t.pmEndWordTime = #{pmEndWordTime}
+		</if>
+		<if test="evesBeginWorkTime != null and evesBeginWorkTime != ''">
+			and t.evesBeginWorkTime = #{evesBeginWorkTime}
+		</if>
+		<if test="evesEndWordTime != null and evesEndWordTime != ''">
+			and t.evesEndWordTime = #{evesEndWordTime}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			 <![CDATA[and t.createTime  >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.createTime  < #{endDate}]]>
+		</if>
+		</where>
+	</sql>
+</mapper>

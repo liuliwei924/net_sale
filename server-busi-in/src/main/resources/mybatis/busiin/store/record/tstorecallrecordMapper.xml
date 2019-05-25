@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORECALLRECORD">
+    <sql id="querySql">
+   			<if test="recordId != null and recordId != ''">
+			  	and recordId = #{recordId} 
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and custTel = #{custTel}
+			</if>
+			<if test="borrowTel != null and borrowTel != ''">
+				and borrowTel = #{borrowTel}
+			</if>
+			<if test="callType != null and callType != ''">
+				and callType = #{callType}
+			</if>
+			<if test="startCallTime != null and startCallTime != ''">
+				and startCallTime = #{startCallTime}
+			</if>
+			<if test="startCallTimeForMat != null and startCallTimeForMat != ''">
+				<![CDATA[and startCallTime > #{startCallTimeForMat}]]>	
+			</if>
+			<if test="durationFlag != null and durationFlag != ''">
+				<![CDATA[and duration > 0]]>
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and t.createTime >= #{applyTime} ]]>
+			</if>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			customerId, 
+			custTel, 
+			f_hide_phone(borrowTel) borrowTel, 
+			callType,
+			DATE_FORMAT(startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			DATE_FORMAT(endCallTime,'%Y-%m-%d %H:%i:%s') as endCallTime  ,
+			duration, 
+			applyId, 
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime
+		FROM t_store_call_record 
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_record
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+	
+	<select id="recentUpLoadTime" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as curUpLoadTime
+		FROM t_store_call_record
+		WHERE customerId = #{customerId} ORDER BY createTime DESC LIMIT 1
+	</select>
+	
+	<select id="getRecentData" resultType="map" parameterType="map">
+		SELECT
+		<![CDATA[
+			MAX(startCallTime) as 'startCallTime',
+			MAX(applyId) as 'applyId',
+			count(*) as 'callTimes',
+			SUM(duration) AS 'totalDuration',
+			COUNT(CASE WHEN duration>0 THEN recordId END) AS 'sucCallTimes'
+		]]>	
+		FROM t_store_call_record
+		WHERE borrowTel=#{borrowTel} and applyId is not null
+		group by borrowTel
+	</select>
+	
+	
+	<!-- 查询出当天所需统计的人和日期 -->
+	<select id="getCountParams" resultType="map" parameterType="map">
+	 SELECT 
+		 t.customerId,
+		 IFNULL(tab1.startCallTime,DATE_ADD(CURDATE(),INTERVAL -1 DAY)) as 'startCallTime'
+		FROM t_busi_cust t 
+		LEFT JOIN (
+		 SELECT a.customerId,DATE_FORMAT(a.startCallTime, '%Y-%m-%d') as 'startCallTime'
+		 FROM t_store_call_record a
+		 WHERE DATE_FORMAT(a.createTime, '%Y-%m-%d') = #{recordDate} group by a.customerId,DATE_FORMAT(a.startCallTime, '%Y-%m-%d')
+		) tab1 ON tab1.customerId = t.customerId
+		WHERE t.roleType in(3,6,7,8,9)  AND t.orgId !=''
+		AND t.orgId !=60 ORDER BY t.customerId ASC, startCallTime ASC
+	</select>
+	
+	<select id="getCountParamsCount" resultType="int" parameterType="map">
+	 SELECT 
+		  COUNT(1) 
+		FROM
+		  (SELECT 
+		    t.customerId,
+		    IFNULL(
+		      tab1.startCallTime,
+		      DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+		    ) AS 'startCallTime' 
+		  FROM
+		    t_busi_cust t 
+		    LEFT JOIN 
+		      (SELECT 
+		        a.customerId,
+		        DATE_FORMAT(a.startCallTime, '%Y-%m-%d') AS 'startCallTime' 
+		      FROM
+		        t_store_call_record a 
+		      WHERE DATE_FORMAT(a.createTime, '%Y-%m-%d') = #{recordDate} 
+		      GROUP BY a.customerId,
+		        DATE_FORMAT(a.startCallTime, '%Y-%m-%d')) tab1 
+		      ON tab1.customerId = t.customerId 
+		  WHERE t.roleType IN (3,6,7, 8, 9) 
+		    AND t.orgId != '' 
+		    AND t.orgId != 60 
+		  ORDER BY t.customerId ASC,
+		    startCallTime ASC) tab1 
+	</select>
+	
+		
+	<!-- 門店人員通話記錄統計 -->
+	<select id="sumStoreCall" resultType="map" parameterType="map">
+		SELECT 
+		 	 #{recordDate} as 'recordDate',
+		 	t.customerId  as 'customerId',
+		 	t.realName as 'realName',
+			t.orgId as 'orgId',
+			t.groupName as 'groupName',
+  			t.teamName as 'teamName',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+		  	IFNULL(tab1.totalCount,0) as 'totalCount',
+			IFNULL(tab1.sucTotalCount,0) as 'sucTotalCount',
+			IFNULL(tab1.callOutCount,0) as 'callOutCount',
+			IFNULL(tab1.sucCallOutCount,0) as 'sucCallOutCount',
+			IFNULL(tab1.callCount60,0) as 'callCount60',
+			IFNULL(tab1.callCount180,0) as 'callCount180',
+			IFNULL(tab1.exterCallCount60,0) as 'exterCallCount60',
+			IFNULL(tab1.exterCallCount180,0) as 'exterCallCount180',
+			<choose>
+				<when test="realFlag != null and realFlag == 1">
+					ROUND(IFNULL(tab1.totalDuration,0)/60,2) as 'totalDuration',
+					ROUND(IFNULL(tab1.exterDuration,0)/60,2) as 'exterDuration',
+				</when>
+				<otherwise>
+					IFNULL(tab1.totalDuration,0) as 'totalDuration',
+					IFNULL(tab1.exterDuration,0) as 'exterDuration',
+				</otherwise>
+			</choose>
+			IFNULL(tab1.exterCallCount,0) as 'exterCallCount',
+			IFNULL(tab1.exterSucCallCount,0) as 'exterSucCallCount',
+			IFNULL(tab1.exterCallOutCount,0) as 'exterCallOutCount',
+			IFNULL(tab1.exterSucCallOutCount,0) as 'exterSucCallOutCount',
+			IFNULL(tab2.sucBookCount, 0) AS 'sucBookCount'
+		FROM 
+		(<![CDATA[
+     		SELECT n.customerId,
+      			 COUNT(DISTINCT n.borrowTel) AS 'totalCount',
+      			 COUNT(DISTINCT(CASE WHEN n.`status`=1 and n.duration>0  THEN n.borrowTel END)) AS 'sucTotalCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=1 and n.callType=2  THEN  n.borrowTel END)) AS 'callOutCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=1 and n.callType=2 and n.duration>0  THEN n.borrowTel END)) AS 'sucCallOutCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=1 and n.duration>60  THEN n.borrowTel END)) AS 'callCount60',
+           		 COUNT(DISTINCT(CASE WHEN n.`status`=1 and n.duration>180  THEN n.borrowTel END)) AS 'callCount180',
+				 SUM(n.duration) AS 'totalDuration',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 THEN n.borrowTel END)) AS 'exterCallCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 and n.duration>0 THEN n.borrowTel END)) AS 'exterSucCallCount',
+				 SUM(CASE WHEN n.`status`=2 THEN n.duration END) AS 'exterDuration',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 and n.callType=1  THEN  n.borrowTel END)) AS 'exterCallOutCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 and n.callType=1 and n.duration>0  THEN n.borrowTel END)) AS 'exterSucCallOutCount',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 and n.duration>60 Then n.borrowTel END)) AS 'exterCallCount60',
+				 COUNT(DISTINCT(CASE WHEN n.`status`=2 and n.duration>180 Then n.borrowTel END)) AS 'exterCallCount180'
+				
+			FROM t_store_call_record n
+			WHERE
+			n.startCallTime >= #{recordDate} AND n.startCallTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+			]]>
+			<if test="customerId != null and customerId != ''">
+		 		 and n.customerId = #{customerId}
+		 	</if>
+			GROUP BY n.customerId
+		) as tab1 
+		JOIN t_busi_cust t ON t.customerId=tab1.customerId
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		LEFT JOIN
+	   (<![CDATA[SELECT 
+	      COUNT(DISTINCT n1.applyId) sucBookCount,
+	      n1.recCustId 
+	    FROM
+	      t_treat_visit_detail n1 
+	    WHERE n1.visitTime >= #{recordDate} 
+	      AND n1.visitTime < DATE_ADD(#{recordDate}, INTERVAL 1 DAY) 
+	    GROUP BY n1.recCustId]]>) tab2 
+	    ON t.customerId = tab2.recCustId
+		WHERE t.orgId !=60
+		<include refid="storeCallSql"/>
+		<if test="orderSql == null">
+			ORDER BY t.customerId,CONVERT(t1.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},t.customerId,CONVERT(t1.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="sumStoreCallCount" resultType="int" parameterType="map">
+		<![CDATA[
+		SELECT COUNT(1) FROM(
+			SELECT COUNT(1) FROM t_store_call_record tab1
+			JOIN t_busi_cust t ON t.customerId = tab1.customerId
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			WHERE t.orgId !=60
+			AND tab1.startCallTime >= #{recordDate} AND tab1.startCallTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+			]]>
+			<include refid="storeCallSql"/>
+			GROUP BY tab1.customerId
+			ORDER BY t.customerId,CONVERT(t1.orgName USING GBK)) as tab2
+	</select>
+	
+	<sql id="storeCallSql">
+		<if test="customerId != null and customerId != ''">
+		  and t.customerId = #{customerId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+		    and t.orgId = #{orgId}
+		</if>
+		<if test="groupName != null and groupName != ''">
+		    and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+		    and t.teamName = #{teamName}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+		    and t.orgId in (${userOrgs})
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t.teamName = #{teamName}
+		</if>
+		<if test="realName != null and realName != ''">
+		    and t.realName LIKE CONCAT(#{realName},'%') 
+		</if>
+		<if test="cityName != null and cityName !=''">
+		    and t1.cityName = #{cityName}
+		</if>
+		<if test="telephone != null and telephone !=''">
+		    and t.telephone = #{telephone}
+		</if>
+		<if test="roleType != null and roleType !=''">
+		    and t.roleType = #{roleType}
+		</if>
+	</sql>
+	
+	<!-- 门店通话记录今日统计 -->
+	<select id="sumOrgCall" resultType="map" parameterType="map">
+		SELECT 
+			CURDATE() AS recordDate,
+			tab1.orgId,
+			tab1.cityName,
+			tab1.orgName,
+			tab1.personCount,
+			ROUND(tab1.sucTotalCount / personCount,2) AS avgSuc,
+			ROUND(tab1.callCount60 / personCount,2) AS avgCall60,
+			ROUND(tab1.callCount180 / personCount,2) AS avgCall180,
+			ROUND(tab1.totalDuration / personCount,2) AS avgtotalDuration,
+			tab1.totalCount,
+			tab1.sucTotalCount,
+			tab1.callOutCount,
+			tab1.sucCallOutCount,
+			tab1.callCount60,
+			tab1.callCount180,
+			tab1.totalDuration
+		FROM	
+			(SELECT 
+				CURDATE() AS recordDate,
+				n1.orgId,
+				n2.cityName,
+				n2.orgName,
+				COUNT(DISTINCT n.customerId) AS personCount,
+	      		COUNT(DISTINCT n.borrowTel) AS 'totalCount',
+	     		COUNT(DISTINCT(CASE WHEN n.duration>0  THEN n.borrowTel END)) AS 'sucTotalCount',
+				COUNT(DISTINCT(CASE WHEN n.callType=2  THEN  n.borrowTel END)) AS 'callOutCount',
+				COUNT(DISTINCT(CASE WHEN n.callType=2 and n.duration>0  THEN n.borrowTel END)) AS 'sucCallOutCount',
+				COUNT(DISTINCT(CASE WHEN n.duration>60  THEN n.borrowTel END)) AS 'callCount60',
+	            COUNT(DISTINCT(CASE WHEN n.duration>180  THEN n.borrowTel END)) AS 'callCount180',
+				ROUND((IFNULL(SUM(n.duration),0) / 60),2) AS 'totalDuration'
+			FROM t_store_call_record n
+	        JOIN t_busi_cust n1 on n.customerId = n1.customerId
+	        JOIN t_org n2  ON n1.orgId = n2.orgId
+			WHERE
+				n.startCallTime >= CURDATE()
+				and n1.orgId !=60
+				and n1.roleType in (3,6,7,8,9)
+		<include refid="queryWhere"/>
+			GROUP BY n1.orgId) as tab1
+		<if test="orderSql == null">
+			ORDER BY CONVERT(tab1.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(tab1.orgName USING GBK)
+		</if>
+	</select>
+	<select id="sumOrgCallCount" resultType="int" parameterType="map">
+		<![CDATA[
+		SELECT COUNT(*)
+		FROM (
+			SELECT COUNT(1)		
+			FROM t_store_call_record n
+	        JOIN t_busi_cust n1 on n.customerId = n1.customerId
+	        JOIN t_org n2  ON n1.orgId = n2.orgId
+			WHERE
+				n.startCallTime >= CURDATE()
+				and n1.orgId !=60
+				and n1.roleType in (3,6,7,8,9)
+			]]>
+			<include refid="queryWhere"/>
+			GROUP BY n1.orgId) AS tab1
+	</select>
+	<sql id="queryWhere">
+		<if test="userOrgs != null and userOrgs != ''">
+			and n1.orgId in (${userOrgs})
+		</if>
+		<if test="orgId != null and orgId != ''">
+		    and n1.orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+		    and n2.orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName !=''">
+		    and n2.cityName = #{cityName}
+		</if>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_call_record (
+			customerId,
+			custTel,
+			borrowTel,
+			callType,
+			startCallTime,
+			endCallTime,
+			duration,
+			applyId,
+			status,
+			createTime
+		)
+
+	   SELECT
+		#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+		#{custTel, jdbcType=VARCHAR}, 
+		#{borrowTel, jdbcType=VARCHAR}, 	
+		IFNULL(#{callType, jdbcType=INTEGER,typeHandler=NumberHandler},0), 
+		#{startCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+		#{endCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 	
+		IFNULL(#{duration, jdbcType=INTEGER,typeHandler=NumberHandler},0), 
+		(select applyId from t_borrow_store_apply t where t.telephone = #{borrowTel}),		
+		(CASE WHEN IFNULL((SELECT applyId FROM t_borrow_apply t WHERE t.telephone = #{borrowTel}),0) = 0 THEN 2 ELSE 1 END), 
+		now()
+		FROM DUAL WHERE NOT EXISTS (select 1 from t_store_call_record e where
+			e.customerId = #{customerId} and e.startCallTime = #{startCallTime}
+			and e.borrowTel =  #{borrowTel} and e.duration = #{duration}
+		)
+
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_call_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_call_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="custTel != null">
+				custTel = #{custTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="borrowTel != null">
+				borrowTel = #{borrowTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="startCallTime != null">
+				startCallTime = #{startCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="endCallTime != null">
+				endCallTime = #{endCallTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="duration != null">
+				duration = #{duration, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	
+	<update id="updateRelationData" parameterType="map">
+		UPDATE t_store_call_record t LEFT JOIN t_borrow_store_apply t1 ON t.borrowTel = t1.telephone
+		SET
+			 t.applyId = t1.applyId,
+			 t.`status` = IF(t1.applyId IS NOT NULL,1,2)
+		WHERE
+		  t.recordId in
+		 <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+              #{item.recordId}       
+       	 </foreach>    
+	</update>
+	
+	<insert id="batchUploadCallRecord" parameterType="ArrayList">
+		INSERT INTO t_store_call_record  (
+			customerId,
+			applyId,
+			custTel,
+			borrowTel,
+			callType,
+			startCallTime,
+			endCallTime,
+			duration,
+			status,
+			createTime
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.customerId}, 
+		  (select applyId from t_borrow_store_apply t where t.telephone = #{item.borrowTel}),
+		  #{item.custTel}, 
+		  #{item.borrowTel}, 
+		  <if test="item.callType != null">
+		  #{item.callType}, 
+		  </if>
+		  <if test="item.callType == null">
+		  0, 
+		  </if>
+		  #{item.startCallTime}, 
+		  #{item.endCallTime},
+		  #{item.duration}, 
+		  (CASE WHEN IFNULL((SELECT applyId FROM t_borrow_apply t WHERE t.telephone = #{item.borrowTel}),0) = 0 THEN 2 ELSE 1 END),
+		  NOW()
+		  )
+		</foreach>
+  </insert>
+  
+  <select id="queryCallRecord" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.customerId, 
+			t.custTel, 
+			f_hide_phone(t.borrowTel) borrowTel, 
+			t.callType,
+			DATE_FORMAT(t.startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			DATE_FORMAT(t.endCallTime,'%Y-%m-%d %H:%i:%s') as endCallTime  ,
+			t.duration, 
+			t.applyId, 
+			t.status, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName
+		FROM t_store_call_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryCallRecordCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_call_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+	<select id="queryNotRelationRecord" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.customerId, 
+			t.custTel, 
+			t.borrowTel, 
+			t.callType,
+			DATE_FORMAT(t.startCallTime,'%Y-%m-%d %H:%i:%s') as startCallTime  ,
+			DATE_FORMAT(t.endCallTime,'%Y-%m-%d %H:%i:%s') as endCallTime  ,
+			t.duration, 
+			t.status, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.applyId
+		FROM
+			t_store_call_record t
+		JOIN t_borrow_store_apply t1 ON t1.telephone = t.borrowTel
+		WHERE
+			t.applyId IS NULL
+		order by t1.applyId asc,t.startCallTime asc
+	</select>
+</mapper>

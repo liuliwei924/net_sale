@@ -1,0 +1,138 @@
+package org.xxjr.job.listener.busi.kf;
+
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.util.JobUtil;
+import org.llw.xxjr.busi.util.borrow.AutoRobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.ApplyAllotUtil;
+import org.xxjr.job.listener.busi.store.LendAutoOrderUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+public class TransferToXxjrUtil {
+	
+	public static void autoSaleData(Object processId){
+		AppResult result = new AppResult();
+		
+		try {
+			LogerUtil.log("***************** 自动挂卖的数据 begin********************");
+			AppParam updateParam = new AppParam();
+			updateParam.setService("salePoolService");
+			updateParam.setMethod("autoSaleData");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			result = RemoteInvoke.getInstance().call(updateParam);
+			Integer totalCount = (Integer)result.getAttr(DuoduoConstant.DAO_Insert_SIZE);
+			
+			result.setMessage("系统成功自动挂卖了：" + totalCount +" 条记录");
+			
+			JobUtil.addProcessExecute(processId, "SysAutoSaleJob系统成功自动挂卖了：" + totalCount +" 条记录");
+			LogerUtil.log("*****************自动挂卖的数据  end********************");
+		} catch (Exception e) {
+			LogerUtil.error(SysAutoSaleJob.class, e, "SysAutoSaleJob系统成功自动挂卖了!");
+			result.setSuccess(Boolean.FALSE);
+			result.setMessage(e.getMessage());
+		}
+	
+	}
+	/**
+	 * 转贷超市场
+	 * @param processId
+	 * @return
+	 */
+	public static  AppResult queryToXxjrList(Object processId){
+		//先转移自动和客服处理要挂卖的数据到贷超池
+		autoSaleData(processId);
+		
+		AppResult result = new AppResult();
+		try {
+			int currentPage = 1;
+			int everyPage = 100;
+			AppParam queryParam = new AppParam("salePoolService", "transferToXxjr");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			queryParam.setCurrentPage(currentPage);
+			queryParam.setEveryPage(everyPage);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			
+			int size = queryResult.getRows().size();
+			long totalPage = queryResult.getPage().getTotalPage();
+			long totalRecords = queryResult.getPage().getTotalRecords();
+			int xhCount = 0;//循环次数
+			int totalCount = 0;
+			if (size > 0) {//总记录数大于0
+				transferToXxjr(queryResult.getRows());//开始转移第一页的
+				totalCount = totalCount + size;
+			
+					  while (totalPage > 1 && totalCount < totalRecords && queryResult.isSuccess() && xhCount<30) {//大于一页
+						queryParam.setCurrentPage(1);//每次转移status会有变化页数会有变化
+						queryParam.setEveryPage(everyPage);
+						queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+						size = queryResult.getRows().size();
+						if(size > 0){
+							transferToXxjr(queryResult.getRows());//开始转移
+						}
+						totalPage = queryResult.getPage().getTotalPage();
+						totalCount = totalCount + size;
+						xhCount++;
+					}
+			}
+			
+			JobUtil.addProcessExecute(processId, "从贷超池共转出:" + totalCount);
+			result.setMessage("从贷超池共转出:" + totalCount);
+		} catch (Exception e) {
+			LogerUtil.error(LendAutoOrderUtils.class, e, "TransferToXxjrUtil >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, " 转移贷超池数据 报错：" + e.getMessage() );
+		}
+		
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param xxjrList
+	 */
+	public static void transferToXxjr(List<Map<String, Object>> xxjrList){
+		for(Map<String, Object> map : xxjrList){
+			try{
+				
+				AppParam tranAppParams = new AppParam();
+				tranAppParams.addAttrs(map);
+				tranAppParams.addAttr("immediate", 1);
+				AppResult tranResult = ApplyAllotUtil.newOrderImmedSale(tranAppParams, false);
+				if(!tranResult.isSuccess()){
+					//处理已经挂卖
+					AppParam applyIdParams = new AppParam("borrowApplyService",
+							"updateTransFailStatus");
+					applyIdParams.addAttr("applyId", map.get("applyId"));
+					applyIdParams.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_busi_in));
+					RemoteInvoke.getInstance().call(applyIdParams);
+				}
+				
+				//删除贷超池记录
+				AppParam delParams = new AppParam();
+				delParams.setService("salePoolService");
+				delParams.setMethod("delete");
+				delParams.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+				delParams.addAttr("applyId", map.get("applyId"));
+				RemoteInvoke.getInstance().call(delParams);
+				
+				// 自动抢单
+				if(!StringUtils.isEmpty(tranResult.getAttr("borrowId"))){
+					AutoRobUtil.autoRobBorrow(tranResult.getAttr("borrowId"));
+				}
+			}catch(Exception e){
+				LogerUtil.error(TransferToXxjrUtil.class,e, "TransferToXxjrJob error: applyId = " + map.get("applyId").toString());
+			}
+		}
+	}
+	
+}

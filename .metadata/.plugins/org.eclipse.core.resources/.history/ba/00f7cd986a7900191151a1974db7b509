@@ -1,0 +1,117 @@
+package org.xxjr.job.listener.busi;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.job.core.BaseExecteJob;
+import org.ddq.job.util.JobConstant;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.CustConstant;
+import org.xxjr.job.listener.cust.GradeVipOverdueJob;
+import org.xxjr.sys.util.ServiceKey;
+
+
+
+/***
+ * 自动失效 25小时无人抢单项目
+ * @author qinxcb
+ *
+ */
+@Lazy
+@Component
+public class AutoCloseBorrowJob implements BaseExecteJob {
+		private static Logger log = LogManager.getLogger(AutoCloseBorrowJob.class);
+	
+		@Override
+		public AppResult executeJob(AppParam param) {
+			AppResult result = new AppResult();
+			StringBuffer closeMessage =new StringBuffer();
+			Object processId = param.getAttr(JobConstant.KEY_processId);
+
+			//修改用户抢单量
+			try{
+				AppParam updateParam = new AppParam("busiCustService","updateDayRobNum");
+				updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+				AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+				int size = (int) updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE);
+				
+				JobUtil.addProcessExecute(processId, "修改当天抢单数量：" + size);
+				//修改用户当前积分抢单次数
+			}catch(Exception e){
+				log.error("close daiBorrowService error:", e);
+				JobUtil.addProcessExecute(processId, "修改当天抢单出错：" + e);
+			}
+			updateCustRole(processId);
+			result.setMessage(closeMessage.toString());
+			return result;
+		}
+		
+		
+		
+		/**
+		 * 更改为按揭员角色
+		 * @return
+		 */
+		private static AppResult updateCustRole(Object processId){
+			AppResult result = new AppResult();
+			// 每次处理50位
+			int everPage = 1;
+			AppParam queryParam = new AppParam();
+			queryParam.setService("employeService");
+			queryParam.setMethod("queryByPage");
+			queryParam.addAttr("empType", "2");
+			queryParam.setOrderBy("empId");
+			queryParam.setOrderValue("ASC");
+			queryParam.setCurrentPage(everPage);
+			queryParam.setEveryPage(50);
+			queryParam.setRmiServiceName(AppProperties.
+					getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_col));
+			AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
+			int size = 0;
+			while(queryResult.getRows().size() > 0){
+				List<String> list = new ArrayList<String>();
+				for(Map<String,Object> row : queryResult.getRows()){
+					if(!StringUtils.isEmpty(row.get("telephone"))){
+						list.add(row.get("telephone").toString());
+					}
+				}
+				// 修改用户为按揭员类型
+				try {
+					AppParam updateParam = new AppParam();
+					updateParam.setService("customerExtService");
+					updateParam.setMethod("batchUpdateRole");
+					updateParam.addAttr("list", list);
+					updateParam.addAttr("roleType", CustConstant.CUST_ROLETYPE_5);
+					updateParam.setRmiServiceName(AppProperties.
+							getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_cust));
+					RemoteInvoke.getInstance().call(updateParam);
+					size = size + list.size();
+				} catch (Exception e) {
+					LogerUtil.error(GradeVipOverdueJob.class, e, "updateCustRole error!");
+					JobUtil.addProcessExecute(processId, " 修改按揭员角色出错：" + size +":" + e.getMessage());
+				}
+				everPage += 1;
+				queryParam.setCurrentPage(everPage);
+				queryParam.setOrderBy("empId");
+				queryParam.setOrderValue("ASC");
+				queryParam.setRmiServiceName(AppProperties.
+						getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_col));
+				queryResult = RemoteInvoke.getInstance().call(queryParam);
+			}
+			
+			JobUtil.addProcessExecute(processId, " 修改按揭员角色总量：" + size);
+			return result;
+		}
+}

@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCONTACT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			contactId,
+			applyId, 
+			name, 
+			telephone, 
+			relation, 
+			age, 
+			compName, 
+			job, 
+			haveKnow
+		FROM t_borrow_contact
+		<where>
+			<if test="contactId != null and contactId != ''">
+			  and contactId = #{contactId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="name != null and name != ''">
+				and name = #{name}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="relation != null and relation != ''">
+				and relation = #{relation}
+			</if>
+			<if test="age != null and age != ''">
+				and age = #{age}
+			</if>
+			<if test="compName != null and compName != ''">
+				and compName = #{compName}
+			</if>
+			<if test="job != null and job != ''">
+				and job = #{job}
+			</if>
+			<if test="haveKnow != null and haveKnow != ''">
+				and haveKnow = #{haveKnow}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_contact 
+		<where>
+		<if test="contactId != null and contactId != ''">
+		    and contactId = #{contactId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="name != null and name != ''">
+			and name = #{name}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="relation != null and relation != ''">
+			and relation = #{relation}
+		</if>
+		<if test="age != null and age != ''">
+			and age = #{age}
+		</if>
+		<if test="compName != null and compName != ''">
+			and compName = #{compName}
+		</if>
+		<if test="job != null and job != ''">
+			and job = #{job}
+		</if>
+		<if test="haveKnow != null and haveKnow != ''">
+			and haveKnow = #{haveKnow}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="contactId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_contact (
+			applyId,
+			name,
+			telephone,
+			relation,
+			age,
+			compName,
+			job,
+			haveKnow
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{name, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			<if test="relation !=null ">
+			#{relation, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="relation ==null ">
+			1 ,
+			</if>
+			<if test="age !=null ">
+			#{age, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="age ==null ">
+			0 ,
+			</if>
+			#{compName, jdbcType=VARCHAR}, 
+			#{job, jdbcType=VARCHAR}, 
+			<if test="haveKnow !=null ">
+			#{haveKnow, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="haveKnow ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_contact 
+		<where> 
+			contactId = #{contactId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_contact  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="name != null">
+				name = #{name, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="relation != null">
+				relation = #{relation, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="age != null">
+				age = #{age, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="compName != null">
+				compName = #{compName, jdbcType=VARCHAR},  
+			</if>
+			<if test="job != null">
+				job = #{job, jdbcType=VARCHAR},  
+			</if>
+			<if test="haveKnow != null">
+				haveKnow = #{haveKnow, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  contactId = #{contactId}
+		</where>
+	</update>
+</mapper>

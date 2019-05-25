@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ALLOTCOUNT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			coutId,
+			DATE_FORMAT(recordDate,'%Y-%m-%d') as recordDate , 
+			cityTempId, 
+			cityName, 
+			testNetCount,
+			netSalesCount, 
+			electSalesCount, 
+			loanShopCount, 
+			custServiceCount, 
+			smallLoanCount, 
+			insuranceCount
+		FROM t_allot_count
+		<where>
+			<if test="coutId != null and coutId != ''">
+			  and coutId = #{coutId}
+			 </if>
+			<if test="recordDate != null and recordDate != ''">
+				and recordDate = #{recordDate}
+			</if>
+			<if test="cityTempId != null and cityTempId != ''">
+				and cityTempId = #{cityTempId}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="netSalesCount != null and netSalesCount != ''">
+				and netSalesCount = #{netSalesCount}
+			</if>
+			<if test="electSalesCount != null and electSalesCount != ''">
+				and electSalesCount = #{electSalesCount}
+			</if>
+			<if test="loanShopCount != null and loanShopCount != ''">
+				and loanShopCount = #{loanShopCount}
+			</if>
+			<if test="custServiceCount != null and custServiceCount != ''">
+				and custServiceCount = #{custServiceCount}
+			</if>
+			<if test="smallLoanCount != null and smallLoanCount != ''">
+				and smallLoanCount = #{smallLoanCount}
+			</if>
+			<if test="insuranceCount != null and insuranceCount != ''">
+				and insuranceCount = #{insuranceCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_allot_count 
+		<where>
+		<if test="coutId != null and coutId != ''">
+		    and coutId = #{coutId}
+		 </if>
+		<if test="recordDate != null and recordDate != ''">
+			and recordDate = #{recordDate}
+		</if>
+		<if test="cityTempId != null and cityTempId != ''">
+			and cityTempId = #{cityTempId}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="netSalesCount != null and netSalesCount != ''">
+			and netSalesCount = #{netSalesCount}
+		</if>
+		<if test="electSalesCount != null and electSalesCount != ''">
+			and electSalesCount = #{electSalesCount}
+		</if>
+		<if test="loanShopCount != null and loanShopCount != ''">
+			and loanShopCount = #{loanShopCount}
+		</if>
+		<if test="custServiceCount != null and custServiceCount != ''">
+			and custServiceCount = #{custServiceCount}
+		</if>
+		<if test="smallLoanCount != null and smallLoanCount != ''">
+			and smallLoanCount = #{smallLoanCount}
+		</if>
+		<if test="insuranceCount != null and insuranceCount != ''">
+			and insuranceCount = #{insuranceCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="coutId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_allot_count (
+			recordDate,
+			cityTempId,
+			cityName,
+			netSalesCount,
+			electSalesCount,
+			loanShopCount,
+			custServiceCount,
+			smallLoanCount,
+			testNetCount,
+			insuranceCount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{cityTempId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="netSalesCount !=null ">
+			#{netSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="netSalesCount ==null ">
+			0 ,
+			</if>
+			<if test="electSalesCount !=null ">
+			#{electSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="electSalesCount ==null ">
+			0 ,
+			</if>
+			<if test="loanShopCount !=null ">
+			#{loanShopCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanShopCount ==null ">
+			0 ,
+			</if>
+			<if test="custServiceCount !=null ">
+			#{custServiceCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="custServiceCount ==null ">
+			0 ,
+			</if>
+			<if test="smallLoanCount !=null ">
+			#{smallLoanCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			</if>
+			<if test="smallLoanCount ==null ">
+			0 ,
+			</if>
+			<if test="testNetCount !=null ">
+			#{testNetCount, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="testNetCount ==null ">
+			0, 
+			</if>
+			<if test="insuranceCount !=null ">
+			#{insuranceCount, jdbcType=BIGINT,typeHandler=NumberHandler}
+			</if>
+			<if test="insuranceCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_allot_count 
+		<where> 
+			coutId = #{coutId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_allot_count  
+		<set>
+			<if test="netSalesCount != null">
+				netSalesCount = netSalesCount +1, 
+			</if>
+			<if test="testNetCount != null">
+				testNetCount = testNetCount +1, 
+			</if>
+			<if test="electSalesCount != null">
+				electSalesCount = (SELECT count(*) FROM t_borrow_apply t
+						WHERE allotFlag=3 AND applyTime>=#{recordDate} AND cityName=#{cityName}), 
+			</if>
+			<if test="loanShopCount != null">
+				loanShopCount = (SELECT count(*) FROM t_borrow_apply t
+						WHERE allotFlag=2 AND applyTime>=#{recordDate} AND cityName=#{cityName}),   
+			</if>
+			<if test="custServiceCount != null">
+				custServiceCount = (SELECT count(*) FROM t_borrow_apply t
+						WHERE allotFlag=4 AND applyTime>=#{recordDate} AND cityName=#{cityName}),   
+			</if>
+			<if test="smallLoanCount != null">
+				smallLoanCount = (SELECT count(*) FROM t_borrow_apply t
+						WHERE allotFlag IN(5,7) AND applyTime>=#{recordDate} AND cityName=#{cityName}),   
+			</if>
+			<if test="insuranceCount != null">
+				insuranceCount = (SELECT count(*) FROM t_borrow_apply t
+						WHERE allotFlag IN(6,7) AND applyTime>=#{recordDate} AND cityName=#{cityName})
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND cityName = #{cityName}
+		</where>
+	</update>
+</mapper>

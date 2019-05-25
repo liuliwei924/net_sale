@@ -1,0 +1,27 @@
+package org.xxjr.busi.util.wd;
+
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+
+public class WdProductConst {
+
+	// 产品列表
+	public static final List<String> proNameList = ImmutableList.of("车贷", "房贷",
+			"信用贷", "公积金贷", "企业贷", "社保贷", "薪易贷", "消费贷", "极速贷");
+	// 产品特点
+	public static final List<String> proFeatureList = ImmutableList.of("到账快",
+			"门槛低", "额度高", "灵活还款", "无抵押", "最快2小时放款", "全程网络操作", "月入2k就可放款");
+
+	// 个人申请所需材料
+	public static final List<String> personApplyMaterial = ImmutableList.of(
+			"身份证", "户口本", "房产证", "居住证", "收入证明", "社保证明", "公积金证明", "车辆登记证", "股票");
+
+	// 企业申请所需材料
+	public static final List<String> compApplyMaterial = ImmutableList.of(
+			"身份证", "户口本", "房产证", "居住证", "收入证明", "社保证明", "公积金证明", "车辆登记证", "股票",
+			"营业执照", "营业财务", "验资报告");
+	//申请所需材料
+	public static final List<String> applyMaterial = ImmutableList.of(
+			"身份证", "户口本", "房产证", "居住证", "收入证明", "社保证明", "公积金证明", "车辆登记证", "股票");
+}

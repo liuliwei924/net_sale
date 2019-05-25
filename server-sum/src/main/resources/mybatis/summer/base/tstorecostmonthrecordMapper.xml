@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STORECOSTMONTHRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			costCount, 
+			backCostCount
+		FROM t_store_cost_month_record
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="costCount != null and costCount != ''">
+				and costCount = #{costCount}
+			</if>
+			<if test="backCostCount != null and backCostCount != ''">
+				and backCostCount = #{backCostCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_cost_month_record 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="costCount != null and costCount != ''">
+			and costCount = #{costCount}
+		</if>
+		<if test="backCostCount != null and backCostCount != ''">
+			and backCostCount = #{backCostCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_store_cost_month_record (
+			recordDate,
+			customerId,
+			costCount,
+			backCostCount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=VARCHAR}, 
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="costCount !=null ">
+			#{costCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="costCount ==null ">
+			0 ,
+			</if>
+			<if test="backCostCount !=null ">
+			#{backCostCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="backCostCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_cost_month_record 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_cost_month_record  
+		<set>
+			<if test="costCount != null">
+				costCount = #{costCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="backCostCount != null">
+				backCostCount = #{backCostCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,117 @@
+package org.xxjr.job.listener.mq;
+
+import java.util.Map;
+import javax.annotation.PreDestroy;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.llw.ddq.job.core.BaseJob;
+import org.llw.ddq.job.core.ScheduleManager;
+import org.llw.ddq.job.util.JobUtil;
+import org.llw.ddq.mq.rabbitmq.RabbitMqConfig;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class JobMqReceiver extends JobMqConsumer{
+	@Autowired
+	private RabbitMqConfig rabbitMqConfig;
+	
+	@Value("${rabbit.queue.resetJob}")
+	private String queueName;
+	
+	@Override
+	public void onMessage(Map<String, Object> messageInfo) {
+		LogerUtil.log("JobMqReceiver params:" + messageInfo.toString());
+		try {
+			String messageType = StringUtil.getString(messageInfo.get("messageType"));
+			LogerUtil.log("messageType:" + messageType);
+			if("jobMqType".equals(messageType)){ //job重置
+				dealJobMessage(messageInfo);
+			}else if("executeQuick".equals(messageType)){
+				executeQuickJob(messageInfo);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(JobMqReceiver.class, e,"SeverCallReceiver mq execute error");
+		}
+	}
+	
+	/***
+	 * 处理MQ操作
+	 * @param messageInfo
+	 */
+	private static void dealJobMessage(Map<String, Object> messageInfo) {
+		AppParam param = new AppParam();
+		param.setService("jobService");
+		param.setMethod("query");
+		param.addAttr("enable", 1);
+		param.addAttr("jobId", messageInfo.get("jobId"));
+		AppResult resultJob = RemoteInvoke.getInstance().call(param);
+		if(resultJob.getRows().size() > 0){
+			Map<String,Object> jobInfo = resultJob.getRow(0);
+			BaseJob baseJob = JobUtil.getBaseJob(jobInfo);
+			try {
+				//bean找不到，不做处理
+				Object bean = SpringAppContext.getBean(baseJob.getJobInfo().getDealBean());
+				if (bean == null) {
+					LogerUtil.error(ScheduleManager.class,"Schedule job:" + jobInfo.get("jobName") 
+							+ " not found bean:" + baseJob.getJobInfo().getDealBean());
+				}
+				ScheduleManager.getInstance().addAndScheduleJob(baseJob);
+			} catch (Exception e) {
+				LogerUtil.error(ScheduleManager.class,e, "Schedule job:" + 
+			baseJob.getJobInfo().toString() + " is error!");
+			}
+		}
+		
+	}
+	
+	/***
+	 * 立即执行任务
+	 * @param messageInfo
+	 */
+	private static void executeQuickJob(Map<String, Object> messageInfo) {
+		AppParam param = new AppParam();
+		param.setService("jobService");
+		param.setMethod("query");
+		param.addAttr("enable", 1);
+		param.addAttr("jobId", messageInfo.get("jobId"));
+		AppResult resultJob = RemoteInvoke.getInstance().call(param);
+		if(resultJob.getRows().size() > 0){
+			Map<String,Object> jobInfo = resultJob.getRow(0);
+			BaseJob baseJob = JobUtil.getBaseJob(jobInfo);
+			try {
+				//bean找不到，不做处理
+				Object bean = SpringAppContext.getBean(baseJob.getJobInfo().getDealBean());
+				if (bean == null) {
+					LogerUtil.error(ScheduleManager.class,"Schedule job:" + jobInfo.get("jobName") 
+							+ " not found bean:" + baseJob.getJobInfo().getDealBean());
+				}
+				ScheduleManager.getInstance().executeQuick(baseJob);
+			} catch (Exception e) {
+				LogerUtil.error(ScheduleManager.class,e, "Schedule job:" + baseJob.toString() + " is error!");
+			}
+		}
+		
+	}
+	
+	@Override
+	public void init(String queueName ,RabbitMqConfig rabbitMqConfig) {
+		super.init(queueName,rabbitMqConfig);
+	}
+	
+    public void init() {
+		init(queueName,rabbitMqConfig);
+	}
+	
+	
+	@PreDestroy
+	public void destroy(){
+		reaseResource();
+	}
+}
+

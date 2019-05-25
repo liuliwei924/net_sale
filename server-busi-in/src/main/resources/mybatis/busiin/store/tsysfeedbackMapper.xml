@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SYSFEEDBACK">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			feedId,
+			customerId, 
+			feedText, 
+			DATE_FORMAT(feedDate,'%Y-%m-%d %H:%i:%s') as feedDate  ,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			status,
+			(CASE status
+			 WHEN 1 THEN '未处理'
+			 WHEN 2 THEN '已处理'
+			END) as 'statusText'
+		FROM t_sys_feedback 
+		<where>
+			<if test="feedId != null and feedId != ''">
+			  and feedId = #{feedId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="feedText != null and feedText != ''">
+				and feedText = #{feedText}
+			</if>
+			<if test="feedDate != null and feedDate != ''">
+				and feedDate = #{feedDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_feedback 
+		<where>
+		<if test="feedId != null and feedId != ''">
+		    and feedId = #{feedId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="feedText != null and feedText != ''">
+			and feedText = #{feedText}
+		</if>
+		<if test="feedDate != null and feedDate != ''">
+			and feedDate = #{feedDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.feedId,
+			t.customerId, 
+			t.feedText, 
+			DATE_FORMAT(t.feedDate,'%Y-%m-%d %H:%i:%s') as feedDate  ,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t1.realName,
+			t2.orgName,
+			t.status,
+			(CASE t.status
+			 WHEN 1 THEN '未处理'
+			 WHEN 2 THEN '已处理'
+			END) as 'statusText'
+		FROM t_sys_feedback t
+		JOIN t_busi_cust t1 ON t1.customerId = t.customerId
+		LEFT JOIN T_ORG t2 ON t2.orgId = t1.orgId
+		<include refid="queryWhere" />
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<sql id="queryWhere">
+		<where>
+			<if test="feedId != null and feedId != ''">
+			  and t.feedId = #{feedId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="feedText != null and feedText != ''">
+				and t.feedText = #{feedText}
+			</if>
+			<if test="feedDate != null and feedDate != ''">
+				and t.feedDate = #{feedDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t2.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t2.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t1.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t1.teamName = #{teamName}
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+		</where>
+	</sql>
+
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_feedback  t
+		JOIN t_busi_cust t1 ON t1.customerId = t.customerId
+		LEFT JOIN T_ORG t2 ON t2.orgId = t1.orgId
+		<include refid="queryWhere" />
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="feedId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sys_feedback (
+			customerId,
+			feedText,
+			feedDate,
+			createTime,
+			status
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{feedText, jdbcType=VARCHAR}, 
+			#{feedDate, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="status ==null ">
+			1
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sys_feedback 
+		<where> 
+			feedId = #{feedId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sys_feedback  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="feedText != null">
+				feedText = #{feedText, jdbcType=VARCHAR},  
+			</if>
+			<if test="feedDate != null">
+				feedDate = #{feedDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="status != null and status != ''">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  feedId = #{feedId}
+		</where>
+	</update>
+</mapper>

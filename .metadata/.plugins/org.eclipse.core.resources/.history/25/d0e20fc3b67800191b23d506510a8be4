@@ -1,0 +1,196 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Base64;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.jsoup.Connection.Method;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.CountGradeUtil;
+import org.xxjr.busi.util.push.Base64Utils;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+@PushCode(11)
+public class PushHouBenUtil implements PushUtil{
+//	private static final String test_url = "http://116.236.184.237:8851/front/HttpForwardProcessor";
+	
+//	private static final String url = "http://221.133.244.6:38080/front/HttpForwardProcessor";
+	
+//	private static final String test_forward_url = "http://192.168.13.62/hb_telesale/flex/msg/ImportList0utService.action";
+	
+//	private static final String forward_url = "http://10.100.82.100/hb_telesale/flex/msg/ImportList0utService.action";
+	
+	
+	//private static final String salt = "yhdjZGfcsd56fdtsbW5vcHFyc3R1ldx4";
+	
+	@Override
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		int status = 2;
+		try {
+			Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+			
+			if ((!PushPlatformUtils.checkChannelOpen(config))) {
+				LogerUtil.log(PushHouBenUtil.class, config.get("pushName") + "推送未打开");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+				LogerUtil.log(PushHouBenUtil.class, config.get("pushName") + "推送已达上限");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelLimit(row, config))) {
+				LogerUtil.log(PushHouBenUtil.class, config.get("pushName") + "筛选条件无法通过");
+				return 4;
+			}
+			if ((!PushPlatformUtils.checkStopDate(config))) {
+				LogerUtil.log(PushHouBenUtil.class, config.get("pushName") + "推送数据推送已暂停");
+				return 5;
+			}
+			String url = SysParamsUtil.getStringParamByKey("push_houBen_cfg_url", "http://221.133.244.6:38080/front/HttpForwardProcessor");
+			String forward_url = SysParamsUtil.getStringParamByKey("push_houBen_cfg_forward_url", "http://telesale.houbank.net/hb_telesale/flex/msg/ImportList0utService.action");
+			
+			Map<String, String> param = new HashMap<String, String>();
+			param.put("params", sendData(row));
+			param.put("url", Base64Utils.encodeBuffer(forward_url, "utf-8"));
+			param.put("method", "post");
+			param.put("posttype", "HTTPCLIENT");//在前置添加HTTPCLIENT转发方式
+			param.put("charcode", "utf-8");
+			String res = PushPlatformUtils.origHttp(url, param, false, Method.POST);
+			Map<String, Object> resMap = decrypt(res);
+			
+			if ("0000".equals(StringUtil.getString(resMap.get("returnCode")))) {
+				status = 1;
+			}
+			AppParam updateParam = new AppParam("thirdPushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			updateParam.addAttr("message", "code:" + resMap.get("returnCode") + "," + resMap.get("returnMsg"));
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("厚本金融推送数据任务 PushHouBenUtil end");
+		} catch (Exception e) {
+			LogerUtil.error(PushXqbUtil.class, e, "PushHouBenUtil >>>>>>>>>>>>>>>>>>error");
+		}
+		
+		return status;
+	}
+	
+	private String sendData (Map<String, Object> row) throws Exception {
+		JSONObject context = new JSONObject();
+		context.put("supplierCode", "43");
+		JSONArray infos = new JSONArray();
+		JSONObject info = new JSONObject();
+		info.put("name", row.get("applyName"));
+		info.put("phone", row.get("telephone"));
+
+		int age = NumberUtil.getInt(row.get("age"), -1);
+		if (age == -1 || age <= 22 || age >= 60) {
+			age = 28;
+		}
+		Random random = new Random();
+		Calendar ca = Calendar.getInstance();
+		int year = ca.get(Calendar.YEAR)-age;
+		int month = random.nextInt(12)%(12) + 1;
+		int day = random.nextInt(30)%(30) + 1;
+		String birthday = year +"-" +(month<10? "0" +month : month+"") +"-" + (day<10 ? "0" +day : day+"");
+		info.put("birthday", birthday);
+		
+		Integer income = 5000;
+		if ((!StringUtils.isEmpty(row.get("income"))) && (NumberUtil.getInt(row.get("income"), 0) > 0)) {
+			income = NumberUtil.getInt(row.get("income"));
+		}else if ((!StringUtils.isEmpty(row.get("pubManageLine"))) && (NumberUtil.getInt(row.get("pubManageLine"), 0) > 0)) {
+			int pubManageLine = NumberUtil.getInt(row.get("pubManageLine"), 0);
+			income = (pubManageLine * 10000);
+		}else if ((!StringUtils.isEmpty(row.get("cashMonth"))) && (NumberUtil.getInt(row.get("cashMonth"), 0) > 0)) {
+			income = NumberUtil.getInt(row.get("cashMonth"));
+		}
+		info.put("incoming", income);
+		info.put("cardType", "01");
+		//info.put("cardNo", row.get("identifyNo"));
+		info.put("cityCode", PushPlatformUtils.getHouBenCityCode(StringUtil.getString(row.get("cityName"))));
+		Integer workType = NumberUtil.getInt(row.get("workType"), 5);
+		if (workType == 1 || workType == 5) {
+			info.put("professionType", 5);
+		}else if (workType == 2) {
+			info.put("professionType", 2);
+		}else if (workType == 3) {
+			info.put("professionType", 4);
+		}else if (workType == 4) {
+			info.put("professionType", 1);
+		}
+		if (income < 2000) {
+			info.put("incomeRange", 4);
+		}else if (income >= 2000 && income < 5000) {
+			info.put("incomeRange", 3);
+		}else if (income >= 5000 && income < 10000) {
+			info.put("incomeRange", 2);
+		}else if (income >= 10000) {
+			info.put("incomeRange", 1);
+		}
+		Integer wagesType = NumberUtil.getInt(row.get("wagesType"), 2);
+		info.put("incomeType", wagesType);
+		info.put("isCreditRecord", "2".equals(StringUtil.getString(row.get("creditType"))) ? "2" : "1");
+		
+		int socialType = NumberUtil.getInt(row.get("socialType"), 2);
+		info.put("isWelfare", CountGradeUtil.judgeSocialType(socialType) ? "1" : "2");
+		
+		int fundType = NumberUtil.getInt(row.get("fundType"), 2);
+		info.put("isHousingFund", CountGradeUtil.judgeFundType(fundType) ? "1" : "2");
+		
+		int houseType = NumberUtil.getInt(row.get("houseType"), 2);
+		info.put("isHasHouse", CountGradeUtil.judgeHouse(houseType) ? "1" : "2");
+
+		int carType = NumberUtil.getInt(row.get("carType"), 2);
+		info.put("isHasCar", CountGradeUtil.judgeCar(carType) ? "1" : "2");
+		
+		info.put("isCarLoan", carType == 3 ? "1" : "2");
+		
+		int insurType = NumberUtil.getInt(row.get("insurType"), 0);
+		info.put("isHasCar", CountGradeUtil.judgeInsurType(insurType) ? "1" : "2");
+		
+		//info.put("flowNo", "PA0100");
+		String sex = StringUtil.getString(row.get("sex"));
+		info.put("custSex", sex.equals("0") ? "02" : "01");
+		info.put("applyTerm", row.get("loanDeadline"));
+		info.put("applySum", row.get("loanAmount"));
+		infos.add(info);
+		context.put("importList", infos);
+		String salt = SysParamsUtil.getStringParamByKey("push_houben_cfg_salt", "yhdjZGfcsd56fdtsbW5vcHFyc3R1ldx4");
+		byte[] bytes = PushPlatformUtils.des3EncodeECB(Base64Utils.base64ToByteArray(salt.trim()), context.toJSONString().getBytes("utf-8"));
+		JSONObject sendData = new JSONObject();
+		sendData.put("sendData", Base64.getEncoder().encodeToString(bytes));
+		return Base64Utils.encodeBuffer(sendData.toJSONString(), "utf-8");
+	}
+	
+	
+	@SuppressWarnings("unchecked")
+	public Map<String, Object> decrypt (String data) throws Exception {
+		Map<String, Object> res = null;
+		String callRst = Base64Utils.decodeBuffer(data, "utf-8");
+		Map<String, Object> returnObject = JsonUtil.getInstance().json2Object(callRst, Map.class);
+		String payload = StringUtil.getString(returnObject.get("returnData"));
+		byte[] returnByte = Base64.getDecoder().decode(payload);
+		String salt = SysParamsUtil.getStringParamByKey("push_houben_cfg_salt", "yhdjZGfcsd56fdtsbW5vcHFyc3R1ldx4");
+		byte[] decryptByte = PushPlatformUtils.ees3DecodeECB(Base64Utils.base64ToByteArray(salt.trim()),returnByte);
+		String decryptStr = new String(decryptByte,"UTF-8");
+		res = JsonUtil.getInstance().json2Object(decryptStr, Map.class);
+		return res;
+	}
+}

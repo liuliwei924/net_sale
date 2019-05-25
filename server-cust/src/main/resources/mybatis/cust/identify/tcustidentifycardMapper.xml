@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTIDENTIFYCARD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t.customerId,
+			t.lenderType, 
+			t.company, 
+			t.companyDesc,
+			t.workName,
+			t.compId,
+			t.cardImage, 
+			t.status, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			t.auditBy, 
+			t.auditDesc, 
+			t.auditLabel,
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') as auditTime,
+			t1.realName,
+			t1.status as identifyStatus,
+			t.compType
+		FROM t_cust_identify_card t
+		left JOIN t_cust_identify t1 on t.customerId = t1.customerId
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_identify_card 
+		<include refid="queryWhereSql"></include>
+	</select>
+	
+	<sql id="queryWhereSql">
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and t.customerId = #{customerId}
+			 </if>
+			<if test="lenderType != null and lenderType != ''">
+				and t.lenderType = #{lenderType}
+			</if>
+			<if test="company != null and company != ''">
+				and t.company = #{company}
+			</if>
+			<if test="cardImage != null and cardImage != ''">
+				and t.cardImage = #{cardImage}
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="auditBy != null and auditBy != ''">
+				and t.auditBy = #{auditBy}
+			</if>
+			<if test="auditDesc != null and auditDesc != ''">
+				and t.auditDesc = #{auditDesc}
+			</if>
+			<if test="auditTime != null and auditTime != ''">
+				and t.auditTime = #{auditTime}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="querySendList" resultType="map" parameterType="map">
+	   SELECT
+		t4.openid,
+		t2.cityName,
+  		t4.telephone,
+  		t3.realName
+	FROM
+		t_cust_identify_card t1
+	 LEFT JOIN t_cust_info t2 ON t1.customerId = t2.customerId
+	 LEFT JOIN t_cust_identify t3 ON t1.customerId = t3.customerId
+	 LEFT JOIN t_customer t4 ON t1.customerId = t4.customerId
+	 <include refid="querySendListWhere"></include>
+	</select>
+	
+	<select id="querySendListCount" resultType="int" parameterType="map">
+	 SELECT
+		COUNT(t1.customerId)
+	FROM
+		t_cust_identify_card t1
+	 LEFT JOIN t_cust_info t2 ON t1.customerId = t2.customerId
+	 LEFT JOIN t_cust_identify t3 ON t1.customerId = t3.customerId
+	 LEFT JOIN t_customer t4 ON t1.customerId = t4.customerId
+	 <include refid="querySendListWhere"></include>
+	</select>
+	
+	<sql id="querySendListWhere">
+	  <where>
+		<if test="cityName != null and cityName != ''">
+			and t2.cityName = #{cityName}
+		</if>
+		<if test="registerDateStart != null and registerDateStart != ''">
+			and t4.registerTime <![CDATA[>=]]> #{registerDateStart}
+		</if>
+		<if test="registerDateEnd != null and registerDateEnd != ''">
+			and t4.registerTime <![CDATA[<=]]> #{registerDateEnd}
+		</if>
+		<if test="workStatus != null and workStatus != ''">
+			and t1.status = #{workStatus}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and t4.telephone = #{telephone}
+		</if>
+	  </where>
+	</sql>
+	
+	<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t1.telephone,
+			t.customerId, 
+			t3.realName,
+			t3.status as identifyStatus,
+			t2.headImgUrl headImg,
+      		t2.cityName,
+			t2.cityArea,
+			t.lenderType,
+	      	t.company,
+	      	t.compId,
+	      	t.workName,
+	      	t.companyDesc,
+	      	t.cardImage,
+			t.status, 
+			t.auditBy, 
+			DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') as auditTime,
+			t.auditDesc, 
+			t.auditLabel,
+			t.compType,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime
+			from T_CUST_IDENTIFY_card t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			left JOIN t_cust_info t2 on t.customerId = t2.customerId
+     	 	left JOIN t_cust_identify t3 on t.customerId = t3.customerId
+		<include refid="sqlWhereQueryView"></include>
+		order by t.createTime desc
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+			from T_CUST_IDENTIFY_card t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			left JOIN t_cust_info t2 on t.customerId = t2.customerId
+     	 	left JOIN t_cust_identify t3 on t.customerId = t3.customerId
+		<include refid="sqlWhereQueryView"></include>
+	</select>
+	<sql id="sqlWhereQueryView">
+		<where>
+			<if test="userName != null and userName != ''">
+			    and (t.company like  '%${userName}%'  or t3.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			  <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			
+			<if test="auditLabel != null and auditLabel != ''">
+				<![CDATA[ and (t.auditLabel like '${auditLabel}%' ) ]]>
+			</if>
+			<if test="cityName != null and cityName != ''">
+				<![CDATA[ and t2.cityName = #{cityName} ]]>
+			</if>
+			<if test="haveImage == '1'.toString() ">
+				<![CDATA[ and (t.cardImage is not null and t.cardImage !='') ]]>
+			</if>
+			<if test="haveImage == '0'.toString() ">
+				<![CDATA[ and (t.cardImage is null or t.cardImage = '')]]>
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="identifyStatus != null and identifyStatus != ''">
+				and t3.status = #{identifyStatus}
+			</if>
+			<if test="compType != null and compType != ''">
+				and t.compType = #{compType}
+			</if>
+			
+		</where>
+	</sql>
+	<insert id="insert" parameterType="map">
+		
+		INSERT INTO t_cust_identify_card (
+			customerId,
+			lenderType,
+			company,
+			compId,
+			workName,
+			companyDesc,
+			cardImage,
+			status,
+			createTime,
+			auditBy,
+			auditDesc,
+			auditTime,
+			compType
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="lenderType !=null ">
+			#{lenderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="lenderType ==null ">
+			1 ,
+			</if>
+			#{company, jdbcType=VARCHAR}, 
+			#{compId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{workName, jdbcType=VARCHAR}, 
+			#{companyDesc, jdbcType=VARCHAR}, 
+			#{cardImage, jdbcType=VARCHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{auditBy, jdbcType=VARCHAR}, 
+			#{auditDesc, jdbcType=VARCHAR}, 
+			#{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{compType, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_identify_card 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_identify_card  
+		<set>
+			<if test="lenderType != null">
+				lenderType = #{lenderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="company != null">
+				company = #{company, jdbcType=VARCHAR},  
+			</if>
+			<if test="compId != null">
+				compId = #{compId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="workName != null">
+				workName = #{workName, jdbcType=VARCHAR},  
+			</if>
+			<if test="companyDesc != null">
+				companyDesc = #{companyDesc, jdbcType=VARCHAR},  
+			</if>
+			
+			<if test="cardImage != null">
+				cardImage = #{cardImage, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditLabel != null">
+				auditLabel = #{auditLabel, jdbcType=VARCHAR},  
+			</if>
+			
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditDesc != null">
+				auditDesc = #{auditDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="compType != null">
+				compType = #{compType, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+			  <if test="fromStatus != null">
+				and status = #{fromStatus, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</where>
+	</update>
+	
+	<!-- 按日统计审核数据 -->
+	<select id="queryAuditByDay" resultType="map" parameterType="map">
+		SELECT 
+			DATE_FORMAT(t.auditTime, '%Y-%m-%d') recordDate,
+		  	SUM(CASE t.`status` WHEN 1 THEN 1 ELSE 0 END) passNum,
+		  	SUM(CASE t.`status` WHEN 2 THEN 1 ELSE 0 END) notpassNum
+		FROM t_cust_identify_card t
+		<include refid="summarySql"></include>
+		GROUP BY recordDate 
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryAuditByDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM 
+		(
+		SELECT 
+			DATE_FORMAT(t.auditTime, '%Y-%m-%d') recordDate
+		FROM t_cust_identify_card t
+		<include refid="summarySql"></include>
+		GROUP BY recordDate 
+		) A
+	</select>
+	<sql id="summarySql">
+		<where>
+			<if test="startDate != null and startDate != ''">
+				and t.auditTime > #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and t.auditTime < DATE_ADD(#{endDate},INTERVAL 1 DAY) ]]>
+			</if>
+		</where>
+	</sql>
+	
+</mapper>

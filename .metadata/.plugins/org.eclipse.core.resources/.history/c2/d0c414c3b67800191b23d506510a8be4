@@ -1,0 +1,140 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+import com.alibaba.fastjson.JSONObject;
+
+/***
+ * 青蜂数据推送
+ *
+ */
+@PushCode(5)
+public class PushQingBeeUtil implements PushUtil{
+	
+//	private static final String test_url = "http://test.api.qingbee.xin/v1/insurance/free/get-rand-insurance";
+
+	private static final String url = "https://api.qingbee.xin/v1/insurance/free/get-rand-insurance";
+
+//	private static final String[] test_params = new String[2];
+
+	private static final String[] params = new String[2];
+
+	static {
+		params[0] = "a5d5ecf709d44b5fb13901b18e65c56f";//appid
+		params[1] = "624107ff777f4318bf0cecdb8374793e";//appkey
+
+//		test_params[0] = "a789dba3fcde41ada651beb800f37ba0";//appid
+//		test_params[1] = "3152786980fd4592bdd3084edcef7d27";//appkey
+	}
+
+	@SuppressWarnings("unchecked")
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		int status = 2;
+		try {
+			Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+			
+			if ((!PushPlatformUtils.checkChannelOpen(config))) {
+				LogerUtil.log(PushQingBeeUtil.class, config.get("pushName") + "推送未打开");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+				LogerUtil.log(PushQingBeeUtil.class, config.get("pushName") + "推送已达上限");
+				return 3;
+			}
+			if ((!PushPlatformUtils.getInsureCondition(row, config))) {
+				LogerUtil.log(PushNaJiaUtil.class, config.get("pushName") + "筛选条件无法通过");
+				return 4;
+			}
+			JSONObject obj = new JSONObject();
+			String id = getId();
+			String timestamp = DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERNYYYYMMDDHHMMSSSSS);
+			obj.put("id", id);
+			obj.put("appId", params[0]);
+			obj.put("timestamp", timestamp);
+			String encrypt = Md5.getInstance().encrypt(id + ":" + params[0] + ":" + params[1] + ":" + timestamp);
+			obj.put("encrypt", "md5");
+			obj.put("sign", encrypt);
+			JSONObject data = new JSONObject();
+			JSONObject applicant = new JSONObject();
+			applicant.put("name", row.get("applyName"));
+			
+			String identifyNo = StringUtil.getString(row.get("identifyNo"));//出生日期处理
+			String birthday = IdCardResolveUtil.getBirthday(identifyNo);
+			int age = NumberUtil.getInt(row.get("age"), -1);
+			applicant.put("birthday", PushPlatformUtils.getBirthDay(birthday, age));
+			
+			applicant.put("mobile", row.get("telephone"));
+			applicant.put("src", "xiaoxiaojinrong");
+			
+			String sex = StringUtil.getString(row.get("sex"));//性别处理
+			if (StringUtils.isEmpty(sex)) {
+				sex = IdCardResolveUtil.getSex(StringUtil.getString("identifyNo")).toString();
+			}
+			if ("1".equals(sex)) {
+				applicant.put("gender", "MALE");
+			} else {
+				applicant.put("gender", "FEMALE");
+			}
+			applicant.put("userIp", row.get("applyIp"));
+			applicant.put("agreed", "YES");
+			applicant.put("credit", StringUtil.getString(NumberUtil.getDouble(row.get("loanAmount"), 0) * 10000));
+			Integer income = 1000;
+			if ((!StringUtils.isEmpty(row.get("income"))) && (NumberUtil.getDouble(row.get("income"), 0) > 0)) {
+				income = NumberUtil.getInt(row.get("income"), 0);
+			}else if ((!StringUtils.isEmpty(row.get("pubManageLine"))) && (NumberUtil.getDouble(row.get("pubManageLine"), 0) > 0)) {
+				int pubManageLine = NumberUtil.getInt(row.get("pubManageLine"), 0);
+				income = pubManageLine * 10000;
+			}else if ((!StringUtils.isEmpty(row.get("cashMonth"))) && (NumberUtil.getDouble(row.get("cashMonth"), 0) > 0)) {
+				income = NumberUtil.getInt(row.get("cashMonth"), 0);
+			}
+			applicant.put("income", StringUtil.getString(income));
+			data.put("applicant", applicant);
+			obj.put("data", data);
+			Map<String, Object> resMap = PushPlatformUtils.httpPost(url, null, obj.toJSONString(), true, null);
+			AppParam updateParam = new AppParam("insurancePushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			Map<String, Object> state = (Map<String, Object>) resMap.get("state");
+			if (state != null && !state.isEmpty()) {
+				if ("0".equals(StringUtil.getString(state.get("code")))) {//推送失败转平安推送
+					status = 1;
+				}
+				updateParam.addAttr("message","code:" + state.get("code") + ",msg:" + state.get("msg"));
+			}
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("青蜂数据推送任务AutoPushQingBeeJob end");
+		} catch (Exception e) {
+			LogerUtil.error(PushQingBeeUtil.class, e,
+					"AutoPushQingBeeJob >>>>>>>>>>>>>>>>>>error");
+		}
+		return status;
+	}
+
+	public static String getId() {
+		long now = System.currentTimeMillis();
+		String time = DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERNYYYYMMDDHHMMSSSSS);
+		String info = now + "";
+		int ran=(int) ((Math.random()*9+1)*100);
+		return time + info.substring(2, info.length()) + ran + "" + new Random().nextInt(9);
+	}
+}

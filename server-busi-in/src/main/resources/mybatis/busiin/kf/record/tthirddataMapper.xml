@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="THIRDDATA">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			sourceChannel, 
+			mediaSource, 
+			telephone, 
+			applyName, 
+			sex, 
+			birthday, 
+			age, 
+			loanAmount, 
+			cityName, 
+			workType, 
+			socialType, 
+			fundType, 
+			creditType, 
+			houseType, 
+			carType, 
+			wagesType, 
+			income, 
+			insurType, 
+			applyIp,
+			params,
+			isRepeat, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			education, 
+			zimaScore, 
+			haveWeiLi, 
+			pubAmount,
+			channelDetail,
+			grade
+		FROM t_third_data
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM t_third_data 
+		<include refid="queryWhereSql"></include>
+	</select>
+	<sql id="queryWhereSql">
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		 <if test="sourceChannel != null and sourceChannel != ''">
+			and sourceChannel = #{sourceChannel}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="sex != null and sex != ''">
+			and sex = #{sex}
+		</if>
+		<if test="birthday != null and birthday != ''">
+			and birthday = #{birthday}
+		</if>
+		<if test="loanAmount != null and loanAmount != ''">
+			and loanAmount = #{loanAmount}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="workType != null and workType != ''">
+			and workType = #{workType}
+		</if>
+		<if test="socialType != null and socialType != ''">
+			and socialType = #{socialType}
+		</if>
+		<if test="fundType != null and fundType != ''">
+			and fundType = #{fundType}
+		</if>
+		<if test="creditType != null and creditType != ''">
+			and creditType = #{creditType}
+		</if>
+		<if test="houseType != null and houseType != ''">
+			and houseType = #{houseType}
+		</if>
+		<if test="carType != null and carType != ''">
+			and carType = #{carType}
+		</if>
+		<if test="isRepeat != null and isRepeat != ''">
+			and isRepeat = #{isRepeat}
+		</if>
+		<if test="wagesType != null and wagesType != ''">
+			and wagesType = #{wagesType}
+		</if>
+		<if test="income != null and income != ''">
+			and income = #{income}
+		</if>
+		<if test="insurType != null and insurType != ''">
+			and insurType = #{insurType}
+		</if>
+		<if test="applyIp != null and applyIp != ''">
+			and applyIp = #{applyIp}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="recordDate != null and recordDate != ''">
+			and DATE_FORMAT(createTime,'%Y-%m-%d')=#{recordDate}
+		</if>
+		<if	test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if	test="grade != null and grade != ''">
+			and grade = #{grade}
+		</if>
+		<if test="nowDate != null and nowDate != null">
+			and DATE_FORMAT(createTime,'%Y-%m-%d')=CURDATE()
+		</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_third_data (
+			sourceChannel,
+			mediaSource,
+			telephone,
+			applyName,
+			sex,
+			birthday,
+			age,
+			loanAmount,
+			cityName,
+			workType,
+			socialType,
+			fundType,
+			creditType,
+			houseType,
+			carType,
+			wagesType,
+			income,
+			insurType,
+			applyType,
+			isRepeat,
+			params,
+			applyIp,
+			createTime,
+			education,
+			zimaScore,
+			haveWeiLi,
+			pubAmount,
+			channelDetail,
+			grade
+		)
+		VALUES ( 
+			#{sourceChannel, jdbcType=VARCHAR}, 
+			#{mediaSource, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			<if test="sex !=null ">
+			#{sex, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sex ==null ">
+			2 ,
+			</if>
+			#{birthday, jdbcType=VARCHAR}, 
+			<if test="age !=null ">
+			#{age, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="age ==null ">
+			0 ,
+			</if>
+			<if test="loanAmount !=null ">
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanAmount ==null ">
+			0.00 ,
+			</if>
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="workType !=null ">
+			#{workType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="workType ==null ">
+			4 ,
+			</if>
+			<if test="socialType !=null ">
+			#{socialType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="socialType ==null ">
+			2 ,
+			</if>
+			<if test="fundType !=null ">
+			#{fundType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="fundType ==null ">
+			2 ,
+			</if>
+			<if test="creditType !=null ">
+			#{creditType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="creditType ==null ">
+			1 ,
+			</if>
+			<if test="houseType !=null ">
+			#{houseType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseType ==null ">
+			2 ,
+			</if>
+			<if test="carType !=null ">
+			#{carType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carType ==null ">
+			0 ,
+			</if>
+			<if test="wagesType !=null ">
+			#{wagesType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="wagesType ==null ">
+			0 ,
+			</if>
+			<if test="income !=null ">
+			#{income, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="income ==null ">
+			0.00 ,
+			</if>
+			<if test="insurType !=null ">
+			#{insurType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insurType ==null ">
+			0 ,
+			</if>
+			<if test="applyType !=null ">
+			#{applyType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyType ==null ">
+			2 ,
+			</if>
+			<if test="isRepeat !=null ">
+			#{isRepeat, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isRepeat ==null ">
+			0 ,
+			</if>
+			#{params, jdbcType=VARCHAR}, 
+			#{applyIp, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{education, jdbcType=VARCHAR}, 
+			<if test="zimaScore !=null ">
+			#{zimaScore, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="zimaScore ==null ">
+			0 ,
+			</if>
+			<if test="haveWeiLi !=null ">
+			#{haveWeiLi, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="haveWeiLi ==null ">
+			0.00 ,
+			</if>
+			<if test="pubAmount !=null ">
+			#{pubAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="pubAmount ==null ">
+			0.00 ,
+			</if>
+			#{channelDetail, jdbcType=VARCHAR},
+			#{grade, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_third_data 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_third_data  
+		<set>
+			<if test="sourceChannel != null">
+				sourceChannel = #{sourceChannel, jdbcType=VARCHAR},  
+			</if>
+			<if test="mediaSource != null">
+				mediaSource = #{mediaSource, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="age != null">
+				age = #{age, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sex != null">
+				sex = #{sex, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="birthday != null">
+				birthday = #{birthday, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="workType != null">
+				workType = #{workType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="socialType != null">
+				socialType = #{socialType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundType != null">
+				fundType = #{fundType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="creditType != null">
+				creditType = #{creditType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseType != null">
+				houseType = #{houseType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyType != null">
+				applyType = #{applyType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isRepeat != null">
+				isRepeat = #{isRepeat, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carType != null">
+				carType = #{carType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="wagesType != null">
+				wagesType = #{wagesType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="income != null">
+				income = #{income, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="insurType != null">
+				insurType = #{insurType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="params != null">
+				params = #{params, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyIp != null">
+				applyIp = #{applyIp, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+			<if test="grade != null">
+				grade = #{grade, jdbcType=VARCHAR},  
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	<!-- 查询贷款线索数 -->
+	<select id="queryApplyCount" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(t1.apiApplyCount, 0) AS apiApplyCount,
+			IFNULL(t2.apiTodayApplyCount, 0) AS apiTodayApplyCount,
+			IFNULL(t3.htmlApplyCount, 0) AS htmlApplyCount,
+			IFNULL(t4.htmlTodayApplyCount, 0) AS htmlTodayApplyCount
+		FROM
+			(
+				SELECT
+					count(*) AS apiApplyCount
+				FROM
+					t_third_data
+				WHERE
+				<![CDATA[createTime < DATE_ADD(#{recordDate},INTERVAL 1 DAY)]]>
+			) t1,
+			(
+				SELECT
+					count(*) AS apiTodayApplyCount
+				FROM
+					t_third_data
+				WHERE
+				<![CDATA[createTime > #{recordDate} and createTime < DATE_ADD(#{recordDate},INTERVAL 1 DAY)]]>
+			) t2,
+			(
+				SELECT
+					count(*) AS htmlApplyCount
+				FROM
+					t_apply
+				WHERE
+				<![CDATA[applyTime < DATE_ADD(#{recordDate},INTERVAL 1 DAY)]]>
+			) t3,
+			(
+				SELECT
+					count(*) AS htmlTodayApplyCount
+				FROM
+					t_apply
+				WHERE
+				<![CDATA[applyTime > #{recordDate} and applyTime < DATE_ADD(#{recordDate},INTERVAL 1 DAY)]]>
+			) t4;
+	</select>
+	
+	<select id="queryApplyId" parameterType="map" resultType="map">
+		SELECT applyId FROM t_borrow_apply WHERE telephone like #{telephone} and cityName = #{cityName}
+	</select>
+</mapper>

@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWPUSHCFG">
+    
+    <sql id="qeuryWhereSql">
+	    <if test="pushCode != null and pushCode != ''">
+			and pushCode = #{pushCode}
+		 </if>
+		<if test="type != null and type != ''">
+			and type = #{type}
+		</if>
+		<if test="enable != null and enable != ''">
+			and enable = #{enable}
+		</if>
+		<if test="pushName != null and pushName != ''">
+			and pushName = #{pushName}
+		</if>
+		<if test="maxCount != null and maxCount != ''">
+			and maxCount = #{maxCount}
+		</if>
+		<if test="notChannel != null and notChannel != ''">
+			and notChannel = #{notChannel}
+		</if>
+		<if test="needCitys != null and needCitys != ''">
+			and needCitys = #{needCitys}
+		</if>
+		<if test="notCitys != null and notCitys != ''">
+			and notCitys = #{notCitys}
+		</if>
+		<if test="minApplyAmount != null and minApplyAmount != ''">
+			and minApplyAmount = #{minApplyAmount}
+		</if>
+		<if test="maxApplyAmount != null and maxApplyAmount != ''">
+			and maxApplyAmount = #{maxApplyAmount}
+		</if>
+		<if test="minAge != null and minAge != ''">
+			and minAge = #{minAge}
+		</if>
+		<if test="maxAge != null and maxAge != ''">
+			and maxAge = #{maxAge}
+		</if>
+		<if test="createTime != null">
+			and createTime = #{createTime}
+		</if>
+		<if test="startDay != null and startDay != ''">
+			and startDay = #{startDay}
+		</if>
+		<if test="endDay != null and endDay != ''">
+			and endDay = #{endDay}
+		</if>
+		<if test="grade != null and grade != ''">
+			and grade = #{grade}
+		</if>
+		<if test="updateTime != null">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="index != null and index != ''">
+			and index = #{index}
+		</if>
+		<if test="isAllot != null and isAllot != ''">
+			and isAllot = #{isAllot}
+		</if>
+		<if test="apiScale != null and apiScale != ''">
+			and apiScale = #{apiScale}
+		</if>
+		<if test="totalCount != null and totalCount != ''">
+			and totalCount = #{totalCount}
+		</if>
+		
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			pushCode,
+			type, 
+			enable, 
+			pushName, 
+			maxCount, 
+			notChannel, 
+			needCitys, 
+			notCitys, 
+			minApplyAmount, 
+			maxApplyAmount, 
+			minAge, 
+			maxAge, 
+			startDay,
+			endDay,
+			grade,
+			`index`,
+			isAllot,
+			apiScale,
+			totalCount,
+			isDel,
+			reuse,
+			delayDay,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  ,
+			isStop ,
+			DATE_FORMAT(stopStartDate,'%Y-%m-%d %H:%i:%s') as stopStartDate  ,
+			DATE_FORMAT(stopEndDate,'%Y-%m-%d %H:%i:%s') as stopEndDate,
+			term as 'condition',
+			sourceTypes
+		FROM t_borrow_push_cfg
+		<where>
+			<include refid="qeuryWhereSql"></include>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_push_cfg 
+		<where>
+			<include refid="qeuryWhereSql"></include>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="pushCode">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_push_cfg (
+			pushCode,
+			type,
+			enable,
+			pushName,
+			maxCount,
+			notChannel,
+			needCitys,
+			notCitys,
+			minApplyAmount,
+			maxApplyAmount,
+			minAge,
+			maxAge,
+			createTime,
+			updateTime,
+			startDay,
+			endDay,
+			grade,
+			`index`,
+			isDel,
+			reuse,
+			delayDay,
+			isStop ,
+			stopStartDate,
+			stopEndDate,
+			term,
+			sourceTypes,
+			isAllot,
+			apiScale,
+			totalCount
+		)
+		VALUES ( 
+			#{pushCode, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="type !=null ">
+			#{type, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="type ==null ">
+			0 ,
+			</if>
+			<if test="enable !=null ">
+			#{enable, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="enable ==null ">
+			0 ,
+			</if>
+			#{pushName, jdbcType=VARCHAR}, 
+			<if test="maxCount !=null ">
+			#{maxCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="maxCount ==null ">
+			500 ,
+			</if>
+			#{notChannel, jdbcType=NVARCHAR}, 
+			#{needCitys, jdbcType=NVARCHAR}, 
+			#{notCitys, jdbcType=NVARCHAR}, 
+			<if test="minApplyAmount !=null ">
+			#{minApplyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="minApplyAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="maxApplyAmount !=null ">
+			#{maxApplyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="maxApplyAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="minAge !=null ">
+			#{minAge, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="minAge ==null ">
+			0 ,
+			</if>
+			<if test="maxAge !=null ">
+			#{maxAge, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="maxAge ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{startDay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{endDay, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{grade, jdbcType=VARCHAR},
+			#{index, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="isDel != null">
+			#{isDel, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="isDel == null">
+			0
+			</if>
+			,
+			#{reuse, jdbcType=VARCHAR},
+			#{delayDay, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="isStop != null">
+			#{isStop, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="isStop == null">
+			0
+			</if>
+			,
+			#{stopStartDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{stopEndDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{condition, jdbcType=NVARCHAR},
+			<if test="sourceTypes != null">
+			#{sourceTypes, jdbcType=VARCHAR}
+			</if>
+			<if test="sourceTypes == null">
+			'0'
+			</if>
+			,
+			<if test="isAllot != null">
+			#{isAllot, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="isAllot == null">
+			0
+			</if>
+			,
+			<if test="apiScale != null">
+			#{apiScale, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="apiScale == null">
+			0
+			</if>
+			,
+			<if test="totalCount != null">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="totalCount == null">
+			500
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_push_cfg 
+		<where> 
+			pushCode = #{pushCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_push_cfg  
+		<set>
+			<if test="type != null">
+				type = #{type, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="startDay != null">
+				startDay = #{startDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="endDay != null">
+				endDay = #{endDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="enable != null">
+				enable = #{enable, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="pushName != null">
+				pushName = #{pushName, jdbcType=VARCHAR},  
+			</if>
+			<if test="maxCount != null">
+				maxCount = #{maxCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notChannel != null">
+				notChannel = #{notChannel, jdbcType=VARCHAR},  
+			</if>
+			<if test="needCitys != null">
+				needCitys = #{needCitys, jdbcType=VARCHAR},  
+			</if>
+			<if test="notCitys != null">
+				notCitys = #{notCitys, jdbcType=VARCHAR},  
+			</if>
+			<if test="condition != null">
+				term = #{condition, jdbcType=NVARCHAR},
+			</if>
+			<if test="minApplyAmount != null">
+				minApplyAmount = #{minApplyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="maxApplyAmount != null">
+				maxApplyAmount = #{maxApplyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="minAge != null">
+				minAge = #{minAge, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="maxAge != null">
+				maxAge = #{maxAge, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="grade != null">
+				grade = #{grade, jdbcType=VARCHAR},  
+			</if>
+			<if test="index != null and index != ''">
+				`index` = #{index, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isDel != null">
+				isDel = #{isDel, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="reuse != null">
+				reuse = #{reuse, jdbcType=VARCHAR},
+			</if>
+			<if test="delayDay != null">
+				delayDay = #{delayDay, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="isStop != null">
+				isStop = #{isStop, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="stopStartDate != null">
+				stopStartDate = #{stopStartDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="stopEndDate != null">
+				stopEndDate = #{stopEndDate, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="sourceTypes != null">
+				sourceTypes = #{sourceTypes, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="isAllot != null">
+				isAllot = #{isAllot, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="apiScale != null">
+				apiScale = #{apiScale, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  pushCode = #{pushCode}
+		</where>
+	</update>
+</mapper>

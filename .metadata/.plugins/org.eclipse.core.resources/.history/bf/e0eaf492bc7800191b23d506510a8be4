@@ -1,0 +1,165 @@
+package org.xxjr.summary.kf;
+
+import java.util.Date;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.exception.AppException;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.ddq.common.exception.DuoduoError;
+
+@Lazy
+@Service
+public class PageCountService extends BaseService {
+	private static final String NAMESPACE = "PAGECOUNT";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("countId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("countId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	public AppResult recordCount(AppParam params) {
+		AppResult result = new AppResult();
+		int size = this.getDao().update(NAMESPACE, "updateCount", params.getAttr(), params.getDataBase());
+		if (size <= 0) {
+			size = this.getDao().insert(NAMESPACE, "insertCount", params.getAttr(), params.getDataBase());
+		}
+		result.putAttr("size", size);
+		return result;
+	}
+	/**
+	 * 客服系统页面展示
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryList(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"queryList","queryListCount");
+	}
+	/**
+	 * queryListCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryListCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryListCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryUVCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryUVCount(AppParam params) {
+		return super.query(params, NAMESPACE,"queryUVCount");
+	}
+	/**
+	 * queryRangeUVCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryRangeUVCount(AppParam params) {
+		return super.query(params, NAMESPACE,"queryRangeUVCount");
+	}
+	
+	
+	public AppResult queryChannelDtlMonthUv(AppParam param) {
+		return super.query(param, NAMESPACE, "queryChannelDtlMonthUv");
+	}
+	
+	public AppResult queryChannelDtlDayUv(AppParam param) {
+		return super.query(param, NAMESPACE, "queryChannelDtlDayUv");
+	}
+	
+	/**
+	 * 区间查询
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryChannelDtlRangeUv(AppParam params) {
+		return super.query(params, NAMESPACE, "queryChannelDtlRangeUv");
+	}
+	/**
+	 * 查询创建微名片数
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCreateCardCount(AppParam params) {
+		return super.query(params, NAMESPACE, "queryCreateCardCount");
+	}
+	
+}

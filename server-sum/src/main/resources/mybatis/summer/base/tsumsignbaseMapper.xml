@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMSIGNBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			sucSignCount, 
+			sucSignAmt, 
+			failSignCount, 
+			failSignAmt, 
+			signingCount, 
+			signingAmt,
+			totalSignCount,
+			totalSignAmt,
+			treatyWill
+		FROM t_sum_sign_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_sign_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_sign_base (
+			recordDate,
+			sucSignCount,
+			sucSignAmt,
+			failSignCount,
+			failSignAmt,
+			signingCount,
+			signingAmt,
+			totalSignCount,
+			totalSignAmt,
+			treatyWill
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			<if test="sucSignCount !=null ">
+			#{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSignAmt !=null ">
+			#{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="failSignCount !=null ">
+			#{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignCount ==null ">
+			0 ,
+			</if>
+			<if test="failSignAmt !=null ">
+			#{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="signingCount !=null ">
+			#{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingCount ==null ">
+			0 ,
+			</if>
+			<if test="signingAmt !=null ">
+			#{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="signingAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="totalSignCount !=null ">
+			#{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalSignCount ==null ">
+			0 ,
+			</if>
+			<if test="totalSignAmt !=null ">
+			#{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="totalSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="treatyWill !=null ">
+			#{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="treatyWill ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_sign_base 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_sign_base  
+		<set>
+			<if test="sucSignCount != null">
+				sucSignCount = #{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSignAmt != null">
+				sucSignAmt = #{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignCount != null">
+				failSignCount = #{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignAmt != null">
+				failSignAmt = #{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingCount != null">
+				signingCount = #{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingAmt != null">
+				signingAmt = #{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="totalSignCount != null">
+				totalSignCount = #{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalSignAmt != null">
+				totalSignAmt = #{totalSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="treatyWill != null">
+				treatyWill = #{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+</mapper>

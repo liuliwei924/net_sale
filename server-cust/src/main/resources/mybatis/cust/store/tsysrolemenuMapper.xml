@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SYSROLEMENU">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			id,
+			menuId, 
+			roleId, 
+			createBy,
+			queryAuth,
+			t.modify,
+			t.check,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_sys_role_menu t
+		<where>
+			<if test="id != null and id != ''">
+			  and id = #{id}
+			 </if>
+			<if test="menuId != null and menuId != ''">
+				and menuId = #{menuId}
+			</if>
+			<if test="roleId != null and roleId != ''">
+				and roleId = #{roleId}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_role_menu 
+		<where>
+		<if test="id != null and id != ''">
+		    and id = #{id}
+		 </if>
+		<if test="menuId != null and menuId != ''">
+			and menuId = #{menuId}
+		</if>
+		<if test="roleId != null and roleId != ''">
+			and roleId = #{roleId}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="id">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sys_role_menu (
+			menuId,
+			roleId,
+			queryAuth,
+			check,
+			modify,
+			createBy,
+			createTime
+		)
+		VALUES ( 
+			#{menuId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{roleId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="queryAuth !=null ">
+			#{queryAuth, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="queryAuth ==null ">
+			0 ,
+			</if>
+			<if test="check !=null ">
+			#{check, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="check ==null ">
+			0 ,
+			</if>
+			<if test="modify !=null ">
+			#{modify, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="modify ==null ">
+			0 ,
+			</if>
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<!-- 批量插入权限 -->
+	<insert id="batchInsertByRole" parameterType="ArrayList">
+		INSERT INTO t_sys_role_menu (
+			menuId,
+			roleId,
+			queryAuth,
+			`check`,
+			modify,
+			createTime
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		(
+			#{item.menuId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{item.roleId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="item.queryAuth !=null ">
+			#{item.queryAuth, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="item.queryAuth ==null ">
+			0 ,
+			</if>
+			<if test="item.check !=null ">
+			#{item.check, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="item.check ==null ">
+			0 ,
+			</if>
+			<if test="item.modify !=null ">
+			#{item.modify, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="item.modify ==null ">
+			0 ,
+			</if>
+			now()	
+		)
+		</foreach>
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sys_role_menu 
+		<where> 
+			id = #{id}
+		</where>
+	</delete>
+	
+	<!-- 删除角色的所有权限 -->
+	<delete id="deleteRoleMenus" parameterType="map">
+		DELETE FROM t_sys_role_menu 
+		<where> 
+			roleId = #{roleId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_sys_role_menu  
+		<set>
+			<if test="menuId != null">
+				menuId = #{menuId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="roleId != null">
+				roleId = #{roleId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="check != null">
+				check = #{check, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="modify != null">
+				modify = #{modify, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			<if test="id != null and id !='' ">
+				 id = #{id}
+			</if>
+			<if test="menuId !=null and menuId !='' and roleId !=null and roleId !=''">
+				menuId = #{menuId} and roleId = #{roleId}
+			</if>
+		</where>
+	</update>
+</mapper>

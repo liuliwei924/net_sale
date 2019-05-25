@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ORGHOLIDAY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t.holidayId,
+			t.orgId, 
+			DATE_FORMAT(t.myDate,'%Y-%m-%d') as myDate , 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			concat(t1.orgNo,'-',t1.orgName) as orgName
+		FROM t_org_holiday t
+		left join t_org t1 on t.orgId = t1.orgId
+		<where>
+			<if test="holidayId != null and holidayId != ''">
+			  and t.holidayId = #{holidayId}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and t1.orgId = #{orgId}
+			</if>
+			<if test="myDate != null and myDate != ''">
+				and t.myDate = #{myDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t1.orgId in (${userOrgs})
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.myDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				 <![CDATA[and t.myDate <= #{endDate}]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_org_holiday t
+		left join t_org t1 on t.orgId = t1.orgId
+		<where>
+		<if test="holidayId != null and holidayId != ''">
+		    and t.holidayId = #{holidayId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and t1.orgId = #{orgId}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t1.orgId in (${userOrgs})
+		</if>
+		<if test="myDate != null and myDate != ''">
+			and t.myDate = #{myDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		
+		<if test="startDate != null and startDate != ''">
+			 <![CDATA[and t.myDate >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			 <![CDATA[and t.myDate <= #{endDate}]]>
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="holidayId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_org_holiday (
+			orgId,
+			myDate,
+			createTime
+		)
+		VALUES ( 
+			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{myDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_org_holiday 
+		<where> 
+			holidayId = #{holidayId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_org_holiday  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="myDate != null">
+				myDate = #{myDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  holidayId = #{holidayId}
+		</where>
+	</update>
+</mapper>

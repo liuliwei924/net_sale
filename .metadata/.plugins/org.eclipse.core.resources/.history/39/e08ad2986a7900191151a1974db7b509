@@ -1,0 +1,192 @@
+package org.xxjr.job.listener.fx;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.active.mq.message.FxMessageSend;
+import org.ddq.active.mq.message.JpushMessageSend;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.job.core.BaseExecteJob;
+import org.ddq.job.util.JobConstant;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.fx.util.FxConstant;
+import org.xxjr.fx.util.FxCustomerUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+/**
+ * 分销用户记账提醒，每天10点执行一次
+ * 
+ * @author Administrator
+ *
+ */
+@Lazy
+@Component
+public class AutoFxBillRemindJob implements BaseExecteJob {
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		try {
+			LogerUtil.log("AutoFxBillRemindJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+			int total = 0;
+			int everPage = 1;
+			// 查询待确定的推广记录
+			// 查询提现记录
+			AppParam queryParam = new AppParam("fxBillRecordService", "queryCustBillByPage");
+			queryParam.addAttr("remindStatus", "1");// 1-开启提醒功能
+			queryParam.addAttr("status", "0");// 0-待处理状态
+			queryParam.setCurrentPage(everPage);
+			queryParam.setEveryPage(100);
+			queryParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			List<Map<String,Object>> billList = queryResult.getRows();
+
+			// 获取当天是几号
+			Calendar cal = Calendar.getInstance();
+			int today = cal.get(Calendar.DATE);
+			while (billList.size() > 0) { 
+				AppParam updateParam = new AppParam("fxBillRecordService","update");
+				for(Map<String,Object> row : billList){
+					int remindDay = NumberUtil.getInt(row.get("remindDay"), 0);// 获取提前几天还款数
+					int repayDateNum = NumberUtil.getInt(row.get("repayDateNum"), 0);// 获取还款日期数
+					int periodNum = NumberUtil.getInt(row.get("periodNum"), 0);// 获取分期还款数
+					Date date = DateUtil.getCurMonthDate(repayDateNum);// 转换成当月日期
+					String dayStr = DateUtil.toStringByParttern(DateUtil.getNextDay(date, -remindDay), "d");
+					int remindDate = NumberUtil.getInt(dayStr, 0);
+					// 提醒日期为当天，且分期数大于0
+					if (today == remindDate && periodNum > 0) {
+						updateParam.clearAttr();
+						updateParam.addAttr("recordId", row.get("recordId"));
+						updateParam.addAttr("fromStatus", row.get("status"));
+						updateParam.addAttr("periodNumSub", "1");// 减少期数
+						if (periodNum == 1) {
+							updateParam.addAttr("status", "1");// 1-已结束
+						}
+						updateParam.setRmiServiceName(AppProperties
+								.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+						AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+						if (updateResult.isSuccess()) {
+							total++;
+							// 模板消息发送
+							AppParam sendParams = new AppParam();
+							sendParams.addAttr("custId", row.get("custId"));
+							sendParams.addAttr("billName", row.get("iconName"));// 账单名称
+							sendParams.addAttr("repayAmt", row.get("repayAmt") + "元");// 待还金额
+							sendParams.addAttr("repayDate", "每月" + row.get("repayDateNum") + "号");// 还款日期
+							// 极光推送
+							sendBillJpushMessage(sendParams);
+							// 微信提醒
+							sendBillWxMessage(sendParams);
+						}
+					}
+				}
+				everPage++;
+				queryParam.setCurrentPage(everPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+				billList = queryResult.getRows();
+			}
+			JobUtil.addProcessExecute(processId, "分销记账" + "，一共提醒了：" + total + "条信息");
+			LogerUtil.log("AutoFxBillRemindJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		} catch (Exception e) {
+			LogerUtil.error(AutoFxBillRemindJob.class, e, "AutoFxBillRemindJob >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "分销用户记账提醒报错：" + e.getMessage());
+		}
+		return result;
+	}
+	
+	/**
+	 * 记账微信模板消息
+	 * 
+	 */
+	private static void sendBillWxMessage(AppParam params){
+		String custId = StringUtil.getString(params.getAttr("custId"));
+		Map<String,Object> custInfo = FxCustomerUtil.getCustIdentify(custId);
+		if (!StringUtils.isEmpty(custInfo.get("openid"))
+				|| !StringUtils.isEmpty(custInfo.get("fxOpenid"))) {
+			Map<String, Object> msgParam = new HashMap<String, Object>();
+			msgParam.put("billName", params.getAttr("billName"));// 账单名称
+			msgParam.put("repayAmt", params.getAttr("repayAmt"));// 待还金额
+			msgParam.put("repayDate", params.getAttr("repayDate"));// 还款日期
+			try {
+				FxMessageSend fxMessageSend = SpringAppContext.getBean(FxMessageSend.class);
+				fxMessageSend.sendCustMessage(custId, "fxCustBillNotify", msgParam);
+			} catch (Exception e) {
+				LogerUtil.error(AutoFxBillRemindJob.class, e, "sendBillWxMessage error");
+			}
+		}
+	}
+	
+	/**
+	 * 记账极光推送模板消息
+	 * 
+	 */
+	private static void sendBillJpushMessage(AppParam params){
+		String custId = StringUtil.getString(params.getAttr("custId"));
+		if(!StringUtils.isEmpty(custId)){
+			String billName = StringUtil.getString(params.getAttr("billName"));
+			String repayAmt = StringUtil.getString(params.getAttr("repayAmt"));
+			String repayDate = StringUtil.getString(params.getAttr("repayDate"));
+			Map<String, Object> msgParam = new HashMap<String, Object>();
+			msgParam.put("billName", billName);
+			msgParam.put("repayAmt", repayAmt);// 待还金额
+			msgParam.put("repayDate", repayDate);// 还款日期
+			msgParam.put("jpushClientType", "xxzq");
+			sendJpushMessage(custId,"fxCustBillNotify",msgParam);
+			try{//增加消息记录
+				StringBuilder mesbuilder = new StringBuilder();
+				mesbuilder.append("您本月的" + billName + "账单已出，具体如下：").append("\r\n");
+				mesbuilder.append("待还金额：").append(repayAmt).append("\r\n");
+				mesbuilder.append("还款日期：").append(repayDate).append("\r\n");
+				mesbuilder.append("请尽快还款，如已还款，请忽略此提醒。");
+				String title = "还款账单通知";
+				AppParam sendparams = new AppParam();
+				sendparams.addAttr("status", FxConstant.FX_MESSAGE_STATUS_1);
+				sendparams.addAttr("custId", custId);
+				sendparams.addAttr("notifyTitle", title);
+				sendparams.addAttr("notifyText", mesbuilder.toString());
+				sendparams.addAttr("messType", FxConstant.FX_MESSAGE_TYPE_8);
+				String jumpUrl = SysParamsUtil.getStringParamByKey("fxMessagejumpUrl", 
+						"https://phone.xxjr.com/fxapp/center");
+				sendparams.addAttr("jumpUrl", jumpUrl);
+				FxCustomerUtil.saveMessageNotify(sendparams);
+			}catch (Exception e) {
+				LogerUtil.error(AutoFxBillRemindJob.class, e, "sendBillJpushMessage error");
+			}
+		}
+	}
+	
+	/***
+	 * 极光推送
+	 * @param custId 用户id
+	 * @param messageType 消息类型
+	 * @param msgParam 处理参数
+	 */
+	public static void sendJpushMessage(String custId,String messageType,Map<String,Object> msgParam){
+		try{
+			JpushMessageSend jpushSend = SpringAppContext.getBean(JpushMessageSend.class);
+			jpushSend.sendCustMessage(custId, messageType, msgParam);
+		}catch(Exception e){
+			LogerUtil.error(AutoFxBillRemindJob.class, e, "AutoFxBillRemindJob 极光消息推送  error");
+		}
+	}
+	
+	
+}

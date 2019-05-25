@@ -1,0 +1,164 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractInsureUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
+/***
+ * 平安数据推送
+ *
+ */
+@PushCode(2)
+public class PushPingAnUtil extends AbstractInsureUtil{
+
+	
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		Map<String, String> data = conversionData(row);
+		String url = null;
+		String retStatus = "fail";
+		if (NumberUtil.getInt(row.get("sourceType"), 0) > 0) {
+			url = SysParamsUtil.getStringParamByKey("push_pingan_cfg_urlXYK", "http://886.datasuv.net/data/add?m=Ml8xXzY1XzMzNQ==");
+		}else {
+			url = SysParamsUtil.getStringParamByKey("push_pingan_cfg_url", "http://47.100.57.211/data/add?m=Ml8xXzY1XzU1");
+		}
+		Map<String, Object> resultMap = PushPlatformUtils.httpPost(url, data, true);
+		retStatus = StringUtil.getString(resultMap.get("status"));
+		if("success".equals(retStatus)){
+			status = 1;
+		}
+		Map<String, Object> resMap = new HashMap<String, Object>();
+		resMap.put("status", status);
+		resMap.put("message", resultMap.get("msg"));
+		return resMap;
+	}
+	
+	public static Map<String, String> conversionData (Map<String, Object> param) {
+		Map<String, String> result = new HashMap<String, String>();
+		result.put("name", StringUtil.getString(param.get("applyName")));
+		result.put("mobile", StringUtil.getString(param.get("telephone")));
+		String sex = StringUtil.getString(param.get("sex"));
+		if (StringUtils.isEmpty(sex)) {
+			sex = IdCardResolveUtil.getSex(StringUtil.getString("identifyNo")).toString();
+		}
+		if ("0".equals(sex)) {
+			result.put("gender", "2");
+		} else {
+			result.put("gender", "1");
+		}
+		if (RedisUtils.getRedisService().get("push_isDebug") != null) {
+			result.put("debug", "1"); //测试
+		}
+		
+		String identifyNo = StringUtil.getString(param.get("identifyNo"));
+		String birthday = IdCardResolveUtil.getBirthday(identifyNo);
+		int age = IdCardResolveUtil.getAge(identifyNo);
+		if (age == -1) {
+			age = NumberUtil.getInt(param.get("age"), -1);
+		}
+		result.put("birthday", getBirthDay(birthday,age));
+		
+		//添加额外的数据
+		JSONArray extentedParam = new JSONArray();
+		/*JSONObject insurType = new JSONObject();
+		insurType.put("insurType", "1".equals(StringUtil.getString(param.get("insurType"))) ? "1" : "0");
+		extentedParam.add(insurType);
+		
+		JSONObject income = new JSONObject();
+		income.put("income", 1000);
+		if ((!StringUtils.isEmpty(param.get("income"))) && (NumberUtil.getDouble(param.get("income"), 0) > 0)) {
+			income.put("income", param.get("income"));
+		}else if ((!StringUtils.isEmpty(param.get("pubManageLine"))) && (NumberUtil.getDouble(param.get("pubManageLine"), 0) > 0)) {
+			double pubManageLine = NumberUtil.getDouble(param.get("pubManageLine"), 0);
+			income.put("income", pubManageLine * 10000);
+		}else if ((!StringUtils.isEmpty(param.get("cashMonth"))) && (NumberUtil.getDouble(param.get("cashMonth"), 0) > 0)) {
+			income.put("income", param.get("cashMonth"));
+		}
+		extentedParam.add(income);*/
+		
+		JSONObject cityName = new JSONObject();
+		cityName.put("cityName", StringUtil.getString(param.get("cityName")));
+		extentedParam.add(cityName);
+		
+/*		JSONObject fundObj = new JSONObject();
+		int fundType = NumberUtil.getInt(param.get("fundType"), 0);
+		fundObj.put("fundType", CountGradeUtil.judgeFundType(fundType) ? "1" : "0");
+		extentedParam.add(fundObj);
+		
+		JSONObject carTypObj = new JSONObject();
+		int carType  = NumberUtil.getInt(param.get("carType"), 0);
+		carTypObj.put("carType", CountGradeUtil.judgeCar(carType) ? "1" : "0");
+		extentedParam.add(carTypObj);
+		
+		JSONObject houseTypeObj = new JSONObject();
+		int houseType  = NumberUtil.getInt(param.get("houseType"), 0);
+		houseTypeObj.put("houseType", CountGradeUtil.judgeHouse(houseType) ? "1" : "0");
+		extentedParam.add(houseTypeObj);
+		
+		JSONObject creditType = new JSONObject();
+		creditType.put("creditType", "2".equals(StringUtil.getString(param.get("creditType"))) ? "0" : "1");
+		extentedParam.add(creditType);*/
+		
+		JSONObject ipObj = new JSONObject();
+		ipObj.put("client_ip", param.get("applyIp"));
+		extentedParam.add(ipObj);
+		
+		JSONObject hObj = new JSONObject();
+		hObj.put("userAgent", PushPlatformUtils.getUserAgent(param.get("userAgent")));
+		extentedParam.add(hObj);
+		
+		if(age >= 23 && age <= 55){
+			if (!StringUtils.isEmpty(identifyNo)) {
+				JSONObject identifyNoParam = new JSONObject();
+				identifyNoParam.put("identifyNo", identifyNo);
+				extentedParam.add(identifyNoParam);
+			}
+		}
+		
+		result.put("extentedParam", extentedParam.toJSONString());
+		return result;
+		
+	} 
+	
+	// 23-55岁
+	private static String getBirthDay(String birthday, int age){
+
+		if(StringUtils.hasText(birthday)){
+			if(age >= 23 && age <= 55){
+				return birthday;
+			}else{
+				String yearStr = birthday.substring(0,birthday.indexOf("-"));
+				
+				birthday = yearStr + "-" + birthday.substring(birthday.indexOf("-")+1);
+				return birthday;
+			}
+		}else{
+			Random random = new Random();
+			Calendar ca = Calendar.getInstance();
+			int minYear = 1952;
+			int maxYear = ca.get(Calendar.YEAR)-23;
+			int year = random.nextInt(maxYear)%(maxYear-minYear+1) + minYear;
+			int month = random.nextInt(12)%(12) + 1;
+			int day = random.nextInt(30)%(30) + 1;
+			birthday = year +"-" +(month<10? "0" +month : month+"") +"-" + (day<10 ? "0" +day : day+"");
+		}
+		
+		return  birthday;
+	}
+}

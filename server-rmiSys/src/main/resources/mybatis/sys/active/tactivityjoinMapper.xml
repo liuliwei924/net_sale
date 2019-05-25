@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ACTIVITYJOIN">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			joinId as "joinId",
+			activeId as "activeId",  <!--  活动ID -->
+			customerId as "customerId",  <!-- 客户 -->
+			DATE_FORMAT(joinTime,'%Y-%m-%d %H:%i:%s') as "joinTime" <!-- 加入时间 -->
+		FROM t_activity_join
+		<where>
+			<if test="joinId != null and joinId != ''">
+			  and joinId = #{joinId}
+			 </if>
+			<if test="activeId != null and activeId != ''">
+				and activeId = #{activeId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="joinTime != null and joinTime != ''">
+				and joinTime = #{joinTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_activity_join 
+		<where>
+		<if test="joinId != null and joinId != ''">
+		    and joinId = #{joinId}
+		 </if>
+		<if test="activeId != null and activeId != ''">
+			and activeId = #{activeId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="joinTime != null and joinTime != ''">
+			and joinTime = #{joinTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="joinId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_activity_join (
+			activeId,
+			customerId,
+			joinTime
+		)
+		VALUES ( 
+			#{activeId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{joinTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_activity_join 
+		<where> 
+			joinId = #{joinId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_activity_join  
+		<set>
+			<if test="activeId != null">
+				activeId = #{activeId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="joinTime != null">
+				joinTime = #{joinTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  joinId = #{joinId}
+		</where>
+	</update>
+	
+	
+</mapper>

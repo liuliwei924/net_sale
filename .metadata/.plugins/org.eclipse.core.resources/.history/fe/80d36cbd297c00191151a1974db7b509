@@ -1,0 +1,5 @@
+package org.xxjr.store.util;
+
+public class DBConst {
+
+}

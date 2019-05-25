@@ -1,0 +1,492 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMCHANNELDEALORDERTYPE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			channelCode, 
+			channelName, 
+			noCondition, 
+			smallLoansCount, 
+			carCount, 
+			insuranceCount, 
+			replaceCount, 
+			houseCount, 
+			rejectCallCount, 
+			notOneselfCount, 
+			emptyCount, 
+			noneedCount, 
+			notDealCount, 
+			totalCount,
+			otherHouseCount
+		FROM t_sum_channel_dealordertype
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and channelName = #{channelName}
+			</if>
+			<if test="noCondition != null and noCondition != ''">
+				and noCondition = #{noCondition}
+			</if>
+			<if test="smallLoansCount != null and smallLoansCount != ''">
+				and smallLoansCount = #{smallLoansCount}
+			</if>
+			<if test="carCount != null and carCount != ''">
+				and carCount = #{carCount}
+			</if>
+			<if test="insuranceCount != null and insuranceCount != ''">
+				and insuranceCount = #{insuranceCount}
+			</if>
+			<if test="replaceCount != null and replaceCount != ''">
+				and replaceCount = #{replaceCount}
+			</if>
+			<if test="houseCount != null and houseCount != ''">
+				and houseCount = #{houseCount}
+			</if>
+			<if test="rejectCallCount != null and rejectCallCount != ''">
+				and rejectCallCount = #{rejectCallCount}
+			</if>
+			<if test="notOneselfCount != null and notOneselfCount != ''">
+				and notOneselfCount = #{notOneselfCount}
+			</if>
+			<if test="emptyCount != null and emptyCount != ''">
+				and emptyCount = #{emptyCount}
+			</if>
+			<if test="noneedCount != null and noneedCount != ''">
+				and noneedCount = #{noneedCount}
+			</if>
+			<if test="notDealCount != null and notDealCount != ''">
+				and notDealCount = #{notDealCount}
+			</if>
+			<if test="totalCount != null and totalCount != ''">
+				and totalCount = #{totalCount}
+			</if>
+			<if test="otherHouseCount != null and otherHouseCount != ''">
+				and otherHouseCount = #{otherHouseCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_channel_dealordertype 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			and channelName = #{channelName}
+		</if>
+		<if test="noCondition != null and noCondition != ''">
+			and noCondition = #{noCondition}
+		</if>
+		<if test="smallLoansCount != null and smallLoansCount != ''">
+			and smallLoansCount = #{smallLoansCount}
+		</if>
+		<if test="carCount != null and carCount != ''">
+			and carCount = #{carCount}
+		</if>
+		<if test="insuranceCount != null and insuranceCount != ''">
+			and insuranceCount = #{insuranceCount}
+		</if>
+		<if test="replaceCount != null and replaceCount != ''">
+			and replaceCount = #{replaceCount}
+		</if>
+		<if test="houseCount != null and houseCount != ''">
+			and houseCount = #{houseCount}
+		</if>
+		<if test="rejectCallCount != null and rejectCallCount != ''">
+			and rejectCallCount = #{rejectCallCount}
+		</if>
+		<if test="notOneselfCount != null and notOneselfCount != ''">
+			and notOneselfCount = #{notOneselfCount}
+		</if>
+		<if test="emptyCount != null and emptyCount != ''">
+			and emptyCount = #{emptyCount}
+		</if>
+		<if test="noneedCount != null and noneedCount != ''">
+			and noneedCount = #{noneedCount}
+		</if>
+		<if test="notDealCount != null and notDealCount != ''">
+			and notDealCount = #{notDealCount}
+		</if>
+		<if test="totalCount != null and totalCount != ''">
+			and totalCount = #{totalCount}
+		</if>
+		<if test="otherHouseCount != null and otherHouseCount != ''">
+			and otherHouseCount = #{otherHouseCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_channel_dealordertype (
+			recordDate,
+			channelCode,
+			channelName,
+			noCondition,
+			smallLoansCount,
+			carCount,
+			insuranceCount,
+			replaceCount,
+			houseCount,
+			rejectCallCount,
+			notOneselfCount,
+			emptyCount,
+			noneedCount,
+			notDealCount,
+			totalCount,
+			otherHouseCount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{channelCode, jdbcType=VARCHAR}, 
+			#{channelName, jdbcType=VARCHAR}, 
+			<if test="noCondition !=null ">
+			#{noCondition, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="noCondition ==null ">
+			0 ,
+			</if>
+			<if test="smallLoansCount !=null ">
+			#{smallLoansCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="smallLoansCount ==null ">
+			0 ,
+			</if>
+			<if test="carCount !=null ">
+			#{carCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="carCount ==null ">
+			0 ,
+			</if>
+			<if test="insuranceCount !=null ">
+			#{insuranceCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="insuranceCount ==null ">
+			0 ,
+			</if>
+			<if test="replaceCount !=null ">
+			#{replaceCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="replaceCount ==null ">
+			0 ,
+			</if>
+			<if test="houseCount !=null ">
+			#{houseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseCount ==null ">
+			0 ,
+			</if>
+			<if test="rejectCallCount !=null ">
+			#{rejectCallCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rejectCallCount ==null ">
+			0 ,
+			</if>
+			<if test="notOneselfCount !=null ">
+			#{notOneselfCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notOneselfCount ==null ">
+			0 ,
+			</if>
+			<if test="emptyCount !=null ">
+			#{emptyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="emptyCount ==null ">
+			0 ,
+			</if>
+			<if test="noneedCount !=null ">
+			#{noneedCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="noneedCount ==null ">
+			0 ,
+			</if>
+			#{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="totalCount ==null ">
+			0 ,
+			</if>
+			<if test="otherHouseCount !=null ">
+			#{otherHouseCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="otherHouseCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+		<!-- 批量插入 -->
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_channel_dealordertype (
+			recordDate,
+			channelCode,
+			channelName,
+			noCondition,
+			smallLoansCount,
+			carCount,
+			insuranceCount,
+			replaceCount,
+			houseCount,
+			rejectCallCount,
+			notOneselfCount,
+			emptyCount,
+			noneedCount,
+			notDealCount,
+			taxesEntLoanCount,
+			accumulationFundCount,	
+			totalCount,
+			otherHouseCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.channelCode},  
+		  #{item.channelName}, 
+		  #{item.noCondition}, 
+		  #{item.smallLoansCount}, 
+		  #{item.carCount}, 
+		  #{item.insuranceCount}, 
+		  #{item.replaceCount}, 
+		  #{item.houseCount},
+		  #{item.rejectCallCount}, 
+		  #{item.notOneselfCount},
+		  #{item.emptyCount},
+		  #{item.noneedCount},
+		  #{item.notDealCount},
+		  #{item.taxesEntLoanCount},
+		  #{item.accumulationFundCount},
+		  #{item.totalCount},
+		  #{item.otherHouseCount}
+		  )
+		</foreach>
+ 	 </insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_channel_dealordertype 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_channel_dealordertype  
+		<set>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="noCondition != null">
+				noCondition = #{noCondition, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="smallLoansCount != null">
+				smallLoansCount = #{smallLoansCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carCount != null">
+				carCount = #{carCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insuranceCount != null">
+				insuranceCount = #{insuranceCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="replaceCount != null">
+				replaceCount = #{replaceCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseCount != null">
+				houseCount = #{houseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rejectCallCount != null">
+				rejectCallCount = #{rejectCallCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notOneselfCount != null">
+				notOneselfCount = #{notOneselfCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="emptyCount != null">
+				emptyCount = #{emptyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="noneedCount != null">
+				noneedCount = #{noneedCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notDealCount != null">
+				notDealCount = #{notDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="otherHouseCount != null">
+				otherHouseCount = #{otherHouseCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	<select id="queryChannelDealordertypeDay" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			CONCAT(t.channelCode,'-',t.channelName) as channel,
+			IFNULL(t.noCondition,0) AS noCondition,
+			IFNULL(t.smallLoansCount,0) AS smallLoansCount,
+			IFNULL(t.carCount,0) AS carCount,
+			IFNULL(t.insuranceCount,0) AS insuranceCount,
+			IFNULL(t.replaceCount,0) AS replaceCount,
+			IFNULL(t.houseCount,0) AS houseCount,
+			IFNULL(t.rejectCallCount,0) AS rejectCallCount,
+			IFNULL(t.notOneselfCount,0) AS notOneselfCount,
+			IFNULL(t.emptyCount,0) AS emptyCount,
+			IFNULL(t.noneedCount,0) AS noneedCount,
+			IFNULL(t.notDealCount,0) AS notDealCount,
+			IFNULL(t.taxesEntLoanCount,0) AS taxesEntLoanCount,
+			IFNULL(t.accumulationFundCount,0) AS accumulationFundCount,
+			IFNULL(t.otherHouseCount,0) AS otherHouseCount,
+			IFNULL(t.totalCount,0) AS totalCount
+		FROM
+			t_sum_channel_dealordertype t
+		<include refid="sqlQuery"/>
+	    <if test="orderSql == null">
+			ORDER BY CONVERT(recordDate USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+    <select id="queryChannelDealordertypeDaySum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.noCondition),0) AS noConditionSum,
+			IFNULL(SUM(t.smallLoansCount),0) AS smallLoansCountSum,
+			IFNULL(SUM(t.carCount),0) AS carCountSum,
+			IFNULL(SUM(t.insuranceCount),0) AS insuranceCountSum,
+			IFNULL(SUM(t.replaceCount),0) AS replaceCountSum,
+			IFNULL(SUM(t.houseCount),0) AS houseCountSum,
+			IFNULL(SUM(t.rejectCallCount),0) AS rejectCallCountSum,
+			IFNULL(SUM(t.notOneselfCount),0) AS notOneselfCountSum,
+			IFNULL(SUM(t.emptyCount),0) AS emptyCountSum,
+			IFNULL(SUM(t.noneedCount),0) AS noneedCountSum,
+			IFNULL(SUM(t.notDealCount),0) AS notDealCountSum,
+			IFNULL(SUM(t.taxesEntLoanCount),0) AS taxesEntLoanCountSum,
+			IFNULL(SUM(t.accumulationFundCount),0) AS accumulationFundCountSum,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_channel_dealordertype t
+		<include refid="sqlQuery"/>
+	</select>
+	<select id="queryChannelDealordertypeDayCount" parameterType="map" resultType="int">
+			SELECT
+				count(*)
+			FROM
+				t_sum_channel_dealordertype t
+			<include refid="sqlQuery"/>
+	</select>
+	<sql id="sqlQuery">
+   		<where>
+			 <if test="recordDate != null and recordDate != ''">
+			  	and t.recordDate = #{recordDate}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			 </if>
+ 		     <if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+			 <if test="channelCode !=null and channelCode !=''">
+	   			and t.channelCode = #{channelCode}
+	   		 </if>
+		</where>
+    </sql>
+    <select id="queryChannelDealordertypeMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') as recordDate,
+			CONCAT(t.channelCode,'-',t.channelName) as channel,
+			IFNULL(SUM(t.noCondition),0) AS noCondition,
+			IFNULL(SUM(t.smallLoansCount),0) AS smallLoansCount,
+			IFNULL(SUM(t.carCount),0) AS carCount,
+			IFNULL(SUM(t.insuranceCount),0) AS insuranceCount,
+			IFNULL(SUM(t.replaceCount),0) AS replaceCount,
+			IFNULL(SUM(t.houseCount),0) AS houseCount,
+			IFNULL(SUM(t.rejectCallCount),0) AS rejectCallCount,
+			IFNULL(SUM(t.notOneselfCount),0) AS notOneselfCount,
+			IFNULL(SUM(t.emptyCount),0) AS emptyCount,
+			IFNULL(SUM(t.noneedCount),0) AS noneedCount,
+			IFNULL(SUM(t.notDealCount),0) AS notDealCount,
+			IFNULL(SUM(t.taxesEntLoanCount),0) AS taxesEntLoanCount,
+			IFNULL(SUM(t.accumulationFundCount),0) AS accumulationFundCount,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCount,
+			IFNULL(SUM(t.totalCount),0) AS totalCount
+		FROM
+			t_sum_channel_dealordertype t
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),channelCode
+		<if test="orderSql == null">
+			ORDER BY CONVERT(recordDate USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+    <select id="queryChannelDealordertypeMonthSum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.noCondition),0) AS noConditionSum,
+			IFNULL(SUM(t.smallLoansCount),0) AS smallLoansCountSum,
+			IFNULL(SUM(t.carCount),0) AS carCountSum,
+			IFNULL(SUM(t.insuranceCount),0) AS insuranceCountSum,
+			IFNULL(SUM(t.replaceCount),0) AS replaceCountSum,
+			IFNULL(SUM(t.houseCount),0) AS houseCountSum,
+			IFNULL(SUM(t.rejectCallCount),0) AS rejectCallCountSum,
+			IFNULL(SUM(t.notOneselfCount),0) AS notOneselfCountSum,
+			IFNULL(SUM(t.emptyCount),0) AS emptyCountSum,
+			IFNULL(SUM(t.noneedCount),0) AS noneedCountSum,
+			IFNULL(SUM(t.notDealCount),0) AS notDealCountSum,
+			IFNULL(SUM(t.taxesEntLoanCount),0) AS taxesEntLoanCountSum,
+			IFNULL(SUM(t.accumulationFundCount),0) AS accumulationFundCountSum,
+			IFNULL(SUM(t.otherHouseCount),0) AS otherHouseCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_channel_dealordertype t
+		<include refid="sqlQuery"/>
+		ORDER by t.recordDate DESC
+	</select>
+	<select id="queryChannelDealordertypeMonthCount" parameterType="map" resultType="int">
+		SELECT
+			COUNT(*)
+		FROM
+			(
+			SELECT
+				count(*)
+			FROM
+				t_sum_channel_dealordertype t
+			<include refid="sqlQuery"/>
+			GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m'),channelCode
+			ORDER by t.recordDate DESC
+			) tab1
+	</select>
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_channel_dealordertype
+		<where> 
+			recordDate = #{recordDate}
+			<if test="channelCode !=null and channelCode !=''">
+			 	AND channelCode= #{channelCode}
+			</if>
+		</where>
+	</delete>
+</mapper>

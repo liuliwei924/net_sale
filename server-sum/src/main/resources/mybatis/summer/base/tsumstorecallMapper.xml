@@ -1,0 +1,534 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMSTORECALL">
+    
+    <sql id="querySql">
+   		<if test="recordDate != null and recordDate != ''">
+		  and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		  and customerId = #{customerId}
+		 </if>
+		<if test="realName != null and realName != ''">
+			and realName = #{realName}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			realName, 
+			orgId, 
+			orgName, 
+			cityName, 
+			totalCount, 
+			callOutCount, 
+			sucTotalCount, 
+			sucCallOutCount, 
+			callCount60, 
+			callCount180, 
+			totalDuration, 
+			exterCallCount, 
+			exterDuration,
+			sucBookCount
+		FROM t_sum_store_call
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_store_call 
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_store_call (
+			recordDate,
+			customerId,
+			realName,
+			orgId,
+			orgName,
+			cityName,
+			totalCount,
+			callOutCount,
+			sucTotalCount,
+			sucCallOutCount,
+			callCount60,
+			callCount180,
+			totalDuration,
+			exterCallCount,
+			exterDuration,
+			sucBookCount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{realName, jdbcType=VARCHAR}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalCount ==null ">
+			0 ,
+			</if>
+			<if test="callOutCount !=null ">
+			#{callOutCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="callOutCount ==null ">
+			0 ,
+			</if>
+			<if test="sucTotalCount !=null ">
+			#{sucTotalCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucTotalCount ==null ">
+			0 ,
+			</if>
+			<if test="sucCallOutCount !=null ">
+			#{sucCallOutCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucCallOutCount ==null ">
+			0 ,
+			</if>
+			<if test="callCount60 !=null ">
+			#{callCount60, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="callCount60 ==null ">
+			0 ,
+			</if>
+			<if test="callCount180 !=null ">
+			#{callCount180, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="callCount180 ==null ">
+			0 ,
+			</if>
+			<if test="totalDuration !=null ">
+			#{totalDuration, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalDuration ==null ">
+			0 ,
+			</if>
+			<if test="exterCallCount !=null ">
+			#{exterCallCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="exterCallCount ==null ">
+			0 ,
+			</if>
+			<if test="exterDuration !=null ">
+			#{exterDuration, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="exterDuration ==null ">
+			0 ,
+			</if>
+			<if test="sucBookCount !=null ">
+			#{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="sucBookCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_store_call 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_store_call  
+		<set>
+			<if test="realName != null">
+				realName = #{realName, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="callOutCount != null">
+				callOutCount = #{callOutCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucTotalCount != null">
+				sucTotalCount = #{sucTotalCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucCallOutCount != null">
+				sucCallOutCount = #{sucCallOutCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="callCount60 != null">
+				callCount60 = #{callCount60, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="callCount180 != null">
+				callCount180 = #{callCount180, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalDuration != null">
+				totalDuration = #{totalDuration, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="exterCallCount != null">
+				exterCallCount = #{exterCallCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="exterDuration != null">
+				exterDuration = #{exterDuration, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="sucBookCount != null">
+				sucBookCount = #{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_store_call 
+		<where> 
+			recordDate = #{recordDate}
+			<if test="customerId != null and customerId != ''">
+		  		and customerId = #{customerId}
+		 	</if>
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_store_call  (
+			recordDate,
+			customerId,
+			realName,
+			orgId,
+			orgName,
+			cityName,
+			totalCount,
+			callOutCount,
+			sucTotalCount,
+			sucCallOutCount,
+			callCount60,
+			callCount180,
+			totalDuration,
+			exterCallCount,
+			exterDuration,
+			exterCallCount60,
+			exterCallCount180,
+			exterSucCallCount,
+			exterCallOutCount,
+			exterSucCallOutCount,
+			sucBookCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.realName}, 
+		  #{item.orgId},
+		  #{item.orgName},
+		  #{item.cityName},
+		  #{item.totalCount},
+		  #{item.callOutCount},
+		  #{item.sucTotalCount},
+		  #{item.sucCallOutCount},
+		  #{item.callCount60},
+		  #{item.callCount180},
+		  #{item.totalDuration},
+		  #{item.exterCallCount},
+		  #{item.exterDuration},
+		  #{item.exterCallCount60},
+		  #{item.exterCallCount180},
+		  #{item.exterSucCallCount},
+		  #{item.exterCallOutCount},
+		  #{item.exterSucCallOutCount},
+		  #{item.sucBookCount}
+		  )
+		</foreach>
+  </insert>
+  
+  
+    <!-- 每天門店人員的通話統計 -->
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.realName,
+			t.orgName,
+			t.cityName,
+			t.totalCount,
+			t.callOutCount,
+			t.sucTotalCount,
+			t.sucCallOutCount,
+			t.callCount60,
+			t.callCount180,
+			ROUND(t.totalDuration/60,2) as 'totalDuration',
+			t.exterCallCount,
+			ROUND(t.exterDuration/60,2) as 'exterDuration',
+			t1.groupName,
+  			t1.teamName,
+  			t.sucBookCount,
+  			t.exterCallCount60,
+  			t.exterCallCount180
+		FROM
+			t_sum_store_call t
+			JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+		<if test="orderSql == null">
+			ORDER BY t.recordDate DESC,t.customerId ASC,CONVERT(t.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(t.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_store_call t 
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+	</select>
+	
+	    <!-- 门店通话本月统计 -->
+	<select id="queryStoreCallDay" resultType="map" parameterType="map">
+		SELECT
+			tab1.recordDate,
+			tab1.orgId,
+			tab1.orgName,
+			tab1.cityName,
+			tab1.personCount,
+			ROUND(tab1.sucTotalCount / tab1.personCount,2) AS avgSuc,
+			ROUND(tab1.callCount60 / tab1.personCount,2) AS avgCall60,
+			ROUND(tab1.callCount180 / tab1.personCount,2) AS avgCall180,
+			ROUND(tab1.totalDuration / tab1.personCount,2) AS avgtotalDuration,
+			tab1.totalCount,
+			tab1.callOutCount,
+			tab1.sucTotalCount,
+			tab1.sucCallOutCount,
+			tab1.callCount60,
+			tab1.callCount180,
+			tab1.totalDuration
+		FROM
+		  (
+			SELECT
+				t.recordDate,
+				t.orgId,
+				t.orgName,
+				t.cityName,
+				COUNT(t.orgId) AS personCount,
+				SUM(t.totalCount) as totalCount,
+				SUM(t.callOutCount + t.exterCallOutCount) as  callOutCount,
+				SUM(t.sucTotalCount + t.exterSucCallCount) as sucTotalCount ,
+				SUM(t.sucCallOutCount + t.exterSucCallOutCount) as sucCallOutCount,
+				SUM(t.callCount60 + t.exterCallCount60) as callCount60 ,
+				SUM(t.callCount180 + t.exterCallCount180) as callCount180,
+				ROUND(SUM(t.totalDuration)/60,2) as 'totalDuration'
+			FROM
+				t_sum_store_call t
+		<include refid="queryWhere"/>
+		GROUP BY t.recordDate,t.orgId)AS tab1
+		<if test="orderSql == null">
+			ORDER BY tab1.recordDate DESC,CONVERT(tab1.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(tab1.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="queryStoreCallDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (
+			SELECT COUNT(*) 
+			FROM t_sum_store_call t 
+			<include refid="queryWhere"/>
+			GROUP BY t.recordDate,t.orgId) AS tab1 
+	</select>
+	
+	  <!--門店人員月度的通話統計 -->
+	<select id="queryMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') as 'recordDate',
+			t.realName,
+			t.orgName,
+			t.cityName,
+			SUM(t.totalCount) as 'totalCount',
+			SUM(t.callOutCount) as 'callOutCount',
+			SUM(t.sucTotalCount) as 'sucTotalCount',
+			SUM(t.sucCallOutCount) as 'sucCallOutCount',
+			SUM(t.callCount60) as 'callCount60',
+			SUM(t.callCount180) as 'callCount180',
+			ROUND(SUM(t.totalDuration)/60,2) as 'totalDuration',
+			SUM(t.exterCallCount) as 'exterCallCount',
+			ROUND(SUM(t.exterDuration)/60,2) as 'exterDuration',
+			t1.groupName,
+  			t1.teamName,
+  			SUM(t.sucBookCount) as 'sucBookCount',
+  			SUM(t.exterCallCount60) as 'exterCallCount60',
+  			SUM(t.exterCallCount180) as 'exterCallCount180'
+		FROM
+			t_sum_store_call t
+			JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+		GROUP BY t.customerId,DATE_FORMAT(t.recordDate,'%Y-%m')
+		<if test="orderSql == null">
+			ORDER BY t.recordDate  DESC,t.customerId ASC,CONVERT(t.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(t.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="queryMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_store_call t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<include refid="showSqlQuery"/>
+		GROUP BY t.customerId,DATE_FORMAT(t.recordDate,'%Y-%m')) tab1
+	</select>
+	
+		  <!-- 门店通話月度统计 -->
+	<select id="queryStoreCallMonth" resultType="map" parameterType="map">
+		SELECT
+			tab1.recordDate,
+			tab1.orgId,
+			tab1.orgName,
+			tab1.cityName,
+			tab1.personCount,
+			ROUND(tab1.sucTotalCount / tab1.personCount,2) AS avgSuc,
+			ROUND(tab1.callCount60 / tab1.personCount,2) AS avgCall60,
+			ROUND(tab1.callCount180 / tab1.personCount,2) AS avgCall180,
+			ROUND(tab1.totalDuration / tab1.personCount,2) AS avgtotalDuration,
+			tab1.totalCount,
+			tab1.callOutCount,
+			tab1.sucTotalCount,
+			tab1.sucCallOutCount,
+			tab1.callCount60,
+			tab1.callCount180,
+			tab1.totalDuration
+		FROM
+			(
+			SELECT
+				DATE_FORMAT(t.recordDate,'%Y-%m') as 'recordDate',
+				t.orgId,
+				t.orgName,
+				t.cityName,
+				COUNT(DISTINCT t.customerId) AS personCount,
+				SUM(t.totalCount) as totalCount,
+				SUM(t.callOutCount + t.exterCallOutCount) as  callOutCount,
+				SUM(t.sucTotalCount + t.exterSucCallCount) as sucTotalCount ,
+				SUM(t.sucCallOutCount + t.exterSucCallOutCount) as sucCallOutCount,
+				SUM(t.callCount60 + t.exterCallCount60) as callCount60 ,
+				SUM(t.callCount180 + t.exterCallCount180) as callCount180,
+				ROUND(SUM(t.totalDuration)/60,2) as 'totalDuration'
+			FROM
+			t_sum_store_call t
+		<include refid="queryWhere"/>
+		GROUP BY t.orgId,DATE_FORMAT(t.recordDate,'%Y-%m'))AS tab1
+		<if test="orderSql == null">
+			ORDER BY tab1.recordDate  DESC,CONVERT(tab1.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(tab1.orgName USING GBK)
+		</if>
+	</select>
+	
+	<select id="queryStoreCallMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_store_call t
+		<include refid="queryWhere"/>
+		GROUP BY t.orgId,DATE_FORMAT(t.recordDate,'%Y-%m')) tab1
+	</select>
+	
+		<sql id="queryWhere">
+    	<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and t.recordDate = #{recordDate}
+			 </if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			</if>
+			<if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			</if>
+			<if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+			    and t.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+			    and t.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t1.groupName = #{groupName}
+			</if>
+			<if test="cityName != null and cityName !=''">
+			    and t.cityName = #{cityName}
+			</if>
+		</where>
+    </sql>
+	
+	<sql id="showSqlQuery">
+    	<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and t.recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and t.customerId = #{customerId}
+			 </if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			</if>
+			<if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			</if>
+			<if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+			    and t1.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+			    and t1.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t1.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t1.teamName = #{teamName}
+			</if>
+			<if test="realName != null and realName != ''">
+			    and t.realName LIKE CONCAT(#{realName},'%') 
+			</if>
+			<if test="cityName != null and cityName !=''">
+			    and t.cityName = #{cityName}
+			</if>
+			<if test="roleType != null and roleType != ''">
+				and t1.roleType = #{roleType}
+			</if>
+		</where>
+    </sql>
+</mapper>

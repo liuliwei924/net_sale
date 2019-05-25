@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BUSIRESOUREPARTYB">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			busiId,
+			teamCode, 
+			code, 
+			channelName, 
+			companyName, 
+			takeOverUs, 
+			takeOverOther, 
+			contactWay, 
+			address, 
+			rateType, 
+			accountsPrice, 
+			accountsType, 
+			status, 
+			prodCode,
+			DATE_FORMAT(lineTime,'%Y-%m-%d') as lineTime,
+			custId,
+			userName
+		FROM t_busi_resoure_party_b
+		<where>
+			<if test="busiId != null and busiId != ''">
+			  and busiId = #{busiId}
+			 </if>
+			<if test="teamCode != null and teamCode != ''">
+				and teamCode like CONCAT('%',#{teamCode},'%')
+			</if>
+			<if test="code != null and code != ''">
+				and code like CONCAT('%',#{code},'%')
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and channelName like CONCAT('%',#{channelName},'%')
+			</if>
+			<if test="companyName != null and companyName != ''">
+				and companyName like CONCAT('%',#{companyName},'%')
+			</if>
+			<if test="takeOverUs != null and takeOverUs != ''">
+				and takeOverUs = #{takeOverUs}
+			</if>
+			<if test="takeOverOther != null and takeOverOther != ''">
+				and takeOverOther = #{takeOverOther}
+			</if>
+			<if test="contactWay != null and contactWay != ''">
+				and contactWay = #{contactWay}
+			</if>
+			<if test="address != null and address != ''">
+				and address = #{address}
+			</if>
+			<if test="rateType != null and rateType != ''">
+				and rateType = #{rateType}
+			</if>
+			<if test="accountsPrice != null and accountsPrice != ''">
+				and accountsPrice = #{accountsPrice}
+			</if>
+			<if test="accountsType != null and accountsType != ''">
+				and accountsType = #{accountsType}
+			</if>
+			<if test="prodCode != null and prodCode != ''">
+				and prodCode = #{prodCode}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="lineTime != null and lineTime != ''">
+				and lineTime = #{lineTime}
+			</if>
+			<if test="custId != null and custId != ''">
+				and custId = #{custId}
+			</if>
+			<if test="userName != null and userName != ''">
+				and userName = #{userName}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_busi_resoure_party_b 
+		<where>
+		<if test="busiId != null and busiId != ''">
+		    and busiId = #{busiId}
+		 </if>
+		<if test="teamCode != null and teamCode != ''">
+			and teamCode = #{teamCode}
+		</if>
+		<if test="code != null and code != ''">
+			and code = #{code}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			and channelName = #{channelName}
+		</if>
+		<if test="companyName != null and companyName != ''">
+			and companyName = #{companyName}
+		</if>
+		<if test="takeOverUs != null and takeOverUs != ''">
+			and takeOverUs = #{takeOverUs}
+		</if>
+		<if test="takeOverOther != null and takeOverOther != ''">
+			and takeOverOther = #{takeOverOther}
+		</if>
+		<if test="contactWay != null and contactWay != ''">
+			and contactWay = #{contactWay}
+		</if>
+		<if test="address != null and address != ''">
+			and address = #{address}
+		</if>
+		<if test="rateType != null and rateType != ''">
+			and rateType = #{rateType}
+		</if>
+		<if test="accountsPrice != null and accountsPrice != ''">
+			and accountsPrice = #{accountsPrice}
+		</if>
+		<if test="accountsType != null and accountsType != ''">
+			and accountsType = #{accountsType}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="lineTime != null and lineTime != ''">
+			and lineTime = #{lineTime}
+		</if>
+		<if test="prodCode != null and prodCode != ''">
+			and prodCode = #{prodCode}
+		</if>
+		<if test="custId != null and custId != ''">
+			and custId = #{custId}
+		</if>
+		<if test="userName != null and userName != ''">
+			and userName = #{userName}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="busiId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_busi_resoure_party_b (
+			teamCode,
+			code,
+			channelName,
+			companyName,
+			takeOverUs,
+			takeOverOther,
+			contactWay,
+			address,
+			rateType,
+			accountsPrice,
+			accountsType,
+			status,
+			lineTime,
+			custId,
+			userName,
+			prodCode
+		)
+		VALUES ( 
+			#{teamCode, jdbcType=VARCHAR}, 
+			#{code, jdbcType=VARCHAR}, 
+			#{channelName, jdbcType=VARCHAR}, 
+			#{companyName, jdbcType=VARCHAR}, 
+			#{takeOverUs, jdbcType=VARCHAR}, 
+			#{takeOverOther, jdbcType=VARCHAR}, 
+			#{contactWay, jdbcType=VARCHAR}, 
+			#{address, jdbcType=VARCHAR}, 
+			#{rateType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{accountsPrice, jdbcType=VARCHAR}, 
+			#{accountsType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{lineTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{custId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{userName, jdbcType=VARCHAR},
+			#{prodCode, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_busi_resoure_party_b 
+		<where> 
+			busiId = #{busiId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_busi_resoure_party_b  
+		<set>
+			<if test="teamCode != null">
+				teamCode = #{teamCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="code != null">
+				code = #{code, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="prodCode != null">
+				prodCode = #{prodCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="companyName != null">
+				companyName = #{companyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="takeOverUs != null">
+				takeOverUs = #{takeOverUs, jdbcType=VARCHAR},  
+			</if>
+			<if test="takeOverOther != null">
+				takeOverOther = #{takeOverOther, jdbcType=VARCHAR},  
+			</if>
+			<if test="contactWay != null">
+				contactWay = #{contactWay, jdbcType=VARCHAR},  
+			</if>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR},  
+			</if>
+			<if test="rateType != null">
+				rateType = #{rateType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="accountsPrice != null">
+				accountsPrice = #{accountsPrice, jdbcType=VARCHAR},  
+			</if>
+			<if test="accountsType != null">
+				accountsType = #{accountsType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="lineTime != null">
+				lineTime = #{lineTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  busiId = #{busiId}
+		</where>
+	</update>
+</mapper>

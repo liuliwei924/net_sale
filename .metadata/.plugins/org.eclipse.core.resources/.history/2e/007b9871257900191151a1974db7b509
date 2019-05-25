@@ -1,0 +1,72 @@
+package org.xxjr.tools.util;
+
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.util.LogerUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 新颜第三方工具类
+ * @author sty
+ *
+ */
+public class XinyanCreditUtil {
+
+	/**
+	 * 负面拉黑
+	 * @param idNo 身份证号码-必传
+	 * @param idName 姓名-必传
+	 * @param phoneNo 手机号-非必传
+	 * @param bankCardNo 银行卡号-非必传
+	 * @return 
+	 * 如果请求成功
+	 * 	 	"code": "0",  查询结果码  （0：建议拉黑(逾期未还款)1：无法确认2：空值未知9：其他异常）
+            "max_overdue_amt": "1000-2000",   最大逾期金额
+            "fee": "N",   收费标示	Y：收费 N：不收费
+            "trans_id": "1541643768458", 商户请求订单号
+            "id_name": "25472e46cf0b2836754b0725b65267b4",  姓名
+            "id_no": "b6e64d70cd072985a9ac1e475304f591",  身份证号
+            "currently_overdue": "1",  当前逾期机构数
+            "versions": "1.3.0",    版本号
+            "acc_sleep": "1",    睡眠机构数
+            "currently_performance": "0",  当前履约机构数
+            "trade_no": "20181108102642222000000063028185", 交易流水号
+            "max_overdue_days": "1-15",   最长逾期天数	区间，格式：dd-dd
+            "latest_overdue_time": "2018-09",  最近逾期时间	格式：yyyy-MM
+            "acc_exc": "0",  异常还款机构数
+            "desc": "建议拉黑"   查询结果描述
+            
+       	如果请求失败
+       		 "errorCode":"S1000",
+    		 "errorMsg":"请求参数有误"
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String,String> getPullBlack(String idNo,String idName,String phoneNo,String bankCardNo){
+		AppParam param = new AppParam();
+		param.setService("creditRatingService");
+		param.setMethod("pullBlack");
+		param.addAttr("id_no", idNo);
+		param.addAttr("id_name", idName);
+		param.addAttr("phone_no",  phoneNo);
+		param.addAttr("bankcard_no", bankCardNo);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_col));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getAttr("resultMap") == null){
+			LogerUtil.log("getPullBlack by col error");
+			return null;
+		}
+		Map<String,String> resultMap = (Map<String, String>) result.getAttr("resultMap");
+		if(!StringUtils.isEmpty(resultMap.get("errorCode"))){
+			LogerUtil.log("getPullBlack error:" + resultMap.toString());
+			return null;
+		}
+		return resultMap;
+	}
+}

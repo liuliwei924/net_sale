@@ -1,0 +1,202 @@
+package org.xxjr.summary.base;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.NumberUtil;
+
+@Lazy
+@Service
+public class SumBorrowPushService extends BaseService {
+	private static final String NAMESPACE = "SUMBORROWPUSH";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	public AppResult queryByMonth(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryMonth", "queryMonthCount");
+	}
+	
+	public AppResult querySection(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "querySection", "querySectionCount");
+	}
+	
+	public AppResult querySectionCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "querySectionCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	public AppResult queryMonthCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryMonthCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("recordDate", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("recordDate"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public AppResult saveOrUpdate (AppParam params) {
+		AppResult result = new AppResult();
+		int count = 0;
+		List<Map<String, Object>> list = (List<Map<String, Object>>) params.getAttr("list");
+		for (Map<String, Object> map : list) {
+			AppParam saveParam = new AppParam();
+			saveParam.addAttrs(map);
+			result = this.update(saveParam);
+			int size = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
+			if (size <= 0) {
+				result = this.insert(saveParam);
+				size = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Insert_SIZE), 0);
+				count = count + size;
+			}
+			count = count + size;
+		}
+		result.putAttr(DuoduoConstant.DAO_Insert_SIZE, count);
+		return result;
+	}
+	
+	/**-------------------------------------去重数据**/
+	
+	/**
+	 * 本月
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinct(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryDistinct", "queryDistinctCount");
+	}
+	
+	/**
+	 * 月度
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinctByMonth(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryDistinctByMonth", "queryDistinctMonthCount");
+	}
+	
+	/**
+	 * 区间
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinctSec(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryDistinctSec", "queryDistinctSecCount");
+	}
+	
+	/**
+	 * 区间行数
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinctSecCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryDistinctSecCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	/**
+	 * 月度行数
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinctMonthCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryDistinctMonthCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDistinctCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryDistinctCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+
+}

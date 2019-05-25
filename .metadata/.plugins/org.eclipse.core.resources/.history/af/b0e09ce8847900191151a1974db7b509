@@ -1,0 +1,60 @@
+package org.xxjr.job.listener.busi.push;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.active.mq.message.PushDataServiceSend;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+
+/***
+ * 推送小钱包数据任务
+ * 
+ * @author ZQH
+ *
+ */
+@Lazy
+@Component
+public class AutoPushXqbJob implements BaseExecteJob {
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		AppResult result = new AppResult();
+		
+		try {
+			PushDataServiceSend send = SpringAppContext.getBean(PushDataServiceSend.class);
+
+			Map<String, Object> msgInfo = new HashMap<String, Object>();
+
+			msgInfo.put("type", PushPlatformUtils.TYPE_LOAN);
+			send.sendExecuteMessage(msgInfo);
+			
+			msgInfo = new HashMap<String, Object>();
+			msgInfo.put("type", PushPlatformUtils.TYPE_INSURE);
+			send.sendExecuteMessage(msgInfo);
+			
+			msgInfo = new HashMap<String, Object>();
+			msgInfo.put("type", PushPlatformUtils.TYPE_LOAN);
+			msgInfo.put("isAllot", 1);
+			send.sendExecuteMessage(msgInfo);
+			
+			LogerUtil.log("推送数据任务 AutoPushXqbJob end");
+		} catch (Exception e) {
+			LogerUtil.error(AutoPushXqbJob.class, e,
+					"AutoPushXqbJob >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId,
+					"推送小钱包数据任务 报错：" + e.getMessage());
+		}
+		return result;
+	}
+
+}

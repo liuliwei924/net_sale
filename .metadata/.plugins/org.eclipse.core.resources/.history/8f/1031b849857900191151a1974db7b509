@@ -1,0 +1,208 @@
+package org.xxjr.job.listener.busi.store;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+public class LendAutoUserMjbUtil {
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public static AppResult lendAllotStart(Object processId){
+		AppResult result = new AppResult();
+		String[] appTypes = SysParamsUtil.getStringParamByKey("mjb_appTypes", "2").split(",|，");
+		for (String appType : appTypes) {
+			try {
+				if(!SysParamsUtil.getBoleanByKey("mjb_lendAutoAllotStatus", false)){
+					result.setMessage("kf 分马甲包功能未开启!");
+					result.setSuccess(false);
+					return result;
+				}
+				LogerUtil.log("LendAutoUserMjbUtil >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+				AppParam queryParams = new AppParam("custRightService", "queryLendKf");
+				queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_cust));
+				AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParams);
+				//可分配客服列表
+				List<Map<String,Object>> kfList = queryResult.getRows();
+				// 所有登录客服列表
+				List<Map<String,Object>> loginkfList = new ArrayList<Map<String,Object>>();
+				//专属客服列表
+				List<Map<String,Object>> kfExclusiveList = new ArrayList<Map<String,Object>>();
+				for (Map<String,Object> map : kfList) {
+					if(!StringUtils.isEmpty(map.get("serveCity"))){//专属客服判断其服务城市是否为空
+						kfExclusiveList.add(map);
+					}
+					
+					if(map.get("isLogin").toString().equals("1")){//所有登录客服列表
+						loginkfList.add(map);
+					}
+					
+				}
+				String today = DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD);
+				updateLendAllotRecord(kfList,today, appType);
+				//查询所有要分的单
+				AppParam lendParam = new AppParam("mjbLendService", "getAllotLends");
+				lendParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_mjb));
+				lendParam.addAttr("appType", appType);
+				AppResult allotResult = RemoteInvoke.getInstance().callNoTx(lendParam);
+				if(allotResult.getRows().size() > 0){
+					List<Map<String,Object>> lendList = allotResult.getRows();
+					int kfCount = kfList.size();
+					if(kfCount > 0){					
+						//匹配信贷经理的城市信息匹配对应的客服
+						List<Map<String, Object>> kfCustList = new ArrayList<Map<String, Object>>();
+						for (Map<String, Object> kfMap : kfExclusiveList) {
+							Iterator it = lendList.iterator();
+							while (it.hasNext()) {
+								Map<String, Object> lendMap = (Map<String, Object>) it.next();
+								//匹配城市
+								if (lendMap.get("cityName") != null
+										&& kfMap.get("serveCity").toString()
+										.contains(
+												lendMap.get("cityName").toString())) {
+									Map<String, Object> map = new HashMap<String, Object>();
+									map.put("kf", kfMap.get("customerId"));
+									map.put("kfName", kfMap.get("realName"));
+									map.put("customerId", lendMap.get("customerId"));
+									map.put("lendId", lendMap.get("lendId"));
+									kfCustList.add(map);
+									it.remove();
+								}
+							}
+						}
+						//未被匹配kf的信贷经理平均分配
+						for (int i = 0; i < lendList.size(); i++) {
+							if(loginkfList.size() ==0){
+								break;
+							}
+							int mod = i % loginkfList.size();
+							Map<String,Object> kfMap = loginkfList.get(mod);
+							int count = Integer.parseInt(kfMap.get("maxAllotCount").toString()) -1;
+							if(SysParamsUtil.getBoleanByKey("mjb_kfMaxAllotCount", false) && count < 0){
+								loginkfList.remove(mod);
+								i--;
+								continue;
+							}
+							kfMap.put("maxAllotCount", count);
+							Map<String,Object> map = new HashMap<String,Object>();
+							map.put("customerId", lendList.get(i).get("customerId"));
+							map.put("lendId", lendList.get(i).get("lendId"));
+							map.put("kf", kfMap.get("customerId"));
+							map.put("kfName",  kfMap.get("realName"));
+							kfCustList.add(map);
+						}
+						//批量修改绑定客服
+						if(kfCustList.size() > 0){
+							AppParam bindParam = new AppParam("mjbLendService","batchAllotLend");
+							bindParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_mjb));
+							bindParam.addAttr("list", kfCustList);
+							AppResult bindResult = RemoteInvoke.getInstance().call(bindParam);
+							if(bindResult.isSuccess()){
+								//清理customerId为空的数据
+								Iterator it = kfCustList.iterator();
+								while (it.hasNext()) {
+									Map<String,Object> kfMap = (Map<String, Object>) it.next();
+									if(StringUtils.isEmpty(kfMap.get("customerId"))){
+										it.remove();
+									}
+								}
+								AppParam kfCustParams = new AppParam("kfCustByMjbService", "batchReplaceInsert");
+								kfCustParams.addAttr("list", kfCustList);
+								kfCustParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+										+ ServiceKey.Key_cust));
+								RemoteInvoke.getInstance().call(kfCustParams);
+								//修改kf分配数量
+								AppParam recordParam = new AppParam("lendAllotRecordService","updateTotalCount");
+								recordParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+										+ ServiceKey.Key_mjb));
+								recordParam.addAttr("appType", appType);
+								recordParam.addAttr("recordDate", today);
+								RemoteInvoke.getInstance().call(recordParam);
+							}
+						}
+						
+					}
+				}
+				JobUtil.addProcessExecute(processId, " kf 分配信贷经理分单 LendAutoUserMjbUtil msg:" + result.getMessage());
+				LogerUtil.log(" kf 分配信贷经理分单 LendAutoUserMjbUtil end >>>>>>>>>>>>>>>>>>msg:" + result.getMessage());
+			} catch (Exception e) {
+				LogerUtil.error(LendAutoUserMjbUtil.class, e, "LendAutoUserMjbUtil >>>>>>>>>>>>>>>>>>error");
+				JobUtil.addProcessExecute(processId, "kf 分配信贷经理分单 报错：" + e.getMessage() );
+			}
+		}
+		
+		return result;
+	}
+
+	/**
+	 * 查询kf 待处理个数
+	 * @param kf
+	 * @return
+	 */
+	private static int queryKfDealCount(Object kf, String appType){
+		AppParam dealCountParams = new AppParam("mjbLendService", "queryCount");
+		dealCountParams.addAttr("kf", kf);
+		dealCountParams.addAttr("appType", appType);
+		dealCountParams.addAttr("status", "0");
+		dealCountParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_mjb));
+		 AppResult dealCountResult = RemoteInvoke.getInstance().call(dealCountParams);
+		 
+		 int count = 0;
+		 if(dealCountResult.isSuccess()){
+			 count =  (Integer)dealCountResult.getAttr(DuoduoConstant.TOTAL_SIZE);
+		 }
+		 dealCountParams = null;
+		 dealCountResult = null;
+		 return count;
+	}
+	
+	/**
+	 * 更新分单记录信息
+	 */
+	private static void updateLendAllotRecord(List<Map<String,Object>> kfList,String today, String appType){
+		AppParam updateParams = new AppParam("lendAllotRecordService", "updateNotLogin");
+		updateParams.addAttr("recordDate", today);
+		updateParams.addAttr("appType", appType);
+		updateParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_mjb));
+		RemoteInvoke.getInstance().call(updateParams);
+		if (kfList.size() > 6) {
+			kfList.parallelStream().map((e) -> {
+				AppParam kfParams = new AppParam("lendAllotRecordService", "saveOrUpdate");
+				kfParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_mjb));
+				kfParams.addAttrs(e);
+				kfParams.addAttr("recordDate", today);
+				kfParams.addAttr("appType", appType);
+				kfParams.addAttr("dealCount", queryKfDealCount(e.get("customerId"), appType));
+				RemoteInvoke.getInstance().call(kfParams);
+				return 1;
+			}).count();
+		}else {
+			AppParam kfParams = new AppParam("lendAllotRecordService", "saveOrUpdate");
+			kfParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_mjb));
+			for(Map<String,Object> kfMap : kfList){
+				kfParams.addAttrs(kfMap);
+				kfParams.addAttr("appType", appType);
+				kfParams.addAttr("recordDate", today);
+				kfParams.addAttr("dealCount", queryKfDealCount(kfMap.get("customerId"), appType));
+				RemoteInvoke.getInstance().call(kfParams);
+			}
+		}
+	}
+}

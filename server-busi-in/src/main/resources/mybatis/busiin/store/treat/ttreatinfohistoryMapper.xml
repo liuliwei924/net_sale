@@ -1,0 +1,731 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATINFOHISTORY">
+    <sql id="querySql">
+   		<where>
+			<if test="treatyNo != null and treatyNo != ''">
+			  and t.treatyNo = #{treatyNo}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="cardNo != null and cardNo != ''">
+				and t.cardNo = #{cardNo}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone = #{telephone}
+			</if>
+			<if test="treatyName != null and treatyName != ''">
+				and t.treatyName = #{treatyName}
+			</if>
+			<if test="feeType != null and feeType != ''">
+				and t.feeType = #{feeType}
+			</if>
+			<if test="feeAmount != null and feeAmount != ''">
+				and t.feeAmount = #{feeAmount}
+			</if>
+			<if test="feeRate != null and feeRate != ''">
+				and t.feeRate = #{feeRate}
+			</if>
+			<if test="treatyAmount != null and treatyAmount != ''">
+				and t.treatyAmount = #{treatyAmount}
+			</if>
+			<if test="treatyWill != null and treatyWill != ''">
+				and t.treatyWill = #{treatyWill}
+			</if>
+			<if test="treatyFee != null and treatyFee != ''">
+				and t.treatyFee = #{treatyFee}
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="signType != null and signType != ''">
+				and t.signType = #{signType}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and t.updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.telephone=#{telephone}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime < DATE_ADD(#{endTime},INTERVAL 1 day)]]>
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t.orgId in (${userOrgs})
+			</if>
+			<if test="upStatus !=null and upStatus != '' ">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="upStatusIn !=null and upStatusIn != '' ">
+				and t.upStatus in (${upStatusIn})
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and t.reContractId = #{reContractId}
+			</if>
+		</where>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t.treatyNo,
+			t.reContractId,
+			t.applyId, 
+			t.applyName,
+			t.orgId,
+			t.cardNo,
+			t.customerId, 
+			t.telephone, 
+			t.treatyName, 
+			t.feeType, 
+			t.failureCause,
+			(CASE t.feeType
+			 WHEN 1 THEN '固定金额'
+			 WHEN 2 THEN '按比例'
+			 END) as 'feeTypeText',
+			t.feeAmount, 
+			t.signAmount,
+			t.bankRetPoint,
+			t.anjiePerson,
+			t.feeRate, 
+			t.handleDesc,
+			(CASE 
+				WHEN feeType =1 THEN t.feeAmount
+				WHEN feeType =2 THEN CONCAT(t.feeRate,'%')
+				ELSE '0.00'
+			END) as 'zhAmount', 
+			t.treatyAmount,
+			t.treatyWill, 
+			t.treatyFee, 
+			t.status, 
+			(CASE t.status
+			 WHEN 1 THEN '提交按揭中'
+			 WHEN 2 THEN '结案'
+			 WHEN 5 THEN '贷款未提交'
+			 END) as 'statusText',
+			t.signType,
+			(CASE t.signType
+			 WHEN 1 THEN '银行'
+			 WHEN 2 THEN '小额'
+			 END) as 'signTypeText',
+			t.upStatus,
+			t.errorMessage,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			t.updateBy, 
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime ,
+			DATE_FORMAT(t.signTime,'%Y-%m-%d %H:%i:%s') as signTime ,
+			t1.realName,
+			t2.orgNo
+		FROM t_treat_info_history t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		left join t_org t2 ON t.orgId = t2.orgId
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_info_history t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		left join t_org t2 ON t.orgId = t2.orgId
+		<include refid="querySql"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="treatyNo">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_info_history (
+			treatyNo,
+			reContractId,
+			applyId,
+			signAmount,
+			applyName,
+			orgId,
+			customerId,
+			telephone,
+			cardNo,
+			bankRetPoint,
+			anjiePerson,
+			treatyName,
+			feeType,
+			feeAmount,
+			feeRate,
+			treatyAmount,
+			treatyWill,
+			treatyFee,
+			status,
+			signType,
+			upStatus,
+			errorMessage,
+			handleDesc,
+			createTime,
+			updateBy,
+			updateTime,
+			signTime,
+			applyTime,
+			channelCode,
+			channelDetail,
+			failureCause
+		)
+		VALUES ( 
+			#{treatyNo, jdbcType=VARCHAR},
+			#{reContractId, jdbcType=VARCHAR}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="signAmount !=null ">
+			#{signAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signAmount ==null ">
+			0.00 ,
+			</if>
+			#{applyName, jdbcType=VARCHAR}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			#{cardNo, jdbcType=VARCHAR}, 
+			<if test="bankRetPoint !=null ">
+			#{bankRetPoint, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="bankRetPoint ==null ">
+			0.00 ,
+			</if>
+			#{anjiePerson, jdbcType=VARCHAR}, 
+			#{treatyName, jdbcType=VARCHAR}, 
+			#{feeType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="feeAmount !=null ">
+			#{feeAmount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feeAmount ==null ">
+			0 ,
+			</if>
+			<if test="feeRate !=null ">
+			#{feeRate, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feeRate ==null ">
+			0.00 ,
+			</if>
+			<if test="treatyAmount !=null ">
+			#{treatyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="treatyAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="treatyWill !=null ">
+			#{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="treatyWill ==null ">
+			0.00 ,
+			</if>
+			<if test="treatyFee !=null ">
+			#{treatyFee, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="treatyFee ==null ">
+			0.00 ,
+			</if>
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			<if test="signType !=null ">
+			#{signType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signType ==null ">
+			1 ,
+			</if>
+			<if test="upStatus !=null ">
+			#{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="upStatus ==null ">
+			1 ,
+			</if>
+			#{errorMessage, jdbcType=VARCHAR}, 
+			#{handleDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{signTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{channelCode, jdbcType=VARCHAR}, 
+			#{channelDetail, jdbcType=VARCHAR},
+			#{failureCause, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_info_history 
+		<where> 
+			treatyNo = #{treatyNo}
+		</where>
+	</delete>
+	<delete id="deleteBy" parameterType="map">
+		DELETE FROM t_treat_info_history 
+		<where> 
+			treatyNo = #{treatyNo}
+			<if test="applyId != null">
+				AND applyId = #{applyId}  
+			</if>
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_treat_info_history  
+		<set>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="signAmount != null">
+				signAmount = #{signAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="cardNo != null">
+				cardNo = #{cardNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="bankRetPoint != null">
+				bankRetPoint = #{bankRetPoint, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="anjiePerson != null">
+				anjiePerson = #{anjiePerson, jdbcType=VARCHAR},  
+			</if>
+			<if test="treatyName != null">
+				treatyName = #{treatyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="feeType != null">
+				feeType = #{feeType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmount != null">
+				feeAmount = #{feeAmount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeRate != null">
+				feeRate = #{feeRate, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyAmount != null">
+				treatyAmount = #{treatyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyWill != null">
+				treatyWill = #{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyFee != null">
+				treatyFee = #{treatyFee, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signType != null">
+				signType = #{signType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="handleDesc != null">
+				handleDesc = #{handleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="signTime != null">
+				signTime = #{signTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>		
+			<if test="failureCause != null">
+				failureCause = #{failureCause, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR} 
+			</if>
+		</set>
+		<where>
+			   treatyNo = #{treatyNo}
+		</where>
+	</update>
+	<update id="updateHistory" parameterType="map">
+		UPDATE t_treat_info_history  
+		<set>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="signAmount != null">
+				signAmount = #{signAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="cardNo != null">
+				cardNo = #{cardNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="bankRetPoint != null">
+				bankRetPoint = #{bankRetPoint, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="anjiePerson != null">
+				anjiePerson = #{anjiePerson, jdbcType=VARCHAR},  
+			</if>
+			<if test="treatyName != null">
+				treatyName = #{treatyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="feeType != null">
+				feeType = #{feeType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmount != null">
+				feeAmount = #{feeAmount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeRate != null">
+				feeRate = #{feeRate, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyAmount != null">
+				treatyAmount = #{treatyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyWill != null">
+				treatyWill = #{treatyWill, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="treatyFee != null">
+				treatyFee = #{treatyFee, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signType != null">
+				signType = #{signType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="handleDesc != null">
+				handleDesc = #{handleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="signTime != null">
+				signTime = #{signTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			<if test="applyId != null">
+			  	applyId = #{applyId}
+			</if>
+			<if test="oldCustomerId != null">
+				and customerId = #{oldCustomerId}
+			</if>
+		</where>
+	</update>
+	<update id="updateSign" parameterType="map">
+		UPDATE t_treat_info_history  
+		<set>
+			 <if test="reContractId != null">
+				 reContractId = #{reContractId,jdbcType=VARCHAR},
+		  	</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+		  applyId = #{applyId}
+		  <if test="signTime != null">
+			and DATE_FORMAT(signTime,'%Y-%m-%d') = #{signTime}
+		  </if>
+		</where>
+	</update>
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			treatyNo,
+			reContractId, 
+			applyId, 
+			signAmount, 
+			applyName, 
+			orgId, 
+			customerId, 
+			telephone, 
+			cardNo, 
+			bankRetPoint, 
+			anjiePerson, 
+			treatyName, 
+			feeType, 
+			feeAmount, 
+			feeRate, 
+			treatyAmount, 
+			treatyWill, 
+			treatyFee, 
+			status, 
+			signType, 
+			upStatus, 
+			errorMessage, 
+			handleDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			updateBy, 
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  ,
+			DATE_FORMAT(signTime,'%Y-%m-%d %H:%i:%s') as signTime  ,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			channelCode, 
+			channelDetail, 
+			failureCause
+		FROM t_treat_info_history
+		<where>
+			<if test="treatyNo != null and treatyNo != ''">
+			  and treatyNo = #{treatyNo}
+			 </if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="signAmount != null and signAmount != ''">
+				and signAmount = #{signAmount}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="cardNo != null and cardNo != ''">
+				and cardNo = #{cardNo}
+			</if>
+			<if test="bankRetPoint != null and bankRetPoint != ''">
+				and bankRetPoint = #{bankRetPoint}
+			</if>
+			<if test="anjiePerson != null and anjiePerson != ''">
+				and anjiePerson = #{anjiePerson}
+			</if>
+			<if test="treatyName != null and treatyName != ''">
+				and treatyName = #{treatyName}
+			</if>
+			<if test="feeType != null and feeType != ''">
+				and feeType = #{feeType}
+			</if>
+			<if test="feeAmount != null and feeAmount != ''">
+				and feeAmount = #{feeAmount}
+			</if>
+			<if test="feeRate != null and feeRate != ''">
+				and feeRate = #{feeRate}
+			</if>
+			<if test="treatyAmount != null and treatyAmount != ''">
+				and treatyAmount = #{treatyAmount}
+			</if>
+			<if test="treatyWill != null and treatyWill != ''">
+				and treatyWill = #{treatyWill}
+			</if>
+			<if test="treatyFee != null and treatyFee != ''">
+				and treatyFee = #{treatyFee}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="signType != null and signType != ''">
+				and signType = #{signType}
+			</if>
+			<if test="upStatus != null and upStatus != ''">
+				and upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage != null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+			<if test="handleDesc != null and handleDesc != ''">
+				and handleDesc = #{handleDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="signTime != null and signTime != ''">
+				and signTime = #{signTime}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and channelDetail = #{channelDetail}
+			</if>
+			<if test="failureCause != null and failureCause != ''">
+				and failureCause = #{failureCause}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_info_history 
+		<where>
+		<if test="treatyNo != null and treatyNo != ''">
+		    and treatyNo = #{treatyNo}
+		 </if>
+		<if test="reContractId != null and reContractId != ''">
+			and reContractId = #{reContractId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="signAmount != null and signAmount != ''">
+			and signAmount = #{signAmount}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cardNo != null and cardNo != ''">
+			and cardNo = #{cardNo}
+		</if>
+		<if test="bankRetPoint != null and bankRetPoint != ''">
+			and bankRetPoint = #{bankRetPoint}
+		</if>
+		<if test="anjiePerson != null and anjiePerson != ''">
+			and anjiePerson = #{anjiePerson}
+		</if>
+		<if test="treatyName != null and treatyName != ''">
+			and treatyName = #{treatyName}
+		</if>
+		<if test="feeType != null and feeType != ''">
+			and feeType = #{feeType}
+		</if>
+		<if test="feeAmount != null and feeAmount != ''">
+			and feeAmount = #{feeAmount}
+		</if>
+		<if test="feeRate != null and feeRate != ''">
+			and feeRate = #{feeRate}
+		</if>
+		<if test="treatyAmount != null and treatyAmount != ''">
+			and treatyAmount = #{treatyAmount}
+		</if>
+		<if test="treatyWill != null and treatyWill != ''">
+			and treatyWill = #{treatyWill}
+		</if>
+		<if test="treatyFee != null and treatyFee != ''">
+			and treatyFee = #{treatyFee}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="signType != null and signType != ''">
+			and signType = #{signType}
+		</if>
+		<if test="upStatus != null and upStatus != ''">
+			and upStatus = #{upStatus}
+		</if>
+		<if test="errorMessage != null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		<if test="handleDesc != null and handleDesc != ''">
+			and handleDesc = #{handleDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="signTime != null and signTime != ''">
+			and signTime = #{signTime}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if test="failureCause != null and failureCause != ''">
+			and failureCause = #{failureCause}
+		</if>
+		</where>
+	</select>
+</mapper>

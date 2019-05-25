@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FUNDRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId as "recordId",
+			customerId as "customerId",  <!-- 用户序号 -->
+			fundType as "fundType",  <!-- 资金类型 -->
+			amount as "amount",  <!-- 操作金额 -->
+			usableAmount as "usableAmount",  <!-- 可用金额 -->
+			orderId as "orderId",  <!-- 借款ID -->
+			businessId as "businessId",  <!-- 业务序号(提现对应提现的id 充值对应充值的ID) -->
+			recordDesc as "recordDesc",  <!-- 操作描述 -->
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime", <!-- 创建时间 -->
+			createBy as "createBy" <!-- 创建人 -->
+		FROM t_fund_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="fundType != null and fundType != ''">
+				and fundType = #{fundType}
+			</if>
+			<if test="amount != null and amount != ''">
+				and amount = #{amount}
+			</if>
+			<if test="usableAmount != null and usableAmount != ''">
+				and usableAmount = #{usableAmount}
+			</if>
+			<if test="orderId != null and orderId != ''">
+				and orderId = #{orderId}
+			</if>
+			<if test="businessId != null and businessId != ''">
+				and businessId = #{businessId}
+			</if>
+			<if test="recordDesc != null and recordDesc != ''">
+				and recordDesc = #{recordDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_fund_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="fundType != null and fundType != ''">
+			and fundType = #{fundType}
+		</if>
+		<if test="amount != null and amount != ''">
+			and amount = #{amount}
+		</if>
+		<if test="usableAmount != null and usableAmount != ''">
+			and usableAmount = #{usableAmount}
+		</if>
+		<if test="orderId != null and orderId != ''">
+			and orderId = #{orderId}
+		</if>
+		<if test="businessId != null and businessId != ''">
+			and businessId = #{businessId}
+		</if>
+		<if test="recordDesc != null and recordDesc != ''">
+			and recordDesc = #{recordDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		</where>
+	</select>
+
+		<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t1.telephone,
+      		t2.fundName,
+			t3.realName,
+			t.recordId as "recordId",
+			t.customerId as "customerId",  <!-- 用户序号 -->
+			t.fundType as "fundType",  <!-- 资金类型 -->
+			t.amount as "amount",  <!-- 操作金额 -->
+			t.usableAmount as "usableAmount",  <!-- 可用金额 -->
+			t.orderId as "orderId",  <!-- 借款ID -->
+			t.businessId as "businessId",  <!-- 业务序号(提现对应提现的id 充值对应充值的ID) -->
+			t.recordDesc as "recordDesc",  <!-- 操作描述 -->
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as "createTime", <!-- 创建时间 -->
+			t.createBy as "createBy" <!-- 创建人 -->
+			from t_fund_record t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_fund_type t2 on t.fundType = t2.fundType
+			 JOIN t_cust_identify t3 on t.customerId = t3.customerId and t3.status=1
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t3.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			 
+			 <if test="fundType != null and fundType != ''">
+				<![CDATA[ and t.fundType = #{fundType} or t2.fundName like '%${fundType}%'  ]]>
+			</if>
+			 <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(t.recordId)
+			from t_fund_record t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			LEFT JOIN t_fund_type t2 on t.fundType = t2.fundType
+			JOIN t_cust_identify t3 on t.customerId = t3.customerId and t3.status=1
+		<where>
+			<if test="userName != null and userName != ''">
+			    and (t1.userName like '%${userName}%' or  t3.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			 <if test="fundType != null and fundType != ''">
+				<![CDATA[ and( t.fundType = #{fundType} or t2.fundName like '%${fundType}%' ) ]]>
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_fund_record (
+			customerId,
+			fundType,
+			amount,
+			usableAmount,
+			orderId,
+			businessId,
+			recordDesc,
+			createTime,
+			createBy
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{fundType, jdbcType=VARCHAR}, 
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{usableAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{orderId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{businessId, jdbcType=VARCHAR}, 
+			#{recordDesc, jdbcType=VARCHAR}, 
+			now(), 
+			#{createBy, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_fund_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_fund_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundType != null">
+				fundType = #{fundType, jdbcType=VARCHAR},  
+			</if>
+			<if test="amount != null">
+				amount = #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="usableAmount != null">
+				usableAmount = #{usableAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderId != null">
+				orderId = #{orderId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="businessId != null">
+				businessId = #{businessId, jdbcType=VARCHAR},  
+			</if>
+			<if test="recordDesc != null">
+				recordDesc = #{recordDesc, jdbcType=VARCHAR},  
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	<update id="withdrawApply" parameterType="map">
+		INSERT into  t_fund_record(customerId,fundType,amount,usableAmount,orderId,businessId,recordDesc,createTime,createBy)
+		SELECT
+				t.customerId,
+				#{fundType},
+				-t.amount,
+				t1.usableAmount,
+				null,
+				t.withdrawId,
+				'提现申请',
+				now(),
+				#{createBy}
+			FROM
+				t_withdraw t
+        JOIN t_cust_amount t1 on t.customerId = t1.customerId
+		<where>
+			   t.withdrawId=#{withdrawId}
+		</where>
+	</update>
+	<update id="withdrawCancel" parameterType="map">
+		INSERT into  t_fund_record(customerId,fundType,amount,usableAmount,orderId,businessId,recordDesc,createTime,createBy)
+		SELECT
+				t.customerId,
+				#{fundType},
+				t.amount,
+				t1.usableAmount,
+				null,
+				t.withdrawId,
+				'提现取消',
+				now(),
+				#{createBy}
+			FROM
+				t_withdraw t
+        JOIN t_cust_amount t1 on t.customerId = t1.customerId
+		<where>
+			   t.withdrawId=#{withdrawId}
+		</where>
+	</update>
+	<update id="withdrawCheck" parameterType="map">
+		INSERT into  t_fund_record(customerId,fundType,amount,usableAmount,orderId,businessId,recordDesc,createTime,createBy)
+		SELECT
+				t.customerId,
+				#{fundType},
+				t.amount,
+				t1.usableAmount,
+				null,
+				t.withdrawId,
+				CONCAT('提现卡号：****',right(t.cardCode,4)),
+				now(),
+				#{createBy}
+			FROM
+				t_withdraw t
+        JOIN t_cust_amount t1 on t.customerId = t1.customerId
+		<where>
+			   t.withdrawId=#{withdrawId}
+		</where>
+	</update>
+	<update id="rewardOrder" parameterType="map">
+		INSERT into  t_fund_record(customerId,fundType,amount,usableAmount,orderId,businessId,recordDesc,createTime,createBy)
+			SELECT
+				t.customerId,
+				#{fundType},
+				t.realAmount,
+				t1.usableAmount,
+				null,
+				t.rewardId,
+				'提成佣金',
+				now(),
+				#{createBy}
+			FROM
+				t_order_reward t
+       		 JOIN t_cust_amount t1 on t.customerId = t1.customerId
+		<where>
+			   t.rewardId=#{rewardId} and t.status = 1
+		</where>
+	</update>
+	
+	<select id="funcRecord" resultType="map" parameterType="map">
+		select 
+			t.recordId as "recordId",
+			t.customerId as "customerId",  <!-- 用户序号 -->
+			t.fundType as "fundType",  <!-- 资金类型 -->
+			t.amount as "amount",  <!-- 操作金额 -->
+			t.usableAmount as "usableAmount",  <!-- 可用金额 -->
+			t.recordDesc as "recordDesc",  <!-- 操作描述 -->
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as "createTime"<!-- 创建时间 -->
+			from t_fund_record t
+		<where>
+			<if test="customerId != null and customerId != ''">
+				<![CDATA[ and t.customerId = #{customerId} ]]>
+			</if>
+		</where>
+			ORDER by createTime desc
+	</select>	
+	
+	<select id="funcRecordCount" resultType="int" parameterType="map">
+		select count(t.recordId)
+			from t_fund_record t
+		<where>
+			<if test="customerId != null and customerId != ''">
+				<![CDATA[ and t.customerId = #{customerId} ]]>
+			</if>
+		</where>
+	</select>
+</mapper>

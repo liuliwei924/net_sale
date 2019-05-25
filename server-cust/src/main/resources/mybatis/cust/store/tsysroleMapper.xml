@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SYSROLE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			roleId,
+			isDefault, 
+			roleType, 
+			roleName, 
+			roleDesc, 
+			createBy, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_sys_role
+		<where>
+			<if test="roleId != null and roleId != ''">
+			  and roleId = #{roleId}
+			 </if>
+			<if test="isDefault != null and isDefault != ''">
+				and isDefault = #{isDefault}
+			</if>
+			<if test="roleType != null and roleType != ''">
+				and roleType = #{roleType}
+			</if>
+			<if test="roleName != null and roleName != ''">
+				and roleName = #{roleName}
+			</if>
+			<if test="roleDesc != null and roleDesc != ''">
+				and roleDesc = #{roleDesc}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_role 
+		<where>
+		<if test="roleId != null and roleId != ''">
+		    and roleId = #{roleId}
+		 </if>
+		<if test="isDefault != null and isDefault != ''">
+			and isDefault = #{isDefault}
+		</if>
+		<if test="roleType != null and roleType != ''">
+			and roleType = #{roleType}
+		</if>
+		<if test="roleName != null and roleName != ''">
+			and roleName = #{roleName}
+		</if>
+		<if test="roleDesc != null and roleDesc != ''">
+			and roleDesc = #{roleDesc}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="roleId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sys_role (
+			isDefault,
+			roleType,
+			roleName,
+			roleDesc,
+			createBy,
+			createTime
+		)
+		VALUES ( 
+			<if test="isDefault !=null ">
+			#{isDefault, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isDefault ==null ">
+			0 ,
+			</if>
+			<if test="roleType !=null ">
+			#{roleType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="roleType ==null ">
+			1 ,
+			</if>
+			#{roleName, jdbcType=VARCHAR}, 
+			#{roleDesc, jdbcType=VARCHAR}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sys_role 
+		<where> 
+			roleId = #{roleId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sys_role  
+		<set>
+			<if test="isDefault != null">
+				isDefault = #{isDefault, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="roleType != null">
+				roleType = #{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="roleName != null">
+				roleName = #{roleName, jdbcType=VARCHAR},  
+			</if>
+			<if test="roleDesc != null">
+				roleDesc = #{roleDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  roleId = #{roleId}
+		</where>
+	</update>
+	
+</mapper>

@@ -1,0 +1,392 @@
+package org.xxjr.cust.util.auth.util;
+
+import java.awt.Image;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Map;
+
+import javax.imageio.ImageIO;
+
+import net.coobird.thumbnailator.Thumbnails;
+
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.util.FileUtil;
+import org.xxjr.cust.util.auth.PhotoAuthUtil;
+
+/**
+ * 文件读取工具类
+ */
+public class FileDealUtil {
+
+	/**
+	 * 读取文件内容，作为字符串返回
+	 */
+	public static String readFileAsString(String filePath) throws IOException {
+		File file = new File(filePath);
+		if (!file.exists()) {
+			throw new FileNotFoundException(filePath);
+		}
+
+		if (file.length() > 1024 * 1024 * 1024) {
+			throw new IOException("File is too large");
+		}
+
+		StringBuilder sb = new StringBuilder((int) (file.length()));
+		// 创建字节输入流
+		FileInputStream fis = new FileInputStream(filePath);
+		// 创建一个长度为10240的Buffer
+		byte[] bbuf = new byte[10240];
+		// 用于保存实际读取的字节数
+		int hasRead = 0;
+		while ((hasRead = fis.read(bbuf)) > 0) {
+			sb.append(new String(bbuf, 0, hasRead));
+		}
+		fis.close();
+		return sb.toString();
+	}
+
+	/**
+	 * 根据文件路径读取byte[] 数组
+	 */
+	public static byte[] readFileByBytes(String filePath) throws IOException {
+		File file = new File(filePath);
+		if (!file.exists()) {
+			throw new FileNotFoundException(filePath);
+		} else {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream(
+					(int) file.length());
+			BufferedInputStream in = null;
+
+			try {
+				in = new BufferedInputStream(new FileInputStream(file));
+				short bufSize = 1024;
+				byte[] buffer = new byte[bufSize];
+				int len1;
+				while (-1 != (len1 = in.read(buffer, 0, bufSize))) {
+					bos.write(buffer, 0, len1);
+				}
+				byte[] var7 = bos.toByteArray();
+				return var7;
+			} finally {
+				try {
+					if (in != null) {
+						in.close();
+					}
+				} catch (IOException var14) {
+					var14.printStackTrace();
+				}
+
+				bos.close();
+			}
+		}
+	}
+
+	// 处理上传的文件
+	public static void processUploadFile(File tempFile, Map<String, String> map) {
+		if (tempFile.exists()) {
+			CompressPictures(tempFile);
+			map.put("photo", GetPicturesStr(tempFile));
+		} else {
+			LogerUtil.log("文件不存在");
+		}
+	}
+	
+	// 处理上传的文件
+	public static void processUpload(InputStream in, Map<String, String> map) throws Exception {
+		if (in != null) {
+			byte[] data = null;
+			try {
+				data = new byte[in.available()];
+				in.read(data);
+			} catch (Exception e) {
+				LogerUtil.error(FileDealUtil.class, e, "processUpload error");
+				throw e;
+			}
+			
+			CompressPictures(data, map);
+			
+		} else {
+			LogerUtil.log("文件不存在");
+		}
+	}
+
+	/**
+	 * 压缩文件 商户可以自己找到优秀的压缩算法来压缩照片 这里只是演示
+	 * 
+	 * @param uploadFile
+	 * @return
+	 */
+	public static File CompressPictures(File uploadFile) {
+		String pictureBase64sStr = GetPicturesStr(uploadFile);
+		int valueL = pictureBase64sStr.length();
+		if (valueL >= 1 * 1024 * 1024) {
+			LogerUtil.log("文件太大，开始压缩 大小:" + valueL);
+			try {
+				Thumbnails.of(uploadFile).scale(0.90f).toFile(uploadFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			return CompressPictures(uploadFile);
+		} else {
+			LogerUtil.log("文件处理完毕 大小:" + valueL);
+			return null;
+		}
+
+	}
+	
+	public static void CompressPictures(byte[] data, Map<String, String> map) {
+		//String pictureBase64sStr = GetPicturesStr(in);
+		int valueL = data.length;
+		if (valueL >= 1 * 1024 * 1024) {
+			LogerUtil.log("文件太大，开始压缩 大小:" + valueL);
+			ByteArrayInputStream in  = new ByteArrayInputStream(data);
+			ByteArrayOutputStream outFile = new ByteArrayOutputStream();
+			try {
+				Thumbnails.of(in).scale(0.90f).toOutputStream(outFile);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			data = outFile.toByteArray();
+			FileUtil.closeQuietly(in);
+			FileUtil.closeQuietly(outFile);
+			CompressPictures(data, map);
+		} else {
+			LogerUtil.log("文件处理完毕 大小:" + valueL);
+			map.put("photo", GetPicturesStr(data));
+		}
+	}
+
+	/**
+	 * 图片转化成base64字符串 将图片文 件转化为字节数组字符串，并对其进行Base64编码处理
+	 * 
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	public static String GetPicturesStr(File file) {
+		InputStream in = null;
+		byte[] data = null;
+		String value = null;
+		// 读取图片字节数组
+		try {
+			in = new FileInputStream(file);
+			data = new byte[in.available()];
+			in.read(data);
+			in.close();
+			value = SecurityUtil.Base64EncodeByByte(data);// 返回Base64编码过的字节数组字符串
+		} catch (UnsupportedEncodingException e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "Base64编码异常--------------");
+			e.printStackTrace();
+		} catch (IOException e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "IO关闭异常-----------");
+			e.printStackTrace();
+		}
+		return value;
+	}
+	
+	public static String GetPicturesStr(byte[] data) {
+		String value = null;
+		// 读取图片字节数组
+		try {
+			value = SecurityUtil.Base64EncodeByByte(data);// 返回Base64编码过的字节数组字符串
+		} catch (UnsupportedEncodingException e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "Base64编码异常--------------");
+			e.printStackTrace();
+		} catch (Exception e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "其他异常-----------");
+			e.printStackTrace();
+		}
+		return value;
+	}
+
+	/**
+	 * 通过url获取图片
+	 * 
+	 * @param destUrl
+	 */
+	public static void saveToFile(String photoUrl, String filePath) {
+		FileOutputStream fos = null;
+		BufferedInputStream bis = null;
+		HttpURLConnection httpUrl = null;
+		URL url = null;
+		int BUFFER_SIZE = 1024;
+		byte[] buf = new byte[BUFFER_SIZE];
+		int size = 0;
+		try {
+			url = new URL(photoUrl);
+			httpUrl = (HttpURLConnection) url.openConnection();
+			httpUrl.connect();
+			bis = new BufferedInputStream(httpUrl.getInputStream());
+			int index = photoUrl.lastIndexOf("/");
+			String filename = photoUrl.substring(index + 1, photoUrl.length());
+			fos = new FileOutputStream(filePath + "/" + filename);
+			while ((size = bis.read(buf)) != -1) {
+				fos.write(buf, 0, size);
+			}
+			fos.flush();
+		} catch (IOException e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "http连接异常-----------");
+			e.printStackTrace();
+		} finally {
+			try {
+				fos.close();
+				bis.close();
+				httpUrl.disconnect();
+			} catch (IOException e) {
+				LogerUtil.error(PhotoAuthUtil.class, e, "关闭异常------------");
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	/**
+	 * 根据文件id下载文件(获取微信服务器上的图片)
+	 * 
+	 * @param mediaId
+	 *            媒体id
+	 * @param accessToken
+	 * @throws Exception
+	 */
+
+	public static InputStream getInputStream(String mediaId, String accessToken) {
+		InputStream inputStream = null;
+		String url = "http://file.api.weixin.qq.com/cgi-bin/media/get?access_token="
+				+ accessToken + "&media_id=" + mediaId;
+		try {
+			URL urlGet = new URL(url);
+			HttpURLConnection http = (HttpURLConnection) urlGet
+					.openConnection();
+			http.setRequestMethod("GET"); // 必须是get方式请求
+			http.setRequestProperty("Content-Type",
+					"application/x-www-form-urlencoded");
+			http.setDoOutput(true);
+			http.setDoInput(true);
+			System.setProperty("sun.net.client.defaultConnectTimeout", "30000");// 连接超时30秒
+			System.setProperty("sun.net.client.defaultReadTimeout", "30000"); // 读取超时30秒
+			http.connect();
+			// 获取文件转化为byte流
+			inputStream = http.getInputStream();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return inputStream;
+	}
+
+	/**
+	 * 
+	 * 下载微信端图片信息（jpg）
+	 * 
+	 * @param mediaId
+	 *            文件的id
+	 * @param accessToken
+	 * @param filePath
+	 *            文件保存路径
+	 * @throws Exception
+	 */
+
+	public static void saveImageToDisk(String mediaId, String accessToken,
+			String fileName) throws Exception {
+		InputStream inputStream = getInputStream(mediaId, accessToken);
+		byte[] data = new byte[1024];
+		int len = 0;
+		FileOutputStream fileOutputStream = null;
+		try {
+			fileOutputStream = new FileOutputStream(fileName);
+			while ((len = inputStream.read(data)) != -1) {
+				fileOutputStream.write(data, 0, len);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		} finally {
+			if (inputStream != null) {
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if (fileOutputStream != null) {
+				try {
+					fileOutputStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	/**
+	 * 判断上传的文件是否是图片
+	 * @param file
+	 * @return
+	 */
+	public static boolean isImage(File imageFile) {  
+       if (!imageFile.exists()) {  
+           return false;  
+       }
+       Image img = null;  
+       try {  
+           img = ImageIO.read(imageFile);  
+           if (img == null || img.getWidth(null) <= 0 || img.getHeight(null) <= 0) {  
+               return false;  
+           }  
+           return true;  
+       } catch (Exception e) {  
+           return false;  
+       } finally {  
+           img = null;  
+       }  
+   }  
+	
+	/**
+	 * 根据图片链接获取输入流
+	 * @param imgUrl
+	 * @return
+	 */
+	public static InputStream getImgUrlToStream(String imgUrl) {
+		HttpURLConnection httpUrl = null;
+		URL url = null;
+		ByteArrayInputStream inAr = null;
+		BufferedInputStream buf = null;
+		byte[] data = new byte[1024];
+		ByteArrayOutputStream fos = null;
+		int size = 0;
+		try {
+			url = new URL(imgUrl);
+			httpUrl = (HttpURLConnection) url.openConnection();
+			httpUrl.connect();
+			buf = new BufferedInputStream(httpUrl.getInputStream());
+			fos = new ByteArrayOutputStream(); 
+			while ((size = buf.read(data)) != -1) {
+				fos.write(data, 0, size);
+			}
+			inAr = new ByteArrayInputStream(fos.toByteArray());
+		} catch (IOException e) {
+			LogerUtil.error(PhotoAuthUtil.class, e, "http连接异常-----------");
+		}
+		finally{
+			FileUtil.closeQuietly(fos);
+			FileUtil.closeQuietly(buf);
+			httpUrl.disconnect();
+		}
+		return inAr;
+	}
+
+//	public static void main(String[] args) throws FileNotFoundException {
+//		File tempFile = new File(
+//				"D:/untitled.png");
+//		FileInputStream inputStream = new FileInputStream(tempFile);
+//		Map<String, String> pictureMap = new HashMap<String, String>();
+//		FileDealUtil.processUpload(inputStream, pictureMap);
+//		System.out.println(StringUtil.objectToStr(pictureMap.get("photo")).length());
+//		FileUtil.closeQuietly(inputStream);
+//	}
+}

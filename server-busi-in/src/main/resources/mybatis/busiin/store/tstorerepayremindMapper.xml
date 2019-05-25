@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREREPAYREMIND">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			notifyId,
+			applyId, 
+			reContractId, 
+			loanNo, 
+			customerId, 
+			applyName, 
+			loadInfo, 
+			lendAmount, 
+			monthPayDay, 
+			monthPay,
+			payDeadline,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_store_repay_remind
+		<where>
+			<if test="notifyId != null and notifyId != ''">
+			  and notifyId = #{notifyId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="loadInfo != null and loadInfo != ''">
+				and loadInfo = #{loadInfo}
+			</if>
+			<if test="lendAmount != null and lendAmount != ''">
+				and lendAmount = #{lendAmount}
+			</if>
+			<if test="monthPayDay != null and monthPayDay != ''">
+				and monthPayDay = #{monthPayDay}
+			</if>
+			<if test="monthPay != null and monthPay != ''">
+				and monthPay = #{monthPay}
+			</if>
+			<if test="payDeadline != null and payDeadline != ''">
+				and payDeadline = #{payDeadline}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_repay_remind 
+		<where>
+		<if test="notifyId != null and notifyId != ''">
+		    and notifyId = #{notifyId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="reContractId != null and reContractId != ''">
+			and reContractId = #{reContractId}
+		</if>
+		<if test="loanNo != null and loanNo != ''">
+			and loanNo = #{loanNo}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="loadInfo != null and loadInfo != ''">
+			and loadInfo = #{loadInfo}
+		</if>
+		<if test="lendAmount != null and lendAmount != ''">
+			and lendAmount = #{lendAmount}
+		</if>
+		<if test="monthPayDay != null and monthPayDay != ''">
+			and monthPayDay = #{monthPayDay}
+		</if>
+		<if test="monthPay != null and monthPay != ''">
+			and monthPay = #{monthPay}
+		</if>
+		<if test="payDeadline != null and payDeadline != ''">
+			and payDeadline = #{payDeadline}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="notifyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_store_repay_remind (
+			applyId,
+			reContractId,
+			loanNo,
+			customerId,
+			applyName,
+			loadInfo,
+			lendAmount,
+			monthPayDay,
+			monthPay,
+			payDeadline,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{reContractId, jdbcType=VARCHAR}, 
+			#{loanNo, jdbcType=VARCHAR}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{loadInfo, jdbcType=VARCHAR}, 
+			<if test="lendAmount !=null ">
+			#{lendAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="lendAmount ==null ">
+			0.00 ,
+			</if>
+			#{monthPayDay, jdbcType=VARCHAR}, 
+			<if test="monthPay !=null ">
+			#{monthPay, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="monthPay ==null ">
+			0.00 ,
+			</if>
+			#{payDeadline, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_repay_remind 
+		<where> 
+			notifyId = #{notifyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_store_repay_remind  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="loadInfo != null">
+				loadInfo = #{loadInfo, jdbcType=VARCHAR},  
+			</if>
+			<if test="lendAmount != null">
+				lendAmount = #{lendAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="monthPayDay != null">
+				monthPayDay = #{monthPayDay, jdbcType=VARCHAR},  
+			</if>
+			<if test="monthPay != null">
+				monthPay = #{monthPay, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="payDeadline != null">
+				payDeadline = #{payDeadline, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  notifyId = #{notifyId}
+		</where>
+	</update>
+	<delete id="deleteAll" parameterType="map">
+		DELETE FROM t_store_repay_remind
+	</delete>
+	<insert id="batchInsert" parameterType="map">
+		INSERT INTO t_store_repay_remind (
+			applyId,
+			reContractId,
+			loanNo,
+			customerId,
+			applyName,
+			loadInfo,
+			lendAmount,
+			monthPayDay,
+			monthPay,
+			payDeadline,
+			createTime,
+			updateTime
+		)
+		VALUES 		
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.applyId}, 
+		  #{item.reContractId}, 
+		  #{item.loanNo},
+		  #{item.customerId}, 
+		  #{item.applyName}, 
+		  #{item.loadInfo},
+		  #{item.lendAmount},
+		  #{item.monthPayDay},
+		  #{item.monthPay},
+		  #{item.payDeadline},
+	      NOW(),
+	      NOW()
+		  )
+		</foreach>
+	</insert>
+	
+	<select id="queryRepayRemindList" resultType="map" parameterType="map">
+		SELECT
+			t.notifyId,
+			t.applyId, 
+			t.reContractId, 
+			t.loanNo, 
+			t.customerId, 
+			t.applyName, 
+			t.loadInfo, 
+			t.lendAmount, 
+			t.monthPayDay,
+			t.monthPay,
+			t.payDeadline,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			f_hide_phone(t1.telephone) as telephone,
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+			t2.realName,
+			t2.groupName,
+			t2.teamName
+		FROM t_store_repay_remind t  
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.customerId
+		JOIN t_org t3 on t2.orgId = t3.orgId
+		LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+		<include refid="queryWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryRepayRemindCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_repay_remind t  
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.customerId
+		JOIN t_org t3 on t2.orgId = t3.orgId
+		LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+		<include refid="queryWhereSql"/>
+	</select>
+	
+	<sql id="queryWhereSql">
+		<where>
+			<if test="notifyId != null and notifyId != ''">
+		    	and t.notifyId = #{notifyId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and t.reContractId = #{reContractId}
+			</if>
+			<if test="loanNo != null and loanNo != ''">
+				and t.loanNo = #{loanNo}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="loadInfo != null and loadInfo != ''">
+				and t.loadInfo = #{loadInfo}
+			</if>
+			<if test="lendAmount != null and lendAmount != ''">
+				and t.lendAmount = #{lendAmount}
+			</if>
+			<if test="monthPayDay != null and monthPayDay != ''">
+				and t.monthPayDay = #{monthPayDay}
+			</if>
+			<if test="monthPay != null and monthPay != ''">
+				and t.monthPay = #{monthPay}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t3.orgId = #{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t3.orgId in (${userOrgs})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName like CONCAT(#{realName},'%') 
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone = #{telephone}
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t2.telephone = #{mobile}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[and t.monthPayDay >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[and t.monthPayDay < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t4.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	
+</mapper>

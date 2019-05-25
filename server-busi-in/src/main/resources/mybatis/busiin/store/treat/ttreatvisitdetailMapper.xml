@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATVISITDETAIL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			detailId,
+			applyId, 
+			DATE_FORMAT(visitTime,'%Y-%m-%d %H:%i:%s') as visitTime  ,
+			recCustId, 
+			visitType,
+			visitDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime ,
+			upStatus,
+			errorMessage,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime 
+		FROM t_treat_visit_detail
+		<where>
+			<if test="detailId != null and detailId != ''">
+			  and detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="visitTime != null and visitTime != ''">
+				and <![CDATA[ DATE_FORMAT(visitTime,'%Y-%m-%d')= DATE_FORMAT(#{visitTime},'%Y-%m-%d')]]>
+			</if>
+			<if test="recCustId != null and recCustId != ''">
+				and recCustId = #{recCustId}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and visitType = #{visitType}
+			</if>
+			<if test="visitDesc != null and visitDesc != ''">
+				and visitDesc = #{visitDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_visit_detail 
+		<where>
+		<if test="detailId != null and detailId != ''">
+		    and detailId = #{detailId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="visitTime != null and visitTime != ''">
+			and visitTime = #{visitTime}
+		</if>
+		<if test="recCustId != null and recCustId != ''">
+			and recCustId = #{recCustId}
+		</if>
+		<if test="visitType != null and visitType != ''">
+			and visitType = #{visitType}
+		</if>
+		<if test="visitDesc != null and visitDesc != ''">
+			and visitDesc = #{visitDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="upStatus !=null and upStatus != ''">
+			and upStatus = #{upStatus}
+		</if>
+		<if test="errorMessage !=null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryVisitRecord" resultType="map" parameterType="map">
+			SELECT
+			t.detailId,
+			t.applyId, 
+			DATE_FORMAT(t.visitTime,'%Y-%m-%d %H:%i:%s') as visitTime,
+			t.recCustId,
+			t1.realName, 
+			(CASE  t.visitType
+				WHEN 1 THEN '手工添加'
+				WHEN 2 THEN '访客登记'
+				ELSE '未知'
+				END
+			) AS visitTypeText,
+			t.visitType,
+			t.visitDesc,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.upStatus,
+			t.errorMessage,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM t_treat_visit_detail t
+		LEFT JOIN t_busi_cust t1 ON t.recCustId = t1.customerId
+		<where>
+			<if test="detailId != null and detailId != ''">
+			  and t.detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="visitTime != null and visitTime != ''">
+				and <![CDATA[ DATE_FORMAT(t.visitTime,'%Y-%m-%d')= DATE_FORMAT(#{visitTime},'%Y-%m-%d')]]>
+			</if>
+			<if test="recCustId != null and recCustId != ''">
+				and t.recCustId = #{recCustId}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and t.visitType = #{visitType}
+			</if>
+			<if test="visitDesc != null and visitDesc != ''">
+				and t.visitDesc = #{visitDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and t.createTime >= #{applyTime} ]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="detailId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_visit_detail (
+			applyId,
+			visitTime,
+			recCustId,
+			visitType,
+			visitDesc,
+			createTime,
+			upStatus,
+			errorMessage,
+			updateTime
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{visitTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{visitType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{visitDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="upStatus ==null ">
+			1 ,
+			</if>
+			<if test="upStatus !=null ">
+			#{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			#{errorMessage, jdbcType=VARCHAR},
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_visit_detail 
+		<where> 
+			detailId = #{detailId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_visit_detail  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitTime != null">
+				visitTime = #{visitTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="recCustId != null">
+				recCustId = #{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitType != null">
+				visitType = #{visitType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitDesc != null">
+				visitDesc = #{visitDesc, jdbcType=VARCHAR,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+			  AND  DATE_FORMAT(visitTime,'%Y-%m-%d')= DATE_FORMAT(#{visitTime},'%Y-%m-%d')
+		</where>
+	</update>
+	
+	<update id="updateByDetailId" parameterType="map">
+		UPDATE t_treat_visit_detail  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitTime != null">
+				visitTime = #{visitTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="recCustId != null">
+				recCustId = #{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitType != null">
+				visitType = #{visitType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="visitDesc != null">
+				visitDesc = #{visitDesc, jdbcType=VARCHAR,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  detailId = #{detailId}
+		</where>
+	</update>
+	
+	<select id="queryHandleVisit" resultType="map" parameterType="map">
+		SELECT
+			t.detailId,
+			t.applyId, 
+			DATE_FORMAT(t.visitTime,'%Y-%m-%d %H:%i:%s') as visitTime,
+			t.recCustId, 
+			t.visitType,
+			t.visitDesc, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.upStatus,
+			t.errorMessage,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t1.applyName,
+			t1.telephone,
+			t2.telephone as receiverTel,
+			t2.realName,
+			t2.orgId,
+			t3.orgNo,
+			(
+				CASE
+				WHEN t2.queryStatus = 1 THEN
+					t2.employeeNo
+				ELSE
+					NULL
+				END
+			) AS employeeNo
+		FROM t_treat_visit_detail t
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.recCustId
+		JOIN t_org t3 ON t3.orgId = t2.orgId
+		<where>
+			<if test="detailId != null and detailId != ''">
+		    	and t.detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="visitTime != null and visitTime != ''">
+				and t.visitTime = #{visitTime}
+			</if>
+			<if test="recCustId != null and recCustId != ''">
+				and t.recCustId = #{recCustId}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and t.visitType = #{visitType}
+			</if>
+			<if test="visitDesc != null and visitDesc != ''">
+				and t.visitDesc = #{visitDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and t.errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryHandleVisitCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_visit_detail t
+		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
+		JOIN t_busi_cust t2 ON t2.customerId = t.recCustId
+		JOIN t_org t3 ON t3.orgId = t2.orgId
+		<where>
+			<if test="detailId != null and detailId != ''">
+		    	and t.detailId = #{detailId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="visitTime != null and visitTime != ''">
+				and t.visitTime = #{visitTime}
+			</if>
+			<if test="recCustId != null and recCustId != ''">
+				and t.recCustId = #{recCustId}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and t.visitType = #{visitType}
+			</if>
+			<if test="visitDesc != null and visitDesc != ''">
+				and t.visitDesc = #{visitDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and t.errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+	</select>
+</mapper>

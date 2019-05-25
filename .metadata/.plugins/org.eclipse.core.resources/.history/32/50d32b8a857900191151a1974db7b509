@@ -1,0 +1,730 @@
+package org.xxjr.job.listener.busi.store;
+
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.active.mq.card.WzCardSend;
+import org.ddq.active.mq.message.WzCardMessageSend;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.llw.job.core.BaseExecteJob;
+import org.llw.job.util.JobConstant;
+import org.llw.job.util.JobUtil;
+import org.llw.xxjr.cust.util.wz.WzConstant;
+import org.llw.xxjr.fx.util.FxConstant;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.ApplyAllotUtil;
+import org.xxjr.busi.util.store.CFSUtil;
+import org.xxjr.store.util.StoreApplyUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.OrgUtils;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONObject;
+
+
+
+/**
+ * 7天未处理的专属单 提醒门店人员处理 上传成本单量到财务系统
+ * 
+ * @author loys
+ *
+ */
+@Lazy
+@Component
+public class StoreExcluNotDealJob implements BaseExecteJob {
+	
+	/**
+	 * 7天未处理的专属单 提醒门店人员处理和
+	 * @param processId
+	 * @return
+	 */
+	@Override
+	public AppResult executeJob(AppParam param){
+		LogerUtil.log("StoreExcluNotDealJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		exclusiveNotDeal(processId);
+		upLoadCostToCollect(processId);
+		commAddWithDrawRecord(processId);
+		autoUpdateXCodeStatus(processId);
+		queryWzCardCustVipInfo(processId);
+		netPoolNewOrderAllotOrg(processId);
+		getCFSRepayMentRemind(processId);
+		batchAddBookRecordToCFS(processId);
+		getCFSEmployeeNo(processId);
+		LogerUtil.log("StoreExcluNotDealJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		return result;
+	}
+
+	/**
+	 * 7天未处理的专属单 提醒门店人员处理
+	 * @param processId
+	 * @return
+	 */
+	public AppResult exclusiveNotDeal(Object processId) {
+		AppResult result = new AppResult();
+		int totalSucSize = 0;
+		int totalFailSize = 0;
+		try{
+			// 查询7天未处理的专属单
+			AppParam queryParam = new AppParam("exclusiveOrderService","queryNotDeal");
+			queryParam.addAttr("orgId", 236);
+			queryParam.setEveryPage(50);
+			queryParam.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			result = RemoteInvoke.getInstance().callNoTx(queryParam);
+			
+			List<Map<String,Object>> orderList = new ArrayList<>();
+			AppParam updateParam = new AppParam("storeExcluesiveNotifyService","save");
+			updateParam.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			
+			// 只处理500笔
+			if(result.isSuccess() && result.getRows().size() > 0){
+				int totalPage = result.getPage().getTotalPage();
+				if(totalPage > 10){
+					totalPage = 10;
+				}
+				for(int i = 1; i<=totalPage; i++){
+					// 查询7天未处理的专属单
+					queryParam.setCurrentPage(i);
+					queryParam.setRmiServiceName(AppProperties.getProperties(
+							DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+					result = RemoteInvoke.getInstance().callNoTx(queryParam);
+					if(result.isSuccess() && result.getRows().size() >0){
+						orderList.addAll(result.getRows());
+					}
+					try{
+						updateParam.addAttr("orderList", orderList);
+						result  = RemoteInvoke.getInstance().call(updateParam);
+						if(result.isSuccess()){
+							totalSucSize = totalSucSize + NumberUtil.getInt(result.getAttr("sucSize"),0);
+							totalFailSize = totalFailSize + NumberUtil.getInt(result.getAttr("failSize"),0);
+						}
+					}catch(Exception e){
+						LogerUtil.error(StoreExcluNotDealJob.class,e, "exclusiveNotDeal error");
+						JobUtil.addProcessExecute(processId, " excluNotDeal 报错：" + e.getMessage() );
+					}
+					orderList.clear();
+				}
+			}
+
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class,e, "exclusiveNotDeal error");
+			JobUtil.addProcessExecute(processId, " exclusiveNotDeal 报错：" + e.getMessage() );
+		}
+		LogerUtil.log("专属单加入通知成功总笔数:"  + totalSucSize + "失败总笔数:" + totalFailSize);
+		JobUtil.addProcessExecute(processId, "专属单加入通知成功总笔数:" + totalSucSize + "失败总笔数:" + totalFailSize);
+		return result;
+	}
+
+	/***
+	 * 上传成本单量到财务系统
+	 * @param processId
+	 * @return
+	 */
+	public AppResult upLoadCostToCollect(Object processId){
+		AppResult result = new AppResult();
+		int upLoadCostToCollectFlag = SysParamsUtil.getIntParamByKey("upLoadCostToCollectFlag", 0);
+		if(upLoadCostToCollectFlag == 0){
+			result.setMessage("上传成本单量到财务暂未开启!");
+			result.setSuccess(false);
+			return result;
+		}
+		try{
+			AppParam queryParam = new AppParam("storeCostRecordService","queryOrderCostList");
+			String recordDate = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),
+					DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			queryParam.addAttr("recordDate", recordDate);
+			//查询有效状态
+			queryParam.addAttr("status", "0");
+			queryParam.setOrderBy("createTime");
+			queryParam.setOrderValue("desc");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi_in));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int totalCount = queryResult.getRows().size();
+			String date = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1), "yyyyMMdd");
+			List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
+			int successCount = 0;
+			if(totalCount > 0){
+				try{
+					for(Map<String, Object> queryMap : queryResult.getRows()){
+						String applyId = StringUtil.getString(queryMap.get("applyId"));
+						String orderNo = date + applyId;
+						StringBuffer buffer = new StringBuffer();
+						buffer.append(queryMap.get("orgName"));
+						buffer.append("-");
+						buffer.append(queryMap.get("realName"));
+						buffer.append("-");
+						buffer.append("成本单");
+						//封装自定义参数
+						Map<String,Object> payParamsMap = new HashMap<String,Object>();
+						payParamsMap.put("customerId", queryMap.get("customerId"));
+						//返回参数
+						Map<String,Object> resultMap = new HashMap<String,Object>();
+						resultMap.put("payParams", JSONObject.toJSONString(payParamsMap));
+						resultMap.put("orderNo", orderNo);
+						resultMap.put("payChannel", "gsfp");
+						resultMap.put("payAmount", NumberUtil.getDouble(queryMap.get("price"), 40.0));//支付金额，单位元
+						resultMap.put("payAccount", 7);//分公司分配
+						resultMap.put("paySource", "allot");
+						resultMap.put("payDesc", buffer.toString());
+						list.add(resultMap);
+					}
+					//向财务系统保存收支记录
+					AppParam incomeParams = new AppParam();
+					incomeParams.setService("incomeDtlService");
+					incomeParams.setMethod("batchInsert");
+					incomeParams.addAttr("list", list);
+					incomeParams.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START +ServiceKey.Key_col));
+					result = RemoteInvoke.getInstance().call(incomeParams);
+					if(result.isSuccess()){
+						successCount = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Insert_SIZE), 0);
+					}
+				}catch(Exception e){
+					LogerUtil.error(StoreExcluNotDealJob.class, e, "upLoadCostToCollect error");
+				}
+			}
+			JobUtil.addProcessExecute(processId, "上传成本单量到财务系统 msg：成功笔数:"+ successCount +"，总共笔数：" + totalCount);
+			LogerUtil.log("上传成本单量到财务系统 msg：成功笔数:"+ successCount +"，总共笔数：" + totalCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "upLoadCostToCollect >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "上传成本单量到财务系统报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	/***
+	 * 查询佣金记录增加到提现记录表
+	 * @param processId
+	 * @return
+	 */
+	public AppResult commAddWithDrawRecord(Object processId){
+		AppResult result = new AppResult();
+		int commAddWithDrawFlag = SysParamsUtil.getIntParamByKey("commAddWithDrawFlag", 0);
+		if(commAddWithDrawFlag == 0){
+			result.setMessage("佣金记录增加到提现记录暂未开启!");
+			result.setSuccess(false);
+			return result;
+		}
+		try{
+			AppParam queryParam = new AppParam("wzCommisionRecordService","queryCustFundList");
+			String recordDate = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),
+					DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			queryParam.addAttr("recordDate", recordDate);
+			//查询未领取和领取失败的佣金
+			queryParam.addAttr("statusIn", "0,2");
+			queryParam.setOrderBy("createTime");
+			queryParam.setOrderValue("asc");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_zx));
+			queryParam.setEveryPage(50);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int currentPage = 1;
+			int successCount = 0;
+			int failCount = 0;
+			while(queryResult.getRows().size() > 0){
+				for(Map<String, Object> queryMap : queryResult.getRows()){
+					try{
+						double withAmount = NumberUtil.getDouble(queryMap.get("withAmount"),0.0);
+						if(withAmount >= 100){
+							AppParam recordParams = new AppParam("wzWithdrawRecordService","save");
+							recordParams.addAttr("customerId", queryMap.get("customerId"));
+							recordParams.addAttr("amount", withAmount);
+							recordParams.addAttr("status", "0"); //0 待审核
+							recordParams.addAttr("platId", "1"); //1-微信
+							recordParams.setRmiServiceName(AppProperties
+									.getProperties(DuoduoConstant.RMI_SERVICE_START +ServiceKey.Key_zx));
+							result = RemoteInvoke.getInstance().call(recordParams);
+							int insertSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Insert_SIZE),0);
+							if(insertSize == 1){
+								successCount ++;
+							}else{
+								failCount ++;
+							}
+						}
+					}catch(Exception e){
+						LogerUtil.error(StoreExcluNotDealJob.class, e, "commAddWithDrawRecord error");
+					}
+				}
+				currentPage ++;
+				queryParam.setCurrentPage(currentPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			}
+			JobUtil.addProcessExecute(processId, " 查询佣金记录增加到提现记录表msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
+			LogerUtil.log(" 查询佣金记录增加到提现记录表 msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "commAddWithDrawRecord >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, " 查询佣金记录增加到提现记录表报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	/**
+	 * 更新xcode状态
+	 * @param processId
+	 */
+	public static void autoUpdateXCodeStatus(Object processId) {
+		try{
+			AppParam updateParam = new AppParam("fxAppCodeService","updateStatus");
+			updateParam.addAttr("enable", FxConstant.APP_XCODE_ENABLE_0);
+			updateParam.addAttr("recordDate", DateUtil.getSimpleFmt(new Date()));
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_sho));
+			AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+			int successCount = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+			JobUtil.addProcessExecute(processId, " 自动更新XCode状态 msg：成功笔数:"+ successCount);
+			LogerUtil.log("自动更新XCode状态 msg：成功笔数:"+ successCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "autoUpdateXCodeStatus >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "自动更新XCode状态报错：" + e.getMessage() );
+		}
+	}
+	
+	/***
+	 * 查询微名片用户会员到期发送消息提醒
+	 * @param processId
+	 * @return
+	 */
+	public AppResult queryWzCardCustVipInfo(Object processId){
+		AppResult result = new AppResult();
+		int queryWzCardCustVipFlag = SysParamsUtil.getIntParamByKey("queryWzCardCustVipFlag", 0);
+		if(queryWzCardCustVipFlag == 0){
+			result.setMessage("查询微名片用户会员到期暂未开启!");
+			result.setSuccess(false);
+			return result;
+		}
+		try{
+			AppParam queryParam = new AppParam("wzCustService","queryByPage");
+			queryParam.addAttr("startQueryDate", DateUtil.getSimpleFmt(new Date()));
+			String recordDate = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),7),
+					DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			queryParam.addAttr("recordDate", recordDate);
+			//查询vip用户
+			queryParam.addAttr("custType", WzConstant.WZ_USER_TYPE_2);
+			queryParam.setOrderBy("createTime");
+			queryParam.setOrderValue("asc");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_zx));
+			queryParam.setEveryPage(50);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int currentPage = 1;
+			int sendMessageCount = 0;
+			//发送微信消息通知
+			WzCardMessageSend messageSend = (WzCardMessageSend) SpringAppContext.getBean(WzCardMessageSend.class);
+			//保存消息通知
+			WzCardSend wzCard = (WzCardSend)SpringAppContext.getBean(WzCardSend.class);
+			while(queryResult.getRows().size() > 0){
+				for(Map<String, Object> queryMap : queryResult.getRows()){
+					try{
+						String customerId = StringUtil.getString(queryMap.get("customerId"));
+						String realName = StringUtil.getString(queryMap.get("realName"));
+						String vipEndDate = StringUtil.getString(queryMap.get("vipEndDate"));
+						int days = DateUtil.diffDate(DateUtil.toDateByString(vipEndDate, DateUtil.DATE_PATTERN_YYYY_MM_DD),new Date());
+						if(days == 7 || days == 3){
+							vipEndDate = vipEndDate.replaceFirst("-", "年").replaceFirst("-", "月") + "日";
+							Map<String,Object> sendMap = new HashMap<String,Object>();
+							StringBuilder title = new StringBuilder();
+							title.append("尊敬的");
+							title.append(realName);
+							title.append("，您的年卡会员将在");
+							title.append(days);
+							title.append("日后到期。");
+							String remark = "为不影响使用，请及时续费！";
+							sendMap.put("title", title.toString());
+							sendMap.put("vipName", "微名片会员");
+							sendMap.put("expDate", vipEndDate);
+							sendMap.put("remark", remark);
+							messageSend.sendCustMessage(customerId,"wzCardVipEndNotify", sendMap);
+							StringBuilder notifyText = new StringBuilder();
+							notifyText.append(title).append("\r\n");
+							notifyText.append("服务名称：微名片会员").append("\r\n");
+							notifyText.append("到期时间：").append(vipEndDate).append("\r\n");
+							sendMap.put("remark", remark);
+							//增加消息通知
+							Map<String,Object> paramsMap = new HashMap<String,Object>();
+							paramsMap.put("notifyCustId", customerId);
+							paramsMap.put("status", WzConstant.WZ_MESSAGE_STATUS_1);
+							paramsMap.put("notifyTitle", "微名片会员");
+							paramsMap.put("notifyText", notifyText);
+							paramsMap.put("messNoType", WzConstant.WZ_MESSAGE_TYPE_1);
+							paramsMap.put("mesStatus", WzConstant.WZ_MESSAGE_RESTATUS_1);
+							wzCard.sendCardMessage(customerId, "notifyType" , paramsMap);
+							sendMessageCount ++ ;
+						}
+					}catch(Exception e){
+						LogerUtil.error(StoreExcluNotDealJob.class, e, "queryWzCardCustVipInfo error");
+					}
+				}
+				currentPage ++;
+				queryParam.setCurrentPage(currentPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			}
+			JobUtil.addProcessExecute(processId, "查询微名片用户会员到期发送消息提醒 msg：发送笔数:"+ sendMessageCount);
+			LogerUtil.log("查询微名片用户会员到期发送消息提醒 msg：发送笔数:"+ sendMessageCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "queryWzCardCustVipInfo >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, " 查询微名片用户会员到期发送消息提醒报错：" + e.getMessage());
+		}
+		return result;
+	}
+	
+	/***
+	 * 网销池中未分配的新单随机分给门店
+	 * @param processId
+	 * @return
+	 */
+	public AppResult netPoolNewOrderAllotOrg(Object processId){
+		AppResult result = new AppResult();
+		int netNewOrderAllotOrgFlag = SysParamsUtil.getIntParamByKey("netNewOrderAllotOrgFlag", 0);
+		if(netNewOrderAllotOrgFlag == 0){
+			result.setMessage("网销池中未分配的新单随机分给门店暂未开启!");
+			result.setSuccess(false);
+			return result;
+		}
+		try{
+			AppParam queryParam = new AppParam("netStorePoolService","queryNetOrderGroupByCity");
+			String startCreateDate = DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(),-1),
+					DateUtil.DATE_PATTERN_YYYY_MM_DD);
+			queryParam.addAttr("startCreateDate", startCreateDate);
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi_in));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int totalCount = 0;
+			int successCount = 0;
+			if(queryResult.getRows().size() > 0){
+				try{
+					AppParam updateParam = new AppParam("netStorePoolService","updateOrderOrgId");
+					for(Map<String, Object> queryMap : queryResult.getRows()){
+						String cityName = StringUtil.getString(queryMap.get("cityName"));
+						//订单数量
+						int orderCount = NumberUtil.getInt(queryMap.get("orderCount"),0);
+						totalCount += orderCount;
+						String applyIds = StringUtil.getString(queryMap.get("applyIds"));
+						List<Map<String,Object>> orglist = OrgUtils.getNetOrgListByCity(cityName);
+						//门店数量
+						int orgCount = orglist.size();
+						if(orgCount == 1){ //只有一个门店
+							String orgId = StringUtil.getString(orglist.get(0).get("orgId"));
+							updateParam.addAttr("orgId", orgId);
+							updateParam.removeAttr("applyId");
+							updateParam.addAttr("applyIdIn", applyIds);
+							updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_busi_in));
+							AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+							int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+							if(updateSize > 0){
+								successCount += updateSize;
+								for(int i = 0; i < orderCount; i++){
+									//记录门店分配订单数量
+									ApplyAllotUtil.saveOrgAllotRecord(DateUtil.getSimpleFmt(new Date()),orgId,cityName);
+								}
+							}
+						}else{ //多个门店
+							List<String> applyList = Arrays.asList(applyIds.split(","));
+							//订单数量大于等于门店数量
+							if(orderCount >= orgCount){
+								for (int j = 0; j < orderCount; j++) {
+									String applyId = applyList.get(j);
+									String orgId = "";
+									if(j >= orgCount){
+										Random random = new Random();// 定义随机类
+										int index = random.nextInt(orgCount);
+										orgId = StringUtil.getString(orglist.get(index).get("orgId"));
+									}else{
+										orgId = StringUtil.getString(orglist.get(j).get("orgId"));
+									}
+									updateParam.addAttr("orgId", orgId);
+									updateParam.addAttr("applyId", applyId);
+									updateParam.removeAttr("applyIdIn");
+									updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+											+ ServiceKey.Key_busi_in));
+									AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+									int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+									if(updateSize > 0){
+										successCount ++;
+										//记录门店分配订单数量
+										ApplyAllotUtil.saveOrgAllotRecord(DateUtil.getSimpleFmt(new Date()),orgId,cityName);
+									}
+								}
+							}else{
+								//订单数量小于门店数量
+								for (int j = 0; j < orderCount; j++) {
+									String applyId = applyList.get(j);
+									String orgId = StringUtil.getString(orglist.get(j).get("orgId"));
+									updateParam.addAttr("orgId", orgId);
+									updateParam.addAttr("applyId", applyId);
+									updateParam.removeAttr("applyIdIn");
+									updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+											+ ServiceKey.Key_busi_in));
+									AppResult updateResult = RemoteInvoke.getInstance().call(updateParam);
+									int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+									if(updateSize > 0){
+										successCount ++;
+										//记录门店分配订单数量
+										ApplyAllotUtil.saveOrgAllotRecord(DateUtil.getSimpleFmt(new Date()),orgId,cityName);
+									}
+								}
+							}
+						}
+					}
+				}catch(Exception e){
+					LogerUtil.error(StoreExcluNotDealJob.class, e, "netPoolNewOrderAllotOrg error");
+				}
+			}
+			JobUtil.addProcessExecute(processId, "网销池中未分配的新单随机分给门店 ：成功笔数:"+ successCount +"，总共笔数：" + totalCount);
+			LogerUtil.log("网销池中未分配的新单随机分给门店 msg：成功笔数:"+ successCount +"，总共笔数：" + totalCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "netPoolNewOrderAllotOrg >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "网销池中未分配的新单随机分给门店报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取CFS还款提醒
+	 * @param processId
+	 */
+	@SuppressWarnings("unchecked")
+	public static AppResult getCFSRepayMentRemind(Object processId) {
+		LogerUtil.log("getCFSRepayMentNotify >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		AppResult result = new AppResult();
+		try{
+			int cfsRepayMentRemindFlag = SysParamsUtil.getIntParamByKey("cfsRepayMentRemindFlag", 0);
+			if(cfsRepayMentRemindFlag == 0){
+				result.setMessage("获取CFS还款提醒暂未开启!");
+				result.setSuccess(false);
+				return result;
+			}
+			int successCount = 0;
+			Map<String, Object> resultMap = CFSUtil.getCustRepayment();
+			if(resultMap != null && !StringUtils.isEmpty(resultMap.get("listMap"))){
+				List<Map<String,Object>> listMap = (List<Map<String, Object>>) resultMap.get("listMap");
+				List<Map<String,Object>> resultList = new ArrayList<Map<String,Object>>();
+				AppParam queryParam = new AppParam("treatInfoHistoryService", "queryShow");
+				for(Map<String,Object> map : listMap){
+					try{
+						String reContractId = StringUtil.getString(map.get("ContractNo"));
+						queryParam.addAttr("reContractId", reContractId);
+						AppResult signResult = ServiceKey.doCallNoTx(queryParam, ServiceKey.Key_busi_in);
+						Map<String,Object> repayMap = new HashMap<String,Object>();
+						if(signResult.getRows().size() > 0){
+							String applyId = StringUtil.getString(signResult.getRow(0).get("applyId"));
+							Map<String,Object> applyMap = StoreApplyUtils.getStoreApplyInfo(applyId);
+							String lastStore = StringUtil.getString(applyMap.get("lastStore"));
+							if(StringUtils.isEmpty(lastStore)){
+								continue;
+							}
+							String payDeadline = "";
+							String strPayDate = StringUtil.getString(map.get("PayDeadline"));
+							if(!StringUtils.isEmpty(strPayDate)){
+								DateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+								Date date = sdf.parse(StringUtil.getString(strPayDate));
+								SimpleDateFormat simpFormat = new SimpleDateFormat ("EEE MMM dd HH:mm:ss Z yyyy", Locale.UK);
+						        Date payDate =  simpFormat.parse(StringUtil.getString(date));
+						        payDeadline = DateUtil.toStringByParttern(payDate, DateUtil.DATE_PATTERN_YYYY_MM_DD);
+							}
+							repayMap.put("customerId", lastStore);
+							repayMap.put("applyId", applyId);
+							repayMap.put("loanNo", map.get("LoanCode"));
+							repayMap.put("loadInfo", map.get("LoadInfo"));
+							repayMap.put("applyName", map.get("CustomerNames"));
+							repayMap.put("lendAmount", map.get("LendAmount"));
+							repayMap.put("payDeadline", payDeadline);
+							repayMap.put("monthPay", NumberUtil.getDouble(map.get("MonthPay"),0));
+							repayMap.put("monthPayDay", map.get("MonthPayDay"));
+							repayMap.put("reContractId", reContractId);
+							resultList.add(repayMap);
+							queryParam.removeAttr("reContractId");
+							signResult = null;
+							//增加用户通知信息
+							AppParam notifyParams = new AppParam("infoNotifyService","updateNotifyByType");
+							notifyParams.addAttr("customerId", lastStore);
+							notifyParams.addAttr("applyId", applyId);
+							notifyParams.addAttr("applyName", map.get("CustomerNames"));
+							notifyParams.addAttr("notifyTime", DateUtil.getSimpleFmt(new Date()));
+							notifyParams.addAttr("type", 4);//还款提醒
+							notifyParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+									+ ServiceKey.Key_busi_in));
+							RemoteInvoke.getInstance().call(notifyParams);
+						}
+					}catch(Exception e){
+						LogerUtil.error(StoreExcluNotDealJob.class, e, "获取CFS还款提醒 >>>>>>>>>>>>>>>>>> error");
+					}
+				}
+				if(resultList.size() > 0){
+					AppParam insertParam = new AppParam("storeRepayRemindService","batchInsert");
+					insertParam.addAttr("list", resultList);
+					insertParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_busi_in));
+					AppResult insertResult = RemoteInvoke.getInstance().call(insertParam);
+					if(insertResult.isSuccess()){
+						successCount = NumberUtil.getInt(insertResult.getAttr(DuoduoConstant.DAO_Insert_SIZE),0);
+					}
+				}
+			}
+			JobUtil.addProcessExecute(processId, " 获取CFS还款提醒：成功笔数:"+ successCount);
+			LogerUtil.log("获取CFS还款提醒 msg：成功笔数:"+ successCount);
+			LogerUtil.log("getCFSRepayMentNotify >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "获取CFS还款提醒 >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "获取CFS还款提醒报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	/**
+	 * 批量添加预约上门记录上传到CFS
+	 * @param processId
+	 */
+	public static AppResult batchAddBookRecordToCFS(Object processId) {
+		LogerUtil.log("batchAddBookRecordToCFS >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		AppResult result = new AppResult();
+		int batchAddBookRecordToCFS = SysParamsUtil.getIntParamByKey("batchAddBookRecordToCFS", 0);
+		if(batchAddBookRecordToCFS == 0){
+			result.setMessage("批量添加预约上门记录上传到CFS醒暂未开启!");
+			result.setSuccess(false);
+			return result;
+		}
+		try{
+			AppParam queryParam = new AppParam("treatBookDetailService","queryBookRecordList");
+			//查询未上传
+			queryParam.addAttr("upStatus", "1");
+			queryParam.addAttr("bookStatus", "0");
+			queryParam.setOrderValue("desc");
+			queryParam.setOrderBy("t.createTime");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi_in));
+			queryParam.setEveryPage(50);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int currentPage = 1;
+			int successCount = 0;
+			int failCount = 0;
+			while(queryResult.getRows().size() > 0 ){
+				for(Map<String, Object> queryMap : queryResult.getRows()){
+					AppParam addparams = new AppParam();
+					addparams.addAttr("detailId", StringUtil.getString(queryMap.get("detailId")));
+					addparams.addAttr("bookTime", StringUtil.getString(queryMap.get("bookTime")));
+					addparams.addAttr("applyName", StringUtil.getString(queryMap.get("applyName")));
+					addparams.addAttr("telephone", StringUtil.getString(queryMap.get("telephone")));
+					addparams.addAttr("bookStatus", StringUtil.getString(queryMap.get("bookStatus")));
+					addparams.addAttr("visitTime", StringUtil.getString(queryMap.get("visitTime")));
+					addparams.addAttr("signStatus", StringUtil.getString(queryMap.get("signStatus")));
+					addparams.addAttr("orgNo", StringUtil.getString(queryMap.get("orgNo")));
+					String clerkmobile = StringUtil.getString(queryMap.get("clerkmobile"));
+					if(clerkmobile.length() == 11){
+						addparams.addAttr("clerkmobile", clerkmobile);
+					}
+					addparams.addAttr("realName", StringUtil.getString(queryMap.get("realName")));
+					Map<String, Object> resultMap = CFSUtil.addBookRecordToCFS(addparams);
+					String messageCode = StringUtil.getString(resultMap.get("MessageCode"));
+					if ("200".equals(messageCode)) {
+						successCount ++;
+					}else{
+						failCount ++;
+					}
+				}
+				currentPage ++;
+				queryParam.setCurrentPage(currentPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			}
+			JobUtil.addProcessExecute(processId, " 批量添加预约上门记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
+			LogerUtil.log("批量添加预约上门记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
+		}catch(Exception e){
+			LogerUtil.error(StoreNotifyUtils.class, e, "batchAddBookRecordToCFS >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "批量添加预约上门记录上传到CFS报错：" + e.getMessage() );
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 获取CFS员工编号信息
+	 * @param processId
+	 */
+	public static AppResult getCFSEmployeeNo(Object processId) {
+		LogerUtil.log("getCFSEmployeeNo >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+		AppResult result = new AppResult();
+		try{
+			int getCfsEmployeeNoFlag = SysParamsUtil.getIntParamByKey("getCfsEmployeeNoFlag", 0);
+			if(getCfsEmployeeNoFlag == 0){
+				result.setMessage("获取CFS员工编号信息暂未开启!");
+				result.setSuccess(false);
+				return result;
+			}
+			AppParam queryParam = new AppParam("busiCustService","queryStoreCustList");
+			queryParam.addAttr("queryStatus", "0");
+			queryParam.addAttr("roleTypeIn", "3,6,7,8,9");
+			queryParam.setOrderValue("desc");
+			queryParam.setOrderBy("t.createTime");
+			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+					+ ServiceKey.Key_busi_in));
+			queryParam.setEveryPage(50);
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			int currentPage = 1;
+			int successCount = 0;
+			int failCount = 0;
+			while(queryResult.getRows().size() > 0 ){
+				for(Map<String, Object> queryMap : queryResult.getRows()){
+					AppParam addparams = new AppParam();
+					addparams.addAttr("orgNo", StringUtil.getString(queryMap.get("orgNo")));
+					addparams.addAttr("realName", StringUtil.getString(queryMap.get("realName")));
+					String employeeNo = CFSUtil.getStoreEmployeeNo(addparams);
+					//更新门店人员员工编号
+					AppParam updateParams = new AppParam("busiCustService","update");
+					updateParams.addAttr("customerId", StringUtil.getString(queryMap.get("customerId")));
+					if (employeeNo.contains(",") || StringUtils.isEmpty(employeeNo)) {
+						updateParams.addAttr("employeeNo", StringUtils.isEmpty(employeeNo) ? null : employeeNo);
+						updateParams.addAttr("queryStatus", "2");
+						failCount ++;
+					}else{
+						updateParams.addAttr("employeeNo", employeeNo);
+						updateParams.addAttr("queryStatus", "1");
+						successCount ++;
+					}
+					updateParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_busi_in));
+					AppResult updateResult = RemoteInvoke.getInstance().call(updateParams);
+					int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+					if(updateSize > 0){
+						updateParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
+								+ ServiceKey.Key_sum));
+						RemoteInvoke.getInstance().call(updateParams);
+					}
+				}
+				currentPage ++;
+				queryParam.setCurrentPage(currentPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			}
+			JobUtil.addProcessExecute(processId, " 获取CFS员工编号信息：成功笔数:"+ successCount+"，失败笔数：" + failCount);
+			LogerUtil.log("获取CFS员工编号信息 msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
+			LogerUtil.log("getCFSEmployeeNo >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		}catch(Exception e){
+			LogerUtil.error(StoreExcluNotDealJob.class, e, "获取CFS员工编号信息 >>>>>>>>>>>>>>>>>> error");
+			JobUtil.addProcessExecute(processId, "获取CFS员工编号信息报错：" + e.getMessage() );
+		}
+		return result;
+	}
+}

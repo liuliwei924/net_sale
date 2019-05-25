@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TRANSORDERCFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			configId,
+			orderLevel, 
+			transOrder1, 
+			transOrderDay1, 
+			transOrder2, 
+			transOrderDay2, 
+			transOrder3, 
+			transOrderDay3, 
+			transOrder4, 
+			transOrderDay4
+		FROM t_trans_order_cfg
+		<where>
+			<if test="configId != null and configId != ''">
+			  and configId = #{configId}
+			 </if>
+			<if test="orderLevel != null and orderLevel != ''">
+				and orderLevel = #{orderLevel}
+			</if>
+			<if test="transOrder1 != null and transOrder1 != ''">
+				and transOrder1 = #{transOrder1}
+			</if>
+			<if test="transOrderDay1 != null and transOrderDay1 != ''">
+				and transOrderDay1 = #{transOrderDay1}
+			</if>
+			<if test="transOrder2 != null and transOrder2 != ''">
+				and transOrder2 = #{transOrder2}
+			</if>
+			<if test="transOrderDay2 != null and transOrderDay2 != ''">
+				and transOrderDay2 = #{transOrderDay2}
+			</if>
+			<if test="transOrder3 != null and transOrder3 != ''">
+				and transOrder3 = #{transOrder3}
+			</if>
+			<if test="transOrderDay3 != null and transOrderDay3 != ''">
+				and transOrderDay3 = #{transOrderDay3}
+			</if>
+			<if test="transOrder4 != null and transOrder4 != ''">
+				and transOrder4 = #{transOrder4}
+			</if>
+			<if test="transOrderDay4 != null and transOrderDay4 != ''">
+				and transOrderDay4 = #{transOrderDay4}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_trans_order_cfg 
+		<where>
+		<if test="configId != null and configId != ''">
+		    and configId = #{configId}
+		 </if>
+		<if test="orderLevel != null and orderLevel != ''">
+			and orderLevel = #{orderLevel}
+		</if>
+		<if test="transOrder1 != null and transOrder1 != ''">
+			and transOrder1 = #{transOrder1}
+		</if>
+		<if test="transOrderDay1 != null and transOrderDay1 != ''">
+			and transOrderDay1 = #{transOrderDay1}
+		</if>
+		<if test="transOrder2 != null and transOrder2 != ''">
+			and transOrder2 = #{transOrder2}
+		</if>
+		<if test="transOrderDay2 != null and transOrderDay2 != ''">
+			and transOrderDay2 = #{transOrderDay2}
+		</if>
+		<if test="transOrder3 != null and transOrder3 != ''">
+			and transOrder3 = #{transOrder3}
+		</if>
+		<if test="transOrderDay3 != null and transOrderDay3 != ''">
+			and transOrderDay3 = #{transOrderDay3}
+		</if>
+		<if test="transOrder4 != null and transOrder4 != ''">
+			and transOrder4 = #{transOrder4}
+		</if>
+		<if test="transOrderDay4 != null and transOrderDay4 != ''">
+			and transOrderDay4 = #{transOrderDay4}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="configId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_trans_order_cfg (
+			orderLevel,
+			transOrder1,
+			transOrderDay1,
+			transOrder2,
+			transOrderDay2,
+			transOrder3,
+			transOrderDay3,
+			transOrder4,
+			transOrderDay4
+		)
+		VALUES ( 
+			<if test="orderLevel !=null ">
+			#{orderLevel, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderLevel ==null ">
+			1 ,
+			</if>
+			#{transOrder1, jdbcType=VARCHAR}, 
+			<if test="transOrderDay1 !=null ">
+			#{transOrderDay1, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="transOrderDay1 ==null ">
+			0 ,
+			</if>
+			#{transOrder2, jdbcType=VARCHAR}, 
+			<if test="transOrderDay2 !=null ">
+			#{transOrderDay2, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="transOrderDay2 ==null ">
+			0 ,
+			</if>
+			#{transOrder3, jdbcType=VARCHAR}, 
+			<if test="transOrderDay3 !=null ">
+			#{transOrderDay3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="transOrderDay3 ==null ">
+			0 ,
+			</if>
+			#{transOrder4, jdbcType=VARCHAR}, 
+			<if test="transOrderDay4 !=null ">
+			#{transOrderDay4, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="transOrderDay4 ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_trans_order_cfg 
+		<where> 
+			configId = #{configId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_trans_order_cfg  
+		<set>
+			<if test="orderLevel != null">
+				orderLevel = #{orderLevel, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="transOrder1 != null">
+				transOrder1 = #{transOrder1, jdbcType=VARCHAR},  
+			</if>
+			<if test="transOrderDay1 != null">
+				transOrderDay1 = #{transOrderDay1, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="transOrder2 != null">
+				transOrder2 = #{transOrder2, jdbcType=VARCHAR},  
+			</if>
+			<if test="transOrderDay2 != null">
+				transOrderDay2 = #{transOrderDay2, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="transOrder3 != null">
+				transOrder3 = #{transOrder3, jdbcType=VARCHAR},  
+			</if>
+			<if test="transOrderDay3 != null">
+				transOrderDay3 = #{transOrderDay3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="transOrder4 != null">
+				transOrder4 = #{transOrder4, jdbcType=VARCHAR},  
+			</if>
+			<if test="transOrderDay4 != null">
+				transOrderDay4 = #{transOrderDay4, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  configId = #{configId}
+		</where>
+	</update>
+</mapper>

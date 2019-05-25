@@ -1,0 +1,158 @@
+package org.xxjr.cust.util.info;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 
+ * 用户的 实名，邮箱，手机号码 的 基本数据
+ * @author Administrator
+ *
+ */
+public class MjbCustomerIdentify {
+	/**已经认证的身分信息**/
+	public static String CacheKey_PASS = "Mjb_CustIdentify";
+	
+	/**
+	 * 获取用户 实名验证的数据
+	 * @param customerId
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getCustIdentify(String customerId){
+		Map<String, Object> userMap = (Map<String, Object>) RedisUtils.getRedisService().get(CacheKey_PASS + customerId);
+		if(userMap == null || userMap.isEmpty()){
+			userMap = refreshIdentifyById(customerId);
+		}
+		return userMap;
+	}
+	/**
+	 * 更新用户实名数据
+	 * @param customerId
+	 * @return
+	 */
+	public static AppResult updateCustIdentify(AppParam param){
+		param.setMethod("update");
+		param.setService("custIdentifyCardService");
+		AppResult result = new AppResult();
+		result = ServiceKey.doCall(param, ServiceKey.Key_mjb);
+		return result;
+	}
+	
+	/**
+	 * 刷新用户实名验证 根据session
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> refreshIdentifyBySession(String customerId){ 
+		Map<String,Object> sessionData = DuoduoSession.getUser().getSessionData();
+		Map<String, Object> userMap = getDBUserInfo(customerId, sessionData);
+		RedisUtils.getRedisService().set(CacheKey_PASS + customerId, (Serializable)userMap, CustomerUtil.CACHE_TIME_7_DAYS);
+		return userMap;
+	}
+	
+	/**
+	 * 根据数据库查出的信息刷新缓存
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> refreshIdentifyByExists(String customerId,Map<String,Object> sessionData){ 
+		Map<String, Object> userMap = getDBUserInfo(customerId, sessionData);
+		RedisUtils.getRedisService().set(CacheKey_PASS + customerId, (Serializable)userMap, CustomerUtil.CACHE_TIME_7_DAYS);
+		return userMap;
+	}
+	
+	/**
+	 * zhijie 刷新信息缓存
+	 * @param custId
+	 * @return
+	 */
+	public static void refreshIdentifyByExistsDate(String customerId,Map<String,Object> sessionData){ 
+		
+		RedisUtils.getRedisService().set(CacheKey_PASS + customerId, (Serializable)sessionData, CustomerUtil.CACHE_TIME_7_DAYS);
+		
+	}
+	/**
+	 * 刷新用户实名验证的数据，根据最新数据
+	 * @param custId
+	 * @return
+	 */
+	public static Map<String, Object> refreshIdentifyById(String customerId){ 
+		AppParam param = new AppParam();
+		param.setService("customerService");
+		param.setMethod("loginQuery");
+		param.addAttr("customerId", customerId);
+		Map<String, Object> userMap = new HashMap<String,Object>();
+		AppResult result = ServiceKey.doCallNoTx(param, ServiceKey.Key_mjb);
+		
+		if(result.getRows().size()>0){
+			Map<String,Object> resultMap = result.getRow(0);
+			userMap = getDBUserInfo(customerId, resultMap);
+		}
+		RedisUtils.getRedisService().set(CacheKey_PASS + customerId, (Serializable)userMap, CustomerUtil.CACHE_TIME_7_DAYS);
+		return userMap;
+	}
+	
+	/***
+	 * 获取用户基本信息 ，去掉email,telephone,cardNo,realName
+	 * @param customerId
+	 * @return
+	 */
+	public static Map<String, Object> getNoShowInfo(String customerId) {
+		Map<String,Object> map = getCustIdentify(customerId);
+		map.remove("email");
+		map.remove("telephone");
+		map.remove("cardNo");
+		map.remove("realName");
+		return map;
+	}
+	
+	/***
+	 * 获取用户基本信息
+	 * @param customerId
+	 * @param resultMap
+	 * @return
+	 */
+	private static Map<String, Object> getDBUserInfo(String customerId,Map<String, Object> resultMap) {
+		String email = (String) resultMap.get("email");
+		String telephone = (String) resultMap.get("telephone");
+		Map<String, Object> userMap = resultMap;
+		userMap.put("hideTelephone", StringUtil.getHideTelphone(telephone));
+		userMap.put("hideEmail", StringUtil.getHideEmail(email));
+		userMap.put("qrcodeImgUrl", StringUtil.getHideEmail("qrcodeImgUrl"));
+		userMap.put("customerId", customerId);
+		//实名信息
+		String cardNo = (String) resultMap.get("cardNo");
+		String realName = (String) resultMap.get("realName");
+		
+		if (!StringUtils.isEmpty(resultMap.get("cardNo")) && 
+				!StringUtils.isEmpty(resultMap.get("realName"))) {
+			userMap.put("hideCardNo", StringUtil.getHideIdentify(cardNo));
+			userMap.put("hideRealName", StringUtil.getHideRealname(realName));
+			userMap.put("hideName", StringUtil.getHideUserName(realName));
+		}
+		return userMap;
+	}
+	/**
+	 * 判断是否是已存在的用户
+	 * @param telephone
+	 * @return
+	 */
+	public static boolean isExistUser(String telephone) {
+		AppParam param = new AppParam("customerService","queryCount");
+		param.addAttr("telephone", telephone);
+		AppResult result = ServiceKey.doCallNoTx(param, ServiceKey.Key_mjb);
+		return NumberUtil.getInt(result.getAttr(DuoduoConstant.TOTAL_SIZE),0) > 0;
+	}
+}

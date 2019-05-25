@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="org.ddq.common.util.NetUtil"/>
+<fullyQualifiedTypeName name="org.ddq.common.context.AppProperties"/>
+<fullyQualifiedTypeName name="org.ddq.common.util.PropertiesXXUtils"/>
+<fullyQualifiedTypeName name="org.ddq.common.security.rsa.RsaReadUtil"/>
+<fullyQualifiedTypeName name="org.ddq.common.util.StringUtil"/>
+<fullyQualifiedTypeName name="org.ddq.common.web.session.DuoduoSession"/>
+<fullyQualifiedTypeName name="org.ddq.common.security.md5.Md5"/>
+<fullyQualifiedTypeName name="org.ddq.common.security.aes.SecurityUtil"/>
+<fullyQualifiedTypeName name="org.ddq.common.core.service.impl.SoaInvokerSpringImpl"/>
+<fullyQualifiedTypeName name="org.ddq.common.core.dao.handler.NumberHandler"/>
+<fullyQualifiedTypeName name="org.ddq.common.core.dao.handler.DateHandler"/>
+<fullyQualifiedTypeName name="org.llw.model.cache.RedisService"/>
+<fullyQualifiedTypeName name="org.common.core.dao.handler.NumberHandler"/>
+<fullyQualifiedTypeName name="org.common.core.dao.handler.DateHandler"/>
+<fullyQualifiedTypeName name="org.llw.job.util.JobUtil"/>
+<fullyQualifiedTypeName name="org.ddq.common.core.service.SoaManager"/>
+<fullyQualifiedTypeName name="org.ddq.common.util.LogerUtil"/>
+<fullyQualifiedTypeName name="org.llw.job.core.BaseJob"/>
+<fullyQualifiedTypeName name="org.llw.job.core.ScheduleManager"/>
+<fullyQualifiedTypeName name="org.llw.common.web.util.QRCodeUtils"/>
+<fullyQualifiedTypeName name="org.xxjr.store.web.util.PageUtil"/>
+<fullyQualifiedTypeName name="org.springframework.core.env.Environment"/>
+</qualifiedTypeNameHistroy>

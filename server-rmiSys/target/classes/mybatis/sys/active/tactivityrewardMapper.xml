@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ACTIVITYREWARD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			rewardDtlId as "rewardDtlId",
+			joinId as "joinId",  <!-- 活动 -->
+			activeId as "activeId",  
+			customerId as "customerId",  
+			rewardId as "rewardId",  <!-- 奖励类型 -->
+			rewardValue as "rewardValue",  <!-- 奖励值 -->
+			rewardDesc as "rewardDesc",  <!-- 奖励描述 -->
+			DATE_FORMAT(rewardTime,'%Y-%m-%d %H:%i:%s') as "rewardTime", <!-- 获取奖励时间 -->
+			status as "status",  <!-- 发放状态(0 未发 1 已发) -->
+			DATE_FORMAT(realTime,'%Y-%m-%d %H:%i:%s') as "realTime" <!-- 实际发放时间 -->
+		FROM t_activity_reward
+		<where>
+			<if test="rewardDtlId != null and rewardDtlId != ''">
+			  and rewardDtlId = #{rewardDtlId}
+			 </if>
+			<if test="joinId != null and joinId != ''">
+				and joinId = #{joinId}
+			</if>
+			<if test="activeId != null and activeId != ''">
+				and activeId = #{activeId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="rewardId != null and rewardId != ''">
+				and rewardId = #{rewardId}
+			</if>
+			<if test="rewardValue != null and rewardValue != ''">
+				and rewardValue = #{rewardValue}
+			</if>
+			<if test="rewardDesc != null and rewardDesc != ''">
+				and rewardDesc = #{rewardDesc}
+			</if>
+			<if test="rewardTime != null and rewardTime != ''">
+				and rewardTime = #{rewardTime}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="realTime != null and realTime != ''">
+				and realTime = #{realTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_activity_reward 
+		<where>
+		<if test="rewardDtlId != null and rewardDtlId != ''">
+		    and rewardDtlId = #{rewardDtlId}
+		 </if>
+		<if test="joinId != null and joinId != ''">
+			and joinId = #{joinId}
+		</if>
+		<if test="activeId != null and activeId != ''">
+			and activeId = #{activeId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="rewardId != null and rewardId != ''">
+			and rewardId = #{rewardId}
+		</if>
+		<if test="rewardValue != null and rewardValue != ''">
+			and rewardValue = #{rewardValue}
+		</if>
+		<if test="rewardDesc != null and rewardDesc != ''">
+			and rewardDesc = #{rewardDesc}
+		</if>
+		<if test="rewardTime != null and rewardTime != ''">
+			and rewardTime = #{rewardTime}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="realTime != null and realTime != ''">
+			and realTime = #{realTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="rewardDtlId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_activity_reward (
+			joinId,
+			activeId,
+			customerId,
+			rewardId,
+			rewardValue,
+			rewardDesc,
+			rewardTime,
+			status,
+			realTime
+		)
+		VALUES ( 
+			#{joinId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{activeId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{rewardId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{rewardValue, jdbcType=VARCHAR}, 
+			#{rewardDesc, jdbcType=VARCHAR}, 
+			#{rewardTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{realTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_activity_reward 
+		<where> 
+			rewardDtlId = #{rewardDtlId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_activity_reward  
+		<set>
+			<if test="joinId != null">
+				joinId = #{joinId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="activeId != null">
+				activeId = #{activeId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardId != null">
+				rewardId = #{rewardId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardValue != null">
+				rewardValue = #{rewardValue, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardDesc != null">
+				rewardDesc = #{rewardDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardTime != null">
+				rewardTime = #{rewardTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="realTime != null">
+				realTime = #{realTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  rewardDtlId = #{rewardDtlId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,86 @@
+package org.xxjr.job.listener.cust;
+
+import java.util.Date;
+import java.util.Map;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/***
+ * 推荐贷款-退佣金
+ */
+@Lazy
+@Component
+public class BackRewardAmountJob implements BaseExecteJob {
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		AppResult result = new AppResult();
+		try {
+			LogerUtil.log("BackRewardAmountJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
+			//推荐贷款退佣金
+			int everPage = 1;// 分页条件
+			AppParam queryParam = new AppParam();
+			queryParam.setService("daiReferRecordService");
+			queryParam.setMethod("queryBackRewardAmountInfo");
+			queryParam.addAttr("orderStatus", "7,8");	// 7-无可贷点/同行/捣乱无效客户；8-空号/错号
+			queryParam.setCurrentPage(everPage);
+			queryParam.setEveryPage(100);
+			queryParam.setRmiServiceName(
+					AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+			while (queryResult.getRows().size() > 0) {
+				for (Map<String, Object> map : queryResult.getRows()) {
+					Object custId = map.get("customerId");
+					double rewardAmount = NumberUtil.getDouble(map.get("rewardAmount"),0);
+					if (rewardAmount <= 0) {
+						continue;
+					}
+					AppParam amountParam = new AppParam();
+					amountParam.setService("custAmountService");
+					amountParam.setMethod("updateRewardAmount");
+					amountParam.addAttr("rewardAmount", -rewardAmount);
+					amountParam.addAttr("amount", rewardAmount);
+					amountParam.addAttr("customerId", custId);
+					amountParam.addAttr("recordDesc", "退单扣除佣金");
+					amountParam.addAttr("fundType", "backReward");
+					amountParam.addAttr("orderId", map.get("applyId")); 
+					amountParam.addAttr("methodName", "updateRewardAmount");
+					amountParam.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+					AppResult amountResult = RemoteInvoke.getInstance().call(amountParam);
+					if (amountResult.isSuccess()) {
+						AppParam referParam = new AppParam();
+						referParam.setService("daiReferRecordService");
+						referParam.setMethod("update");
+						referParam.addAttr("settlementStatus", "2"); 	//已退佣金
+						referParam.addAttr("recordId", map.get("recordId")); 
+						referParam.addAttr("refundTime", new Date()); 
+						referParam.setRmiServiceName(AppProperties
+								.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+						RemoteInvoke.getInstance().call(referParam);
+					}
+				}
+				everPage++;
+				queryParam.setCurrentPage(everPage);
+				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		}
+		LogerUtil.log("BackRewardAmountJob >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end");
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "backRewardAmount error");
+			JobUtil.addProcessExecute(processId, "推荐贷款退佣金：" + e.getMessage());
+		}
+		return result;
+	}
+}

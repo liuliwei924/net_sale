@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PUSHDATAPOOL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			pushId,
+			customerId, 
+			pushType, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			immediate, 
+			applyName, 
+			identifyNo, 
+			userAgent, 
+			telephone, 
+			cityName, 
+			sourceType, 
+			channelCode, 
+			channelDetail, 
+			age,
+			sex,
+			applyIp
+		FROM t_pushdata_pool
+		<where>
+			<if test="pushId != null and pushId != ''">
+			  and pushId = #{pushId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="pushType != null and pushType != ''">
+				and pushType = #{pushType}
+			</if>
+			<if test="createTime != null">
+				and createTime = #{createTime}
+			</if>
+			<if test="applyTime != null">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="immediate != null and immediate != ''">
+				and immediate = #{immediate}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="identifyNo != null and identifyNo != ''">
+				and identifyNo = #{identifyNo}
+			</if>
+			<if test="userAgent != null and userAgent != ''">
+				and userAgent = #{userAgent}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="sourceType != null and sourceType != ''">
+				and sourceType = #{sourceType}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and channelDetail = #{channelDetail}
+			</if>
+			<if test="applyIp != null and applyIp != ''">
+				and applyIp = #{applyIp}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_pushdata_pool 
+		<where>
+		<if test="pushId != null and pushId != ''">
+		    and pushId = #{pushId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="pushType != null and pushType != ''">
+			and pushType = #{pushType}
+		</if>
+		<if test="createTime != null">
+			and createTime = #{createTime}
+		</if>
+		<if test="applyTime != null">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="immediate != null and immediate != ''">
+			and immediate = #{immediate}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="identifyNo != null and identifyNo != ''">
+			and identifyNo = #{identifyNo}
+		</if>
+		<if test="userAgent != null and userAgent != ''">
+			and userAgent = #{userAgent}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="sourceType != null and sourceType != ''">
+			and sourceType = #{sourceType}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if test="applyIp != null and applyIp != ''">
+			and applyIp = #{applyIp}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="pushId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_pushdata_pool (
+			customerId,
+			pushType,
+			createTime,
+			applyTime,
+			immediate,
+			applyName,
+			identifyNo,
+			userAgent,
+			telephone,
+			cityName,
+			sourceType,
+			channelCode,
+			channelDetail,
+			applyIp,
+			age,
+			sex
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="pushType !=null ">
+			#{pushType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="pushType ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			<if test="immediate !=null ">
+			#{immediate, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="immediate ==null ">
+			1 ,
+			</if>
+			#{applyName, jdbcType=VARCHAR}, 
+			#{identifyNo, jdbcType=VARCHAR}, 
+			#{userAgent, jdbcType=NVARCHAR}, 
+			#{telephone, jdbcType=CHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="sourceType !=null ">
+			#{sourceType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sourceType ==null ">
+			0 ,
+			</if>
+			#{channelCode, jdbcType=VARCHAR}, 
+			#{channelDetail, jdbcType=VARCHAR}, 
+			#{applyIp, jdbcType=VARCHAR},
+			#{age, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{sex, jdbcType=INTEGER,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_pushdata_pool 
+		<where> 
+			pushId = #{pushId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_pushdata_pool  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="pushType != null">
+				pushType = #{pushType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="immediate != null">
+				immediate = #{immediate, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="identifyNo != null">
+				identifyNo = #{identifyNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="userAgent != null">
+				userAgent = #{userAgent, jdbcType=NVARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=CHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="sourceType != null">
+				sourceType = #{sourceType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="age != null">
+				age = #{age, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sex != null">
+				sex = #{sex, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyIp != null">
+				applyIp = #{applyIp, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  pushId = #{pushId}
+		</where>
+	</update>
+	
+	<!-- 查询推送数据,通用 -->
+	<select id="queryPushData" parameterType="map" resultType="map">
+		SELECT
+			customerId as 'applyId',
+			customerId,
+			pushId,
+			immediate,
+			applyIp,
+			IFNULL(applyName,'') as 'applyName',
+			telephone,
+			IFNULL(identifyNo,'') as 'identifyNo',
+			IFNULL(cityName,'') as 'cityName',
+			userAgent,
+			channelCode,
+			channelDetail,
+			age,
+			sex,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%S') as 'applyTime',
+			pushType,
+			sourceType
+		FROM t_pushdata_pool 
+		<where>
+			<if test="startDate != null and startDate != ''">
+			and applyTime >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+			<![CDATA[and applyTime <= #{endDate}]]>
+			</if>
+			<if test="sourceType != null and sourceType != ''">
+				and sourceType = #{sourceType}
+			</if>
+		</where>
+		ORDER BY applyTime ASC
+		LIMIT #{size}
+	</select>
+</mapper>

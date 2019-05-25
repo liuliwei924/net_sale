@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appenders>
+		<Console name="Console" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d %-5p [%t] (%F:%L) - %m%n" />
+		</Console>
+
+		<File name="duoduoLog" fileName="duoduo-active.log" append="false">
+			<PatternLayout pattern="%d %-5p [%t] (%F:%L) - %m%n" />
+		</File>
+		
+		<RollingFile name="duoduoLog" fileName="D:/logs/duoduo-job.log"
+                     filePattern="d:/logs/$${date:yyyy-MM}/duoduo-job-%d{MM-dd-yyyy}-%i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd 'at' HH:mm:ss} %-5level %class{36} %L %M - %msg%xEx%n"/>
+            <SizeBasedTriggeringPolicy size="10MB"/>
+        </RollingFile>
+	</appenders>
+	<loggers>
+		<!-- 3rdparty Loggers -->  
+		<logger name="org.springframework" level="error" />
+		<logger name="com.google" level="error" />
+		<logger name="net.rubyeye" level="error" />
+		<logger name="org.mybatis" level="error" />
+		<logger name="org.apache" level="error" />
+		<logger name="org.ddq" level="info" />
+		<Root  level="debug">
+			<appender-ref ref="duoduoLog" />
+			<appender-ref ref="Console" />
+		</Root> 
+	</loggers>
+</configuration>  

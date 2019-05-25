@@ -1,0 +1,58 @@
+package org.xxjr.goods.util;
+
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+
+/**
+ * 商品工具类
+ * @author Administrator
+ *
+ */
+public class AwardUtil {
+	
+	/**
+	 * 查询商品信息
+	 * @param awardId
+	 * @return
+	 */
+	public static Map<String,Object> queryAwardInfo(Object awardId){
+		AppParam param = new AppParam();
+		param.setService("awardService");
+		param.setMethod("query");
+		param.addAttr("awardId", awardId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "shop"));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询商品信息及用户已兑换总数
+	 * @param awardId
+	 * @param openid
+	 * @return
+	 */
+	public static Map<String,Object> queryAwardInfo(Object awardId,Object openid, Object gzhId){
+		AppParam param = new AppParam();
+		param.setService("awardService");
+		param.setMethod("queryDtl");
+		param.addAttr("awardId", awardId);
+		param.addAttr("openid", openid);
+		param.addAttr("gzhId", gzhId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "shop"));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return null;
+	}
+}

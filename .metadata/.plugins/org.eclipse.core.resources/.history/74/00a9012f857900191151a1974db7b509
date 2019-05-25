@@ -1,0 +1,118 @@
+package org.xxjr.job.listener.busi.sms.util;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 获取短信报告工具类
+ * @author sty
+ *
+ */
+public class SmsReportUtil {
+
+	/**
+	 * 获取优讯的短信发送状态
+	 */
+	@SuppressWarnings("unchecked")
+	public static void getYouxunReport(){
+		String response = SmsYouxunUtil.getReportJson();
+		LogerUtil.error(SmsReportUtil.class,"优讯短信状态数据"+response);
+		Map<String, Object> responseResult = JsonUtil.getInstance().json2Object(response, Map.class);
+		if("0".equals(responseResult.get("result"))){
+			List<String> sucList = new ArrayList<String>();
+			List<String> notSucList = new ArrayList<String>();
+			List<Map<String, Object>> reportList = (List<Map<String, Object>>) responseResult.get("report");
+			if(reportList.size()>0){
+				for(Map<String, Object> reportMap : reportList){
+					String phone = (String) reportMap.get("phone");
+					Object status = reportMap.get("status");
+					if("0".equals(status)){
+						sucList.add(phone);
+					}else{
+						notSucList.add(phone);
+					}
+				}
+				if(sucList.size()>0){
+					AppParam param = new AppParam();
+					param.addAttr("telList", sucList.toArray());
+					param.addAttr("lss", 2);
+					updateStatus(param);
+				}
+				if(notSucList.size()>0){
+					AppParam param = new AppParam();
+					param.addAttr("telList", sucList.toArray());
+					param.addAttr("lss", 3);
+					updateStatus(param);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 获取乐信通的短信发送状态
+	 */
+	@SuppressWarnings("unchecked")
+	public static void getLMobileReport(){
+		String response = SmsLMobileUtil.getReportJson();
+		LogerUtil.error(SmsReportUtil.class,"乐信通短信状态数据"+response);
+		Map<String, Object> responseResult = JsonUtil.getInstance().json2Object(response, Map.class);
+		if(responseResult.get("State").equals(0)){
+			List<String> sucList = new ArrayList<String>();
+			List<String> notSucList = new ArrayList<String>();
+			List<Map<String, Object>> reportList = (List<Map<String, Object>>) responseResult.get("ReportInfos");
+			if(reportList.size()>0){
+				for(Map<String, Object> reportMap : reportList){
+					String phone = (String) reportMap.get("MobilePhone");
+					Object status = reportMap.get("SendState");
+					if("1".equals(status)){
+						sucList.add(phone);
+					}else{
+						notSucList.add(phone);
+					}
+				}
+				if(sucList.size()>0){
+					AppParam param = new AppParam();
+					param.addAttr("telList", sucList.toArray());
+					param.addAttr("lss", 2);
+					updateStatus(param);
+				}
+				if(notSucList.size()>0){
+					AppParam param = new AppParam();
+					param.addAttr("telList", sucList.toArray());
+					param.addAttr("lss", 3);
+					updateStatus(param);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 修改最后短信发送状态
+	 * @param param
+	 */
+	private static void updateStatus(AppParam param) {
+		AppParam updateParam = new AppParam();
+		Map<String, Object> updateMap = new HashMap<String, Object>();
+		Map<String, Object> queryMap = new HashMap<String, Object>();
+		updateMap.put("lss", param.getAttr("lss"));
+		queryMap.put("telList", param.getAttr("telList"));
+		updateParam.addAttr("params", updateMap);
+		updateParam.addAttr("keys", queryMap);
+		updateParam.setService("smsUserService");
+		updateParam.setMethod("update");
+		updateParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		RemoteInvoke.getInstance().call(updateParam);
+	}
+}

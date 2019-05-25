@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy 2 elements to &apos;xxjr-job-listener/src/main/java/org.xxjr.job.listener.mq&apos;&#x0A;- Original project: &apos;mall-job-listener&apos;&#x0A;- Destination element: &apos;xxjr-job-listener/src/main/java/org.xxjr.job.listener.mq&apos;&#x0A;- Original elements:&#x0A;     org.xxjr.mall.mq.JobMqReceiver.java&#x0A;     org.xxjr.mall.mq.JobMqConsumer.java" description="Copy compilation units" destination="=xxjr-job-listener/src\/main\/java&lt;org.xxjr.job.listener.mq" element1="/src\/main\/java&lt;org.xxjr.mall.mq{JobMqReceiver.java" element2="/src\/main\/java&lt;org.xxjr.mall.mq{JobMqConsumer.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1558233926935" units="2" version="1.0"/>
+</session>

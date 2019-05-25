@@ -1,0 +1,141 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.security.Key;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.jsoup.Connection;
+import org.jsoup.Connection.Method;
+import org.jsoup.Connection.Response;
+import org.jsoup.helper.HttpConnection;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.KaniuApplyUtils;
+import org.xxjr.busi.util.push.AbstractInsureUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+@PushCode(27)
+public class PushHeinUtil extends AbstractInsureUtil {
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		String url = getUrl(row);
+		String resStr = doGet(new URL(url));
+		Map<String, Object> resMap = JsonUtil.getInstance().json2Object(resStr, Map.class);
+		if (0 == NumberUtil.getInt(resMap.get("error_code"), -1)) {
+			status = 1;
+		}
+		Map<String, Object> response = new HashMap<String, Object>();
+		response.put("status", status);
+		response.put("message", resMap.get("error_code") + ":" + resMap.get("error_msg"));
+		return response;
+	}
+	
+	private static String getUrl (Map<String, Object> row){
+		String key = SysParamsUtil.getStringParamByKey("push_hein_cfg_key", "cdee6a33");
+		StringBuilder url = new StringBuilder(SysParamsUtil.getStringParamByKey("push_hein_cfg_url", "https://www.heiniubao.com/insurance/enhanced"));
+		String salt = SysParamsUtil.getStringParamByKey("push_hein_cfg_salt", "baoxian-$@");
+		try {
+			String applyName = PushPlatformUtils.isPushTest() ? "张三" : StringUtil.objectToStr(row.get("applyName"));
+			String channel = SysParamsUtil.getStringParamByKey("push_hein_cfg_channel", "xiaoxiaojinrong");
+			String telephone = StringUtil.objectToStr(row.get("telephone"));
+			String identifyNo = StringUtil.objectToStr(row.get("identifyNo"));
+			if (PushPlatformUtils.isPushTest()) {
+				url.append("?name=").append(URLEncoder.encode(desEncrypt("张三", key), "utf-8"));
+			}else {
+				url.append("?name=").append(URLEncoder.encode(desEncrypt(StringUtil.objectToStr(row.get("applyName")), key), "utf-8"));
+			}
+			url.append("&phone=").append(URLEncoder.encode(desEncrypt(telephone, key), "utf-8"));
+			url.append("&channel=").append(channel);
+			int sourceType = NumberUtil.getInt(row.get("sourceType"), 0);
+			switch (sourceType) {
+			case 0:
+				url.append("&subchannel=").append(SysParamsUtil.getStringParamByKey("push_hein_cfg_subchannelLoan", "xxjrdkapi1"));
+				break;
+			case 1:
+				url.append("&subchannel=").append(SysParamsUtil.getStringParamByKey("push_hein_cfg_subchannelCard", "xxjrxykapi1"));
+				break;
+			case 2:
+				url.append("&subchannel=").append(SysParamsUtil.getStringParamByKey("push_hein_cfg_subchannelScore", "xxjrjfapi1"));
+				break;
+			}
+			if (StringUtils.isEmpty(identifyNo)) {
+				int sex = NumberUtil.getInt(row.get("sex"), 1);//性别处理
+				url.append("&sex=").append(URLEncoder.encode(desEncrypt((1==sex ? "M" : "F"), key), "utf-8"));
+				int age = NumberUtil.getInt(row.get("age"), -1);
+				String birthDay = PushPlatformUtils.getBirthDay(null, age);
+				url.append("&birth=").append(URLEncoder.encode(desEncrypt(birthDay, key), "utf-8"));
+			}else {
+				url.append("&id_no=").append(URLEncoder.encode(desEncrypt(identifyNo, key), "utf-8"));
+			}
+			if (RedisUtils.getRedisService().get("push_isDebug") == null) {
+				url.append("&customer_ip=").append(URLEncoder.encode(StringUtil.objectToStr(row.get("applyIp")), "utf-8"));
+			}else {
+				url.append("&customer_ip=").append(URLEncoder.encode("120.24.158.180", "utf-8"));
+			}
+			url.append("&user_agent=").append(URLEncoder.encode(PushPlatformUtils.getUserAgent(row.get("userAgent")), "utf-8"));
+			StringBuilder sign = new StringBuilder();
+			sign.append(identifyNo).append(applyName).append(telephone).append(channel).append(salt);
+			url.append("&sign=").append(Md5.getInstance().encrypt(sign.toString()));
+		} catch (UnsupportedEncodingException e) {
+			LogerUtil.error(PushHeinUtil.class, e, "PushHeinUtil getUrl error");
+		}
+		return url.toString();
+	}
+	
+	public static String desEncrypt(String data, String keyParam){
+		byte[] datasource = data.getBytes();
+		Key key = null;  
+		byte[] keyByte = keyParam.getBytes();  
+		byte[] byteTemp = new byte[8];  
+		for (int i = 0; i < byteTemp.length && i < keyByte.length; i++) {  
+			byteTemp[i] = keyByte[i];  
+		}  
+		key = new SecretKeySpec(byteTemp, "DES");  
+		key.getEncoded();
+		try {
+			SecretKeySpec keys = new SecretKeySpec(key.getEncoded(), "DES");  
+			Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");  
+			cipher.init(Cipher.ENCRYPT_MODE, keys);  
+			byte[] encryptedData = cipher.doFinal(datasource);  
+			String newstr = Base64.getEncoder().encodeToString(encryptedData);
+			return newstr;
+		} catch (Exception e) {
+			LogerUtil.error(PushHeinUtil.class, e, "PushHeinUtil desEncrypt error");
+		}
+		return null;
+	}
+	
+	public static String doGet(URL url)
+			throws IOException {
+		String body = null;
+		if (url.toString().indexOf("https") >= 0) {
+			KaniuApplyUtils.trustEveryone();
+		}
+		Connection connect = HttpConnection.connect(url);
+		connect.method(Method.GET);
+		connect.timeout(10000);
+		connect.ignoreContentType(true);
+		Response response = connect.execute();
+		body = response.body();
+		return body;
+	}
+	
+}

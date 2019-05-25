@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWINCOME">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			workCmp, 
+			IFNULL(income,0.00) as 'income', 
+			incomeMonths, 
+			jobMonth, 
+			wagesType, 
+			incomeMonth, 
+			manageYear, 
+			managePlace, 
+			licenceLimit, 
+			cashMonth, 
+			pubManageLine,
+			hasLicense,
+			myLicense
+		FROM T_BORROW_INCOME
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="workCmp != null and workCmp != ''">
+				and workCmp = #{workCmp}
+			</if>
+			<if test="income != null and income != ''">
+				and income = #{income}
+			</if>
+			<if test="incomeMonths != null and incomeMonths != ''">
+				and incomeMonths = #{incomeMonths}
+			</if>
+			<if test="jobMonth != null and jobMonth != ''">
+				and jobMonth = #{jobMonth}
+			</if>
+			<if test="wagesType != null and wagesType != ''">
+				and wagesType = #{wagesType}
+			</if>
+			<if test="incomeMonth != null and incomeMonth != ''">
+				and incomeMonth = #{incomeMonth}
+			</if>
+			<if test="manageYear != null and manageYear != ''">
+				and manageYear = #{manageYear}
+			</if>
+			<if test="managePlace != null and managePlace != ''">
+				and managePlace = #{managePlace}
+			</if>
+			<if test="licenceLimit != null and licenceLimit != ''">
+				and licenceLimit = #{licenceLimit}
+			</if>
+			<if test="cashMonth != null and cashMonth != ''">
+				and cashMonth = #{cashMonth}
+			</if>
+			<if test="pubManageLine != null and pubManageLine != ''">
+				and pubManageLine = #{pubManageLine}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_INCOME 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="workCmp != null and workCmp != ''">
+			and workCmp = #{workCmp}
+		</if>
+		<if test="income != null and income != ''">
+			and income = #{income}
+		</if>
+		<if test="incomeMonths != null and incomeMonths != ''">
+			and incomeMonths = #{incomeMonths}
+		</if>
+		<if test="jobMonth != null and jobMonth != ''">
+			and jobMonth = #{jobMonth}
+		</if>
+		<if test="wagesType != null and wagesType != ''">
+			and wagesType = #{wagesType}
+		</if>
+		<if test="incomeMonth != null and incomeMonth != ''">
+			and incomeMonth = #{incomeMonth}
+		</if>
+		<if test="manageYear != null and manageYear != ''">
+			and manageYear = #{manageYear}
+		</if>
+		<if test="managePlace != null and managePlace != ''">
+			and managePlace = #{managePlace}
+		</if>
+		<if test="licenceLimit != null and licenceLimit != ''">
+			and licenceLimit = #{licenceLimit}
+		</if>
+		<if test="cashMonth != null and cashMonth != ''">
+			and cashMonth = #{cashMonth}
+		</if>
+		<if test="pubManageLine != null and pubManageLine != ''">
+			and pubManageLine = #{pubManageLine}
+		</if>
+		</where>
+	</select>
+
+	<select id="queryText" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(income,0.00) as 'income', 
+			incomeMonth,
+			pubManageLine,
+			cashMonth,
+			(CASE 
+				WHEN workCmp =1 THEN '公务员事业单位'
+				WHEN workCmp =2 THEN '国企单位'
+				WHEN workCmp =3 THEN '世界500强公司'
+				WHEN workCmp =4 THEN '上市企业'
+				WHEN workCmp =5 THEN '普通企业'
+				ELSE '未知'
+			END) as 'workCmpText',
+			(CASE 
+				WHEN incomeMonths =1 THEN '3个月以下'
+				WHEN incomeMonths =2 THEN '3个月~6个月'
+				WHEN incomeMonths =3 THEN '6个月以上'
+				ELSE '未知'
+			END) as 'incomeMonthsText',
+			(CASE
+				WHEN jobMonth =1 THEN '不足6个月'
+				WHEN jobMonth =2 THEN '6-11个月'
+				WHEN jobMonth =3 THEN '1-3年'
+				WHEN jobMonth =4 THEN '4-7年'
+				WHEN jobMonth =5 THEN '7年以上'
+				ELSE '未知'
+			END) as 'jobMonthText',
+			(CASE
+				WHEN wagesType =1 THEN '打卡'
+				WHEN wagesType =2 THEN '现金'
+				ELSE '未知'
+			END) as 'wagesTypeText',
+			(CASE
+				WHEN manageYear =0 THEN '不足3个月'
+				WHEN manageYear =1 THEN '3个月 '
+				WHEN manageYear =2 THEN '3半年'
+				WHEN manageYear =3 THEN '1年'
+				WHEN manageYear =4 THEN '2年'
+				WHEN manageYear =5 THEN '3年'
+				WHEN manageYear =6 THEN '3年以上'
+				ELSE '未知'
+			END) as 'manageYearText',
+			(CASE 
+				WHEN managePlace =1 THEN '本地 '
+				WHEN managePlace =2 THEN '外地'
+				ELSE '无注册地'
+			END) as 'managePlaceText' ,
+			(CASE 
+				WHEN licenceLimit =1 THEN '已办理，不满6个月'
+				WHEN licenceLimit =2 THEN '已办理，6~11个月'
+				WHEN licenceLimit =3 THEN '已办理，满1年'
+				WHEN licenceLimit =4 THEN '已办理，满2年'
+				WHEN licenceLimit =5 THEN '已办理，满3年'
+				WHEN licenceLimit =6 THEN '已办理，满4年'
+				WHEN licenceLimit =7 THEN '已办理，满5年以上'
+				ELSE '没办理过'
+			END) as 'licenceLimitText' 
+		FROM T_BORROW_INCOME
+		WHERE applyId=#{applyId}
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO T_BORROW_INCOME (
+			applyId,
+			workCmp,
+			income,
+			incomeMonths,
+			jobMonth,
+			wagesType,
+			incomeMonth,
+			manageYear,
+			managePlace,
+			licenceLimit,
+			cashMonth,
+			pubManageLine,
+			hasLicense,
+			myLicense
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="workCmp !=null ">
+			#{workCmp, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="workCmp ==null ">
+			5 ,
+			</if>
+			<if test="income !=null ">
+			#{income, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="income ==null ">
+			0.00 ,
+			</if>
+			<if test="incomeMonths !=null ">
+			#{incomeMonths, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="incomeMonths ==null ">
+			1 ,
+			</if>
+			<if test="jobMonth !=null ">
+			#{jobMonth, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="jobMonth ==null ">
+			0 ,
+			</if>
+			<if test="wagesType !=null ">
+			#{wagesType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="wagesType ==null ">
+			0 ,
+			</if>
+			<if test="incomeMonth !=null ">
+			#{incomeMonth, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="incomeMonth ==null ">
+			0.00 ,
+			</if>
+			<if test="manageYear !=null ">
+			#{manageYear, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="manageYear ==null ">
+			0 ,
+			</if>
+			<if test="managePlace !=null ">
+			#{managePlace, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="managePlace ==null ">
+			0 ,
+			</if>
+			<if test="licenceLimit !=null ">
+			#{licenceLimit, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="licenceLimit ==null ">
+			0 ,
+			</if>
+			<if test="cashMonth !=null ">
+			#{cashMonth, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="cashMonth ==null ">
+			0.00 ,
+			</if>
+			<if test="pubManageLine !=null ">
+			#{pubManageLine, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="pubManageLine ==null ">
+			0.00 ,
+			</if>
+			#{hasLicense, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="myLicense !=null ">
+			#{myLicense, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="myLicense ==null ">
+			0
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_BORROW_INCOME 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE T_BORROW_INCOME  
+		<set>
+			<if test="workCmp != null">
+				workCmp = #{workCmp, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="income != null">
+				income = #{income, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="incomeMonths != null">
+				incomeMonths = #{incomeMonths, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="jobMonth != null">
+				jobMonth = #{jobMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="wagesType != null">
+				wagesType = #{wagesType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="incomeMonth != null">
+				incomeMonth = #{incomeMonth, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="manageYear != null">
+				manageYear = #{manageYear, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="managePlace != null">
+				managePlace = #{managePlace, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="licenceLimit != null">
+				licenceLimit = #{licenceLimit, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="cashMonth != null">
+				cashMonth = #{cashMonth, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="hasLicense != null">
+				hasLicense = #{hasLicense, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="myLicense != null">
+				myLicense = #{myLicense, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="pubManageLine != null">
+				pubManageLine = #{pubManageLine, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

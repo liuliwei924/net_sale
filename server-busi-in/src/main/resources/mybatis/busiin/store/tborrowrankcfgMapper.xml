@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWRANKCFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			rankId,
+			gradeCode, 
+			gradeName,
+			baseCount, 
+			days, 
+			maxCount, 
+			maxAgainCount,
+			dealCount, 
+			lockCount, 
+			visitCount, 
+			sucCount, 
+			gradePercent, 
+			backAmount,
+			backCount,
+			allotNewCount
+		FROM t_borrow_rank_cfg
+		<where>
+			<if test="rankId != null and rankId != ''">
+			  and rankId = #{rankId}
+			 </if>
+			<if test="gradeCode != null and gradeCode != ''">
+				and gradeCode = #{gradeCode}
+			</if>
+			<if test="gradeName != null and gradeName != ''">
+				and gradeName = #{gradeName}
+			</if>
+			<if test="baseCount != null and baseCount != ''">
+				and baseCount = #{baseCount}
+			</if>
+			<if test="days != null and days != ''">
+				and days = #{days}
+			</if>
+			<if test="maxCount != null and maxCount != ''">
+				and maxCount = #{maxCount}
+			</if>
+			<if test="maxAgainCount != null and maxAgainCount != ''">
+				and maxAgainCount = #{maxAgainCount}
+			</if>
+			<if test="dealCount != null and dealCount != ''">
+				and dealCount = #{dealCount}
+			</if>
+			<if test="lockCount != null and lockCount != ''">
+				and lockCount = #{lockCount}
+			</if>
+			<if test="visitCount != null and visitCount != ''">
+				and visitCount = #{visitCount}
+			</if>
+			<if test="sucCount != null and sucCount != ''">
+				and sucCount = #{sucCount}
+			</if>
+			<if test="gradePercent != null and gradePercent != ''">
+				and gradePercent = #{gradePercent}
+			</if>
+			<if test="backAmount != null and backAmount != ''">
+				and backAmount = #{backAmount}
+			</if>
+			<if test="backCount != null and backCount != ''">
+				and backCount = #{backCount}
+			</if>
+			<if test="allotNewCount != null and allotNewCount != ''">
+				and allotNewCount = #{allotNewCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_rank_cfg 
+		<where>
+		<if test="rankId != null and rankId != ''">
+		    and rankId = #{rankId}
+		 </if>
+		<if test="gradeCode != null and gradeCode != ''">
+			and gradeCode = #{gradeCode}
+		</if>
+		<if test="gradeName != null and gradeName != ''">
+			and gradeName = #{gradeName}
+		</if>
+		<if test="baseCount != null and baseCount != ''">
+			and baseCount = #{baseCount}
+		</if>
+		<if test="days != null and days != ''">
+			and days = #{days}
+		</if>
+		<if test="maxCount != null and maxCount != ''">
+			and maxCount = #{maxCount}
+		</if>
+		<if test="maxAgainCount != null and maxAgainCount != ''">
+			and maxAgainCount = #{maxAgainCount}
+		</if>
+		<if test="dealCount != null and dealCount != ''">
+			and dealCount = #{dealCount}
+		</if>
+		<if test="lockCount != null and lockCount != ''">
+			and lockCount = #{lockCount}
+		</if>
+		<if test="visitCount != null and visitCount != ''">
+			and visitCount = #{visitCount}
+		</if>
+		<if test="sucCount != null and sucCount != ''">
+			and sucCount = #{sucCount}
+		</if>
+		<if test="gradePercent != null and gradePercent != ''">
+			and gradePercent = #{gradePercent}
+		</if>
+		<if test="backAmount != null and backAmount != ''">
+			and backAmount = #{backAmount}
+		</if>
+		<if test="backCount != null and backCount != ''">
+			and backCount = #{backCount}
+		</if>
+		<if test="allotNewCount != null and allotNewCount != ''">
+			and allotNewCount = #{allotNewCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="rankId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_rank_cfg (
+			gradeCode,
+			gradeName,
+			baseCount,
+			days,
+			maxCount,
+			maxAgainCount,
+			dealCount,
+			lockCount,
+			visitCount,
+			sucCount,
+			gradePercent,
+			backAmount,
+			backCount,
+			allotNewCount
+		)
+		VALUES ( 
+			<if test="gradeCode !=null ">
+			#{gradeCode, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="gradeCode ==null ">
+			1 ,
+			</if>
+			#{gradeName, jdbcType=VARCHAR}, 
+			#{baseCount, jdbcType=VARCHAR}, 
+			<if test="days !=null ">
+			#{days, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="days ==null ">
+			0 ,
+			</if>
+			#{maxCount, jdbcType=VARCHAR}, 
+			#{maxAgainCount, jdbcType=VARCHAR}, 
+			#{dealCount, jdbcType=VARCHAR}, 
+			#{lockCount, jdbcType=VARCHAR}, 
+			#{visitCount, jdbcType=VARCHAR}, 
+			#{sucCount, jdbcType=VARCHAR}, 
+			<if test="gradePercent !=null ">
+			#{gradePercent, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="gradePercent ==null ">
+			0.00 ,
+			</if>
+			#{backAmount, jdbcType=VARCHAR},
+			#{backCount, jdbcType=VARCHAR},
+			#{allotNewCount, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_rank_cfg 
+		<where> 
+			rankId = #{rankId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_rank_cfg  
+		<set>
+			<if test="gradeCode != null">
+				gradeCode = #{gradeCode, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="gradeName != null">
+				gradeName = #{gradeName, jdbcType=VARCHAR},  
+			</if>
+			<if test="baseCount != null">
+				baseCount = #{baseCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="days != null">
+				days = #{days, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="maxCount != null">
+				maxCount = #{maxCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="maxAgainCount != null">
+				maxAgainCount = #{maxAgainCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="dealCount != null">
+				dealCount = #{dealCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="lockCount != null">
+				lockCount = #{lockCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="visitCount != null">
+				visitCount = #{visitCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="sucCount != null">
+				sucCount = #{sucCount, jdbcType=VARCHAR},  
+			</if>
+			<if test="gradePercent != null">
+				gradePercent = #{gradePercent, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="backAmount != null">
+				backAmount = #{backAmount, jdbcType=VARCHAR},
+			</if>
+			<if test="backCount != null">
+				backCount = #{backCount, jdbcType=VARCHAR},
+			</if>
+			<if test="allotNewCount != null">
+				allotNewCount = #{allotNewCount, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  rankId = #{rankId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,703 @@
+package org.xxjr.cust.fund;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.active.mq.activity.RewardRefererUtil;
+import org.ddq.active.mq.activity.RewardUtil;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.FundConstant;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.cust.util.invite.CustInviteUtil;
+import org.xxjr.cust.util.member.GradeUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+import com.alibaba.fastjson.JSONObject;
+
+@Lazy
+@Service
+@Slf4j
+public class RechargeService extends BaseService {
+	private static final String NAMESPACE = "RECHARGE";
+
+	// 交易成功
+	public final static String SUCESS_FLAG = "0000";
+
+	/**
+	 * 查寻数据
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+
+	/**
+	 * 分页查寻数据
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+
+	/**
+	 * 分页查寻数据
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShow(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryShow",
+				"queryShowCount");
+	}
+	
+	/**
+	 * 查询交易状态
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryTrade(AppParam params) {
+		AppResult result = new AppResult();
+		Object rechargeId = params.getAttr("rechargeId"); // 充值序号
+		if (StringUtils.isEmpty(rechargeId)) {
+			throw new SysException("充值序号不能为空");
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("rechargeId", rechargeId);
+		AppResult queryResult = this.query(queryParam);
+		if (queryResult.getRows().size() == 0) {
+			throw new AppException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		
+		Map<String,Object> rechargeInfo = queryResult.getRow(0);
+		String rechargeChannel = StringUtil.getString(rechargeInfo.get("rechargeChannel"));
+		if("bf".equals(rechargeChannel)){
+			AppParam bfParam = new AppParam();
+			bfParam.addAttr("rechargeId", rechargeId);
+			bfParam.addAttr("transactionId", rechargeInfo.get("transactionId"));
+			queryTradeStatus(bfParam);
+		}
+		if("llrz".equalsIgnoreCase(rechargeChannel) || "llkj".equalsIgnoreCase(rechargeChannel)){
+			AppParam llParam = new AppParam();
+			llParam.addAttr("rechargeId", rechargeId);
+			llParam.addAttr("lianType", rechargeInfo.get("rechargeChannel"));
+			llParam.addAttr("customerId", rechargeInfo.get("customerId"));
+			llParam.addAttr("reqParams", rechargeInfo.get("params"));
+			queryLlStatus(llParam);
+		}
+		return result;
+	}
+	
+	/**
+	 * 查询连连支付状态
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings({ "unchecked" })
+	public AppResult queryLlStatus(AppParam params) {
+		AppResult result = new AppResult();
+		Object reqParams = params.getAttr("reqParams");
+		if(StringUtils.isEmpty(reqParams)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		// 查询交易状态
+		JSONObject paramJson = JSONObject.parseObject(reqParams.toString());
+		AppParam queryParam = new AppParam();
+		queryParam.setService("lianlianPayService");
+		queryParam.setMethod("orderQuery");
+		queryParam.addAttr("userId", CustomerUtil.LIANLIAN_USER_PRE + params.getAttr("customerId"));
+		queryParam.addAttr("lianType", params.getAttr("lianType"));
+		queryParam.addAttr("noOrder", params.getAttr("rechargeId"));
+		queryParam.addAttr("dtOrder", paramJson.get("dtOrder"));
+		queryParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_col));
+		AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
+		if(queryResult.isSuccess() && !StringUtils.isEmpty(queryResult.getAttr("resultMap"))){
+			Map<String,Object> resultMap = (Map<String,Object>)queryResult.getAttr("resultMap");
+			if(!"0000".equals(resultMap.get("ret_code").toString())){
+				throw new SysException("连连错误信息：" + StringUtil.getString(resultMap.get("ret_msg")));
+			}
+			AppParam updateParams = new AppParam();
+			updateParams.addAttr("errCode", resultMap.get("ret_code"));
+			updateParams.addAttr("errCodeDesc", resultMap.get("ret_msg"));
+			updateParams.addAttr("rechargeId", params.getAttr("rechargeId"));
+			String resultPay = StringUtil.getString(resultMap.get("result_pay"));
+			if("SUCCESS".equals(resultPay)){
+				updateParams.addAttr("transactionId", result.getAttr("oid_paybill"));
+				updateParams.addAttr("backTime", new Date());
+				updateParams.addAttr("status", 1);// 1表示支付成功
+				rechargeSuccess(updateParams);
+				//向财务系统保存收支记录
+				AppParam incomeParams = new AppParam();
+				incomeParams.setService("incomeDtlService");
+				incomeParams.setMethod("addIncome");
+				incomeParams.addAttr("orderNo", params.getAttr("rechargeId"));
+				incomeParams.addAttr("payChannel", params.getAttr("lianType"));
+				incomeParams.addAttr("payAmount", resultMap.get("money_order"));//支付金额，单位元
+				incomeParams.addAttr("transactionId", resultMap.get("oid_paybill"));//平台订单号
+				incomeParams.addAttr("payAccount", 4);
+				incomeParams.addAttr("payDesc", "查询连连支付成功");
+				incomeParams.addAttr("paySource", "recharge");
+				//封装自定义参数
+				Map<String,Object> payParamsMap = new HashMap<String,Object>();
+				payParamsMap.put("customerId", params.getAttr("customerId"));
+				payParamsMap.put("bankCardNo", paramJson.get("bankCardNo"));
+				incomeParams.addAttr("payParams", JsonUtil.getInstance().object2JSON(payParamsMap));
+				incomeParams.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START +ServiceKey.Key_col));
+				 RemoteInvoke.getInstance().call(incomeParams);
+			}else if("FAILURE".equals(resultPay)){
+				updateParams.addAttr("status", 2);// 1表示支付失败
+				rechargeFailed(updateParams);
+			}else if("PROCESSING".equals(resultPay)){
+				updateParams.addAttr("status", "3");// 1表示交易进行中
+				this.update(updateParams);
+			}
+		}else{
+			throw new SysException("查询连连订单状态失败");
+		}
+		return result;
+	}
+
+	/**
+	 * 查询宝付交易状态
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryTradeStatus(AppParam params) {
+		AppResult result = new AppResult();
+		String transactionId = StringUtil.getString(params
+				.getAttr("transactionId")); // 商户订单号
+		if (StringUtils.isEmpty(transactionId)) {
+			throw new SysException("商户订单号不能为空");
+		}
+		String rechargeId = StringUtil.getString(params.getAttr("rechargeId")); // 充值序号
+		if (StringUtils.isEmpty(rechargeId)) {
+			throw new SysException("充值序号不能为空");
+		}
+		//查询交易时间
+		AppParam recordParam = new AppParam();
+		recordParam.addAttr("rechargeId", rechargeId);
+		AppResult recordResult =  this.query(recordParam);
+		String tradeDate = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+		if (recordResult.getRows().size() > 0 && !StringUtils.isEmpty(recordResult.getRow(0))) {
+			Date createTime = DateUtil.toDateByString(StringUtil.getString(recordResult.getRow(0).get("createTime")), 
+					DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS);
+			tradeDate = new SimpleDateFormat("yyyyMMddHHmmss").format(createTime);
+		}
+		// 查询交易状态
+		AppParam queryParam = new AppParam();
+		queryParam.setService("baoFooRechargeService");
+		queryParam.setMethod("queryDealStatus");
+		queryParam.addAttr("transactionId", transactionId);
+		queryParam.addAttr("tradeDate", tradeDate);
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_col));
+		AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
+		if (queryResult.isSuccess()) {
+			if(!StringUtils.isEmpty(queryResult.getAttr("resultMap"))){
+				@SuppressWarnings("unchecked")
+				Map<String, Object> resultMap = (Map<String, Object>) queryResult.getAttr("resultMap");
+				String resp_code = StringUtil.getString(resultMap.get("resp_code"));
+				String resp_msg = StringUtil.getString(resultMap.get("resp_msg"));
+				String payAmount = StringUtil.getString(resultMap.get("succ_amt"));
+				AppParam updateParams = new AppParam();
+				updateParams.addAttr("rechargeId", rechargeId);
+				updateParams.addAttr("errCode", resp_code);
+				updateParams.addAttr("errCodeDesc", resp_msg);
+				updateParams.addAttr("fromStatus", 3);// 原状态 交易中
+				if (SUCESS_FLAG.equals(resp_code)) {
+					updateParams.addAttr("status", 1);// 1表示支付成功
+					rechargeSuccess(updateParams);
+					result.putAttr("resp_code", resp_code);
+					result.putAttr("resp_msg", resp_msg);
+					//向财务系统保存收支记录
+					AppParam incomeParams = new AppParam();
+					incomeParams.setService("incomeDtlService");
+					incomeParams.setMethod("addIncome");
+					incomeParams.addAttr("orderNo", rechargeId);
+					incomeParams.addAttr("payAmount", Double.parseDouble(payAmount)/100);//支付金额，返回单位为分转为元
+					incomeParams.addAttr("payChannel", "bf");
+					incomeParams.addAttr("transactionId", transactionId);
+					incomeParams.addAttr("payAccount", 6);
+					incomeParams.addAttr("payDesc", "查询宝付支付成功");
+					incomeParams.addAttr("paySource", "recharge");
+					//封装自定义参数
+					Map<String,Object> payParamsMap = new HashMap<String,Object>();
+					payParamsMap.put("customerId", recordResult.getRow(0).get("customerId"));
+					payParamsMap.put("rechargeType", recordResult.getRow(0).get("rechargeType"));
+					incomeParams.addAttr("payParams", JsonUtil.getInstance().object2JSON(payParamsMap));
+					incomeParams.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START +ServiceKey.Key_col));
+					 RemoteInvoke.getInstance().call(incomeParams);
+				} else if (resp_code.equals("BF00100")
+						|| resp_code.equals("BF00112")
+						|| resp_code.equals("BF00113")
+						|| resp_code.equals("BF00115")
+						|| resp_code.equals("BF00144")
+						|| resp_code.equals("BF00202")) {
+					this.update(updateParams);
+					result.putAttr("resp_code", resp_code);
+					result.putAttr("resp_msg", resp_msg);
+				} else {
+					updateParams.addAttr("status", 2);// 2表示交易失败
+					rechargeFailed(updateParams);
+					result.setSuccess(Boolean.FALSE);
+					result.setErrorCode(resp_code);
+					result.setMessage(resp_msg);
+				}
+			}else{
+				throw new SysException("查询交易状态失败!");
+			}
+			
+		}else{
+			throw new SysException(queryResult.getMessage());
+		}
+		
+		return result;
+
+	}
+
+	/**
+	 * 查寻分页统计数据
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT, params.getAttr(),
+				params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+
+	/**
+	 * 添加数据处理
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		AppResult result = new AppResult();
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		result  = super.insert(params, NAMESPACE);
+		result.putAttr("rechargeId", params.getAttr("rechargeId"));
+		return result;
+	}
+
+	/**
+	 * 充值成功 数据处理，需要修改用户可用余额
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult rechargeSuccess(AppParam params) {
+		AppResult result = new AppResult();
+		Object rechargeId = params.getAttr("rechargeId");
+		if (StringUtils.isEmpty(rechargeId)) {
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("rechargeId", rechargeId);
+		AppResult queryResult = this.query(queryParam);
+		if (queryResult.getRows().size() != 1) {
+			throw new AppException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		Map<String, Object> rechargeInfo = queryResult.getRow(0);
+		String status = rechargeInfo.get("status").toString();
+		if("0".equals(status)||"3".equals(status)){
+			params.addAttr("fromStatus", status);
+		}else{
+			throw new SysException("当前充值的状态为:" + status +",不能设置为充值成功！");
+		}
+		// 修改支付状态
+		AppResult updateResult = this.update(params);
+		if (1 == Integer.valueOf(updateResult.getAttr(
+				DuoduoConstant.DAO_Update_SIZE).toString())) {
+			
+			double couponAmount = couponHandle(rechargeInfo);
+			rechargeInfo.put("couponAmount", couponAmount);
+			paySuccess(rechargeInfo);
+		}
+        result.putAttrs(rechargeInfo);
+		return result;
+	}
+
+	/**
+	 * 充值成功后优惠券的处理
+	 * @param rechargeInfo
+	 * @return
+	 */
+	private double couponHandle(Map<String, Object> rechargeInfo){
+		double couponAmount = 0;
+		double rechargeAmt = Double.valueOf(rechargeInfo.get("amount").toString()) / 100;
+		// 增加增加kf送券的用户充值成功的记录，方便后续做统计
+		try{
+			Object customerId = rechargeInfo.get("customerId");
+			int rechargeCount = 1;
+			Object giveBy = null;
+			// 查询客户充值成功次数
+			AppParam recordParams = new AppParam();
+			recordParams.addAttr("customerId", customerId);
+			AppResult recordResult  = this.rechargeSuccessCount(recordParams);		
+			if(recordResult.getRows().size() > 0){
+				Map<String, Object> recordMap = recordResult.getRow(0);
+				rechargeCount =  NumberUtil.getInt(recordMap.get("rechargeCount"), 1);
+			}
+			
+			if(rechargeCount == 1 && CustInviteUtil.inviteActivityIsInActive()){
+				// 新用户注册通过工作认证后，进行首次充值后老用户可获得抵扣券
+				RewardRefererUtil.rewardByFirstRecharge(customerId.toString());
+			}
+		
+			// 查询客户与客服是否绑定
+			AppParam kfParam = new AppParam();
+			kfParam.setService("kfCustService");
+			kfParam.setMethod("query");
+			kfParam.addAttr("customerId", rechargeInfo.get("customerId"));
+			AppResult kfResult = SoaManager.getInstance().invoke(kfParam);
+			if (kfResult.getRows().size() > 0) {
+				giveBy = kfResult.getRow(0).get("kf");
+			}
+			recordParams = new AppParam("lendSuccessRechargeService", "insert");
+			recordParams.addAttr("couponId", rechargeInfo.get("couponId"));
+			recordParams.addAttr("customerId", rechargeInfo.get("customerId"));
+			recordParams.addAttr("rechargeId", rechargeInfo.get("rechargeId"));
+			recordParams.addAttr("rechargeAmt", rechargeAmt);
+			recordParams.addAttr("rechargeCount", rechargeCount);
+			recordParams.addAttr("kf", giveBy);
+			SoaManager.getInstance().invoke(recordParams);					
+		}catch(Exception e){
+			log.error("增加用户充值成功次数的记录", e);
+		}
+		
+		return couponAmount;
+	}
+	/**
+	 * 充值其他处理
+	 * @param rechargeInfo
+	 */
+	private void paySuccess(Map<String, Object> rechargeInfo) {
+		// 充值类型
+		String rechargType = rechargeInfo.get("rechargeType").toString();
+		String customerId = rechargeInfo.get("customerId").toString();
+		if (FundConstant.RECHARGE_TYPE_R.equals(rechargType)
+				|| FundConstant.RECHARGE_TYPE_V.equals(rechargType)) {
+
+			Map<String, Object> vipConfigInfo = GradeUtils.getVipConfig();
+			double amount = Double.valueOf(rechargeInfo.get("amount")
+					.toString()) / 100;
+			Object openMonth = null;
+			double rewardAmount = 0;
+			if (amount >= Integer.valueOf(vipConfigInfo.get("month12Recharge")
+					.toString())) {
+				// 如果充值金额大于赠送12个月会员的条件
+				openMonth = "12";
+			} else if (amount >= Integer.valueOf(vipConfigInfo.get(
+					"month6Recharge").toString())) {
+				// 如果充值金额大于赠送6个月会员的条件
+				openMonth = "6";
+			} else if (amount >= Integer.valueOf(vipConfigInfo.get(
+					"month3Recharge").toString())) {
+				// 如果充值金额大于赠送3个月会员的条件
+				openMonth = "3";
+			} else if (amount >= Integer.valueOf(vipConfigInfo.get(
+					"month1Recharge").toString())) {
+				// 如果充值金额大于赠送1个月会员的条件
+				openMonth = "1";
+			}
+			
+			// 奖励抢单券，抵扣券
+			RewardUtil.rewardRecharge(openMonth, customerId);
+			
+			if(CustInviteUtil.inviteActivityIsInActive()){
+				// 新用户通过了工作认证和充值后老用户可额外获得抵扣券
+				RewardRefererUtil.rewardByIdentifyCardAndRecharge(customerId);
+			}
+			
+			// 修改用户可用金额
+			AppParam amountParam = new AppParam();
+			amountParam.setService("custAmountService");
+			amountParam.setMethod("updateRechargeAmount");
+			amountParam.addAttr("orderId", rechargeInfo.get("rechargeId"));
+			amountParam.addAttr("customerId", customerId);
+			amountParam.addAttr("amount", amount);
+			amountParam.addAttr("rechargeReward", rewardAmount);
+			amountParam.addAttr("couponAmount", rechargeInfo.get("couponAmount"));
+			AppResult amountResult = SoaManager.getInstance().invoke(
+					amountParam);
+
+			if (amountResult.isSuccess() && !StringUtils.isEmpty(openMonth)) {
+				AppParam vipParam = new AppParam();
+				vipParam.setService("customerService");
+				vipParam.setMethod("openVip");
+				vipParam.addAttr("customerId", customerId);
+				vipParam.addAttr("openMonth", openMonth);// vip 月数
+				AppResult vipResult = SoaManager.getInstance().invoke(vipParam);
+				if (vipResult.isSuccess()) {
+					CustomerIdentify.refreshIdentifyById(customerId);
+				}
+			}
+
+			// 保存赠送记录
+			if (rewardAmount > 0) {
+				AppParam giveParam = new AppParam();
+				giveParam.addAttr("rechargeId", rechargeInfo.get("rechargeId"));
+				giveParam.addAttr("rechargeReward", rewardAmount * 100);
+				this.update(giveParam);
+			}
+		} else if (FundConstant.RECHARGE_TYPE_S.equals(rechargType)) {
+			// 优质单充值
+			seniorRechargeSuccess(rechargeInfo);
+		} else if (FundConstant.RECHARGE_TYPE_F.equals(rechargType)) {
+			// 增加房产评估次数
+			AppParam evalParam = new AppParam();
+			evalParam.setService("evalSlQueryService");
+			evalParam.setMethod("recharge");
+			evalParam.addAttr("customerId", customerId);
+			evalParam.addAttr("openid", rechargeInfo.get("openid"));
+			evalParam.addAttr("freeCount", "1");
+			evalParam.addAttr("gzhId", rechargeInfo.get("gzhId"));
+			evalParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + "tools"));
+			RemoteInvoke.getInstance().call(evalParam);
+		}
+	}
+
+	/**
+	 * 优质单充值回调
+	 * 
+	 * @param rechargeInfo
+	 * @return
+	 */
+	public AppResult seniorRechargeSuccess(Map<String, Object> rechargeInfo) {
+		String customerId = rechargeInfo.get("customerId").toString();
+		double amount = Double.valueOf(rechargeInfo.get("amount").toString()) / 100;
+
+		// 修改用户可抢优质单金额
+		AppParam amountParam = new AppParam();
+		amountParam.setService("custAmountService");
+		amountParam.setMethod("updateSeniorAmount");
+		amountParam.addAttr("orderId", rechargeInfo.get("rechargeId"));
+		amountParam.addAttr("recordDesc", "优质单充值");
+		amountParam.addAttr("customerId", customerId);
+		amountParam.addAttr("amount", amount);
+		amountParam.addAttr("fundType", FundConstant.FundType_SENIOR_RECHARGE);
+		return SoaManager.getInstance().invoke(amountParam);
+	}
+
+	/**
+	 * 其他 成功处理
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateSuccess(AppParam params) {
+		// 缺少参数
+		if (StringUtils.isEmpty(params.getAttr("rechargeId"))) {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.update(params, NAMESPACE);
+	}
+
+	/**
+	 * 充值失败
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult rechargeFailed(AppParam params) {
+		Object rechargeId = params.getAttr("rechargeId");
+		if (StringUtils.isEmpty(rechargeId)) {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("rechargeId", rechargeId);
+		AppResult queryResult = this.query(queryParam);
+		if (queryResult.getRows().size() == 0) {
+			throw new AppException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		// 修改支付状态
+		return this.update(params);
+	}
+
+	/**
+	 * 修改数据处理
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		params.addAttr("backTime", new Date());
+		return super.update(params, NAMESPACE);
+	}
+
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("rechargeId", id);
+
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("rechargeId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+
+	/**
+	 * 查询每日统计
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDailySum(AppParam params) {
+		return this.query(params, NAMESPACE, "queryDailySum");
+	}
+	
+	/**
+	 * 信贷经理个人充值记录
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult lendRechargeList(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "lendRechargeList",
+				"lendRechargeCount");
+	}
+	
+	/**
+	 * 后台为用户消费优惠券
+	 */
+	public AppResult updateCoupon(AppParam params){
+		AppResult result = new AppResult();
+		Object rechargeId = params.getAttr("rechargeId");
+		Object couponId = params.getAttr("couponId");
+		
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("rechargeId", rechargeId);
+		AppResult queryResult = this.query(queryParam);
+		if(queryResult.getRows().size() <= 0){
+			throw new SysException(DuoduoError.UPDATE_DATA_IS_NOTEXISTS);
+		}
+		Map<String,Object> recharInfo = queryResult.getRow(0);
+		if(!StringUtils.isEmpty(recharInfo.get("couponId"))){
+			throw new SysException("该笔充值记录已使用过优惠券");
+		}
+		
+		Object customerId = recharInfo.get("customerId");
+		Object amount = Double.valueOf(recharInfo.get("amount")
+				.toString()) / 100;
+		//判断该优惠卷是否可用
+		AppParam couponParam = new AppParam("custCouponService","verifiUseCoupon");
+		couponParam.addAttr("couponId", couponId);
+		couponParam.addAttr("customerId", customerId);
+		couponParam.addAttr("rechargeAmt", amount);
+		couponParam.addAttr("rechargeTime", recharInfo.get("createTime"));
+		result = SoaManager.getInstance().invoke(couponParam);
+		if(result.getRows().size() <= 0){
+			throw new SysException("无法使用该优惠券，优惠券必须是有效的，符合使用规则的且领取时间在充值时间前");
+		}
+		
+		//修改充值记录的优惠券信息
+		AppParam updateParam = new AppParam();
+		updateParam.addAttr("rechargeId", rechargeId);
+		updateParam.addAttr("couponId", couponId);
+		this.update(updateParam);
+		
+		//优惠券的处理
+		recharInfo.put("couponId", couponId);
+		double couponAmount = couponHandle(recharInfo);
+		
+		//修改用户可用余额
+		AppParam rewardAmountParam = new AppParam();
+		rewardAmountParam.setService("custAmountService");
+		rewardAmountParam.setMethod("updateCustAmount");
+		rewardAmountParam.addAttr("recordDesc", "客服激活优惠券");
+		rewardAmountParam.addAttr("customerId", customerId);
+		rewardAmountParam.addAttr("amount", couponAmount);
+		rewardAmountParam.addAttr("fundType", FundConstant.COUPON_RECHARGE);
+		SoaManager.getInstance().invoke(rewardAmountParam);
+		
+		//修改用户折扣率
+		AppParam updateDiscount = new AppParam("custAmountService","updateUserDiscount");
+		updateDiscount.addAttr("customerId", customerId);
+		SoaManager.getInstance().invoke(updateDiscount);
+		return result;
+	}
+	
+	/**
+	 * 查询充值总额
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryRechargeRecords(AppParam params) {
+		return super.query(params, NAMESPACE, "queryRechargeRecords");
+	}
+	
+	/**
+	 * 查询客户充值成功次数
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult rechargeSuccessCount(AppParam params) {
+		return super.query(params, NAMESPACE, "rechargeSuccessCount");
+	}
+	
+	/**
+	 * 信贷经理基本情况统计
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryLendInfoByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryLendInfoSum", "queryLendInfoCount");
+	}
+	
+	/**
+	 * 查询信贷经理充值情况
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCustRechargeCount(AppParam params) {
+		return this.query(params, NAMESPACE, "queryCustRechargeCount");
+	}
+}

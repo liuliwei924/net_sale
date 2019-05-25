@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BASECFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			configId,
+			dayCount, 
+			delayDay, 
+			notVisitDay, 
+			notRetDay, 
+			notSignDay, 
+			allotCitys, 
+			orderNoDealHours,
+			orderCount1,
+			orderCount2,
+			orderCount3,
+			orderCount4,
+			allotPrice
+		FROM t_base_cfg
+		<where>
+			<if test="configId != null and configId != ''">
+			  and configId = #{configId}
+			 </if>
+			<if test="dayCount != null and dayCount != ''">
+				and dayCount = #{dayCount}
+			</if>
+			<if test="delayDay != null and delayDay != ''">
+				and delayDay = #{delayDay}
+			</if>
+			<if test="notVisitDay != null and notVisitDay != ''">
+				and notVisitDay = #{notVisitDay}
+			</if>
+			<if test="notRetDay != null and notRetDay != ''">
+				and notRetDay = #{notRetDay}
+			</if>
+			<if test="notSignDay != null and notSignDay != ''">
+				and notSignDay = #{notSignDay}
+			</if>
+			<if test="allotCitys != null and allotCitys != ''">
+				and allotCitys = #{allotCitys}
+			</if>
+			<if test="orderNoDealHours != null and orderNoDealHours != ''">
+				and orderNoDealHours = #{orderNoDealHours}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_base_cfg 
+		<where>
+		<if test="configId != null and configId != ''">
+		    and configId = #{configId}
+		 </if>
+		<if test="dayCount != null and dayCount != ''">
+			and dayCount = #{dayCount}
+		</if>
+		<if test="delayDay != null and delayDay != ''">
+			and delayDay = #{delayDay}
+		</if>
+		<if test="notVisitDay != null and notVisitDay != ''">
+			and notVisitDay = #{notVisitDay}
+		</if>
+		<if test="notRetDay != null and notRetDay != ''">
+			and notRetDay = #{notRetDay}
+		</if>
+		<if test="notSignDay != null and notSignDay != ''">
+			and notSignDay = #{notSignDay}
+		</if>
+		<if test="allotCitys != null and allotCitys != ''">
+			and allotCitys = #{allotCitys}
+		</if>
+		<if test="orderNoDealHours != null and orderNoDealHours != ''">
+			and orderNoDealHours = #{orderNoDealHours}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="configId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_base_cfg (
+			dayCount,
+			delayDay,
+			notVisitDay,
+			notRetDay,
+			notSignDay,
+			allotCitys,
+			orderNoDealHours,
+			orderCount1,
+			orderCount2,
+			orderCount3,
+			orderCount4,
+			allotPrice
+		)
+		VALUES ( 
+			<if test="dayCount !=null ">
+			#{dayCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="dayCount ==null ">
+			0 ,
+			</if>
+			<if test="delayDay !=null ">
+			#{delayDay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="delayDay ==null ">
+			0 ,
+			</if>
+			<if test="notVisitDay !=null ">
+			#{notVisitDay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notVisitDay ==null ">
+			0 ,
+			</if>
+			<if test="notRetDay !=null ">
+			#{notRetDay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notRetDay ==null ">
+			0 ,
+			</if>
+			<if test="notSignDay !=null ">
+			#{notSignDay, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notSignDay ==null ">
+			0 ,
+			</if>
+			#{allotCitys, jdbcType=VARCHAR}, 
+			<if test="orderNoDealHours !=null ">
+			#{orderNoDealHours, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderNoDealHours ==null ">
+			0 ,
+			</if>
+			<if test="orderCount1 !=null ">
+			#{orderCount1, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderCount1 ==null ">
+			0 ,
+			</if>
+			<if test="orderCount2 !=null ">
+			#{orderCount2, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderCount2 ==null ">
+			0 ,
+			</if>
+			<if test="orderCount3 !=null ">
+			#{orderCount3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderCount3 ==null ">
+			0 ,
+			</if>
+			<if test="orderCount4 !=null ">
+			#{orderCount4, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderCount4 ==null ">
+			0 ,
+			</if>
+			<if test="allotPrice !=null ">
+			#{allotPrice, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="allotPrice ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_base_cfg 
+		<where> 
+			configId = #{configId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_base_cfg  
+		<set>
+			<if test="dayCount != null">
+				dayCount = #{dayCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="delayDay != null">
+				delayDay = #{delayDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notVisitDay != null">
+				notVisitDay = #{notVisitDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notRetDay != null">
+				notRetDay = #{notRetDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notSignDay != null">
+				notSignDay = #{notSignDay, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="allotCitys != null">
+				allotCitys = #{allotCitys, jdbcType=VARCHAR},  
+			</if>
+			<if test="orderNoDealHours != null">
+				orderNoDealHours = #{orderNoDealHours, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderCount1 != null">
+				orderCount1 = #{orderCount1, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderCount2 != null">
+				orderCount2 = #{orderCount2, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderCount3 != null">
+				orderCount3 = #{orderCount3, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="orderCount4 != null">
+				orderCount4 = #{orderCount4, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="allotPrice != null">
+				allotPrice = #{allotPrice, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  configId = #{configId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,34 @@
+package org.xxjr.job.listener.busi.store;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+/**
+ * 信贷经理自动分配
+ *
+ */
+@Lazy
+@Component
+public class LendAutoAllotJob implements BaseExecteJob{
+	
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		
+		// 给kf分信贷员
+		LendAutoOrderUtils.lendAllotStart(processId);
+		
+		//分马甲包信贷经理
+		LendAutoUserMjbUtil.lendAllotStart(processId);
+		
+		return result;
+	}
+	public static void main(String[] args) {
+		System.out.println("1".concat("11"));
+	}
+}

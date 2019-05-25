@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ABILITYACCEPTRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			customerId, 
+			applyId,
+			itemType, 
+			abilityValue, 
+			detailDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_ability_accept_record
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_ability_accept_record 
+		<include refid="queryWhereSql"></include>
+	</select>
+	<sql id="queryWhereSql">
+		<where>
+			<if test="recordId != null and recordId != ''">
+			    and recordId = #{recordId}
+			 </if>
+			 <if test="applyId != null and applyId != ''">
+			    and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="itemType != null and itemType != ''">
+				and itemType = #{itemType}
+			</if>
+			<if test="abilityValue != null and abilityValue != ''">
+				and abilityValue = #{abilityValue}
+			</if>
+			<if test="detailDesc != null and detailDesc != ''">
+				and detailDesc = #{detailDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_ability_accept_record (
+			customerId,
+			applyId,
+			itemType,
+			abilityValue,
+			detailDesc,
+			createTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{itemType, jdbcType=VARCHAR}, 
+			<if test="abilityValue !=null ">
+			#{abilityValue, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="abilityValue ==null ">
+			0 ,
+			</if>
+			#{detailDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_ability_accept_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_ability_accept_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="itemType != null">
+				itemType = #{itemType, jdbcType=VARCHAR},  
+			</if>
+			<if test="abilityValue != null">
+				abilityValue = #{abilityValue, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="detailDesc != null">
+				detailDesc = #{detailDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

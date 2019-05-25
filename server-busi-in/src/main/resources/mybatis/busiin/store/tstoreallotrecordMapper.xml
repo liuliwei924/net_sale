@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREALLOTRECORD">
+    
+    <sql id="querySql">
+    	<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			</if>
+		</where>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			allotNotFillCount, 
+			allotSeniorCount, 
+			totalCount
+		FROM t_store_allot_record
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_store_allot_record 
+		<include refid="querySql"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_store_allot_record (
+			recordDate,
+			customerId,
+			allotNotFillCount,
+			allotSeniorCount,
+			totalCount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler},
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			<if test="allotNotFillCount !=null ">
+			#{allotNotFillCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="allotNotFillCount ==null ">
+			0 ,
+			</if>
+			<if test="allotSeniorCount !=null ">
+			#{allotSeniorCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="allotSeniorCount ==null ">
+			0 ,
+			</if>
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="totalCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_store_allot_record 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_store_allot_record  
+		<set>
+			<if test="allotNotFillCount != null">
+				allotNotFillCount = #{allotNotFillCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="addAllotNotFillCount != null">
+				allotNotFillCount =allotNotFillCount+ #{addCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="allotSeniorCount != null">
+				allotSeniorCount = #{allotSeniorCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="addAllotSeniorCount != null">
+				allotSeniorCount = allotSeniorCount +#{addCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="addTotalCount != null">
+				totalCount =totalCount + #{addCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<select id="queryNewOrderCount" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(allotSeniorCount),0) as allotNewOrderCount
+		FROM t_store_allot_record
+		<include refid="queryNewOrderSql"/>
+	</select>
+	
+	<sql id="queryNewOrderSql">
+    	<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			</if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+				<![CDATA[and recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+				<![CDATA[and recordDate < DATE_ADD(#{endRecordDate},INTERVAL 1 day)]]>
+			</if>
+		</where>
+    </sql>
+	
+</mapper>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JOBEXECUTE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			executeId as "executeId",
+			processId as "processId",  <!-- 执行ID -->
+			DATE_FORMAT(executeTime,'%Y-%m-%d %H:%i:%s') as "executeTime", <!-- 执行时间 -->
+			executeDesc as "executeDesc" <!-- 执行描述 -->
+		FROM t_job_execute
+		<where>
+			<if test="executeId != null and executeId != ''">
+			  and executeId = #{executeId}
+			 </if>
+			<if test="processId != null and processId != ''">
+				and processId = #{processId}
+			</if>
+			<if test="executeTime != null and executeTime != ''">
+				and executeTime = #{executeTime}
+			</if>
+			<if test="executeDesc != null and executeDesc != ''">
+				and executeDesc = #{executeDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_job_execute 
+		<where>
+		<if test="executeId != null and executeId != ''">
+		    and executeId = #{executeId}
+		 </if>
+		<if test="processId != null and processId != ''">
+			and processId = #{processId}
+		</if>
+		<if test="executeTime != null and executeTime != ''">
+			and executeTime = #{executeTime}
+		</if>
+		<if test="executeDesc != null and executeDesc != ''">
+			and executeDesc = #{executeDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="executeId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_job_execute (
+			processId,
+			executeTime,
+			executeDesc
+		)
+		VALUES ( 
+			#{processId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			now(), 
+			#{executeDesc, jdbcType=NVARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_job_execute 
+		<where> 
+			executeId = #{executeId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_job_execute  
+		<set>
+			<if test="processId != null">
+				processId = #{processId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="executeTime != null">
+				executeTime = #{executeTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="executeDesc != null">
+				executeDesc = #{executeDesc, jdbcType=NVARCHAR}
+			</if>
+		</set>
+		<where>
+			  executeId = #{executeId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCHANNELDTL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			t.detailCode,
+			t.channelName,
+			t.teamNo,
+			t1.teamName,
+			t.channelCode,
+			t.advertisers, 
+			t.pageURL, 
+			t.postName, 
+			t.contact, 
+			t.contactTel, 
+			DATE_FORMAT(t.launchTime,'%Y-%m-%d %H:%i:%s') as launchTime  ,
+			t.createBy, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.updateTime  
+		FROM t_borrow_channel_dtl t left join t_borrow_team t1 on t.teamNo = t1.teamNo
+		<where>
+			<if test="detailCode != null and detailCode != ''">
+			  and t.detailCode = #{detailCode}
+			 </if>
+			 <if test="channelName != null and channelName != ''">
+				and t.channelName = #{channelName}
+			</if>
+			<if test="teamNo != null and teamNo != ''">
+				and t.teamNo = #{teamNo}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t1.teamName = #{teamName}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and t.channelCode = #{channelCode}
+			</if>
+			<if test="pageURL != null and pageURL != ''">
+				and t.pageURL = #{pageURL}
+			</if>
+			<if test="advertisers != null and advertisers != ''">
+				and t.advertisers = #{advertisers}
+			</if>
+			<if test="postName != null and postName != ''">
+				and t.postName = #{postName}
+			</if>
+			<if test="contact != null and contact != ''">
+				and t.contact = #{contact}
+			</if>
+			<if test="contactTel != null and contactTel != ''">
+				and t.contactTel = #{contactTel}
+			</if>
+			<if test="launchTime != null and launchTime != ''">
+				and t.launchTime = #{launchTime}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and t.createBy = #{createBy}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM  t_borrow_channel_dtl t left join t_borrow_team t1 on t.teamNo = t1.teamNo
+		<where>
+		<if test="detailCode != null and detailCode != ''">
+		  and t.detailCode = #{detailCode}
+		 </if>
+		 <if test="channelName != null and channelName != ''">
+			and t.channelName = #{channelName}
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			and t.teamNo = #{teamNo}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t1.teamName = #{teamName}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and t.channelCode = #{channelCode}
+		</if>
+		<if test="pageURL != null and pageURL != ''">
+			and t.pageURL = #{pageURL}
+		</if>
+		<if test="advertisers != null and advertisers != ''">
+			and t.advertisers = #{advertisers}
+		</if>
+		<if test="postName != null and postName != ''">
+			and t.postName = #{postName}
+		</if>
+		<if test="contact != null and contact != ''">
+			and t.contact = #{contact}
+		</if>
+		<if test="contactTel != null and contactTel != ''">
+			and t.contactTel = #{contactTel}
+		</if>
+		<if test="launchTime != null and launchTime != ''">
+			and t.launchTime = #{launchTime}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and t.createBy = #{createBy}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and t.updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.detailCode,
+			t.channelCode,
+			t.channelName,
+			t.teamNo,
+			t1.type, 
+			t1.flowType, 
+			t1.launchPlace, 
+			t.pageURL, 
+			t.postName, 
+			t.contact, 
+			t.contactTel, 
+			t.createBy,
+			DATE_FORMAT(t.launchTime,'%Y-%m-%d %H:%i:%s') as launchTime  ,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_borrow_channel_dtl t
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode  
+		<include refid="showWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM t_borrow_channel_dtl t
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+		<include refid="showWhereSql"></include>
+	</select>
+	<sql id="showWhereSql">
+		<where>
+			<if test="detailCode != null and detailCode != ''">
+			  and t.detailCode = #{detailCode}
+			</if>
+			<if test="postName != null and postName != ''">
+			  and t.postName = #{postName}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+			  and t1.channelCode = #{channelCode}
+			</if>
+			<if test="type != null and type != ''">
+			  and t1.type = #{type}
+			</if>
+			<if test="launchPlace != null and launchPlace != ''">
+			  and t1.launchPlace = #{launchPlace}
+			</if>
+		</where>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_borrow_channel_dtl (
+			detailCode,
+			channelCode,
+			channelName,
+			advertisers,
+			teamNo,
+			pageURL,
+			postName,
+			contact,
+			contactTel,
+			launchTime,
+			createBy,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{detailCode, jdbcType=VARCHAR},  
+			#{channelCode, jdbcType=VARCHAR},
+			#{channelName, jdbcType=VARCHAR},
+			#{advertisers, jdbcType=VARCHAR},  
+			#{teamNo, jdbcType=VARCHAR}, 
+			#{pageURL, jdbcType=VARCHAR}, 
+			#{postName, jdbcType=VARCHAR}, 
+			#{contact, jdbcType=VARCHAR}, 
+			#{contactTel, jdbcType=VARCHAR}, 
+			#{launchTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_channel_dtl 
+		<where> 
+			detailCode = #{detailCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_channel_dtl  
+		<set>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="pageURL != null">
+				pageURL = #{pageURL, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="advertisers != null">
+				advertisers = #{advertisers, jdbcType=VARCHAR},
+			</if>
+			<if test="teamNo != null">
+				teamNo = #{teamNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="postName != null">
+				postName = #{postName, jdbcType=VARCHAR},  
+			</if>
+			<if test="contact != null">
+				contact = #{contact, jdbcType=VARCHAR},  
+			</if>
+			<if test="contactTel != null">
+				contactTel = #{contactTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="launchTime != null">
+				launchTime = #{launchTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  detailCode = #{detailCode}
+		</where>
+	</update>
+</mapper>

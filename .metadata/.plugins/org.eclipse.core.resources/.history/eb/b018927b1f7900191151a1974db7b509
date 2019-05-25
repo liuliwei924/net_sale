@@ -1,0 +1,64 @@
+package org.xxjr.sys.util;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.core.service.SoaManager;
+import org.llw.model.cache.RedisUtils;
+
+/**
+ * 支付渠道
+ * @author 
+ *
+ */
+public class RechargeChannelUtil {
+
+	/**获取支付渠道的key**/
+	public static String KEY_RECHARGE_CHANNEL = "key_recharge_channel";
+
+	
+	/***
+	 * 获取支付渠道
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getRechargeChanne(){
+		List<Map<String, Object>> list = (List<Map<String, Object>>) RedisUtils.getRedisService().get(KEY_RECHARGE_CHANNEL);
+		if(list == null){
+			list = refershRechargeChanne();
+		}
+		return list;
+	}
+	
+	public static List<Map<String, Object>> refershRechargeChanne(){
+		AppParam params = new AppParam();
+		params.setService("rechargeChannelService");
+		params.addAttr("enable", 1);
+		params.setMethod("query");
+		params.setOrderBy("indexNum");
+		params.setOrderValue("desc");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sys));
+		AppResult result=null;
+		if (SpringAppContext.getBean("rechargeChannelService") == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else{
+			result = SoaManager.getInstance().invoke(params);
+		}
+		 List<Map<String, Object>> list = new ArrayList<Map<String,Object>>();
+		 if(result.getRows().size()>0){
+			 list = result.getRows();
+			 RedisUtils.getRedisService().set(KEY_RECHARGE_CHANNEL, (Serializable)list);
+		 }
+		 return list;
+	}
+	
+}

@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTVISIT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			custName, 
+			custTel, 
+			visitType, 
+			receiverTel, 
+			customerId, 
+			applyId, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			upStatus,
+			errorMessage,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM t_cust_visit
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="custName != null and custName != ''">
+				and custName = #{custName}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and custTel = #{custTel}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and visitType = #{visitType}
+			</if>
+			<if test="receiverTel != null and receiverTel != ''">
+				and receiverTel = #{receiverTel}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="createTime != null">
+				and createTime = #{createTime}
+			</if>
+			<if test="today !=null">
+				and DATE_FORMAT(createTime,'%Y-%m-%d') =  DATE_FORMAT(NOW(),'%Y-%m-%d')
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_visit 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="custName != null and custName != ''">
+			and custName = #{custName}
+		</if>
+		<if test="custTel != null and custTel != ''">
+			and custTel = #{custTel}
+		</if>
+		<if test="visitType != null and visitType != ''">
+			and visitType = #{visitType}
+		</if>
+		<if test="receiverTel != null and receiverTel != ''">
+			and receiverTel = #{receiverTel}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="createTime != null">
+			and createTime = #{createTime}
+		</if>
+		<if test="upStatus !=null and upStatus != ''">
+			and upStatus = #{upStatus}
+		</if>
+		<if test="errorMessage !=null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		<if test="updateTime != null">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_visit (
+			custName,
+			custTel,
+			visitType,
+			receiverTel,
+			customerId,
+			applyId,
+			createTime,
+			upStatus,
+			errorMessage,
+			updateTime
+		)
+		VALUES ( 
+			#{custName, jdbcType=VARCHAR}, 
+			#{custTel, jdbcType=VARCHAR},
+			#{visitType, jdbcType=VARCHAR},
+			#{receiverTel, jdbcType=VARCHAR}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="upStatus ==null ">
+			1 ,
+			</if>
+			<if test="upStatus !=null ">
+			#{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			#{errorMessage, jdbcType=VARCHAR},
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_visit 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_visit  
+		<set>
+			<if test="custName != null">
+				custName = #{custName, jdbcType=VARCHAR},  
+			</if>
+			<if test="custTel != null">
+				custTel = #{custTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="visitType != null">
+				visitType = #{visitType, jdbcType=VARCHAR},
+			</if>
+			<if test="receiverTel != null">
+				receiverTel = #{receiverTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="upStatus != null">
+				upStatus = #{upStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	
+	<!-- 查询接待人信息 -->
+	<select id="queryReceviceInfo" parameterType="map" resultType="map">
+		SELECT
+		t.recordId,
+		t.custName,
+		t.custTel,
+		t.visitType,
+		t.receiverTel,
+		t.customerId,
+		t.applyId,
+		t2.orgId
+		FROM
+		t_cust_visit t LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		WHERE recordId = #{recordId}
+	</select>
+	
+	<!-- 查询到访客户列表 -->
+	<select id="queryVisitList" parameterType="map" resultType="map">
+		SELECT 
+			tab1.recordId,
+			tab1.applyId,
+			tab1.custName,
+			tab1.custTel,
+			tab1.visitType,
+			tab1.receiverTel,
+			tab1.visitTime,
+			tab1.orgName,
+			tab1.realName,
+			tab1.groupName,
+			tab1.teamName,
+			tab1.telephone,
+			tab1.havApply,
+			tab1.upStatus,
+			tab1.errorMessage,
+			tab1.updateTime,
+			tab1.orgId,
+			tab1.employeeNo
+		FROM (
+			SELECT
+			t.recordId,
+			t.applyId,
+			t.custName,
+			f_hide_phone(t.custTel) as custTel,
+			t.visitType,
+			t.receiverTel,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d')as visitTime,
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+			t2.realName,
+			t2.groupName,
+			t2.teamName,
+			f_hide_phone(t1.telephone) as telephone,
+			(CASE 
+				WHEN t.applyId is NULL THEN '匹配失败'
+				WHEN t.customerId = t1.lastStore  THEN '匹配本人'
+				WHEN (t.customerId != t1.lastStore OR t1.lastStore is NULL) THEN '匹配非本人'
+				END)as havApply,
+			t.upStatus,
+			t.errorMessage,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t3.orgId,
+			(
+				CASE
+				WHEN t2.queryStatus = 1 THEN
+					t2.employeeNo
+				ELSE
+					NULL
+				END
+			) AS employeeNo
+			FROM
+			t_cust_visit t 
+			LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+			LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+			LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+			LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+			<include refid="queryVisitSql"/>
+		UNION ALL
+		SELECT
+			t.detailId AS recordId,
+			t.applyId,
+			t1.applyName AS custName,
+			f_hide_phone(t1.telephone) as custTel,
+			'手动添加' AS visitType,
+		  	t2.telephone as receiverTel,
+			DATE_FORMAT(t.visitTime,'%Y-%m-%d')as visitTime,
+			CONCAT(t3.orgNo,'-',t3.orgName) as orgName,
+			t2.realName,
+			t2.groupName,
+			t2.teamName,
+			f_hide_phone(t1.telephone) as telephone,
+		  	'匹配本人' as havApply,
+		 	t.upStatus,
+		  	t.errorMessage,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t3.orgId,
+			(
+				CASE
+				WHEN t2.queryStatus = 1 THEN
+					t2.employeeNo
+				ELSE
+					NULL
+				END
+			) AS employeeNo
+		FROM
+			t_treat_visit_detail t
+		LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_busi_cust t2 ON t.recCustId = t2.customerId
+		LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+		LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+		<include refid="queryVisitDetailSql"/>
+		) as tab1
+		order by tab1.visitTime DESC
+	</select>
+	
+	<select id="queryVisitCount" parameterType="map" resultType="int">
+		select sum(tab1.totalCount) from (
+			SELECT
+				count(1) as totalCount
+			FROM
+				t_cust_visit t
+			LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+			LEFT JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+			LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+			LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+			<include refid="queryVisitSql"/>
+			UNION ALL
+			SELECT
+				count(1) as totalCount
+			FROM
+				t_treat_visit_detail t
+			LEFT JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+			LEFT JOIN t_busi_cust t2 ON t.recCustId = t2.customerId
+			LEFT JOIN t_org t3 ON t2.orgId = t3.orgId
+			LEFT JOIN t_borrow_channel t4 ON t4.channelCode = t1.channelCode
+			<include refid="queryVisitDetailSql"/>
+			) as tab1
+	</select>
+	
+	<sql id="queryVisitSql">
+		<where>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t2.orgId in (${userOrgs})
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t2.orgId = #{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="custName != null and custName != ''">
+				<![CDATA[ and t.custName like CONCAT(#{custName},'%') ]]>
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t.custTel= #{telephone}
+			</if>
+			<if test="recName != null and recName != ''">
+				<![CDATA[ and t2.realName like CONCAT(#{recName},'%') ]]>
+			</if>
+			<if test="receiverTel != null and receiverTel != ''">
+				and t.receiverTel= #{receiverTel}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[ and t.createTime >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				 <![CDATA[and t.createTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="applyStatus == 1">
+				and t.customerId = t1.lastStore
+			</if>
+			<if test="applyStatus == 2">
+				and t.applyId IS NULL
+			</if>
+			<if test="applyStatus == 3">
+				and t.applyId IS NOT NULL
+ 				and (t.customerId != t1.lastStore OR t1.lastStore is NULL)
+			</if>
+			<if test="upStatus != null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+		</where>
+	</sql>
+	
+	<sql id="queryVisitDetailSql">
+		<where>
+			t.visitType = 1
+			<if test="userOrgs != null and userOrgs != ''">
+				and t2.orgId in (${userOrgs})
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t2.orgId = #{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="custName != null and custName != ''">
+				<![CDATA[ and t1.applyName like CONCAT(#{custName},'%') ]]>
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone= #{telephone}
+			</if>
+			<if test="recName != null and recName != ''">
+				<![CDATA[ and t2.realName like CONCAT(#{recName},'%') ]]>
+			</if>
+			<if test="receiverTel != null and receiverTel != ''">
+				and t2.telephone= #{receiverTel}
+			</if>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[ and t.visitTime >= #{startDate} ]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				 <![CDATA[and t.visitTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="applyStatus == 1">
+				and t.applyId IS NOT NULL
+			</if>
+			<if test="applyStatus == 2 or applyStatus == 3">
+				and t.applyId IS NULL
+			</if>
+			<if test="upStatus != null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t4.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 关联处理 -->
+	<update id="relationDeal">
+		update t_cust_visit set applyId = #{applyId}
+		<where>
+			  recordId = #{recordId}
+		</where>
+	
+	</update>
+	
+	<select id="queryVisitByPage" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.custName, 
+			t.custTel, 
+			t.visitType,
+			t.receiverTel, 
+			t.customerId, 
+			t.applyId, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.upStatus,
+			t.errorMessage,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			t1.realName,
+			t1.orgId,
+			t2.orgNo,
+			(
+				CASE
+				WHEN t1.queryStatus = 1 THEN
+					t1.employeeNo
+				ELSE
+					NULL
+				END
+			) AS employeeNo
+		FROM t_cust_visit t
+		JOIN t_busi_cust t1 ON t.receiverTel = t1.telephone
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<where>
+			<if test="recordId != null and recordId != ''">
+			    and t.recordId = #{recordId}
+			</if>
+			<if test="custName != null and custName != ''">
+				and t.custName = #{custName}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and t.custTel = #{custTel}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and t.visitType = #{visitType}
+			</if>
+			<if test="receiverTel != null and receiverTel != ''">
+				and t.receiverTel = #{receiverTel}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="createTime != null">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and t.errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryVisitByCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_visit t
+		JOIN t_busi_cust t1 ON t.receiverTel = t1.telephone
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<where>
+			<if test="recordId != null and recordId != ''">
+			    and t.recordId = #{recordId}
+			</if>
+			<if test="custName != null and custName != ''">
+				and t.custName = #{custName}
+			</if>
+			<if test="custTel != null and custTel != ''">
+				and t.custTel = #{custTel}
+			</if>
+			<if test="visitType != null and visitType != ''">
+				and t.visitType = #{visitType}
+			</if>
+			<if test="receiverTel != null and receiverTel != ''">
+				and t.receiverTel = #{receiverTel}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and t.applyId = #{applyId}
+			</if>
+			<if test="createTime != null">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="upStatus !=null and upStatus != ''">
+				and t.upStatus = #{upStatus}
+			</if>
+			<if test="errorMessage !=null and errorMessage != ''">
+				and t.errorMessage = #{errorMessage}
+			</if>
+			<if test="updateTime != null">
+				and t.updateTime = #{updateTime}
+			</if>
+		</where>
+	</select>
+</mapper>

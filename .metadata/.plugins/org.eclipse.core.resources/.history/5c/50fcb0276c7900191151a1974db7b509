@@ -1,0 +1,32 @@
+/**
+ * 
+ */
+package org.xxjr.job.listener.xxxj;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+/**
+ * 生成天币网价格行情
+ * @author zenghw
+ *
+ */
+@Lazy
+@Component
+public class GenrateQuotaitionPriceJob implements BaseExecteJob{
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		AppResult result = new AppResult();
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+
+		//生成天狗币交易行情价格
+		TranUtil.generateCoinPrice(processId);
+		return result;
+	}
+
+}

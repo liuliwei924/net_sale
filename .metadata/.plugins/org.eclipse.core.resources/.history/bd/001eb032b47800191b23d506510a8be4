@@ -1,0 +1,464 @@
+package org.xxjr.cust.util.info;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.lang.RandomStringUtils;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.common.web.session.DuoduoUser;
+import org.ddq.common.web.session.ThreadConstants;
+import org.ddq.common.web.util.IdentifyUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.CustConstant;
+import org.xxjr.cust.util.CustTokenConstant;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+
+public class MjbCustomerUtil {
+
+
+	/**用户数据保留时长为 1小时**/
+	public static Integer CACHE_TIME = 60*60*1;
+	
+	/** 客服管理登录用户信息缓存key  **/
+	public static final String MJB_USER_SESSION = "MJB_SESS_";
+
+	/**
+	 * 用户手机ID
+	 */
+	public static final String AUTOZ_LOGIN_KEY = "Mjb_antoLogin_";
+	
+	private static final char[] randomChs = new char[] { '1', '2', '3', '4','5', '6', '7', '8', '9', '0','a','f','e','y','z' };
+	
+	/** 连连支付商户用户标识 **/
+	public static final String LIANLIAN_USER_PRE ="xxjrlluid";
+	
+	/** 连连支付测试商户用户标识 **/
+	public static final String LIANLIAN_TEST_USER_PRE ="testxxjrlluid";
+		
+	public static AppResult retErrorMsg(String errMsg){
+		AppResult result = new AppResult();
+		result.setSuccess(false);
+		result.setMessage(errMsg);
+		return result;
+	}
+	
+	/**
+	 * 创建tokenId
+	 * 
+	 * @param type
+	 * @return
+	 */
+	public static String createTokenId(String type) {
+		StringBuffer bf = new StringBuffer();
+		String random = RandomStringUtils.random(8);
+		bf.append(random);
+		bf.append(DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERNYYYYMMDDHHMMSSSSS));
+		String token = type + Md5.getInstance().encrypt(bf.toString());
+		return token;
+	}
+
+	/**
+	 * app保存token
+	 * @param loginType
+	 * @param custId
+	 * @param request
+	 * @return
+	 */
+	public static String setAppToken(String loginType, String custId,
+			HttpServletRequest request) {
+		String signId= createTokenId(loginType);
+		Map<String, Object> tokenInfo = new HashMap<String, Object>();
+		tokenInfo.put(CustTokenConstant.CUST_LOGINSTATUS,
+				CustTokenConstant.CUST_LOGINSTATUS_LOGININ);
+		tokenInfo.put(CustTokenConstant.USER_TOKENID, signId);
+		tokenInfo.put(CustTokenConstant.CUST_LOGINTYPE, loginType);
+		tokenInfo.put(CustTokenConstant.CUST_ID,custId);
+		RedisUtils.getRedisService().set(signId, (Serializable)tokenInfo, 60 * 60 *24 *30);
+		RedisUtils.getRedisService().set((MjbCustomerUtil.MJB_USER_SESSION + custId), (Serializable)signId, 60 * 60 *24 *30);
+		return signId;
+	}
+	public static void refreshSession(HttpServletRequest request){
+		Map<String,Object> custMap = MjbCustomerIdentify.refreshIdentifyById(getCustId());
+		setExistsSession(custMap,request);
+	}
+	
+	/***
+	 * 设置用户session 非登录处理
+	 * @param context
+	 * @param request
+	 * @return
+	 */
+	public static void setExistsSession(Map<String, Object> custMap,HttpServletRequest request){
+		DuoduoUser duoduoUser = new DuoduoUser();
+		if(StringUtils.isEmpty(custMap.get("userName"))){
+			duoduoUser.setUsername(custMap.get("customerId")+"-" +
+					StringUtil.getHideTelphone(org.ddq.common.util.StringUtil.getString(custMap.get("telephone"))));
+		}
+		String platform = request.getParameter("platform");
+		if(!StringUtils.isEmpty(platform)){
+			custMap.put("platform", StringUtils.isEmpty(platform) ? "0" : platform);
+		}
+		duoduoUser.setSessionData(custMap);
+		request.setAttribute(ThreadConstants.DUODUO_USER, duoduoUser);
+		request.getSession().setAttribute(ThreadConstants.DUODUO_USER, duoduoUser);
+		
+	}
+	
+	public static void refreshRedis(HttpServletRequest request){
+		MjbCustomerIdentify.refreshIdentifyById(getCustId());
+	}
+	/***
+	 * 获取session用户id
+	 * @return
+	 */
+	public static String getCustId(){
+		DuoduoUser user = DuoduoSession.getUser();
+		if(user == null || StringUtils.isEmpty(user.getSessionData().get(CustTokenConstant.CUST_ID)))
+			return "";
+		else
+		return  user.getSessionData().get(CustTokenConstant.CUST_ID).toString();
+	}
+	/***
+	 * 根据手机号和马甲包版本查用户ID
+	 * @param userName
+	 * @return
+	 */
+	public static String queryCustId(String telephone,String appType){
+		if(StringUtils.isEmpty(telephone)){
+			return null;
+		}
+		AppParam  queryCust = new AppParam();
+		queryCust.addAttr("telephone", telephone);
+		queryCust.addAttr("appType", appType);
+		queryCust.setService("customerService");
+		queryCust.setMethod("queryCustName");
+		queryCust.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(queryCust);
+		if(result.getRows().size()>0){
+			return result.getRow(0).get("customerId").toString();
+		}
+		return null;
+	}
+	/**
+	 * 查询用户是否已设置密码
+	 * @param customerId
+	 * @return
+	 */
+	public static Object queryCustPwd(String customerId){
+		if(StringUtils.isEmpty(customerId)){
+			return null;
+		}
+		AppParam  queryCust = new AppParam();
+		queryCust.addAttr("customerId", customerId);
+		queryCust.setService("customerService");
+		queryCust.setMethod("queryCustPwd");
+		queryCust.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(queryCust);
+		if(result.getRows().size() > 0){
+			return result.getRow(0).get("password");
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询用户是否已设置交易密码
+	 * @param customerId
+	 * @return
+	 */
+	public static Object queryCustJyPwd(String customerId){
+		if(StringUtils.isEmpty(customerId)){
+			return null;
+		}
+		AppParam  queryCust = new AppParam();
+		queryCust.addAttr("customerId", customerId);
+		queryCust.setService("customerService");
+		queryCust.setMethod("queryCustPwd");
+		AppResult result = ServiceKey.doCallNoTx(queryCust, ServiceKey.Key_mjb);
+		if(result.getRows().size() > 0){
+			return result.getRow(0).get("tradePwd");
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询用户信息(公共方法)
+	 * @param params
+	 * @return
+	 */
+	public static Map<String,Object> queryCustInfo(AppParam params){
+		params.setService("customerService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = null;
+		if (SpringAppContext.getBean("customerService") == null) {
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		}else {
+			result = SoaManager.getInstance().invoke(params);
+		}
+		
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return null;
+	}
+	
+	/**
+	 * 用户Id加密
+	 * @param custId
+	 * @return
+	 */
+	public static String getEncrypt(String custId){
+		String start = getRandBefore();
+		String newCust = getCustId(custId);
+		return  start + StringUtil.encodeBase64(newCust);
+	}
+	
+	
+	/**
+	 * 从t_openid_relation根据customerId查询openid
+	 * @param openid
+	 * @return
+	 */
+	public static Object queryOpenidByCustId(Object customerId){
+		AppParam queryParam = new AppParam();
+		queryParam.setService("customerService");
+		queryParam.setMethod("query");
+		queryParam.addAttr("customerId", customerId);
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
+		if(queryResult.getRows().size()>0){
+			return queryResult.getRow(0).get("openid");
+		}
+		return null;
+	}
+	
+	/***
+	 * 用户Id解密
+	 * @param custId
+	 * @return
+	 */
+	public static String getDecrypt(String custId){
+		try{
+			if (custId == null || custId.equals("")) {
+				return null;
+			}
+			int size = SysParamsUtil.getIntParamByKey("USERID", 8);
+			if(custId.length()<=size){
+				return null;
+			}
+			custId = custId.substring(size);
+			String descId = StringUtil.decoderBase64(custId);
+			return new Integer(descId).toString();
+		}catch(Exception e){
+			
+		}
+		return null;
+	}
+	
+	private static String getCustId(String custId){
+		StringBuffer str = new StringBuffer(custId);
+		if(str.length()<11){
+			for(int i=custId.length();i<=11;i++){
+				str.insert(0,"0");
+			}
+		}
+		return str.toString();
+	}
+	
+	private static String getRandBefore(){
+		return IdentifyUtil.getRandValue(SysParamsUtil.getIntParamByKey("USERID", 8));
+	}
+	
+	public static void sumRegister (Object telephone) {
+		if (StringUtils.isEmpty(telephone)) {
+			return;
+		}
+		AppParam updateParam = new AppParam("sumUserRegisterService", "update");
+		updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+		updateParam.addAttr("telephone", telephone);
+		updateParam.addAttr("register", "1");
+		if (SpringAppContext.getBean("sumUserRegisterService") == null) {
+			RemoteInvoke.getInstance().call(updateParam);
+		}else {
+			SoaManager.getInstance().invoke(updateParam);
+		}
+	}
+	/**
+	 * 生成唯一标识
+	 * 
+	 * @return
+	 */
+	public  static String getUUID(String preStr) {
+		String random = RandomStringUtils.random(5, randomChs);
+		String seriaNo = DateUtil.toStringByParttern(new Date(), "yyyyMMddHHmmssSSS")+ random;
+		String key = Md5.getInstance().encrypt(seriaNo);
+		return preStr != null ? preStr + key : key;
+	}
+	/**
+	 * 更新用户信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult updateInfo(AppParam params) {
+		params.setService("customerService");
+		params.setMethod("update");
+		return ServiceKey.doCall(params, ServiceKey.Key_mjb);
+	}
+	/**
+	 * 获取signid
+	 * @param request
+	 * @return
+	 */
+	public static String getSignId(HttpServletRequest request) {
+		String signId = request.getParameter(CustTokenConstant.USER_SIGNID);
+		if (signId == null || signId=="") {
+			signId = request.getHeader(CustTokenConstant.USER_SIGNID);
+		}
+		request.setAttribute(CustTokenConstant.USER_SIGNID,signId);
+		return signId;
+	}
+	
+	/**
+	 * 返回用户id
+	 * 
+	 * @param request
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static String getCustId(HttpServletRequest request) {
+		String signId = getSignId(request);
+		if (signId != null) {
+			try {
+				Map<String, Object> info = (Map<String, Object>) RedisUtils.getRedisService().get(signId);
+				if (info != null && !info.isEmpty()) {
+					return (String) info.get(CustTokenConstant.CUST_ID);
+				}
+			} catch (Exception e) {
+				LogerUtil.error(MjbCustomerUtil.class, "getCustId error");
+			}
+		}
+		return null;
+	}
+	
+	
+	/**
+	 * 查询用户密码
+	 * @param params
+	 * @return
+	 */
+	public static AppResult verifyPass(AppParam params){
+		params.setService("customerService");
+		params.setMethod("verifyPass");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(params);
+		return result;
+	}
+	
+	/**
+	 * 添加活动记录
+	 * @param params
+	 */
+	public static void addActivityRecord(AppParam params){
+		params.setService("custActivityRecordService");
+		params.setMethod("insert");
+		params.addAttr("customerId", params.getAttr("customerId"));
+		params.addAttr("referer", params.getAttr("referer"));
+		params.addAttr("registerTime", new Date());
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+		if (SpringAppContext.getBean("custActivityRecordService") == null) {
+			RemoteInvoke.getInstance().call(params);
+		}else{
+			SoaManager.getInstance().invoke(params);
+		}
+	}
+	/**
+	 * 更新用户ip地址
+	 * @param customerId
+	 * @param ipAddress 
+	 * @return
+	 */
+	public static AppResult updateLoginMessageById(String customerId, String ipAddress) {
+		AppParam param = new AppParam("customerService","update");
+		param.addAttr("customerId", customerId);
+		param.addAttr("lastLoginTime", new Date());
+		param.addAttr("lastLoginIp", ipAddress);
+		return ServiceKey.doCall(param, ServiceKey.Key_mjb);
+	}
+	
+	/**
+	 * 获取连连的custid(马甲包使用)
+	 * @param request
+	 * @return
+	 */
+	public static String getLianUserId(HttpServletRequest request){
+		String appType = request.getParameter("appType");
+		if (StringUtils.isEmpty(appType)) {
+			appType = CustConstant.CUST_mjb_Xdyzj;
+		}
+		
+		if(AppProperties.isDebug()){
+			/** 连连支付测试商户用户标识 **/
+			return "test" + "mjb" + appType  + "lluid" + MjbCustomerUtil.getCustId();
+		}else{
+			return "mjb" + appType + "lluid" + MjbCustomerUtil.getCustId();
+			/** 连连支付商户用户标识 **/
+		}
+	}
+	
+	public static String getLianUserId(String customerId, String appType){
+		if (StringUtils.isEmpty(appType)) {
+			appType = CustConstant.CUST_mjb_Xdyzj;
+		}
+		
+		if(AppProperties.isDebug()){
+			/** 连连支付测试商户用户标识 **/
+			return "test" + "mjb" + appType  + "lluid" + customerId;
+		}else{
+			return "mjb" + appType + "lluid" + customerId;
+			/** 连连支付商户用户标识 **/
+		}
+	}
+
+	/**
+	 * 返回用户信息
+	 * 
+	 * @param request
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getTokenInfo(String signId) {
+		Map<String, Object> tokenInfo = new HashMap<String, Object>();
+		if (signId != null) {
+			tokenInfo = (Map<String, Object>) RedisUtils.getRedisService().get(
+					signId);
+		}
+		if(null == tokenInfo){
+			tokenInfo = new HashMap<String, Object>();
+		}
+		return tokenInfo;
+	}
+}

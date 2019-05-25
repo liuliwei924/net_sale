@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATSUCCESSHISTORY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			repayId, 
+			applyId, 
+			customerId, 
+			backType, 
+			orgId, 
+			loanOrg, 
+			applyAmount, 
+			loanAmount, 
+			loanDeadline, 
+			loanType, 
+			DATE_FORMAT(loanDate,'%Y-%m-%d') as loanDate , 
+			DATE_FORMAT(nextRetDate,'%Y-%m-%d') as nextRetDate , 
+			nextRetAmount, 
+			status, 
+			rewardAmount, 
+			feeAmount, 
+			DATE_FORMAT(feeAmountDate,'%Y-%m-%d') as feeAmountDate , 
+			recordDesc, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			updateBy, 
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  ,
+			anjiePerson, 
+			payType, 
+			recType, 
+			recStatus, 
+			queryStatus, 
+			errorMessage, 
+			loanNo, 
+			reContractId, 
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			channelCode, 
+			channelDetail
+		FROM t_treat_success_history
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="repayId != null and repayId != ''">
+				and repayId = #{repayId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="backType != null and backType != ''">
+				and backType = #{backType}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="loanOrg != null and loanOrg != ''">
+				and loanOrg = #{loanOrg}
+			</if>
+			<if test="applyAmount != null and applyAmount != ''">
+				and applyAmount = #{applyAmount}
+			</if>
+			<if test="loanAmount != null and loanAmount != ''">
+				and loanAmount = #{loanAmount}
+			</if>
+			<if test="loanDeadline != null and loanDeadline != ''">
+				and loanDeadline = #{loanDeadline}
+			</if>
+			<if test="loanType != null and loanType != ''">
+				and loanType = #{loanType}
+			</if>
+			<if test="loanDate != null and loanDate != ''">
+				and loanDate = #{loanDate}
+			</if>
+			<if test="nextRetDate != null and nextRetDate != ''">
+				and nextRetDate = #{nextRetDate}
+			</if>
+			<if test="nextRetAmount != null and nextRetAmount != ''">
+				and nextRetAmount = #{nextRetAmount}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="rewardAmount != null and rewardAmount != ''">
+				and rewardAmount = #{rewardAmount}
+			</if>
+			<if test="feeAmount != null and feeAmount != ''">
+				and feeAmount = #{feeAmount}
+			</if>
+			<if test="feeAmountDate != null and feeAmountDate != ''">
+				and feeAmountDate = #{feeAmountDate}
+			</if>
+			<if test="recordDesc != null and recordDesc != ''">
+				and recordDesc = #{recordDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="anjiePerson != null and anjiePerson != ''">
+				and anjiePerson = #{anjiePerson}
+			</if>
+			<if test="payType != null and payType != ''">
+				and payType = #{payType}
+			</if>
+			<if test="recType != null and recType != ''">
+				and recType = #{recType}
+			</if>
+			<if test="recStatus != null and recStatus != ''">
+				and recStatus = #{recStatus}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and queryStatus = #{queryStatus}
+			</if>
+			<if test="errorMessage != null and errorMessage != ''">
+				and errorMessage = #{errorMessage}
+			</if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="channelDetail != null and channelDetail != ''">
+				and channelDetail = #{channelDetail}
+			</if>
+			<if test="repayFlag != null and repayFlag != ''">
+				and repayId is not null
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_success_history 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="repayId != null and repayId != ''">
+			and repayId = #{repayId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="backType != null and backType != ''">
+			and backType = #{backType}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="loanOrg != null and loanOrg != ''">
+			and loanOrg = #{loanOrg}
+		</if>
+		<if test="applyAmount != null and applyAmount != ''">
+			and applyAmount = #{applyAmount}
+		</if>
+		<if test="loanAmount != null and loanAmount != ''">
+			and loanAmount = #{loanAmount}
+		</if>
+		<if test="loanDeadline != null and loanDeadline != ''">
+			and loanDeadline = #{loanDeadline}
+		</if>
+		<if test="loanType != null and loanType != ''">
+			and loanType = #{loanType}
+		</if>
+		<if test="loanDate != null and loanDate != ''">
+			and loanDate = #{loanDate}
+		</if>
+		<if test="nextRetDate != null and nextRetDate != ''">
+			and nextRetDate = #{nextRetDate}
+		</if>
+		<if test="nextRetAmount != null and nextRetAmount != ''">
+			and nextRetAmount = #{nextRetAmount}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="rewardAmount != null and rewardAmount != ''">
+			and rewardAmount = #{rewardAmount}
+		</if>
+		<if test="feeAmount != null and feeAmount != ''">
+			and feeAmount = #{feeAmount}
+		</if>
+		<if test="feeAmountDate != null and feeAmountDate != ''">
+			and feeAmountDate = #{feeAmountDate}
+		</if>
+		<if test="recordDesc != null and recordDesc != ''">
+			and recordDesc = #{recordDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="anjiePerson != null and anjiePerson != ''">
+			and anjiePerson = #{anjiePerson}
+		</if>
+		<if test="payType != null and payType != ''">
+			and payType = #{payType}
+		</if>
+		<if test="recType != null and recType != ''">
+			and recType = #{recType}
+		</if>
+		<if test="recStatus != null and recStatus != ''">
+			and recStatus = #{recStatus}
+		</if>
+		<if test="queryStatus != null and queryStatus != ''">
+			and queryStatus = #{queryStatus}
+		</if>
+		<if test="errorMessage != null and errorMessage != ''">
+			and errorMessage = #{errorMessage}
+		</if>
+		<if test="loanNo != null and loanNo != ''">
+			and loanNo = #{loanNo}
+		</if>
+		<if test="reContractId != null and reContractId != ''">
+			and reContractId = #{reContractId}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_success_history (
+			repayId,
+			applyId,
+			customerId,
+			backType,
+			orgId,
+			loanOrg,
+			applyAmount,
+			loanAmount,
+			loanDeadline,
+			loanType,
+			loanDate,
+			nextRetDate,
+			nextRetAmount,
+			status,
+			rewardAmount,
+			feeAmount,
+			feeAmountDate,
+			recordDesc,
+			createTime,
+			updateBy,
+			updateTime,
+			anjiePerson,
+			payType,
+			recType,
+			recStatus,
+			queryStatus,
+			errorMessage,
+			loanNo,
+			reContractId,
+			applyTime,
+			channelCode,
+			channelDetail
+		)
+		VALUES ( 
+			#{repayId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="backType !=null ">
+			#{backType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="backType ==null ">
+			1 ,
+			</if>
+			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{loanOrg, jdbcType=VARCHAR}, 
+			<if test="applyAmount !=null ">
+			#{applyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="loanAmount !=null ">
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="loanDeadline !=null ">
+			#{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanDeadline ==null ">
+			0 ,
+			</if>
+			<if test="loanType !=null ">
+			#{loanType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanType ==null ">
+			1 ,
+			</if>
+			#{loanDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{nextRetDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			<if test="nextRetAmount !=null ">
+			#{nextRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="nextRetAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			<if test="rewardAmount !=null ">
+			#{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rewardAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="feeAmount !=null ">
+			#{feeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="feeAmount ==null ">
+			0.00 ,
+			</if>
+			#{feeAmountDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{recordDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{anjiePerson, jdbcType=VARCHAR}, 
+			#{payType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{recType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="queryStatus !=null ">
+			#{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="queryStatus ==null ">
+			1 ,
+			</if>
+			#{errorMessage, jdbcType=VARCHAR}, 
+			#{loanNo, jdbcType=VARCHAR}, 
+			#{reContractId, jdbcType=VARCHAR}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{channelCode, jdbcType=VARCHAR}, 
+			#{channelDetail, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_success_history 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<delete id="deleteByRepayId" parameterType="map">
+		DELETE FROM t_treat_success_history 
+		<where> 
+			repayId = #{repayId}
+			<if test="reContractId != null">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="applyId != null">
+				and applyId = #{applyId}
+			</if>
+		</where>
+	</delete>
+	
+	<delete id="deleteBack" parameterType="map">
+		DELETE FROM t_treat_success_history 
+		<where> 
+			applyId = #{applyId}
+			<if test="reContractId != null and reContractId != ''">
+				AND reContractId = #{reContractId}
+			</if>
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_treat_success_history  
+		<set>
+			<if test="repayId != null">
+				repayId = #{repayId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="backType != null">
+				backType = #{backType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanOrg != null">
+				loanOrg = #{loanOrg, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyAmount != null">
+				applyAmount = #{applyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDeadline != null">
+				loanDeadline = #{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanType != null">
+				loanType = #{loanType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDate != null">
+				loanDate = #{loanDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetDate != null">
+				nextRetDate = #{nextRetDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetAmount != null">
+				nextRetAmount = #{nextRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardAmount != null">
+				rewardAmount = #{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmount != null">
+				feeAmount = #{feeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmountDate != null">
+				feeAmountDate = #{feeAmountDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="recordDesc != null">
+				recordDesc = #{recordDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="anjiePerson != null">
+				anjiePerson = #{anjiePerson, jdbcType=VARCHAR},  
+			</if>
+			<if test="payType != null">
+				payType = #{payType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recType != null">
+				recType = #{recType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recStatus != null">
+				recStatus = #{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	<update id="updateBackInfo" parameterType="map">
+		UPDATE t_treat_success_history  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="backType != null">
+				backType = #{backType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanOrg != null">
+				loanOrg = #{loanOrg, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyAmount != null">
+				applyAmount = #{applyAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDeadline != null">
+				loanDeadline = #{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanType != null">
+				loanType = #{loanType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDate != null">
+				loanDate = #{loanDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetDate != null">
+				nextRetDate = #{nextRetDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="nextRetAmount != null">
+				nextRetAmount = #{nextRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardAmount != null">
+				rewardAmount = #{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmount != null">
+				feeAmount = #{feeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="feeAmountDate != null">
+				feeAmountDate = #{feeAmountDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="recordDesc != null">
+				recordDesc = #{recordDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="anjiePerson != null">
+				anjiePerson = #{anjiePerson, jdbcType=VARCHAR},  
+			</if>
+			<if test="payType != null">
+				payType = #{payType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recType != null">
+				recType = #{recType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recStatus != null">
+				recStatus = #{recStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="errorMessage != null">
+				errorMessage = #{errorMessage, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+		    repayId = #{repayId}
+		    <if test="applyId != null">
+				and applyId = #{applyId}
+			</if>
+		</where>
+	</update>
+</mapper>

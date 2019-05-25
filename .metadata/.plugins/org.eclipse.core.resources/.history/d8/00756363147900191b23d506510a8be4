@@ -1,0 +1,27 @@
+package org.xxjr.store.web.action.account.config;
+
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.common.web.session.RequestUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.zk.util.ZKPath;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+/***
+ * redis管理
+ * @author LHS
+ *
+ */
+@Controller
+@RequestMapping("/account/config/redis/")
+public class RedisManageAction {
+
+
+}

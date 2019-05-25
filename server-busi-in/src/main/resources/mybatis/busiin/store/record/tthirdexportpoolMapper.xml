@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="THIRDEXPORTPOOL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			houseType, 
+			carType, 
+			insure, 
+			loanAmount, 
+			fundType, 
+			socialType, 
+			income, 
+			wagesType, 
+			haveWeiLi, 
+			downloadStatus, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			zimaScore
+		FROM t_third_export_pool
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="houseType != null and houseType != ''">
+				and houseType = #{houseType}
+			</if>
+			<if test="carType != null and carType != ''">
+				and carType = #{carType}
+			</if>
+			<if test="insure != null and insure != ''">
+				and insure = #{insure}
+			</if>
+			<if test="loanAmount != null and loanAmount != ''">
+				and loanAmount = #{loanAmount}
+			</if>
+			<if test="fundType != null and fundType != ''">
+				and fundType = #{fundType}
+			</if>
+			<if test="socialType != null and socialType != ''">
+				and socialType = #{socialType}
+			</if>
+			<if test="income != null and income != ''">
+				and income = #{income}
+			</if>
+			<if test="wagesType != null and wagesType != ''">
+				and wagesType = #{wagesType}
+			</if>
+			<if test="haveWeiLi != null and haveWeiLi != ''">
+				and haveWeiLi = #{haveWeiLi}
+			</if>
+			<if test="downloadStatus != null and downloadStatus != ''">
+				and downloadStatus = #{downloadStatus}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="zimaScore != null and zimaScore != ''">
+				and zimaScore = #{zimaScore}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_third_export_pool 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="houseType != null and houseType != ''">
+			and houseType = #{houseType}
+		</if>
+		<if test="carType != null and carType != ''">
+			and carType = #{carType}
+		</if>
+		<if test="insure != null and insure != ''">
+			and insure = #{insure}
+		</if>
+		<if test="loanAmount != null and loanAmount != ''">
+			and loanAmount = #{loanAmount}
+		</if>
+		<if test="fundType != null and fundType != ''">
+			and fundType = #{fundType}
+		</if>
+		<if test="socialType != null and socialType != ''">
+			and socialType = #{socialType}
+		</if>
+		<if test="income != null and income != ''">
+			and income = #{income}
+		</if>
+		<if test="wagesType != null and wagesType != ''">
+			and wagesType = #{wagesType}
+		</if>
+		<if test="haveWeiLi != null and haveWeiLi != ''">
+			and haveWeiLi = #{haveWeiLi}
+		</if>
+		<if test="downloadStatus != null and downloadStatus != ''">
+			and downloadStatus = #{downloadStatus}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="zimaScore != null and zimaScore != ''">
+			and zimaScore = #{zimaScore}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_third_export_pool (
+			applyId,
+			customerId,
+			houseType,
+			carType,
+			insure,
+			loanAmount,
+			fundType,
+			socialType,
+			income,
+			wagesType,
+			haveWeiLi,
+			downloadStatus,
+			createTime,
+			zimaScore
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{houseType, jdbcType=VARCHAR}, 
+			#{carType, jdbcType=VARCHAR}, 
+			#{insure, jdbcType=VARCHAR}, 
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{fundType, jdbcType=VARCHAR}, 
+			#{socialType, jdbcType=VARCHAR}, 
+			#{income, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{wagesType, jdbcType=VARCHAR}, 
+			#{haveWeiLi, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			<if test="downloadStatus !=null ">
+			#{downloadStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="downloadStatus ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{zimaScore, jdbcType=NUMERIC,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_third_export_pool 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_third_export_pool  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseType != null">
+				houseType = #{houseType, jdbcType=VARCHAR},  
+			</if>
+			<if test="carType != null">
+				carType = #{carType, jdbcType=VARCHAR},  
+			</if>
+			<if test="insure != null">
+				insure = #{insure, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundType != null">
+				fundType = #{fundType, jdbcType=VARCHAR},  
+			</if>
+			<if test="socialType != null">
+				socialType = #{socialType, jdbcType=VARCHAR},  
+			</if>
+			<if test="income != null">
+				income = #{income, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="wagesType != null">
+				wagesType = #{wagesType, jdbcType=VARCHAR},  
+			</if>
+			<if test="haveWeiLi != null">
+				haveWeiLi = #{haveWeiLi, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="downloadStatus != null">
+				downloadStatus = #{downloadStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="zimaScore != null">
+				zimaScore = #{zimaScore, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+	
+	
+	<!--  查询对外分配池列表  -->
+	<select id="queryForeignAllotPond" resultType="map" parameterType="map">
+		SELECT 
+		  DATE_FORMAT(t.createTime, '%Y-%m-%d') AS createTime,
+		  t.applyId,
+		  t.customerId,
+		  t.downloadStatus,
+		  COUNT(t.customerId) AS exportCount,
+		  t1.`realName`
+		FROM
+		  t_third_export_pool t 
+		  JOIN t_busi_cust t1 
+		    ON t.customerId = t1.customerId 
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.createTime, '%Y-%m-%d'),t.customerId
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryForeignAllotPondCount" resultType="int" parameterType="map"> 
+	    SELECT COUNT(1) FROM (SELECT 
+		  COUNT(*),
+		  t.`createTime`
+		FROM
+		  t_third_export_pool t 
+		  JOIN t_busi_cust t1 
+		    ON t.customerId = t1.customerId 
+		    <include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.createTime, '%Y-%m-%d'),t.customerId) tab1
+	</select>
+	
+	<sql id="sqlQuery">
+		<where>
+			<if test="applyId != null and applyId != ''">
+			    and t.applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="startCreateDate != null and startCreateDate != ''">
+				 <![CDATA[and t.createTime >= #{startCreateDate}]]>
+			</if>
+			<if test="endCreateDate != null and endCreateDate != ''">
+				<![CDATA[and t.createTime  < DATE_ADD(#{endCreateDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="mobile != null and mobile != ''">
+				and t1.telephone = #{mobile}
+			</if>
+			<if test="storeSearchKey != null and storeSearchKey != ''">
+				and (t1.realName like CONCAT(#{storeSearchKey},'%') or
+				t1.telephone like CONCAT(#{storeSearchKey},'%'))
+			</if>
+			<if test="downloadStatus != null and downloadStatus != ''">
+				and t.downloadStatus = #{downloadStatus}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询对外导出数据 -->
+	<select id="queryForeignAllotList" resultType="map" parameterType="map">
+		SELECT 
+		  DATE_FORMAT(t.createTime,'%Y-%m-%d') AS 'recordDate',
+		  t.applyId,
+		  t.customerId,
+		  t.houseType,
+		  t.carType,
+		  t.insure,
+		  t.loanAmount,
+		  t.fundType,
+		  t.socialType,
+		  t.income,
+		  t.wagesType,
+		  t.haveWeiLi,
+		  t.downloadStatus,
+		  DATE_FORMAT(
+		    t.createTime,
+		    '%Y-%m-%d %H:%i:%s'
+		  ) AS createTime,
+		  t1.`cityName`,
+		  t1.`applyName`,
+		  t1.`telephone`,
+		  t.zimaScore
+		FROM
+		  t_third_export_pool t 
+		  JOIN t_borrow_apply t1 
+		    ON t.`applyId` = t1.`applyId` 
+		<include refid="querywhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryForeignAllotListCount" resultType="int" parameterType="map"> 
+		SELECT 
+		  COUNT(1)
+		FROM
+		  t_third_export_pool t 
+		  JOIN t_borrow_apply t1 
+		    ON t.`applyId` = t1.`applyId` 
+		<include refid="querywhere"/>
+	</select>
+	
+	<sql id="querywhere">
+		<where>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and DATE_FORMAT(t.createTime, '%Y-%m-%d') = #{createTime}
+			</if>
+		</where>
+	</sql>
+</mapper>

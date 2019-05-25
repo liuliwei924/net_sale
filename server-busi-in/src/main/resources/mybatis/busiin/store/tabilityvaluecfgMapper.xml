@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ABILITYVALUECFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			configId,
+			levelVisit1, 
+			levelSign1, 
+			levelRet1, 
+			levelVisit2, 
+			levelSign2, 
+			levelRet2, 
+			levelVisit3, 
+			levelSign3, 
+			levelRet3, 
+			levelVisit4, 
+			levelSign4, 
+			levelRet4
+		FROM t_ability_value_cfg
+		<where>
+			<if test="configId != null and configId != ''">
+			  and configId = #{configId}
+			 </if>
+			<if test="levelVisit1 != null and levelVisit1 != ''">
+				and levelVisit1 = #{levelVisit1}
+			</if>
+			<if test="levelSign1 != null and levelSign1 != ''">
+				and levelSign1 = #{levelSign1}
+			</if>
+			<if test="levelRet1 != null and levelRet1 != ''">
+				and levelRet1 = #{levelRet1}
+			</if>
+			<if test="levelVisit2 != null and levelVisit2 != ''">
+				and levelVisit2 = #{levelVisit2}
+			</if>
+			<if test="levelSign2 != null and levelSign2 != ''">
+				and levelSign2 = #{levelSign2}
+			</if>
+			<if test="levelRet2 != null and levelRet2 != ''">
+				and levelRet2 = #{levelRet2}
+			</if>
+			<if test="levelVisit3 != null and levelVisit3 != ''">
+				and levelVisit3 = #{levelVisit3}
+			</if>
+			<if test="levelSign3 != null and levelSign3 != ''">
+				and levelSign3 = #{levelSign3}
+			</if>
+			<if test="levelRet3 != null and levelRet3 != ''">
+				and levelRet3 = #{levelRet3}
+			</if>
+			<if test="levelVisit4 != null and levelVisit4 != ''">
+				and levelVisit4 = #{levelVisit4}
+			</if>
+			<if test="levelSign4 != null and levelSign4 != ''">
+				and levelSign4 = #{levelSign4}
+			</if>
+			<if test="levelRet4 != null and levelRet4 != ''">
+				and levelRet4 = #{levelRet4}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_ability_value_cfg 
+		<where>
+		<if test="configId != null and configId != ''">
+		    and configId = #{configId}
+		 </if>
+		<if test="levelVisit1 != null and levelVisit1 != ''">
+			and levelVisit1 = #{levelVisit1}
+		</if>
+		<if test="levelSign1 != null and levelSign1 != ''">
+			and levelSign1 = #{levelSign1}
+		</if>
+		<if test="levelRet1 != null and levelRet1 != ''">
+			and levelRet1 = #{levelRet1}
+		</if>
+		<if test="levelVisit2 != null and levelVisit2 != ''">
+			and levelVisit2 = #{levelVisit2}
+		</if>
+		<if test="levelSign2 != null and levelSign2 != ''">
+			and levelSign2 = #{levelSign2}
+		</if>
+		<if test="levelRet2 != null and levelRet2 != ''">
+			and levelRet2 = #{levelRet2}
+		</if>
+		<if test="levelVisit3 != null and levelVisit3 != ''">
+			and levelVisit3 = #{levelVisit3}
+		</if>
+		<if test="levelSign3 != null and levelSign3 != ''">
+			and levelSign3 = #{levelSign3}
+		</if>
+		<if test="levelRet3 != null and levelRet3 != ''">
+			and levelRet3 = #{levelRet3}
+		</if>
+		<if test="levelVisit4 != null and levelVisit4 != ''">
+			and levelVisit4 = #{levelVisit4}
+		</if>
+		<if test="levelSign4 != null and levelSign4 != ''">
+			and levelSign4 = #{levelSign4}
+		</if>
+		<if test="levelRet4 != null and levelRet4 != ''">
+			and levelRet4 = #{levelRet4}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="configId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_ability_value_cfg (
+			levelVisit1,
+			levelSign1,
+			levelRet1,
+			levelVisit2,
+			levelSign2,
+			levelRet2,
+			levelVisit3,
+			levelSign3,
+			levelRet3,
+			levelVisit4,
+			levelSign4,
+			levelRet4
+		)
+		VALUES ( 
+			<if test="levelVisit1 !=null ">
+			#{levelVisit1, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelVisit1 ==null ">
+			0 ,
+			</if>
+			<if test="levelSign1 !=null ">
+			#{levelSign1, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelSign1 ==null ">
+			0 ,
+			</if>
+			<if test="levelRet1 !=null ">
+			#{levelRet1, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelRet1 ==null ">
+			0 ,
+			</if>
+			<if test="levelVisit2 !=null ">
+			#{levelVisit2, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelVisit2 ==null ">
+			0 ,
+			</if>
+			<if test="levelSign2 !=null ">
+			#{levelSign2, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelSign2 ==null ">
+			0 ,
+			</if>
+			<if test="levelRet2 !=null ">
+			#{levelRet2, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelRet2 ==null ">
+			0 ,
+			</if>
+			<if test="levelVisit3 !=null ">
+			#{levelVisit3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelVisit3 ==null ">
+			0 ,
+			</if>
+			<if test="levelSign3 !=null ">
+			#{levelSign3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelSign3 ==null ">
+			0 ,
+			</if>
+			<if test="levelRet3 !=null ">
+			#{levelRet3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelRet3 ==null ">
+			0 ,
+			</if>
+			<if test="levelVisit4 !=null ">
+			#{levelVisit4, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelVisit4 ==null ">
+			0 ,
+			</if>
+			<if test="levelSign4 !=null ">
+			#{levelSign4, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="levelSign4 ==null ">
+			0 ,
+			</if>
+			<if test="levelRet4 !=null ">
+			#{levelRet4, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="levelRet4 ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_ability_value_cfg 
+		<where> 
+			configId = #{configId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_ability_value_cfg  
+		<set>
+			<if test="levelVisit1 != null">
+				levelVisit1 = #{levelVisit1, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelSign1 != null">
+				levelSign1 = #{levelSign1, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelRet1 != null">
+				levelRet1 = #{levelRet1, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelVisit2 != null">
+				levelVisit2 = #{levelVisit2, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelSign2 != null">
+				levelSign2 = #{levelSign2, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelRet2 != null">
+				levelRet2 = #{levelRet2, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelVisit3 != null">
+				levelVisit3 = #{levelVisit3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelSign3 != null">
+				levelSign3 = #{levelSign3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelRet3 != null">
+				levelRet3 = #{levelRet3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelVisit4 != null">
+				levelVisit4 = #{levelVisit4, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelSign4 != null">
+				levelSign4 = #{levelSign4, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="levelRet4 != null">
+				levelRet4 = #{levelRet4, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  configId = #{configId}
+		</where>
+	</update>
+</mapper>

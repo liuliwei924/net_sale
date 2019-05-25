@@ -1,0 +1,101 @@
+package org.xxjr.busi.util.wd;
+
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.info.CustomerUtil;
+
+public class WdCaseUtil {
+
+
+	/**
+	 * 增加客户的成功案例
+	 * @param params
+	 * @return
+	 */
+	public static  AppResult editWdCase(AppParam params){
+		boolean custFlag = StringUtils.isEmpty(params.getAttr("caseId"));
+		params.setService("wdCaseService");
+		params.setMethod(custFlag ? "insert" : "update");
+		params.addAttr("customerId", CustomerUtil.getCustId());
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		
+		if(result.isSuccess() && custFlag){
+			WdShopUtil.refreshWdCache(params.getAttr("customerId").toString(), "caseCount");
+		}
+		return result;
+	}	
+	
+	/**
+	 * 删除客户的成功案例
+	 * @param params
+	 * @return
+	 */
+	public static  AppResult delWdCase(AppParam params){
+		params.setService("wdCaseService");
+		params.setMethod("delete");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		
+		if(result.isSuccess()){
+			WdShopUtil.refreshWdCache(params.getAttr("customerId").toString(), "caseCount");
+		}
+		return result;
+	}	
+	
+	
+	/**
+	 * 成功案例信息
+	 * @param params
+	 * @return
+	 */
+	public static  Map<String, Object> wdCaseInfo(AppParam params){
+		params.setService("wdCaseService");
+		params.setMethod("query");
+		params.addAttr("customerId", CustomerUtil.getCustId());
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		return result.getRows().size() > 0 ? result.getRow(0) : result.getAttr();
+	}
+	
+	/**
+	 * 成功案例信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult wdCaseList(AppParam params){
+		params.setService("wdCaseService");
+		params.setMethod("queryByPage");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 每个人成功案例个数
+	 * @param params
+	 * @return
+	 */
+	public static Integer getWdCaseCount(String customerId){
+		AppParam params = new AppParam();
+		params.addAttr("customerId", customerId);
+		params.setService("wdCaseService");
+		params.setMethod("queryCount");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result =  RemoteInvoke.getInstance().call(params);
+		int count = (Integer)result.getAttr(DuoduoConstant.TOTAL_SIZE);
+		
+		return count;
+	}	
+	
+}

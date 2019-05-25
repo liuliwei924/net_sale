@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JOBPROCESS">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			processId as "processId",
+			jobId as "jobId",  <!-- 任务ID -->
+			DATE_FORMAT(startTime,'%Y-%m-%d %H:%i:%s') as "startTime", <!-- 开始时间 -->
+			DATE_FORMAT(endTime,'%Y-%m-%d %H:%i:%s') as "endTime", <!-- 结束时间 -->
+			serverName as "serverName",  <!-- 执行服务器 -->
+			createBy as "createBy",  <!-- 执行人 -->
+			executeStatus as "executeStatus", 
+			notifyStatus as "notifyStatus", 
+			executeDesc as "executeDesc" <!-- 执行描述 -->
+		FROM t_job_process
+		<where>
+			<if test="processId != null and processId != ''">
+			  and processId = #{processId}
+			 </if>
+			<if test="jobId != null and jobId != ''">
+				and jobId = #{jobId}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and startTime = #{startTime}
+			</if>
+			<if test="endTime != null and endTime != ''">
+				and endTime = #{endTime}
+			</if>
+			<if test="serverName != null and serverName != ''">
+				and serverName = #{serverName}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+			<if test="executeStatus != null and executeStatus != ''">
+				and executeStatus = #{executeStatus}
+			</if>
+			<if test="notifyStatus != null and notifyStatus != ''">
+				and notifyStatus = #{notifyStatus}
+			</if>
+			<if test="executeDesc != null and executeDesc != ''">
+				and executeDesc = #{executeDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_job_process 
+		<where>
+		<if test="processId != null and processId != ''">
+		    and processId = #{processId}
+		 </if>
+		<if test="jobId != null and jobId != ''">
+			and jobId = #{jobId}
+		</if>
+		<if test="startTime != null and startTime != ''">
+			and startTime = #{startTime}
+		</if>
+		<if test="endTime != null and endTime != ''">
+			and endTime = #{endTime}
+		</if>
+		<if test="serverName != null and serverName != ''">
+			and serverName = #{serverName}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		<if test="executeStatus != null and executeStatus != ''">
+			and executeStatus = #{executeStatus}
+		</if>
+		<if test="notifyStatus != null and notifyStatus != ''">
+			and notifyStatus = #{notifyStatus}
+		</if>
+		<if test="executeDesc != null and executeDesc != ''">
+			and executeDesc = #{executeDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="processId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_job_process (
+			jobId,
+			startTime,
+			endTime,
+			serverName,
+			createBy,
+			executeStatus,
+			notifyStatus,
+			executeDesc
+		)
+		VALUES ( 
+			#{jobId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			now(),  
+			#{endTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{serverName, jdbcType=VARCHAR}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{executeStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{notifyStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{executeDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_job_process 
+		<where> 
+			processId = #{processId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_job_process  
+		<set>
+			<if test="jobId != null">
+				jobId = #{jobId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="startTime != null">
+				startTime = #{startTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="endTime != null">
+				endTime = #{endTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="serverName != null">
+				serverName = #{serverName, jdbcType=VARCHAR},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="executeStatus != null">
+				executeStatus = #{executeStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notifyStatus != null">
+				notifyStatus = #{notifyStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="executeDesc != null">
+				executeDesc = #{executeDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  processId = #{processId}
+		</where>
+	</update>
+</mapper>

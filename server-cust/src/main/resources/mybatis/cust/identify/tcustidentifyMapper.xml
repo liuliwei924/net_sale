@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTIDENTIFY">
+	<sql id="querySql">
+		<where>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="identifyType != null and identifyType != ''">
+				and identifyType = #{identifyType}
+			</if>
+			<if test="realName != null and realName != ''">
+				and realName = #{realName}
+			</if>
+			<if test="cardNo != null and cardNo != ''">
+				and cardNo = #{cardNo}
+			</if>
+			<if test="checkCardNo != null and checkCardNo != ''">
+				and ( cardNo = #{checkCardNo} and customerId !=
+				#{checkCustomerId} )
+			</if>
+			<if test="photoUrl != null and photoUrl != ''">
+				and photoUrl = #{photoUrl}
+			</if>
+			<if test="realImage != null and realImage != ''">
+				and realImage = #{realImage}
+			</if>
+			<if test="idCardImage != null and idCardImage != ''">
+				and idCardImage = #{idCardImage}
+			</if>
+			<if test="handImage != null and handImage != ''">
+				and handImage = #{handImage}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="autoStatus != null and autoStatus != ''">
+				and autoStatus = #{autoStatus}
+			</if>
+			<if test="auditBy != null and auditBy != ''">
+				and auditBy = #{auditBy}
+			</if>
+			<if test="auditTime != null and auditTime != ''">
+				and auditTime = #{auditTime}
+			</if>
+			<if test="auditDesc != null and auditDesc != ''">
+				and auditDesc = #{auditDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+		customerId,
+		identifyType,
+		realName,
+		cardNo,
+		photoUrl,
+		realImage,
+		idCardImage,
+		handImage,
+		autoAuditCount,
+		identAuthCount,
+		status,
+		autoStatus,
+		idCardLimit,
+		idCardSignOrg,
+		auditBy,
+		auditLabel,
+		DATE_FORMAT(auditTime,'%Y-%m-%d %H:%i:%s') as auditTime ,
+		auditDesc,
+		DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime
+		FROM t_cust_identify
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+		limit 5
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_identify
+		<include refid="querySql"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+
+		INSERT INTO T_CUST_IDENTIFY (
+		customerId,
+		identifyType,
+		realName,
+		cardNo,
+		photoUrl,
+		realImage,
+		idCardImage,
+		handImage,
+		status,
+		autoStatus,
+		idCardLimit,
+		idCardSignOrg,
+		auditBy,
+		auditTime,
+		auditDesc,
+		autoAuditCount,
+		identAuthCount,
+		createTime
+		)
+		VALUES (
+		#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+		<if test="identifyType !=null ">
+			#{identifyType,
+			jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="identifyType ==null ">
+			0 ,
+		</if>
+		#{realName, jdbcType=VARCHAR},
+		#{cardNo, jdbcType=VARCHAR},
+		#{photoUrl, jdbcType=VARCHAR},
+		#{realImage, jdbcType=VARCHAR},
+		#{idCardImage, jdbcType=VARCHAR},
+		#{handImage, jdbcType=VARCHAR},
+		<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="status ==null ">
+			0 ,
+		</if>
+		<if test="autoStatus !=null ">
+			#{autoStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+
+		<if test="autoStatus ==null ">
+			0 ,
+		</if>
+		#{idCardLimit, jdbcType=VARCHAR},
+		#{idCardSignOrg, jdbcType=VARCHAR},
+		#{auditBy, jdbcType=VARCHAR},
+		#{auditTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+		#{auditDesc, jdbcType=VARCHAR},
+		<if test="autoAuditCount !=null ">
+			#{autoAuditCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="autoAuditCount ==null ">
+			0 ,
+		</if>
+		<if test="identAuthCount !=null ">
+			#{identAuthCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="identAuthCount ==null ">
+			0 ,
+		</if>
+		#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_CUST_IDENTIFY
+		<where>
+			identifyId = #{identifyId}
+		</where>
+	</delete>
+
+	<!-- 根据手机号查询认证信息 -->
+	<select id="queryByTel" resultType="map" parameterType="map">
+		SELECT t.realName, t.cardNo, t.idCardImage, t.photoUrl, t.realImage 
+		FROM t_cust_identify t
+		JOIN t_customer t1 ON t.customerId = t1.customerId
+		WHERE t.`status` = 1 AND t1.telephone = #{telephone}
+	</select>
+
+	<update id="update" parameterType="map">
+		UPDATE t_cust_identify
+		<set>
+			<if test="identifyType != null">
+				identifyType = #{identifyType,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="realName != null">
+				realName = #{realName, jdbcType=VARCHAR},
+			</if>
+			<if test="cardNo != null">
+				cardNo = #{cardNo, jdbcType=VARCHAR},
+			</if>
+			<if test="photoUrl != null">
+				photoUrl = #{photoUrl, jdbcType=VARCHAR},
+			</if>
+			<if test="realImage != null">
+				realImage = #{realImage, jdbcType=VARCHAR},
+			</if>
+			<if test="idCardImage != null">
+				idCardImage = #{idCardImage, jdbcType=VARCHAR},
+			</if>
+			<if test="handImage != null">
+				handImage = #{handImage, jdbcType=VARCHAR},
+			</if>
+			<if test="auditLabel != null">
+				auditLabel = #{auditLabel, jdbcType=VARCHAR},
+			</if>
+			<if test="autoAuditCount != null">
+				autoAuditCount = #{autoAuditCount,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="identAuthCount != null">
+				identAuthCount = #{identAuthCount,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="status != null">
+				status = #{status,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="autoStatus != null">
+				autoStatus = #{autoStatus,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="idCardSignOrg != null">
+				idCardSignOrg = #{idCardSignOrg, jdbcType=VARCHAR},
+			</if>
+			<if test="idCardLimit != null">
+				idCardLimit = #{idCardLimit, jdbcType=VARCHAR},
+			</if>
+			<if test="auditBy != null">
+				auditBy = #{auditBy, jdbcType=VARCHAR},
+			</if>
+			<if test="auditTime != null">
+				auditTime = #{auditTime,
+				jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="auditDesc != null">
+				auditDesc = #{auditDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime,
+				jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			customerId = #{customerId}
+			<if test="fromStatus != null">
+				and status = #{fromStatus,
+				jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</where>
+	</update>
+
+	<select id="queryView" resultType="map" parameterType="map">
+		select
+		t1.userName,
+		t1.telephone,
+		t.customerId,
+		t.identifyType,
+		t.realName,
+		t.photoUrl,
+		t.realImage,
+		t.idCardImage,
+		t.handImage,
+		IFNULL(t.handImage,t.realImage) as imgeUrl,
+		t2.cityName,
+		t2.cityArea,
+		t.cardNo,
+		t.status,
+		t.autoStatus,
+		t.auditBy,
+		DATE_FORMAT(t.auditTime,'%Y-%m-%d %H:%i:%s') as auditTime,
+		t.auditDesc,
+		t.auditLabel,
+		DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime
+		from t_customer t1
+		left JOIN  T_CUST_IDENTIFY t on t.customerId = t1.customerId
+		left JOIN t_cust_info t2 on t.customerId = t2.customerId
+		<include refid="sqlWhereQueryView"></include>
+		order by t.createTime desc
+	</select>
+
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+		from t_customer t1
+		left JOIN  T_CUST_IDENTIFY t on t.customerId = t1.customerId
+		left JOIN t_cust_info t2 on t.customerId = t2.customerId
+		<include refid="sqlWhereQueryView"></include>
+	</select>
+	<sql id="sqlWhereQueryView">
+		<where>
+			<if test="userName != null and userName != ''">
+				and (
+				  t.realName = #{userName}
+				 or t1.telephone = #{userName} )
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and t.createTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t.createTime <= #{endTime} ]]>
+			</if>
+			<if test="auditStartTime != null and auditStartTime != ''">
+				<![CDATA[ and t.auditTime >= #{auditStartTime} ]]>
+			</if>
+			<if test="auditEndTime != null and auditEndTime != ''">
+				<![CDATA[ and t.auditTime <= #{auditEndTime} ]]>
+			</if>
+			<if test="auditLabel != null and auditLabel != ''">
+				<![CDATA[ and (t.auditLabel like '${auditLabel}%' ) ]]>
+			</if>
+			<if test="cityName != null and cityName != ''">
+				<![CDATA[ and t2.cityName = #{cityName} ]]>
+			</if>
+			<if test="haveImage == '1'.toString() ">
+				<![CDATA[ and (t.realImage is not null and t.realImage != '') ]]>
+			</if>
+			<if test="haveImage == '0'.toString() ">
+				<![CDATA[ and (t.realImage is null or t.realImage ='')]]>
+			</if>
+			<if test="status != null and status != ''">
+				and t.status = #{status}
+			</if>
+			<if test="cardNo != null and cardNo != ''">
+				and t.cardNo = #{cardNo}
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 按日统计审核数据 -->
+	<select id="queryAuditByDay" resultType="map" parameterType="map">
+		SELECT 
+			DATE_FORMAT(t.auditTime, '%Y-%m-%d') recordDate,
+		  	SUM(CASE t.`status` WHEN 1 THEN 1 ELSE 0 END) passNum,
+		  	SUM(CASE t.`status` WHEN 2 THEN 1 ELSE 0 END) notpassNum
+		FROM t_cust_identify t
+		<include refid="summarySql"></include>
+		GROUP BY recordDate
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryAuditByDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM 
+		(
+		SELECT 
+			DATE_FORMAT(t.auditTime, '%Y-%m-%d') recordDate
+		FROM t_cust_identify t
+		<include refid="summarySql"></include>
+		GROUP BY recordDate 
+		) A
+	</select>
+	<sql id="summarySql">
+		<where>
+			<if test="startDate != null and startDate != ''">
+				and t.auditTime > #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[ and t.auditTime < DATE_ADD(#{endDate},INTERVAL 1 DAY) ]]>
+			</if>
+		</where>
+	</sql>
+</mapper>

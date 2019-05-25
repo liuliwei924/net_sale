@@ -1,0 +1,183 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Base64;
+import java.util.Map;
+import java.util.Random;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.CountGradeUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+import com.alibaba.fastjson.JSONObject;
+
+@PushCode(14)
+public class PushHaoDaiUtil implements PushUtil {
+
+	private static final String url = "http://oc.haodai.com/Center/pushOrder";
+	private static final Integer channel_id = 39;
+	private static final Integer biaoshi = 19;
+	private static final String key = "SP7acbGDbYqjgexv";
+	
+//	private static final String test_url = "http://dev.oc.haodai.net/Center/pushOrder";
+//	private static final Integer test_channel_id = 26;
+//	private static final Integer test_biaoshi = 19;
+//	private static final String test_key = "SP7acbGDbYqjgexv";
+
+	@Override
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		int status = 2;
+		try {
+			Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+			
+			if ((!PushPlatformUtils.checkChannelOpen(config))) {
+				LogerUtil.log(PushHaoDaiUtil.class, config.get("pushName") + "推送未打开");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+				LogerUtil.log(PushHaoDaiUtil.class, config.get("pushName") + "推送已达上限");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelLimit(row, config))) {
+				LogerUtil.log(PushHaoDaiUtil.class, config.get("pushName") + "筛选条件无法通过");
+				return 4;
+			}
+			if ((!PushPlatformUtils.checkStopDate(config))) {
+				LogerUtil.log(PushHaoDaiUtil.class, config.get("pushName") + "推送数据推送已暂停");
+				return 5;
+			}
+			String json = sendData(row);
+			Map<String, Object> resMap = PushPlatformUtils.httpPost(url, null, json, true, null);
+			
+			if ("1000".equals(StringUtil.getString(resMap.get("code")))) {
+				status = 1;
+			}
+			AppParam updateParam = new AppParam("thirdPushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			updateParam.addAttr("message", resMap.get("msg"));
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("好贷推送数据任务 PushHaoDaiUtil end");
+		} catch (Exception e) {
+			LogerUtil.error(PushXqbUtil.class, e, "PushHaoDaiUtil >>>>>>>>>>>>>>>>>>error");
+		}
+		return status;
+	}
+
+	private String sendData(Map<String, Object> row) throws Exception {
+		JSONObject context = new JSONObject();
+		JSONObject field = new JSONObject();
+		field.put("username", row.get("applyName"));
+		field.put("money", (NumberUtil.getDouble(row.get("loanAmount")) * 10000));
+		Random rand = new Random();
+		int month = rand.nextInt(36 - 12 + 1) + 12;
+		field.put("month", month);
+		field.put("zone_id", StringUtils.isEmpty(row.get("cityName")) ? "440300" : PushPlatformUtils.getZipCodeByCityName(StringUtil.getString(row.get("cityName"))));
+		field.put("mobile", row.get("telephone"));
+		int age = NumberUtil.getInt(row.get("age"), 28);
+		if (age <= 22 || age >=60) {
+			age = 28;
+		}
+		field.put("age", age);
+		double income = 5000;
+		if ((!StringUtils.isEmpty(row.get("income"))) && (NumberUtil.getDouble(row.get("income"), 0) > 0)) {
+			income = NumberUtil.getDouble(row.get("income"), 0);
+		}else if ((!StringUtils.isEmpty(row.get("pubManageLine"))) && (NumberUtil.getDouble(row.get("pubManageLine"), 0) > 0)) {
+			double pubManageLine = NumberUtil.getDouble(row.get("pubManageLine"), 0);
+			income =  pubManageLine * 10000;
+		}else if ((!StringUtils.isEmpty(row.get("cashMonth"))) && (NumberUtil.getDouble(row.get("cashMonth"), 0) > 0)) {
+			income = NumberUtil.getDouble(row.get("cashMonth"), 0);
+		}
+		field.put("salary_bank_public", income);
+		
+		int wagesType = NumberUtil.getInt(row.get("wagesType"), 1);
+		field.put("salary_bank_private", wagesType == 1 ? 2 : 3);
+		
+		int fundType = NumberUtil.getInt(row.get("fundType"), 0);
+		field.put("is_fund", CountGradeUtil.judgeFundType(fundType) ? 1 : 2);
+		
+		int socialType = NumberUtil.getInt(row.get("socialType"), 0);
+		field.put("is_security", CountGradeUtil.judgeSocialType(socialType) ? 1 : 2);
+		
+		int houseType = NumberUtil.getInt(row.get("houseType"), 0);
+		field.put("house_type", CountGradeUtil.judgeHouse(houseType) ? 2 : 1);
+		
+		int carType = NumberUtil.getInt(row.get("carType"), 0);
+		field.put("car_type", CountGradeUtil.judgeCar(carType) ? 2 : 1);
+		context.put("field", encrypt(field.toJSONString(), key));
+		context.put("channel_id", channel_id);
+		context.put("biaoshi", biaoshi);
+		
+		double havePinan = NumberUtil.getDouble(row.get("havePinan"), 0);
+		if (havePinan > 0) {
+			havePinan = 20000;
+		}
+		context.put("havePinan", havePinan);
+		return context.toJSONString();
+	}
+
+
+	public static String encrypt(String sSrc, String sKey) throws Exception {
+		if (sKey == null) {
+			LogerUtil.log(PushHaoDaiUtil.class, "Key为空null");
+			return null;
+		}
+		// 判断Key是否为16位
+		if (sKey.length() != 16) {
+			LogerUtil.log(PushHaoDaiUtil.class, "Key长度不是16位");
+			return null;
+		}
+		byte[] raw = sKey.getBytes("utf-8");
+		SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
+		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");// "算法/模式/补码方式"
+		cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+		byte[] encrypted = cipher.doFinal(sSrc.getBytes("utf-8"));
+		return Base64.getEncoder().encodeToString(encrypted);// 此处使用BASE64做转码功能，同时能起到2次加密的作用。
+	}
+	
+	// 解密
+    public static String decrypt(String sSrc, String sKey) throws Exception {
+        try {
+            // 判断Key是否正确
+            if (sKey == null) {
+            	LogerUtil.log(PushHaoDaiUtil.class, "Key为空null");
+                return null;
+            }
+            // 判断Key是否为16位
+            if (sKey.length() != 16) {
+            	LogerUtil.log(PushHaoDaiUtil.class, "Key长度不是16位");
+                return null;
+            }
+            byte[] raw = sKey.getBytes("utf-8");
+            SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
+            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+            byte[] encrypted1 = Base64.getDecoder().decode(sSrc.getBytes());//先用base64解密
+            try {
+                byte[] original = cipher.doFinal(encrypted1);
+                String originalString = new String(original,"utf-8");
+                return originalString;
+            } catch (Exception e) {
+            	LogerUtil.log(PushHaoDaiUtil.class, e, e.toString());
+                return null;
+            }
+        } catch (Exception ex) {
+        	LogerUtil.log(PushHaoDaiUtil.class, ex, ex.toString());
+            return null;
+        }
+    }
+}

@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="INSURANCEPUSHPOOL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			pushId,
+			applyId, 
+			pushType,
+			immediate,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  
+		FROM t_insurance_push_pool
+		<where>
+			<if test="pushId != null and pushId != ''">
+			  and pushId = #{pushId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="pushType != null and pushType != ''">
+				and pushType = #{pushType}
+			</if>
+			<if test="immediate != null and immediate != ''">
+				and immediate = #{immediate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_insurance_push_pool 
+		<where>
+		<if test="pushId != null and pushId != ''">
+		    and pushId = #{pushId}
+		 </if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="immediate != null and immediate != ''">
+			and immediate = #{immediate}
+		</if>
+		<if test="pushType != null and pushType != ''">
+			and pushType = #{pushType}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="pushId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_insurance_push_pool (
+			applyId,
+			pushType,
+			createTime,
+			applyTime,
+			immediate
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="pushType !=null ">
+			#{pushType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="pushType ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="immediate == null">
+			0
+			</if>
+			<if test="immediate != null">
+			#{immediate, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_insurance_push_pool 
+		<where> 
+			pushId = #{pushId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_insurance_push_pool  
+		<set>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="pushType != null">
+				pushType = #{pushType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="immediate != null">
+				immediate = #{immediate, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  pushId = #{pushId}
+		</where>
+	</update>
+	
+	<!-- 查询推送数据,通用 -->
+	<select id="queryPushData" parameterType="map" resultType="map">
+		SELECT
+			t.applyId as 'applyId',
+			t.pushId,
+			t.immediate,
+			t2.loanAmount,
+			t2.loanDeadline,
+			t2.applyIp,
+			IFNULL(t1.applyName,'') as 'applyName',
+			t1.telephone as 'telephone',
+			IFNULL(t2.sex,'') as 'sex',
+			IFNULL(t2.age,'') as 'age',
+			IFNULL(t2.identifyNo,'') as 'identifyNo',
+			IFNULL(t2.creditType,'1') as 'creditType',
+			IFNULL(t2.houseType,'2') as 'houseType',
+			IFNULL(t2.carType,'0') as 'carType',
+			IFNULL(t2.workType, '') as 'workType',
+			IFNULL(t3.wagesType, '') as 'wagesType',
+			IFNULL(t4.insurType,'0') as 'insurType',
+			IFNULL(t2.fundType,'2') as 'fundType',
+			IFNULL(t2.cityName,'') as 'cityName',
+			IFNULL(t3.cashMonth,'') as 'cashMonth',
+			IFNULL(t3.pubManageLine,'') as 'pubManageLine',
+			IFNULL(t3.income,'') as 'income',
+			IFNULL(t2.havePinan, '0') as 'havePinan',
+			IFNULL(t2.socialType, '0') as 'socialType',
+			t2.userAgent,
+			t1.channelCode,
+			t1.channelDetail,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%S') as 'applyTime',
+			t1.grade,
+			t.pushType,
+			if (t5.type = 3,1,0) as 'isApiChannel'
+		FROM t_insurance_push_pool t
+		left join t_borrow_apply t1 on t.applyId = t1.applyId
+		left join t_borrow_base t2 on t.applyId = t2.applyId
+		left join t_borrow_income t3 on t.applyId = t3.applyId
+		left join t_borrow_insure t4 on t.applyId = t4.applyId
+		left join t_borrow_channel t5 on t1.channelCode = t5.channelCode
+		<where>
+			<choose>
+				<when test="immediate != null and immediate != ''">
+				and t.immediate = #{immediate}
+				</when>
+				<otherwise>
+				and t.immediate <![CDATA[<=]]> 1
+				</otherwise>
+			</choose>
+			<if test="nullUser != null and nullUser != ''">
+			and t2.userAgent is not null
+			</if>
+			<if test="notChannel != null and notChannel != ''">
+			and !FIND_IN_SET(t1.channelCode,#{notChannel})
+			</if>
+			<if test="needCitys != null and needCitys != ''">
+			and FIND_IN_SET(t1.cityName,#{needCitys})
+			</if>
+			<if test="notCitys != null and notCitys != ''">
+			and !FIND_IN_SET(t1.cityName,#{notCitys})
+			</if>
+			<if test="minApplyAmount != null and minApplyAmount != ''">
+			and t2.loanAmount >= #{minApplyAmount}
+			</if>
+			<if test="maxApplyAmount != null and maxApplyAmount != ''">
+			<![CDATA[and t2.loanAmount <= #{maxApplyAmount}]]>
+			</if>
+			<if test="minAge != null and minAge != ''">
+			<![CDATA[and t2.age >= #{minAge}]]>
+			</if>
+			<if test="maxAge != null and maxAge != ''">
+			<![CDATA[and t2.age <= #{maxAge}]]>
+			</if>
+			<if test="startDate != null and startDate != ''">
+			and t.applyTime >= #{startDate}
+			</if>
+			<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.applyTime <= #{endDate}]]>
+			</if>
+			<if test="startCreateDate != null and startCreateDate != ''">
+			and t.createTime >= #{startCreateDate}
+			</if>
+			<if test="endCreateDate != null and endCreateDate != ''">
+			<![CDATA[and t.createTime <= #{endCreateDate}]]>
+			</if>
+		</where>
+		ORDER BY t.applyTime ASC
+		LIMIT #{size}
+	</select>
+	
+	<insert id="failDataRestore" parameterType="map">
+		INSERT INTO t_insurance_push_pool (
+			applyId,
+			pushType,
+			createTime,
+			applyTime,
+			immediate
+		)
+		SELECT 
+			DISTINCT applyId,
+			#{pushType},
+			CURRENT_TIMESTAMP(),
+			applyTime,
+			3
+		FROM t_borrow_apply_push
+		WHERE 
+		createTime >= #{startTime} 
+		and createTime <![CDATA[<=]]> #{endTime} 
+		and sourceType = 0 
+		and pushType=#{pushType} 
+		and `status`=#{pushStatus}
+	</insert>
+</mapper>

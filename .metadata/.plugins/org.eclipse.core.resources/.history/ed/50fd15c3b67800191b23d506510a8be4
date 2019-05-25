@@ -1,0 +1,84 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONObject;
+@PushCode(10)
+public class PushWeiDaiUtil implements PushUtil{
+	
+//	private static final String test_url = "https://cdg.wdai.com/channel/register";
+	
+	private static final String url = "https://cdg.weidai.com.cn/channel/register";
+
+	@Override
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		int status = 2;
+		try {
+			Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+			
+			if ((!PushPlatformUtils.checkChannelOpen(config))) {
+				LogerUtil.log(PushWeiDaiUtil.class, config.get("pushName") + "推送未打开");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+				LogerUtil.log(PushWeiDaiUtil.class, config.get("pushName") + "推送已达上限");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelLimit(row, config))) {
+				LogerUtil.log(PushWeiDaiUtil.class, config.get("pushName") + "筛选条件无法通过");
+				return 4;
+			}
+			if ((!PushPlatformUtils.checkStopDate(config))) {
+				LogerUtil.log(PushWeiDaiUtil.class, config.get("pushName") + "推送数据推送已暂停");
+				return 5;
+			}
+			String context = conversion(row);
+			System.out.println();
+			Map<String, Object> response = PushPlatformUtils.httpPost(url, null, context, true, null);
+			AppParam updateParam = new AppParam("thirdPushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			updateParam.addAttr("message", response.get("message"));
+			if (Boolean.valueOf(StringUtil.getString(response.get("success")))) {
+				status = 1;
+				updateParam.addAttr("message", response.get("data"));
+			}
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("微贷网推送数据任务 PushWeiDaiUtil end");
+		} catch (Exception e) {
+			LogerUtil.error(PushXqbUtil.class, e, "PushWeiDaiUtil >>>>>>>>>>>>>>>>>>error");
+		}
+		
+		return status;
+	}
+	
+	private String conversion (Map<String, Object> row) {
+		JSONObject context = new JSONObject();
+		context.put("username", row.get("applyName"));
+		context.put("mobile", row.get("telephone"));
+		context.put("zipCode", PushPlatformUtils.getZipCodeByCityName(StringUtil.getString(row.get("cityName"))));
+		Integer sex = NumberUtil.getInt(row.get("sex"), 0);//性别处理
+		context.put("sex", sex > 0 ? (sex - 1) : 0);
+		context.put("age", NumberUtil.getInt(row.get("age"), 0));
+		context.put("productType", "车抵贷");
+		context.put("applyTime", row.get("applyTime"));
+		String channelNo = SysParamsUtil.getStringParamByKey("push_weidai_cfg_channelNo", "050");
+		context.put("channelNo", channelNo);
+		return context.toJSONString();
+	}
+}

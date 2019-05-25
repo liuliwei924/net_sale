@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTSESSION">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			sessionType,
+			sessionKey, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_cust_session
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="sessionType != null and sessionType != ''">
+			  and sessionType = #{sessionType}
+			 </if>
+			<if test="sessionKey != null and sessionKey != ''">
+				and sessionKey = #{sessionKey}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_session 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="sessionType != null and sessionType != ''">
+		    and sessionType = #{sessionType}
+		 </if>
+		<if test="sessionKey != null and sessionKey != ''">
+			and sessionKey = #{sessionKey}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_session (
+			customerId,
+			sessionType,
+			sessionKey,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{sessionType, jdbcType=VARCHAR}, 
+			#{sessionKey, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_session 
+		<where> 
+			customerId = #{customerId} AND 
+			sessionType = #{sessionType}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_session  
+		<set>
+			<if test="sessionKey != null">
+				sessionKey = #{sessionKey, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId} AND 
+			  sessionType = #{sessionType}
+		</where>
+	</update>
+</mapper>

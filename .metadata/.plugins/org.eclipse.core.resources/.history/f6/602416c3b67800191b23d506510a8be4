@@ -1,0 +1,67 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.security.md5.Md5;
+import org.ddq.common.util.StringUtil;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractInsureUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+@PushCode(24)
+public class PushYcdInsureUtil extends AbstractInsureUtil{
+	
+	
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		String ycdUrl = SysParamsUtil.getStringParamByKey("push_ycdInsure_cfg_url", "http://cc.yicaidao.cn/api/yiwaixian/reg");
+		StringBuilder url = new StringBuilder(ycdUrl);
+		Map<String, String> connParam = sendData(row, url);
+		Map<String, Object> resMap = PushPlatformUtils.httpPost(url.toString(), connParam, true);
+		if ("1".equals(StringUtil.objectToStr(resMap.get("errCode")))) {
+			status = 1;
+		}
+		Map<String, Object> response = new HashMap<String, Object>();
+		response.put("status", status);
+		response.put("message", resMap.get("errMsg"));
+		return response;
+	}
+
+	public Map<String, String> sendData (Map<String, Object> row,StringBuilder builder) {
+		Map<String, String> connParam = new HashMap<String, String>();
+		
+		String channelIds = SysParamsUtil.getStringParamByKey("push_ycdInsure_cfg_channelIds", "2739;2768;2791");
+		String[] channelIdArray = channelIds.split(";");
+		
+		int sourceType = Integer.min(NumberUtil.getInt(row.get("sourceType"), 0), channelIdArray.length);
+		String channelId = channelIdArray[sourceType];
+		builder.append("?c=").append(channelId);
+	
+		String type = SysParamsUtil.getStringParamByKey("push_ycdInsure_cfg_type", "yicaidao");
+		builder.append("&t=").append(type);
+		
+		connParam.put("Name", StringUtil.objectToStr(row.get("applyName")));
+		connParam.put("BxType", "1");
+		
+		int age = NumberUtil.getInt(row.get("age"), -1);
+		String birthDay = PushPlatformUtils.getBirthDay(IdCardResolveUtil.getBirthday(StringUtil.objectToStr(row.get("identifyNo"))), age);
+		connParam.put("Birthday", birthDay);
+		connParam.put("Sex", NumberUtil.getInt(row.get("sex"), 1) == 1 ? "1" : "2");
+		String telephone = StringUtil.objectToStr(row.get("telephone"));
+		connParam.put("Phone", telephone);
+		connParam.put("IP", StringUtil.objectToStr(row.get("applyIp")));
+		connParam.put("City", StringUtil.objectToStr(row.get("cityName")));
+		connParam.put("userAgent", PushPlatformUtils.getUserAgent(row.get("userAgent")));
+		
+		String key = SysParamsUtil.getStringParamByKey("push_ycdInsure_cfg_key", "ycd2kals4qpc7p9Ywx");
+		String sign = Md5.getInstance().encrypt(birthDay + telephone + channelId + key);
+		builder.append("&v=").append(sign);
+		
+		return connParam;
+	}
+}

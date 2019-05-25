@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMRETBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			retCount, 
+			retAmount, 
+			sucRetCount, 
+			sucRetAmount
+		FROM t_sum_ret_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_ret_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_ret_base (
+			recordDate,
+			retCount,
+			retAmount,
+			chkRetCount,
+			chkRetAmount,
+			sucRetCount,
+			sucRetAmount
+		)
+		VALUES ( 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			<if test="retCount !=null ">
+			#{retCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retCount ==null ">
+			0 ,
+			</if>
+			<if test="retAmount !=null ">
+			#{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="chkRetCount !=null ">
+			#{chkRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="chkRetCount ==null ">
+			0 ,
+			</if>
+			<if test="chkRetAmount !=null ">
+			#{chkRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="chkRetAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="sucRetCount !=null ">
+			#{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucRetCount ==null ">
+			0 ,
+			</if>
+			<if test="sucRetAmount !=null ">
+			#{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="sucRetAmount ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_ret_base 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_ret_base  
+		<set>
+			<if test="retCount != null">
+				retCount = #{retCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="retAmount != null">
+				retAmount = #{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetCount != null">
+				sucRetCount = #{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetAmount != null">
+				sucRetAmount = #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	<update id="updateSucRetAmount" parameterType="map">
+		UPDATE t_sum_ret_base t 
+		SET
+		t.sucRetAmount = t.sucRetAmount + #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+		t.sucRetCount = t.sucRetCount + #{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+		WHERE 
+		 t.recordDate = #{recordDate}
+	</update>
+</mapper>

@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMRETSTORE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			retCount, 
+			retAmount, 
+			sucRetCount, 
+			sucRetAmount
+		FROM t_sum_ret_store
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="retCount != null and retCount != ''">
+				and retCount = #{retCount}
+			</if>
+			<if test="retAmount != null and retAmount != ''">
+				and retAmount = #{retAmount}
+			</if>
+			<if test="sucRetCount != null and sucRetCount != ''">
+				and sucRetCount = #{sucRetCount}
+			</if>
+			<if test="sucRetAmount != null and sucRetAmount != ''">
+				and sucRetAmount = #{sucRetAmount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_ret_store 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="retCount != null and retCount != ''">
+			and retCount = #{retCount}
+		</if>
+		<if test="retAmount != null and retAmount != ''">
+			and retAmount = #{retAmount}
+		</if>
+		<if test="sucRetCount != null and sucRetCount != ''">
+			and sucRetCount = #{sucRetCount}
+		</if>
+		<if test="sucRetAmount != null and sucRetAmount != ''">
+			and sucRetAmount = #{sucRetAmount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_ret_store (
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			retCount,
+			retAmount,
+			chkRetCount,
+			chkRetAmount,
+			sucRetCount,
+			sucRetAmount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if> 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="retCount !=null ">
+			#{retCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retCount ==null ">
+			0 ,
+			</if>
+			<if test="retAmount !=null ">
+			#{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="retAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="chkRetCount !=null ">
+			#{chkRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="chkRetCount ==null ">
+			0 ,
+			</if>
+			<if test="chkRetAmount !=null ">
+			#{chkRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="chkRetAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="sucRetCount !=null ">
+			#{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucRetCount ==null ">
+			0 ,
+			</if>
+			<if test="sucRetAmount !=null ">
+			#{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="sucRetAmount ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_ret_store 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_ret_store  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="retCount != null">
+				retCount = #{retCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="retAmount != null">
+				retAmount = #{retAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="chkRetCount != null">
+				chkRetCount = #{chkRetCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="chkRetAmount != null">
+				chkRetAmount = #{chkRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetCount != null">
+				sucRetCount = #{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucRetAmount != null">
+				sucRetAmount = #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_ret_store 
+		<where> 
+			recordDate = #{today}
+			<if test="orgId != null and orgId != ''">
+		    	and orgId = #{orgId}
+		 	</if>
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_ret_store(
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			retCount, 
+			retAmount,
+			chkRetCount,
+			chkRetAmount, 
+			sucRetCount, 
+			sucRetAmount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.cityName}, 
+		  #{item.retCount}, 
+		  #{item.retAmount}, 
+		  #{item.chkRetCount}, 
+		  #{item.chkRetAmount},
+		  #{item.sucRetCount}, 
+		  #{item.sucRetAmount}
+		  )
+		</foreach>
+  </insert>
+
+	<update id="updateSucRetAmount" parameterType="map">
+		UPDATE t_sum_ret_store t 
+		SET
+		t.sucRetAmount = t.sucRetAmount + #{sucRetAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+		t.sucRetCount = t.sucRetCount +#{sucRetCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+		WHERE 
+		 t.recordDate = #{recordDate}
+		AND
+		 t.customerId = #{lastStore}
+	</update>
+</mapper>

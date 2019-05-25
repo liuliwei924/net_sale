@@ -1,0 +1,60 @@
+package org.xxjr.job.listener.xxxj;
+
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.llw.xxjr.xxxj.record.XjBaseUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+
+@Lazy
+@Component
+public class GenrateCoinsJob implements BaseExecteJob{
+
+	@Override
+	public AppResult executeJob(AppParam param) {
+		
+		AppResult result = new AppResult();
+		//刷新天狗币排行榜
+		XjBaseUtils.refreshXjCoinRankingInfo();
+//		//刷新狗粮排行榜
+		XjBaseUtils.refreshXjAbilityRankingInfo();
+//		//刷新活动邀请排行榜
+		XjBaseUtils.refreshXjInviteRankingInfo();
+//		
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+//		String msg = GenrateCoinsUtil.genrateDayCoins(processId);
+//		JobUtil.addProcessExecute(processId, msg);
+//
+//		//发放内部人员专属奖励天狗币
+		String msg2 = GenrateCoinsUtil.grantRewardCoin(processId);
+		JobUtil.addProcessExecute(processId, msg2);
+//		
+//		//竞拍-自动确认收货
+		String msg3 = XjAuctionUtil.autoCollectGoods();
+		JobUtil.addProcessExecute(processId, msg3);
+//		
+//		//奖励结算-发放天狗吃月游戏奖励
+		String msg4 = XjGameUtil.sendTgcyGameReward();
+		JobUtil.addProcessExecute(processId, msg4);
+//		
+//		//一天统计一次星座分红总数
+		XzUtil.sumXzReward(processId);
+//		//一天更新一次用户领取状态
+		XzUtil.updateRecStatus(processId);
+//		//每天将一天未登录的用户踢出星座
+		XzUtil.timingQuitXz(processId);
+		
+		//清除今日任务图片数据记录
+//		XjDataUtil.cleanToDayScreenRecord();
+		//清除今日任务记录
+//		XjDataUtil.cleanToDayTask();
+		//清除天狗吃月游戏记录数据
+		XjDataUtil.cleanGameRecordData();
+		//清除天狗吃月游戏排行记录
+		XjDataUtil.cleanGameOWnRanking();
+		return result;
+	}
+}

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWTEAM">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			teamNo,
+			teamName, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_borrow_team
+		<where>
+			<if test="teamNo != null and teamNo != ''">
+			  and teamNo = #{teamNo}
+			 </if>
+			<if test="teamName != null and teamName != ''">
+				and teamName = #{teamName}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_team 
+		<where>
+		<if test="teamNo != null and teamNo != ''">
+		    and teamNo = #{teamNo}
+		 </if>
+		<if test="teamName != null and teamName != ''">
+			and teamName = #{teamName}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_borrow_team (
+			teamNo,
+			teamName,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{teamNo, jdbcType=VARCHAR}, 
+			#{teamName, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_team 
+		<where> 
+			teamNo = #{teamNo}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_team  
+		<set>
+			<if test="teamName != null">
+				teamName = #{teamName, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  teamNo = #{teamNo}
+		</where>
+	</update>
+	
+	<select id="queryChannels" parameterType="map" resultType="map">
+		SELECT
+			IFNULL(GROUP_CONCAT(channelCode), '') as 'channels' 
+		FROM t_borrow_channel where teamNo= #{teamNo}
+	</select>
+	
+	<update id="updateChannels" parameterType="map">
+		UPDATE 
+			t_borrow_channel
+		SET 
+			teamNo = #{teamNo}
+		WHERE
+			channelCode IN
+			(
+			<foreach collection="channels" separator="," item="channelCode">
+				#{channelCode}
+			</foreach>
+			)
+	</update>
+</mapper>

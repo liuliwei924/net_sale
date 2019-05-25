@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMRISKBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			notHitCount, 
+			hitLeTimesCount3, 
+			hitMoTimesCount3, 
+			failCount, 
+			totalCount
+		FROM t_sum_risk_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="notHitCount != null and notHitCount != ''">
+				and notHitCount = #{notHitCount}
+			</if>
+			<if test="hitLeTimesCount3 != null and hitLeTimesCount3 != ''">
+				and hitLeTimesCount3 = #{hitLeTimesCount3}
+			</if>
+			<if test="hitMoTimesCount3 != null and hitMoTimesCount3 != ''">
+				and hitMoTimesCount3 = #{hitMoTimesCount3}
+			</if>
+			<if test="failCount != null and failCount != ''">
+				and failCount = #{failCount}
+			</if>
+			<if test="totalCount != null and totalCount != ''">
+				and totalCount = #{totalCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_risk_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="notHitCount != null and notHitCount != ''">
+			and notHitCount = #{notHitCount}
+		</if>
+		<if test="hitLeTimesCount3 != null and hitLeTimesCount3 != ''">
+			and hitLeTimesCount3 = #{hitLeTimesCount3}
+		</if>
+		<if test="hitMoTimesCount3 != null and hitMoTimesCount3 != ''">
+			and hitMoTimesCount3 = #{hitMoTimesCount3}
+		</if>
+		<if test="failCount != null and failCount != ''">
+			and failCount = #{failCount}
+		</if>
+		<if test="totalCount != null and totalCount != ''">
+			and totalCount = #{totalCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_risk_base (
+			recordDate,
+			notHitCount,
+			hitLeTimesCount3,
+			hitMoTimesCount3,
+			failCount,
+			totalCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="notHitCount !=null ">
+			#{notHitCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notHitCount ==null ">
+			0 ,
+			</if>
+			<if test="hitLeTimesCount3 !=null ">
+			#{hitLeTimesCount3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="hitLeTimesCount3 ==null ">
+			0 ,
+			</if>
+			<if test="hitMoTimesCount3 !=null ">
+			#{hitMoTimesCount3, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="hitMoTimesCount3 ==null ">
+			0 ,
+			</if>
+			<if test="failCount !=null ">
+			#{failCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failCount ==null ">
+			0 ,
+			</if>
+			<if test="totalCount !=null ">
+			#{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="totalCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_risk_base 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_risk_base  
+		<set>
+			<if test="notHitCount != null">
+				notHitCount = #{notHitCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="hitLeTimesCount3 != null">
+				hitLeTimesCount3 = #{hitLeTimesCount3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="hitMoTimesCount3 != null">
+				hitMoTimesCount3 = #{hitMoTimesCount3, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failCount != null">
+				failCount = #{failCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalCount != null">
+				totalCount = #{totalCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_risk_base 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	<select id="queryRiskDay" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			IFNULL(t.notHitCount, 0) AS notHitCount,
+			IFNULL(t.hitLeTimesCount3, 0) AS hitLeTimesCount3,
+			IFNULL(t.hitMoTimesCount3, 0) AS hitMoTimesCount3,
+			IFNULL(t.failCount, 0) AS failCount,
+			IFNULL(t.totalCount, 0) AS totalCount
+		FROM
+			t_sum_risk_base t
+			<include refid="sqlQuery"/>
+			GROUP BY t.recordDate
+			ORDER by t.recordDate DESC
+	</select>
+	<select id="queryRiskDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (SELECT count(1) FROM t_sum_risk_base t
+		<include refid="sqlQuery"/>
+		GROUP BY t.recordDate) tab1
+	</select>
+	<sql id="sqlQuery">
+   		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  	and t.recordDate = #{recordDate}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t.recordDate <= #{endRecordDate}]]>
+			 </if>
+ 		     <if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+		</where>
+    </sql>
+    
+    <select id="queryRiskMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') AS 'recordDate',
+			IFNULL(sum(t.notHitCount), 0) AS notHitCount,
+			IFNULL(sum(t.hitLeTimesCount3), 0) AS hitLeTimesCount3,
+			IFNULL(sum(t.hitMoTimesCount3), 0) AS hitMoTimesCount3,
+			IFNULL(sum(t.failCount), 0) AS failCount,
+			IFNULL(sum(t.totalCount), 0) AS totalCount
+		FROM
+			t_sum_risk_base t
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m')
+		ORDER by t.recordDate DESC
+	</select>
+	<select id="queryRiskMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM (SELECT COUNT(1) FROM t_sum_risk_base t
+		<include refid="sqlQuery"/>
+		GROUP BY DATE_FORMAT(t.recordDate,'%Y-%m')) tab1
+	</select>
+	<select id="queryRiskDaySum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.notHitCount),0) AS notHitCountSum,
+			IFNULL(SUM(t.hitLeTimesCount3),0) AS hitLeTimesCount3Sum,
+			IFNULL(SUM(t.hitMoTimesCount3),0) AS hitMoTimesCount3Sum,
+			IFNULL(SUM(t.failCount),0) AS failCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_risk_base t
+		<include refid="sqlQuery"/>
+	</select>
+	<select id="queryRiskMonthSum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.notHitCount),0) AS notHitCountSum,
+			IFNULL(SUM(t.hitLeTimesCount3),0) AS hitLeTimesCount3Sum,
+			IFNULL(SUM(t.hitMoTimesCount3),0) AS hitMoTimesCount3Sum,
+			IFNULL(SUM(t.failCount),0) AS failCountSum,
+			IFNULL(SUM(t.totalCount),0) AS totalCountSum
+		FROM
+			t_sum_risk_base t
+		<include refid="sqlQuery"/>
+	</select>
+</mapper>

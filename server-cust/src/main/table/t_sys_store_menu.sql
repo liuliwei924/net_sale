@@ -1,0 +1,25 @@
+INSERT INTO `xxjr_user`.`t_sys_store_menu` (
+	`menuId`,
+	`orderNum`,
+	`menuCode`,
+	`menuName`,
+	`menuUrl`,
+	`level`,
+	`parentId`,
+	`createBy`,
+	`createTime`,
+	`updateTime`
+)
+VALUES
+	(
+		'96',
+		'4',
+		'custVisit',
+		'访客记录',
+		'/work/custVisit',
+		'3',
+		'6',
+		NULL,
+		NULL,
+		NULL
+	);

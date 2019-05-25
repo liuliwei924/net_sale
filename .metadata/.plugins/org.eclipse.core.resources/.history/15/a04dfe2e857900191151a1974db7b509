@@ -1,0 +1,227 @@
+package org.xxjr.job.listener.busi.sms.util;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.web.page.PageUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 短信发送工具类
+ * @author sty
+ *
+ */
+public class SmsSendUtil {
+	/**优讯   每次最多发送1000条*/
+	public static String channel_youxun ="youxun";
+	/**乐信通 每次最多发送100000条*/
+	public static String channel_lmobile ="lmobile";
+	
+	public static Map<String,Object> sendPageNoMap = new HashMap<String,Object>();
+	
+	static{
+		sendPageNoMap.put(channel_youxun, 1000);
+		sendPageNoMap.put(channel_lmobile, 50000);
+	}
+	/**
+	 * 执行短信发送任务
+	 */
+	public static AppResult sendSms() {
+		AppResult result = new AppResult();
+		// 查询发送短信任务
+		AppParam queryParam = new AppParam();
+		queryParam.setService("smsSendRecordService");
+		queryParam.addAttr("status", "0");
+		queryParam.setOrderBy("createTime");
+		queryParam.setOrderValue(PageUtil.ORDER_ASC);
+		queryParam.setMethod("queryDetail");
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		AppResult taskMap = RemoteInvoke.getInstance().callNoTx(queryParam);
+
+		if (taskMap.isSuccess() && taskMap.getRows().size() > 0) {
+			// 短信发送分配
+			result = sendSmsAllot(taskMap.getRow(0));
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 短信发送分配任务
+	 * 
+	 * @param param
+	 */
+	public static AppResult sendSmsAllot(Map<String, Object> taskMap) {
+		AppResult result = new AppResult();
+		// 把发送任务改为发送中
+		AppParam updateTaskParam = new AppParam();
+		updateTaskParam.addAttr("recordId", taskMap.get("recordId"));
+		updateTaskParam.addAttr("status", 1);
+		updateTaskStatus(updateTaskParam);
+		
+		int allLimit = NumberUtil.getInt(taskMap.get("sendNum"));
+		int sendPageNo = (int) sendPageNoMap.get(taskMap.get("channelKey"));
+		int curreryPage = 1;
+		int skip = 0;
+		boolean sendSuccess = true;
+		while (allLimit > 0 && sendSuccess) {// 进行分页
+			// 发送短信
+			AppParam queryPhoneParam = new AppParam();
+			queryPhoneParam.addAttr("queryParam", taskMap.get("sendParam"));
+			queryPhoneParam.addAttr("skip", skip);
+			queryPhoneParam.addAttr("limit", allLimit < sendPageNo ? allLimit
+					: sendPageNo);
+			String telephone = getTelephone(queryPhoneParam);
+
+			// 保存发送记录
+			AppParam saveParam = new AppParam();
+			saveParam.addAttr("recordId", taskMap.get("recordId"));
+			saveParam.addAttr("tempId", taskMap.get("tempId"));
+			saveParam.addAttr("tempContent", taskMap.get("tempContent"));
+			saveParam.addAttr("channelKey", taskMap.get("channelKey"));
+			saveParam.addAttr("indexNum", curreryPage);
+			saveParam.addAttr("telephone", telephone);
+			saveParam.addAttr("telephoneCount",
+					allLimit < sendPageNo ? allLimit : sendPageNo);
+			sendSuccess = saveSendDetail(saveParam);
+
+			curreryPage++;
+			skip += sendPageNo;
+			allLimit = allLimit - sendPageNo;
+		}
+
+		// 把发送任务改为发送完成
+		updateTaskParam.addAttr("recordId", taskMap.get("recordId"));
+		updateTaskParam.addAttr("status", 2);
+		updateTaskParam.addAttr("endTime", new Date());
+		result = updateTaskStatus(updateTaskParam);
+		
+		//全部发送成功后修改手机号码的发送状态
+		AppParam updateParam = new AppParam();
+		Map<String, Object> updateMap = new HashMap<String, Object>();
+		updateMap.put("lstid", taskMap.get("tempId"));
+		updateMap.put("lstime", new Date());
+		updateMap.put("lss", 1);		
+		updateParam.addAttr("params", updateMap);
+		updateParam.addAttr("queryParam",  taskMap.get("sendParam"));
+		updateParam.addAttr("sendNum", taskMap.get("sendNum"));
+		updateParam.setService("smsUserService");
+		updateParam.setMethod("updateAndInc");
+		updateParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		RemoteInvoke.getInstance().call(updateParam);
+		return result;
+	}
+
+	
+	/**
+	 * 修改发送任务状态
+	 * @param param
+	 * @return
+	 */
+	public static AppResult updateTaskStatus(AppParam param){
+		param.setService("smsSendRecordService");
+		param.setMethod("update");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		return result;
+	}
+	
+	/**
+	 * 发送短信并保存记录
+	 * @param param
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static boolean saveSendDetail(AppParam param){
+		String phones = (String) param.getAttr("telephone");
+		String tempContent = (String) param.getAttr("tempContent");
+		String channelKey = (String) param.getAttr("channelKey");
+		Object recordId = param.getAttr("recordId");
+		
+		Object returnStatus = null;
+		Object returnMsgid = null;
+		Object returnDesc = null;
+		Object blacklist = null;
+		Object status = null;
+		if(channel_youxun.equalsIgnoreCase(channelKey)){
+			String response =SmsYouxunUtil.sendJson(phones, tempContent);
+			Map<String, Object> responseResult = JsonUtil.getInstance().json2Object(response, Map.class);
+			returnStatus = responseResult.get("result");
+			returnMsgid = responseResult.get("msgid");
+			returnDesc = responseResult.get("desc");
+			blacklist = responseResult.get("blacklist"); 
+			status = "0".equals(returnStatus)?1:2;
+		}else if(channel_lmobile.equalsIgnoreCase(channelKey)){
+			String response =SmsLMobileUtil.sendJson(phones, tempContent);
+			Map<String, Object> responseResult = JsonUtil.getInstance().json2Object(response, Map.class);
+			returnStatus = responseResult.get("State");
+			returnMsgid = responseResult.get("MsgID");
+			status = "0".equals(returnStatus)?1:2;
+		}
+
+		param.addAttr("returnStatus", returnStatus);
+		param.addAttr("returnMsgid", returnMsgid);
+		param.addAttr("returnDesc", returnDesc);
+		param.addAttr("blacklist", blacklist);
+		param.addAttr("status", status);
+		param.setService("smsSendDetailService");
+		param.setMethod("insert");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		RemoteInvoke.getInstance().call(param);
+		//如果第三方返回的状态不为成功，停止发送
+		if(!status.equals(1)){
+			// 把发送任务改为发送失败
+			AppParam updateTaskParam = new AppParam();
+			updateTaskParam.addAttr("recordId", recordId);
+			updateTaskParam.addAttr("status", 4);
+			updateTaskStatus(updateTaskParam);
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * 查询发送短信手机号码
+	 * @param param
+	 * @return
+	 */
+	public static String  getTelephone(AppParam param){
+		param.setService("smsUserService");
+		param.setMethod("queryTelephone");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		StringBuffer telephone = new StringBuffer();				
+		int i=0;
+		for(Map<String, Object> map : result.getRows()){
+			if(i==1){
+				telephone.append("," +map.get("tel").toString());
+			}else{
+				telephone.append(map.get("tel").toString());
+			}
+			i=1;
+		}
+		if(StringUtils.isEmpty(telephone.toString())){
+			return "";
+		}
+		return telephone.toString();
+	}
+}

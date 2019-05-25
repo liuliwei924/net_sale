@@ -1,0 +1,162 @@
+package org.xxjr.busiIn.kf.config;
+
+import java.util.Date;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.springframework.context.annotation.Lazy;
+import org.ddq.common.web.session.DuoduoSession;
+import org.llw.common.core.service.BaseService;
+import org.springframework.stereotype.Service;
+import org.xxjr.sys.util.NumberUtil;
+
+
+@Lazy
+@Service
+public class SalePoolService extends BaseService {
+	private static final String NAMESPACE = "SALEPOOL";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	public AppResult save(AppParam params) {
+		AppResult result = new AppResult();
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("applyId", params.getAttr("applyId"));
+		AppResult queryCount = this.queryCount(queryParam);
+		int size =  NumberUtil.getInt(queryCount.getAttr(DuoduoConstant.TOTAL_SIZE), 0);
+		if (size <= 0) {
+			params.addAttr("createTime", new Date());
+			params.addAttr("createBy", DuoduoSession.getUserName());
+			result =  super.insert(params, NAMESPACE);
+		}
+		return result;
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * 插入分配的单子
+	 * @param params
+	 * @return
+	 */
+	public AppResult insertNotUpdate(AppParam params) {
+		int size = getDao().insert(NAMESPACE, "insertNotUpdate", params.getAttr(), params.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		return backContext;
+	}
+	
+	
+	/**
+	 * 自动挂卖的数据
+	 * @param params
+	 * @return
+	 */
+	public AppResult autoSaleData(AppParam params) {
+		int size = getDao().insert(NAMESPACE, "autoSaleData", params.getAttr(), params.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		return backContext;
+	}
+
+
+	/**
+	 * 可转信贷经理列表(客服系统)
+	 * @param params
+	 * @return
+	 */
+	public AppResult canTransXxjrList(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"canTransXxjrList","canTransXxjrCount");
+	}
+	
+	/**
+	 * 转化到小小金融
+	 * @param params
+	 * @return
+	 */
+	public AppResult transferToXxjr(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"transferToXxjr", "transferToXxjrCount");
+	}
+	
+	/**
+	 * 转优质客户查询
+	 * @param params
+	 * @return
+	 */
+	public AppResult transferToSeniorCust(AppParam params) {
+		return super.query(params, NAMESPACE, "transferToSeniorCust");
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		AppResult result = new AppResult();
+		result = super.delete(params, NAMESPACE);
+		return result;
+	}
+	
+	
+	
+	/**
+	 * batchDelete
+	 * @param params
+	 * @return
+	 */
+	public AppResult batchDelete(AppParam params) {
+		int size = getDao().delete(NAMESPACE, "batchDelete", params.getAttr(), params.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Delete_SIZE, size);
+		return backContext;
+	}
+}

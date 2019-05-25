@@ -1,0 +1,76 @@
+package org.xxjr.busi.util.wd;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.zk.service.RemoteInvoke;
+import org.xxjr.sys.util.ServiceKey;
+
+public class ApplyUtil {
+	
+	/**
+	 * 根据unionId查询客户申请信息
+	 * @param unionId
+	 * @return
+	 */
+	public static Map<String, Object> queryApplyMap(Object unionId) {
+		AppParam queryParam = new AppParam("applyService", "query");
+		queryParam.addAttr("unionId", unionId);
+		queryParam.setOrderBy("applyId");
+		queryParam.setOrderValue("DESC");
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		return queryResult.getRows().size()>0?queryResult.getRow(0):new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 根据uid、customerId、telephone查询客户申请信息
+	 * @param uid
+	 * @param customerId
+	 * @param telephone
+	 * @return
+	 */
+	public static Map<String, Object> queryApplyMap(Object uid,Object customerId,Object telephone) {
+		AppParam queryParam = new AppParam("applyService", "query");
+		queryParam.addAttr("uid", uid);
+		queryParam.addAttr("customerId", customerId);
+		queryParam.addAttr("telephone", telephone);
+//		queryParam.addAttr("status", "0");
+		queryParam.setOrderBy("applyId");
+		queryParam.setOrderValue("DESC");
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		return queryResult.getRow(0);
+	}
+
+	public static Map<String, Object> queryApplyProductMap(Object uid,Object customerId,Object telephone) {
+		AppParam queryParam = new AppParam("applyProductService", "query");
+		queryParam.addAttr("uid", uid);
+		queryParam.addAttr("customerId", customerId);
+		queryParam.addAttr("telephone", telephone);
+		queryParam.setOrderBy("proApplyId");
+		queryParam.setOrderValue("DESC");
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		if (queryResult.getRows().size()<=0) {
+			return null;
+		}
+		return queryResult.getRow(0);
+	}
+	
+	public static AppResult updateStatus(Object status,Object uid,Object proApplyId) {
+		AppParam statusParam = new AppParam("applyProductService", "update");
+		statusParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+		statusParam.addAttr("uid", uid);
+		statusParam.addAttr("proApplyId", proApplyId);
+		statusParam.addAttr("status", status);
+		return RemoteInvoke.getInstance().call(statusParam);
+	}
+}

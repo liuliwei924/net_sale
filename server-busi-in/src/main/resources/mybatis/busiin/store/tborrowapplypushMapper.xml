@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWAPPLYPUSH">
+    
+    <sql id="querySql">
+   		<if test="applyId != null and applyId != ''">
+		  and applyId = #{applyId}
+		 </if>
+		 <if test="pushId != null and pushId != ''">
+		  and pushId = #{pushId}
+		 </if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="pushType != null and pushType != ''">
+			and pushType = #{pushType}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="channelDetail != null and channelDetail != ''">
+			and channelDetail = #{channelDetail}
+		</if>
+		<if test="recordDate != null and recordDate != ''">
+			and DATE_FORMAT(updateTime,'%Y-%m-%d')=#{recordDate}
+		</if>
+		<if test="recordTime != null and recordTime != ''">
+			and DATE_FORMAT(createTime,'%Y-%m-%d')=#{recordTime}
+		</if>
+		<if test="startRecordTime != null and startRecordTime != ''">
+			and createTime >= #{startRecordTime}
+		</if>
+		<if test="endRecordTime != null and endRecordTime != ''">
+			and createTime <![CDATA[<=]]> #{endRecordTime}
+		</if>
+    </sql>
+    
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			pushId,
+			applyId,
+			applyName, 
+			telephone, 
+			status, 
+			message, 
+			pushType, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_borrow_apply_push
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_apply_push 
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+	
+	<!-- 查询推送列表 -->
+	<select id="queryPushList" parameterType="map" resultType="map">
+		SELECT
+			t.applyId as 'applyId',
+			t.pushId,
+			IFNULL(t.applyName,'') as 'applyName',
+			t.telephone as 'telephone',
+			IFNULL(t1.sex,'') as 'sex',
+			IFNULL(t1.age,'') as 'age',
+			IFNULL(t1.loanAmount,'0') as 'loanAmount',
+			IFNULL(t2.income,'0') as 'income',
+			IFNULL(t1.workType,'1') as 'workType',
+			IFNULL(t2.wagesType,'1') as 'wagesType',
+			IFNULL(t1.creditType,'1') as 'creditType',
+			IFNULL(t1.houseType,'2') as 'houseType',
+			IFNULL(t1.carType,'2') as 'carType',
+			IFNULL(t3.insurType,'0') as 'insurType'
+		FROM t_borrow_apply_push t
+		LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 on t.applyId = t2.applyId
+		LEFT JOIN t_borrow_insure t3 on t.applyId = t3.applyId  
+		<where>
+			 t.status = 0 
+			 and t.pushType=1 
+			 and  <![CDATA[t.applyTime<= DATE_ADD(NOW(),INTERVAL -2 DAY)]]>
+			 LIMIT 50
+		</where>
+	</select>
+	
+	<!-- 查询推送数据,通用 -->
+	<select id="queryPushData" parameterType="map" resultType="map">
+		SELECT
+			t.applyId as 'applyId',
+			t.pushId,
+			t1.loanAmount,
+			IFNULL(t.applyName,'') as 'applyName',
+			t.telephone as 'telephone',
+			IFNULL(t1.sex,'') as 'sex',
+			IFNULL(t1.identifyNo,'') as 'identifyNo',
+			IFNULL(t1.creditType,'1') as 'creditType',
+			IFNULL(t1.houseType,'2') as 'houseType',
+			IFNULL(t1.carType,'0') as 'carType',
+			IFNULL(t3.insurType,'0') as 'insurType',
+			IFNULL(t1.fundType,'2') as 'fundType',
+			IFNULL(t1.cityName,'') as 'cityName',
+			IFNULL(t2.cashMonth,'') as 'cashMonth',
+			IFNULL(t2.pubManageLine,'') as 'pubManageLine',
+			IFNULL(t2.income,'') as 'income'
+		FROM t_borrow_apply_push t
+		LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 on t.applyId = t2.applyId
+		LEFT JOIN t_borrow_insure t3 on t.applyId = t3.applyId
+		<where>
+			t.status = 0 
+			and t.pushType=#{pushType}
+			<if test="createTime != null and createTime != ''">
+			and DATE_FORMAT(t.createTime,'%Y-%m-%d') <![CDATA[<=]]> #{createTime}
+			</if> 
+		</where>
+		LIMIT #{size}
+	</select>
+	
+	<!-- 查询所有推送列表 -->
+	<select id="queryPushListAll" parameterType="map" resultType="map">
+		SELECT
+			t.applyId as 'applyId',
+			t.pushId,
+			t.applyName as 'applyName',
+			f_hide_phone(t.telephone) as 'telephone',
+			t.status as 'pushStatus',
+			t.pushType, 
+			t.message as 'message',
+			t1.cityName as 'cityName', 
+			IFNULL(t1.sex,'') as 'sex',
+			IFNULL(t1.age,'') as 'age',
+			IFNULL(t1.loanAmount,'0') as 'loanAmount',
+			IFNULL(t2.income,'0') as 'income',
+			IFNULL(t1.workType,'1') as 'workType',
+			IFNULL(t2.wagesType,'1') as 'wagesType',
+			IFNULL(t1.creditType,'1') as 'creditType',
+			IFNULL(t1.houseType,'2') as 'houseType',
+			IFNULL(t1.carType,'2') as 'carType',
+			IFNULL(t3.insurType,'0') as 'insurType',
+			t4.status as 'status',
+			t.channelCode,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			IFNULL(t.sourceType,0) as 'sourceType'
+		FROM t_borrow_apply_push t
+		LEFT JOIN t_borrow_apply t4 on t.telephone = t4.telephone
+		LEFT JOIN t_borrow_base t1 on t4.applyId = t1.applyId		
+		LEFT JOIN t_borrow_income t2 on t4.applyId = t2.applyId
+		LEFT JOIN t_borrow_insure t3 on t4.applyId = t3.applyId
+		<if test="queryChannelType != null and queryChannelType != ''">
+		LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+		</if>
+		<where>
+			<include refid="queryPushSQL"></include>		
+		</where>
+		order by t.createTime desc
+	</select>
+	
+	<select id="queryPushListAllCount" parameterType="map" resultType="int">
+		SELECT COUNT(*) 
+		FROM t_borrow_apply_push t
+		<if test="cityName != null and cityName != ''">
+		LEFT JOIN t_borrow_apply t4 on t.telephone = t4.telephone
+		LEFT JOIN t_borrow_base t1 on t4.applyId = t1.applyId	
+		</if>
+		<if test="queryChannelType != null and queryChannelType != ''">
+		LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+		</if>
+		<where>
+			<include refid="queryPushSQL"></include>
+		</where>
+	</select>
+	
+	<sql id="queryPushSQL">
+		<if test="queryChannelType != null and queryChannelType != ''">
+			and t5.type IN(${queryChannelType})
+		</if>
+		<if test="applyId != null and applyId != ''">
+		    and t.applyId = #{applyId}
+		 </if>
+		 <if test="pushId != null and pushId != ''">
+		    and t.pushId = #{pushId}
+		 </if>
+		<if test="applyName != null and applyName != ''">
+			and t.applyName like CONCAT(#{applyName},'%')
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and t.telephone = #{telephone}
+		</if>
+		<if test="pushStatus != null and pushStatus != ''">
+			and t.status = #{pushStatus}
+		</if>
+		<if test="message != null and message != ''">
+			and t.message = #{message}
+		</if>
+		<if test="pushType != null and pushType != ''">
+			and t.pushType = #{pushType}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t1.cityName like CONCAT(#{cityName},'%') 
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and t.applyTime = #{applyTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and t.updateTime = #{updateTime}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and t.channelCode = #{channelCode}
+		</if>
+		<if test="timeType != null and timeType == 1">
+			<![CDATA[ and t.createTime >= #{startTime} ]]>
+		</if>
+		<if test="timeType != null and timeType == 1">
+			<![CDATA[ and t.createTime <= #{endTime} ]]>
+		</if>
+		
+		<if test="timeType != null and timeType == 2">
+			<![CDATA[ and t.updateTime >= #{startTime} ]]>
+		</if>
+		<if test="timeType != null and timeType == 2">
+			<![CDATA[ and t.updateTime <= #{endTime} ]]>
+		</if>
+		
+		<if test="timeType != null and timeType == 3">
+			<![CDATA[ and t.applyTime >= #{startTime} ]]>
+		</if>
+		<if test="timeType != null and timeType == 3">
+			<![CDATA[ and t.applyTime <= #{endTime} ]]>
+		</if>
+		<if test="sourceType != null and sourceType != ''">
+			and t.sourceType = #{sourceType}
+		</if>
+	</sql>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="pushId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_apply_push (
+			applyId,
+			applyName,
+			telephone,
+			status,
+			message,
+			pushType,
+			createTime,
+			applyTime,
+			updateTime,
+			channelCode,
+			channelDetail,
+			sourceType
+		)
+		VALUES (
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{applyName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=CHAR}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			0 ,
+			</if>
+			#{message, jdbcType=VARCHAR}, 
+			<if test="pushType !=null ">
+			#{pushType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="pushType ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="channelCode == null">
+			(SELECT n1.channelCode FROM t_borrow_channel n1 WHERE locate(n1.channelCode,#{channelDetail})=1 LIMIT 1),
+			</if>
+			<if test="channelCode != null">
+			#{channelCode, jdbcType=VARCHAR},
+			</if>
+			#{channelDetail, jdbcType=VARCHAR},
+			<if test="sourceType !=null ">
+			#{sourceType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="sourceType ==null ">
+			0
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_apply_push 
+		<where> 
+			pushId = #{pushId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_apply_push  
+		<set>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=CHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="message != null">
+				message = #{message, jdbcType=VARCHAR},  
+			</if>
+			<if test="pushType != null">
+				pushType = #{pushType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channelDetail != null">
+				channelDetail = #{channelDetail, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  pushId = #{pushId}
+		</where>
+	</update>
+	
+	<select id="sumPushData" parameterType="map" resultType="map">
+		SELECT
+			t.pushType,
+			t.sourceType,
+			sum(IF(t.`status` = 1, 1, 0)) AS 'sucCount',
+			sum(IF(t.`status` = 2, 1, 0)) AS 'failCount',
+			sum(IF(t.`status` = 4, 1, 0)) AS 'filterCount',
+			t1.pushName,
+			t1.type,
+			CONCAT(#{startDate}) as 'recordDate'
+		FROM
+			t_borrow_apply_push t LEFT JOIN t_borrow_push_cfg t1
+			on t.pushType = t1.pushCode
+		WHERE
+			t.createTime >= #{startDate}
+		AND t.createTime <![CDATA[<=]]> #{endDate}
+		GROUP BY
+			t.pushType,
+			t.sourceType
+	</select>
+	
+	<select id="sumDistinctData" parameterType="map" resultType="map">
+		SELECT
+			-1 AS 'pushType',
+			COUNT(DISTINCT telephone) AS 'sucCount',
+			sum(IF(status = 1,1,0)) AS 'failCount',
+			'去重数据' AS 'pushName',
+			1 AS 'type',
+			CONCAT(#{startDate}) AS 'recordDate',
+			sourceType
+		FROM
+			t_borrow_apply_push
+		WHERE
+			createTime >= #{startDate}
+		AND createTime <![CDATA[<=]]> #{endDate}
+		AND pushType in (SELECT t.pushCode from t_borrow_push_cfg t where type = 1)
+		GROUP BY
+			sourceType
+		UNION ALL
+		SELECT
+			-2 AS 'pushType',
+			COUNT(DISTINCT telephone) AS 'sucCount',
+			sum(IF(status = 1,1,0)) AS 'failCount',
+			'去重数据' AS 'pushName',
+			2 AS 'type',
+			CONCAT(#{startDate}) AS 'recordDate',
+			sourceType
+		FROM
+			t_borrow_apply_push
+		WHERE
+		createTime >= #{startDate}
+		AND createTime <![CDATA[<=]]> #{endDate}
+		AND pushType in (SELECT t.pushCode from t_borrow_push_cfg t where type = 2)
+		GROUP BY
+			sourceType
+	</select>
+	
+	<select id="sumChannelPushData" parameterType="map" resultType="map">
+		SELECT
+			IFNULL(t.channelCode, 'default') as 'channelCode',
+			t.pushType,
+			sum(IF(t.`status` = 1, 1, 0)) AS 'sucCount',
+			sum(IF(t.`status` = 2, 1, 0)) AS 'failCount',
+			sum(IF(t.`status` = 4, 1, 0)) AS 'filterCount',
+			t1.pushName,
+			t1.type,
+			CONCAT(#{startDate}) as 'recordDate'
+		FROM
+			t_borrow_apply_push t LEFT JOIN t_borrow_push_cfg t1
+			on t.pushType = t1.pushCode
+		WHERE
+			t.createTime >= #{startDate}
+		AND t.createTime <![CDATA[<=]]> #{endDate}
+		GROUP BY
+			t.pushType,
+			t.channelCode
+	</select>
+	
+	<update id="updateStatus" parameterType="map">
+		UPDATE t_borrow_apply_push
+		SET `status` = IF (`status` = #{formStatus}, #{status}, `status`)
+		WHERE
+		createTime >= #{startTime}
+		AND createTime <![CDATA[<=]]> #{endTime}
+		AND message IN (
+			<foreach collection="messageArray" separator="," item="item" index="i">
+				#{item}
+			</foreach>
+		)
+		AND pushType = #{pushType}
+	</update>
+	
+	<select id="queryPushCount" parameterType="map" resultType="map">
+		<![CDATA[
+		SELECT
+			COUNT(
+				CASE
+				WHEN `status` = 1 THEN
+					pushId
+				END
+			) AS 'sucCount',
+			COUNT(pushId) as 'totalCount'
+		FROM
+			t_borrow_apply_push
+		WHERE
+			pushType = #{pushType}
+		AND createTime >= #{startRecordTime}
+		AND createTime <= #{endRecordTime}
+		]]>
+	</select>
+	
+	<select id="queryChannelProportion" parameterType="map" resultType="map">
+		<![CDATA[
+			SELECT
+				COUNT(
+					CASE
+					WHEN t1.type = 3 THEN
+						t.pushId
+					END
+				) AS 'apiCount',
+				COUNT(
+					CASE
+					WHEN t1.type != 3 THEN
+						t.pushId
+					END
+				)  AS 'otherCount'
+			FROM
+				t_borrow_apply_push t
+			JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE
+				t.pushType = #{pushType}
+			AND t.createTime >= #{nowDate}
+			AND t.createTime <= DATE_ADD(#{nowDate},INTERVAL 1 DAY)
+		]]>
+	</select>
+</mapper>

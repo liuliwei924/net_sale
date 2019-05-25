@@ -1,0 +1,202 @@
+package org.xxjr.cust.invite;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.active.mq.message.CustMessageSend;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+@Lazy
+@Service
+@Slf4j
+public class TicketRecordService extends BaseService {
+	private static final String NAMESPACE = "TICKETRECORD";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 注册发送抢单券
+	 * @param params
+	 * @return
+	 */
+	public AppResult regSendTicket(AppParam params) {
+		AppResult result = new AppResult();
+		String activityType = StringUtil.getString(params.getAttr("activityType"));
+		//免单券邀请注册活动直接送券
+		if("0".equals(activityType)){
+			AppParam queryParam = new AppParam();
+			queryParam.addAttr("telephone", params.getAttr("telephone"));
+			AppResult tickResult = this.query(queryParam);
+			if(tickResult.getRows().size() <= 0){
+				result.setSuccess(false);
+				return result;
+			}
+			//维护原有用户表推荐人信息
+			Map<String,Object> ticketInfo = tickResult.getRow(0);
+			if(!StringUtils.isEmpty(ticketInfo.get("inviteCustId"))){
+				AppParam custParam = new AppParam("customerService","update");
+				custParam.addAttr("customerId", params.getAttr("customerId"));
+				custParam.addAttr("referer", ticketInfo.get("inviteCustId"));
+				SoaManager.getInstance().invoke(custParam);
+			}
+			//保存领取记录
+			AppParam param = new AppParam("inviteRecordService","insert");
+			param.addAttr("customerId", params.getAttr("customerId"));
+			param.addAttr("registerReward", "2");
+			param.addAttr("parentId", tickResult.getRow(0).get("inviteCustId"));
+			SoaManager.getInstance().invoke(param);
+			// 维护customerId
+			AppParam recordParam = new AppParam();
+			recordParam.addAttr("customerId", params.getAttr("customerId"));
+			recordParam.addAttr("recordId", ticketInfo.get("recordId"));
+			this.update(recordParam);
+		}
+		//发送抢单券
+		AppParam saveParam = new AppParam("custTicketService","batchInsert");
+		saveParam.addAttr("rewardType", params.getAttr("type"));
+		saveParam.addAttr("createDesc", params.getAttr("createDesc"));
+		saveParam.addAttr("customerId", params.getAttr("customerId"));
+		saveParam.addAttr("rewardValue", params.getAttr("rewardValue"));
+		saveParam.addAttr("activityType", params.getAttr("activityType"));
+		result = SoaManager.getInstance().invoke(saveParam);
+		if(result.isSuccess()){
+			Object customerId = params.getAttr("customerId");
+			try {
+				Map<String,Object> paramsMap = new HashMap<String,Object>();
+				paramsMap.put("customerId", customerId);
+				CustMessageSend messageSend = SpringAppContext.getBean(CustMessageSend.class);
+				messageSend.sendCustMessage(customerId.toString(), "sendIviteCoupons", paramsMap);
+			} catch (Exception e) {
+				log.error("regSendTicket error", e);
+			}
+		}
+		return result;
+	}
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * save
+	 */
+	public AppResult save(AppParam params) {
+		AppResult result = new AppResult();
+		Object telephone = params.getAttr("telephone");
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("telephone", telephone);
+		AppResult queryResult = query(params);
+		if(queryResult.getRows().size() > 0){
+			result.setSuccess(false);
+			result.setErrorCode("0003");
+			result.setMessage("您已领取过该奖励，请勿重复领取！");
+			return result;
+		}
+		result = this.insert(params);
+		return result;
+	}
+
+	
+	/**
+	 * updateTel
+	 */
+	public AppResult updateTel(AppParam params){
+		AppResult result = new AppResult();
+		Object telephone = params.getAttr("telephone");
+		Object oldTelephone = params.getAttr("oldTelephone");
+		if(StringUtils.isEmpty(telephone) || StringUtils.isEmpty(oldTelephone)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryParam = new AppParam();
+		queryParam.addAttr("telephone", telephone);
+		AppResult queryResult = this.query(queryParam);
+		if(queryResult.getRows().size() > 0){
+			throw new SysException("手机号" + telephone + "已领取过福利");
+		}
+		int size = this.getDao().update(NAMESPACE, "updateTel", params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("recordId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("recordId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+}

@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMHANDLERECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			realName,
+			traOrderCount, 
+			backOrderCount, 
+			authCount, 
+			leaDealCount,
+			onlineTime, 
+			cfsCount, 
+			audioCount, 
+			exportCount
+		FROM t_sum_handle_record
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="realName != null and realName != ''">
+				and realName = #{realName}
+			</if>
+			<if test="traOrderCount != null and traOrderCount != ''">
+				and traOrderCount = #{traOrderCount}
+			</if>
+			<if test="backOrderCount != null and backOrderCount != ''">
+				and backOrderCount = #{backOrderCount}
+			</if>
+			<if test="authCount != null and authCount != ''">
+				and authCount = #{authCount}
+			</if>
+			<if test="leaDealCount != null and leaDealCount != ''">
+				and leaDealCount = #{leaDealCount}
+			</if>
+			<if test="onlineTime != null and onlineTime != ''">
+				and onlineTime = #{onlineTime}
+			</if>
+			<if test="cfsCount != null and cfsCount != ''">
+				and cfsCount = #{cfsCount}
+			</if>
+			<if test="audioCount != null and audioCount != ''">
+				and audioCount = #{audioCount}
+			</if>
+			<if test="exportCount != null and exportCount != ''">
+				and exportCount = #{exportCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_handle_record 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="realName != null and realName != ''">
+			and realName = #{realName}
+		</if>
+		<if test="traOrderCount != null and traOrderCount != ''">
+			and traOrderCount = #{traOrderCount}
+		</if>
+		<if test="backOrderCount != null and backOrderCount != ''">
+			and backOrderCount = #{backOrderCount}
+		</if>
+		<if test="authCount != null and authCount != ''">
+			and authCount = #{authCount}
+		</if>
+		<if test="leaDealCount != null and leaDealCount != ''">
+			and leaDealCount = #{leaDealCount}
+		</if>
+		<if test="onlineTime != null and onlineTime != ''">
+			and onlineTime = #{onlineTime}
+		</if>
+		<if test="cfsCount != null and cfsCount != ''">
+			and cfsCount = #{cfsCount}
+		</if>
+		<if test="audioCount != null and audioCount != ''">
+			and audioCount = #{audioCount}
+		</if>
+		<if test="exportCount != null and exportCount != ''">
+			and exportCount = #{exportCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_handle_record (
+			recordDate,
+			customerId,
+			realName,
+			traOrderCount,
+			backOrderCount,
+			authCount,
+			leaDealCount,
+			onlineTime,
+			cfsCount,
+			audioCount,
+			exportCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			#{realName, jdbcType=VARCHAR}, 
+			<if test="traOrderCount !=null ">
+			#{traOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="traOrderCount ==null ">
+			0 ,
+			</if>
+			<if test="backOrderCount !=null ">
+			#{backOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="backOrderCount ==null ">
+			0 ,
+			</if>
+			<if test="authCount !=null ">
+			#{authCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="authCount ==null ">
+			0 ,
+			</if>
+			<if test="leaDealCount !=null ">
+			#{leaDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="leaDealCount ==null ">
+			0 ,
+			</if>
+			<if test="onlineTime !=null ">
+			#{onlineTime, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="onlineTime ==null ">
+			0.00 ,
+			</if>
+			<if test="cfsCount !=null ">
+			#{cfsCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="cfsCount ==null ">
+			0 ,
+			</if>
+			<if test="audioCount !=null ">
+			#{audioCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="audioCount ==null ">
+			0 ,
+			</if>
+			<if test="exportCount !=null ">
+			#{exportCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="exportCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_handle_record 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_handle_record  
+		<set>
+			<if test="realName != null">
+				realName = #{realName, jdbcType=VARCHAR},  
+			</if>
+			<if test="traOrderCount != null">
+				traOrderCount = #{traOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="backOrderCount != null">
+				backOrderCount = #{backOrderCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="authCount != null">
+				authCount = #{authCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="leaDealCount != null">
+				leaDealCount = #{leaDealCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="onlineTime != null">
+				onlineTime = onlineTime + #{onlineTime},  
+			</if>
+			<if test="cfsCount != null">
+				cfsCount = #{cfsCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="audioCount != null">
+				audioCount = #{audioCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="exportCount != null">
+				exportCount = #{exportCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE t
+		FROM
+			t_sum_handle_record t
+		<where> 
+			t.recordDate = #{recordDate}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_handle_record  (
+			recordDate,
+			customerId,
+			realName,
+			traOrderCount,
+			backOrderCount,
+			authCount,
+			leaDealCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.realName}, 
+		  #{item.traOrderCount}, 
+		  #{item.backOrderCount}, 
+		  #{item.authCount}, 
+		  #{item.leaDealCount}
+		  )
+		</foreach>
+  	</insert>
+  	<!-- 查询今日和本月操作记录 -->
+  	<select id="queryHandRecordByDate" resultType="map" parameterType="map">
+		SELECT
+			t.recordDate,
+			t.customerId,
+			t.realName,
+			t.traOrderCount, 
+			t.backOrderCount, 
+			t.authCount, 
+			t.leaDealCount,
+			t1.roleType,
+			concat(t2.orgNo,'-',t2.orgName) as orgName,
+			t.onlineTime,
+			t.cfsCount,
+			t.audioCount,
+			t.exportCount
+		FROM t_sum_handle_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<include refid="handleSqlQuery"/>
+		<if test="orderSql == null">
+			ORDER BY t.recordDate DESC,t.customerId,CONVERT(t2.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},t.customerId,CONVERT(t2.orgName USING GBK)
+		</if>
+	</select>
+
+	<select id="queryHandRecordByDateCount" resultType="int" parameterType="map">
+		SELECT 
+			COUNT(*) 
+		FROM  
+		t_sum_handle_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<include refid="handleSqlQuery"/>
+	</select>
+	<sql id="handleSqlQuery">
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and t.recordDate = #{recordDate}
+			</if>
+			<if test="customerId != null and customerId != ''">
+			  and t.customerId = #{customerId}
+			</if>
+			<if test="realName != null and realName != ''">
+				and t.realName = #{realName}
+			</if>
+			<if test="traOrderCount != null and traOrderCount != ''">
+				and t.traOrderCount = #{traOrderCount}
+			</if>
+			<if test="backOrderCount != null and backOrderCount != ''">
+				and t.backOrderCount = #{backOrderCount}
+			</if>
+			<if test="authCount != null and authCount != ''">
+				and t.authCount = #{authCount}
+			</if>
+			<if test="leaDealCount != null and leaDealCount != ''">
+				and t.leaDealCount = #{leaDealCount}
+			</if>
+			<if test="orgId != null and orgId != ''">
+			    and t1.orgId = #{orgId}
+			</if>
+			<if test="orgIdIn != null and orgIdIn != ''">
+			    and t1.orgId in (${orgIdIn})
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+			    and t1.orgId in (${userOrgs})
+			</if>
+			<if test="roleType != null and roleType != ''">
+			    and t1.roleType = #{roleType}
+			</if>
+			<if test="startRecordDate != null and startRecordDate != ''">
+			  	<![CDATA[and t.recordDate >= #{startRecordDate}]]>
+			</if>
+			<if test="endRecordDate != null and endRecordDate != ''">
+			 	<![CDATA[ and t.recordDate <= #{endRecordDate}]]>
+			</if>
+			<if test="startRecordMonth != null and startRecordMonth != ''">
+			  	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') >= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordMonth != ''">
+			 	and <![CDATA[ DATE_FORMAT(t.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+		</where>
+	</sql>
+	<select id="queryHandleRecordSum" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(SUM(t.traOrderCount),0) AS traOrderCountSum, 
+			IFNULL(SUM(t.backOrderCount),0) AS backOrderCountSum, 
+			IFNULL(SUM(t.authCount),0) AS authCountSum, 
+			IFNULL(SUM(t.leaDealCount),0) AS leaDealCountSum,
+			IFNULL(SUM(t.onlineTime),0) AS onlineTimeSum,
+			IFNULL(SUM(t.cfsCount),0) AS cfsCountSum,
+			IFNULL(SUM(t.audioCount),0) AS audioCountSum,
+			IFNULL(SUM(t.exportCount),0) AS exportCountSum
+		FROM t_sum_handle_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<include refid="handleSqlQuery"/>
+	</select>
+	<!-- 查询月度操作记录 -->
+	<select id="queryHandRecordMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t.recordDate,'%Y-%m') AS recordDate,
+			t.customerId,
+			t.realName,
+			SUM(t.traOrderCount) AS traOrderCount,
+			SUM(t.backOrderCount) AS backOrderCount,
+			SUM(t.authCount) AS authCount,
+			SUM(t.leaDealCount) AS leaDealCount,
+			SUM(t.onlineTime) AS onlineTime,
+			SUM(t.cfsCount) AS cfsCount,
+			SUM(t.audioCount) AS audioCount,
+			SUM(t.exportCount) AS exportCount,
+			t1.roleType,
+			concat(t2.orgNo,'-',t2.orgName) as orgName
+		FROM t_sum_handle_record t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		JOIN t_org t2 ON t1.orgId = t2.orgId
+		<include refid="handleSqlQuery"/>
+		GROUP BY t.customerId,DATE_FORMAT(t.recordDate,'%Y-%m')
+		<if test="orderSql == null"> 
+			ORDER BY DATE_FORMAT(t.recordDate,'%Y-%m') ASC,t.customerId,CONVERT(t2.orgName USING GBK)
+		</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},t.customerId,CONVERT(t2.orgName USING GBK)
+		</if>
+	</select>
+
+	<select id="queryHandRecordMonthCount" resultType="int" parameterType="map">
+		SELECT
+			count(tab.count)
+		FROM
+		(
+			SELECT 
+				COUNT(*) as count
+			FROM  
+			t_sum_handle_record t
+			JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+			JOIN t_org t2 ON t1.orgId = t2.orgId
+			<include refid="handleSqlQuery"/>
+			GROUP BY t.customerId,DATE_FORMAT(t.recordDate,'%Y-%m')
+		) tab
+	</select>
+</mapper>

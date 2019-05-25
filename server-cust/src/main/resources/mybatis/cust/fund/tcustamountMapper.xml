@@ -1,0 +1,463 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTAMOUNT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId as "customerId",
+			discount,
+			usableAmount , 
+			freezeAmount ,
+			rewardAmount, 
+			totalRewardAmount,
+			otherAmount,
+			seniorAmount,
+			leftRepayAmount,
+			stewardUsableAmt,
+			stewardfreezeAmt,
+			drawCount,
+			drawAmt,
+			drawTotalAmt,
+			totalScore	,
+			updateBy as "updateBy",  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime" 
+		FROM t_cust_amount
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="usableAmount != null and usableAmount != ''">
+				and usableAmount = #{usableAmount}
+			</if>
+			<if test="freezeAmount != null and freezeAmount != ''">
+				and freezeAmount = #{freezeAmount}
+			</if>
+			<if test="rewardAmount != null and rewardAmount != ''">
+				and rewardAmount = #{rewardAmount}
+			</if>
+			<if test="totalRewardAmount != null and totalRewardAmount != ''">
+				and totalRewardAmount = #{totalRewardAmount}
+			</if>
+			<if test="otherAmount != null and otherAmount != ''">
+				and otherAmount = #{otherAmount}
+			</if>
+			<if test="seniorAmount != null and seniorUsableAmount != ''">
+				and seniorAmount = #{seniorAmount}
+			</if>
+			<if test="leftRepayAmount != null and leftRepayAmount != ''">
+				and leftRepayAmount = #{leftRepayAmount}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_amount 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="usableAmount != null and usableAmount != ''">
+			and usableAmount = #{usableAmount}
+		</if>
+		<if test="freezeAmount != null and freezeAmount != ''">
+			and freezeAmount = #{freezeAmount}
+		</if>
+		<if test="rewardAmount != null and rewardAmount != ''">
+			and rewardAmount = #{rewardAmount}
+		</if>
+		<if test="totalRewardAmount != null and totalRewardAmount != ''">
+			and totalRewardAmount = #{totalRewardAmount}
+		</if>
+		<if test="otherAmount != null and otherAmount != ''">
+			and otherAmount = #{otherAmount}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<select id="queryView" resultType="map" parameterType="map">
+		select 
+			t1.userName,
+			t1.telephone,
+			t2.realName,
+			t.*,
+			(select IFNULL(sum(t3.amount),0)/100 from t_recharge t3
+				 where t.customerId = t3.customerId and t3.status = 1) rechargeSum, 
+			(select IFNULL(sum(t3.rechargeReward),0)/100 from t_recharge t3 
+				where t.customerId = t3.customerId and t3.status = 1) giveawaySum, 
+			(select IFNULL(SUM(t4.amount),0) from t_fund_record t4 
+				where t.customerId = t4.customerId) costSum
+			from t_cust_amount t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			 <if test="usableAmount != null and usableAmount != ''">
+			    and t.usableAmount >= #{usableAmount}
+			 </if>
+			 <if test="startTime != null and startTime != ''">
+				<![CDATA[ and t1.registerTime >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and t1.registerTime <= #{endTime} ]]>
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>	
+	
+	<select id="queryViewCount" resultType="int" parameterType="map">
+		select count(1)
+			from t_cust_amount t
+			JOIN t_customer t1 on t.customerId = t1.customerId
+			JOIN t_cust_identify t2 on t.customerId = t2.customerId
+		<where>
+			
+			<if test="userName != null and userName != ''">
+			    and (t2.realName like '%${userName}%' or  t1.telephone like '${userName}%' )
+			 </if>
+			 <if test="usableAmount != null and usableAmount != ''">
+			    and t.usableAmount >= #{usableAmount}
+			 </if>
+			 
+		</where>
+	</select>
+	
+	<!-- 更新个人折扣 -->
+	<update id="updateUserDiscount" parameterType="map">
+         UPDATE t_cust_amount t
+		SET discount = IFNULL((
+			SELECT
+				sum(e.amount) / sum(
+					e.amount + e.rechargeReward + IFNULL(e1.amount, 0)
+				)
+			FROM
+				t_recharge e LEFT JOIN t_cust_coupon e1 ON e.couponId = e1.couponId
+			AND e1.`status` = 3 
+			WHERE
+				e. STATUS = 1
+				and e.createTime >= DATE_ADD(now(),INTERVAL -1 MONTH)
+			AND e.customerId = #{customerId}
+		),1)
+		WHERE t.customerId = #{customerId}
+    </update>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_cust_amount (
+			customerId,
+			usableAmount,
+			freezeAmount,
+			rewardAmount,
+			totalRewardAmount,
+			otherAmount,
+			seniorAmount,
+			leftRepayAmount,
+			stewardUsableAmt,
+			stewardfreezeAmt,
+			drawCount,
+			drawAmt,
+			drawTotalAmt,
+			totalScore,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{customerId, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			<if test="usableAmount !=null ">
+			#{usableAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="usableAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="freezeAmount !=null ">
+			#{freezeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="freezeAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="rewardAmount !=null ">
+			#{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="rewardAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="totalRewardAmount !=null ">
+			#{totalRewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalRewardAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="otherAmount !=null ">
+			#{otherAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="otherAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="seniorAmount !=null ">
+			#{seniorAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="seniorAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="leftRepayAmount !=null ">
+			#{leftRepayAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="leftRepayAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="stewardUsableAmt !=null ">
+			#{stewardUsableAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="stewardUsableAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="stewardfreezeAmt !=null ">
+			#{stewardfreezeAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="stewardfreezeAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="drawCount !=null ">
+			#{drawCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="drawCount ==null ">
+			0.00 ,
+			</if>
+			<if test="drawAmt !=null ">
+			#{drawAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="drawAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="drawTotalAmt !=null ">
+			#{drawTotalAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="drawTotalAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="totalScore !=null ">
+			#{totalScore, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalScore ==null ">
+			0.00 ,
+			</if>
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_amount 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			<if test="usableAmount != null">
+				usableAmount = #{usableAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="freezeAmount != null">
+				freezeAmount = #{freezeAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardAmount != null">
+				rewardAmount = #{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="totalRewardAmount != null">
+				totalRewardAmount = #{totalRewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="otherAmount != null">
+				otherAmount = #{otherAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="discount != null">
+				discount = #{discount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="seniorAmount != null">
+				seniorAmount = #{seniorAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="leftRepayAmount != null">
+				leftRepayAmount = #{leftRepayAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			customerId = #{customerId}
+		</where>
+	</update>
+	
+	<update id="updateNewScore" parameterType="map">
+		UPDATE t_cust_amount  t
+		<set>
+				t.totalScore = (select IFNULL(sum(score),0) from t_cust_score  e where e.customerId=t.customerId),
+			<if test="updateTime != null">
+				t.updateTime = now()
+			</if>
+		</set>
+		<where>
+			t.customerId = #{customerId}
+		</where>
+	</update>
+	
+	<update id="updateCustAmount" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			usableAmount = usableAmount +  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<update id="updateSeniorAmount">
+		UPDATE t_cust_amount  
+		<set>
+			<if test="amount != null">
+				seniorAmount = seniorAmount +  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="leftRepayAmount != null">
+				leftRepayAmount = leftRepayAmount +  #{leftRepayAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<!-- 提现申请 -->
+	<update id="withdrawApply" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			seniorAmount = seniorAmount -  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			freezeAmount = freezeAmount + #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	<update id="withdrawCancel" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			usableAmount = usableAmount + (select amount from t_withdraw where withdrawId=#{withdrawId} and `status` = 3),
+			freezeAmount = freezeAmount - (select amount from t_withdraw where withdrawId=#{withdrawId} and `status` = 3 )
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	<update id="withdrawCheck" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			freezeAmount = freezeAmount - (select amount from t_withdraw where withdrawId=#{withdrawId} and `status` = 2 )
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	
+	<update id="rewardOrder" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			usableAmount = usableAmount + (select realAmount from t_order_reward where rewardId=#{rewardId} and `status` = 1 )
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<update id="updateScore" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			totalScore = totalScore +  #{score, jdbcType=NUMERIC,typeHandler=NumberHandler},
+		</set>
+		<where>
+			 customerId = #{customerId}
+		</where>
+	</update>
+	
+	<!-- 金融管家抽奖 -->
+	<update id="stewardDraw" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			drawCount = drawCount - 1,
+			drawTotalAmt = drawTotalAmt + #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			stewardUsableAmt = stewardUsableAmt + #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+		</set>
+		WHERE customerId = #{customerId} AND drawCount > 0
+	</update>
+	
+	<!-- 查询已赠送金额 -->
+	<select id="querySeniorAmount" resultType="map" parameterType="map">
+		SELECT
+			IFNULL(seniorAmount,0) as 'seniorAmount',
+			IFNULL(leftRepayAmount,0) as 'leftRepayAmount',
+			IF(<![CDATA[leftRepayAmount<seniorAmount]]>,seniorAmount-leftRepayAmount,0) as 'rewardAmount',
+			(SELECT IFNULL(SUM(r.amount),0) FROM t_fund_record_senior r WHERE r.customerId=#{customerId} and r.fundType='giveSeniorAmount') as 'giveAmount'
+		FROM t_cust_amount
+		WHERE customerId=#{customerId}
+	</select>
+	
+	<!-- 推荐贷款提现申请 -->
+	<update id="tjWithdrawApply" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			rewardAmount = rewardAmount -  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			freezeAmount = freezeAmount +  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<!-- 推荐贷款提现取消 -->
+	<update id="tjWithdrawCancel" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			rewardAmount = rewardAmount +  #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			freezeAmount = freezeAmount - #{amount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			updateTime = NOW()
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<!-- 修改佣金和总佣金 -->
+	<update id="updateRewardAmount" parameterType="map">
+		UPDATE t_cust_amount  
+		<set>
+			rewardAmount = rewardAmount +  #{rewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			<if test="totalRewardAmount != null">
+				totalRewardAmount = totalRewardAmount + #{totalRewardAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}  
+			</if>
+		</set>
+		<where>
+			 customerId = #{customerId}
+		</where>
+	</update>
+</mapper>

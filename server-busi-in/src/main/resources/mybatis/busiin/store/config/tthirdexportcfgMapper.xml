@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="THIRDEXPORTCFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			customerId, 
+			houseType, 
+			carType, 
+			insure, 
+			loanAmount, 
+			havePinan, 
+			fundType, 
+			socialType, 
+			wagesType, 
+			exportTitile, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			incomeData
+		FROM t_third_export_cfg
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="houseType != null and houseType != ''">
+				and houseType = #{houseType}
+			</if>
+			<if test="carType != null and carType != ''">
+				and carType = #{carType}
+			</if>
+			<if test="insure != null and insure != ''">
+				and insure = #{insure}
+			</if>
+			<if test="loanAmount != null and loanAmount != ''">
+				and loanAmount = #{loanAmount}
+			</if>
+			<if test="havePinan != null and havePinan != ''">
+				and havePinan = #{havePinan}
+			</if>
+			<if test="fundType != null and fundType != ''">
+				and fundType = #{fundType}
+			</if>
+			<if test="socialType != null and socialType != ''">
+				and socialType = #{socialType}
+			</if>
+			<if test="wagesType != null and wagesType != ''">
+				and wagesType = #{wagesType}
+			</if>
+			<if test="exportTitile != null and exportTitile != ''">
+				and exportTitile = #{exportTitile}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="incomeData != null and incomeData != ''">
+				and incomeData = #{incomeData}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_third_export_cfg 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="houseType != null and houseType != ''">
+			and houseType = #{houseType}
+		</if>
+		<if test="carType != null and carType != ''">
+			and carType = #{carType}
+		</if>
+		<if test="insure != null and insure != ''">
+			and insure = #{insure}
+		</if>
+		<if test="loanAmount != null and loanAmount != ''">
+			and loanAmount = #{loanAmount}
+		</if>
+		<if test="havePinan != null and havePinan != ''">
+			and havePinan = #{havePinan}
+		</if>
+		<if test="fundType != null and fundType != ''">
+			and fundType = #{fundType}
+		</if>
+		<if test="socialType != null and socialType != ''">
+			and socialType = #{socialType}
+		</if>
+		<if test="wagesType != null and wagesType != ''">
+			and wagesType = #{wagesType}
+		</if>
+		<if test="exportTitile != null and exportTitile != ''">
+			and exportTitile = #{exportTitile}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="incomeData != null and incomeData != ''">
+			and incomeData = #{incomeData}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_third_export_cfg (
+			customerId,
+			houseType,
+			carType,
+			insure,
+			loanAmount,
+			havePinan,
+			fundType,
+			socialType,
+			wagesType,
+			exportTitile,
+			createTime,
+			incomeData
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{houseType, jdbcType=VARCHAR}, 
+			#{carType, jdbcType=VARCHAR}, 
+			#{insure, jdbcType=VARCHAR}, 
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{havePinan, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{fundType, jdbcType=VARCHAR}, 
+			#{socialType, jdbcType=VARCHAR}, 
+			#{wagesType, jdbcType=VARCHAR}, 
+			#{exportTitile, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{incomeData, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_third_export_cfg 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_third_export_cfg  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseType != null">
+				houseType = #{houseType, jdbcType=VARCHAR},  
+			</if>
+			<if test="carType != null">
+				carType = #{carType, jdbcType=VARCHAR},  
+			</if>
+			<if test="insure != null">
+				insure = #{insure, jdbcType=VARCHAR},  
+			</if>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="havePinan != null">
+				havePinan = #{havePinan, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundType != null">
+				fundType = #{fundType, jdbcType=VARCHAR},  
+			</if>
+			<if test="socialType != null">
+				socialType = #{socialType, jdbcType=VARCHAR},  
+			</if>
+			<if test="wagesType != null">
+				wagesType = #{wagesType, jdbcType=VARCHAR},  
+			</if>
+			<if test="exportTitile != null">
+				exportTitile = #{exportTitile, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="incomeData != null">
+				incomeData = #{incomeData, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+	
+	
+	<select id="queryForeginExport" resultType="map" parameterType="map">
+		SELECT
+			t.recordId,
+			t.customerId,
+			t.houseType,
+			t.carType,
+			t.insure,
+			t.loanAmount,
+			t.havePinan,
+			t.fundType,
+			t.socialType,
+			t.wagesType,
+			t.exportTitile,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.incomeData,
+			t1.`realName`
+		FROM t_third_export_cfg t
+		JOIN t_busi_cust t1 
+    	ON t.`customerId` = t1.`customerId` 
+		<include refid="querySql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryForeginExportCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_third_export_cfg t
+		JOIN t_busi_cust t1 
+    	ON t.`customerId` = t1.`customerId` 
+		<include refid="querySql"/>
+	</select>
+	
+	<sql id="querySql">
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and t.recordId = #{recordId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and t.customerId = #{customerId}
+		</if>
+		<if test="houseType != null and houseType != ''">
+			and t.houseType = #{houseType}
+		</if>
+		<if test="carType != null and carType != ''">
+			and t.carType = #{carType}
+		</if>
+		<if test="insure != null and insure != ''">
+			and t.insure = #{insure}
+		</if>
+		<if test="loanAmount != null and loanAmount != ''">
+			and t.loanAmount = #{loanAmount}
+		</if>
+		<if test="havePinan != null and havePinan != ''">
+			and t.havePinan = #{havePinan}
+		</if>
+		<if test="fundType != null and fundType != ''">
+			and t.fundType = #{fundType}
+		</if>
+		<if test="socialType != null and socialType != ''">
+			and t.socialType = #{socialType}
+		</if>
+		<if test="wagesType != null and wagesType != ''">
+			and t.wagesType = #{wagesType}
+		</if>
+		<if test="exportTitile != null and exportTitile != ''">
+			and t.exportTitile = #{exportTitile}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="incomeData != null and incomeData != ''">
+			and t.incomeData = #{incomeData}
+		</if>
+		</where>
+	</sql>
+</mapper>

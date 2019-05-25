@@ -1,0 +1,6 @@
+spring.profiles.active=dev
+
+###loggin
+logging.config=classpath:log4j2.xml
+
+spring.devtools.restart.trigger-file=trigger.txt

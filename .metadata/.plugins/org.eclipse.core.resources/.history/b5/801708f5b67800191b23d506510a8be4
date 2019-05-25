@@ -1,0 +1,54 @@
+package org.xxjr.cust.util.info;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.xxjr.sys.util.ServiceKey;
+
+public class CouponUtil {
+
+	/**
+	 * 优惠券配置key
+	 */
+	public static final String COUPON_CFG_KEY = "coupon_config_redis_key";
+	
+	public static final int COUPON_REDIS_TIME = 60*60*24*7;
+	
+	
+	/***
+	 * 获取所有有效优惠券配置
+	 */
+	public static List<Map<String,Object>>  getCouponList(){
+		@SuppressWarnings("unchecked")
+		List<Map<String,Object>>  list = ((List<Map<String, Object>>) RedisUtils.getRedisService().get(COUPON_CFG_KEY));
+		if(list==null || list.isEmpty()){
+			list = refershCouponList();
+		}
+		return list;
+	}
+	
+	
+	/***
+	 * 刷新银行信息
+	 */
+	public static List<Map<String,Object>> refershCouponList(){
+		//设置当前城市的信息
+		AppParam param  = new AppParam();
+		param.setService("couponConfigService");
+		param.setMethod("query");
+		param.addAttr("status", "1");
+		param.setOrderBy("amount,createTime");
+		param.setOrderValue("ASC,DESC");
+		param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ ServiceKey.Key_cust));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		RedisUtils.getRedisService().set(COUPON_CFG_KEY, (Serializable)result.getRows(), COUPON_REDIS_TIME);
+		return result.getRows();
+	}
+}

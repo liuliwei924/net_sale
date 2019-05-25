@@ -1,0 +1,1764 @@
+package org.xxjr.store.web.action.account.fx;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.io.FileUtils;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.JsonUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.common.web.session.RequestUtil;
+import org.ddq.common.web.util.FileUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.Resource;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.xxjr.busi.util.kf.ExportUtil;
+import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.info.CustFundUtil;
+import org.xxjr.cust.util.info.CustInfoUtil;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.fx.util.FxConstant;
+import org.xxjr.fx.util.FxCustomerUtil;
+import org.xxjr.fx.util.FxProdUtil;
+import org.xxjr.goods.util.FxFundUtil;
+import org.xxjr.sms.SmsTenXunSendUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSONArray;
+
+/**
+ * 分销系统业务相关
+ * @author Administrator
+ *
+ */
+@Controller()
+@RequestMapping("/account/fx/")
+public class FxBusiAction {
+
+	
+	/**
+	 * 查询申请列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/queryApplyList")
+	@ResponseBody
+	public AppResult queryApplyList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String cardNo = request.getParameter("cardNo");// 申请人身份证号
+			if(!StringUtils.isEmpty(cardNo) && cardNo.contains("*")){
+				cardNo = cardNo.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxFullTel = SysParamsUtil.getStringParamByKey("fxQueryFullTelRole", "18277103611");// 指定手机号，查看完整手机的权限
+			if (!AppProperties.isDebug() && fxFullTel.contains(telephone)) {
+				params.addAttr("roleType", "1");
+				params.addAttr("fxDataManager", "1");
+			} else if (AppProperties.isDebug()) {
+				params.addAttr("roleType", "1");
+				params.addAttr("fxDataManager", "1");
+			}
+			params.setService("fxApplyRecordService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("cardNo", cardNo);
+			params.setOrderBy("applyTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryApplyList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 手动修改申请数据状态
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/updateApplyStatus")
+	@ResponseBody
+	public AppResult updateApplyStatus(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String applyId = request.getParameter("applyId");
+			if (StringUtils.isEmpty(applyId)) {
+				result.setSuccess(false);
+				result.setMessage("申请applyId为空");
+				return result;
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxModifyApplyInfoRole", "18126382005");
+            if(!AppProperties.isDebug() && !fxRoleTel.contains(StringUtil.getString(custInfo.get("telephone")))){
+            	result.setSuccess(false);
+            	result.setMessage("您没有对应的权限！");
+            	return result;
+            }
+			AppParam params = new AppParam();
+			params.setService("fxApplyRecordService");
+			params.setMethod("updateApplyHandle");
+			params.addAttr("applyId", applyId);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "updateApplyStatus error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 后台手动录入保单号
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/addInsNoHandle")
+	@ResponseBody
+	public AppResult addInsNoHandle(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String applyId = request.getParameter("applyId");
+			String insuranceNo = request.getParameter("insuranceNo");
+			if (StringUtils.isEmpty(applyId) || StringUtils.isEmpty(insuranceNo)) {
+				result.setSuccess(false);
+				result.setMessage("缺少必要参数！");
+				return result;
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxModifyApplyInfoRole", "18126382005");
+            if(!AppProperties.isDebug() && !fxRoleTel.contains(StringUtil.getString(custInfo.get("telephone")))){
+            	result.setSuccess(false);
+            	result.setMessage("您没有对应的权限！");
+            	return result;
+            }
+			AppParam params = new AppParam();
+			params.setService("fxApplyRecordService");
+			params.setMethod("addInsNoHandle");
+			params.addAttr("applyId", applyId);
+			params.addAttr("insuranceNo", insuranceNo);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "addInsNoHandle error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询信用卡进度记录
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/queryProcessRecord")
+	@ResponseBody
+	public AppResult queryProcessRecord(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+	        RequestUtil.setAttr(params, request);
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String fxSendAutoRewardManager = SysParamsUtil.getStringParamByKey("fxSendAutoRewardManager", "18126382005");
+			if (fxSendAutoRewardManager.contains(StringUtil.getString(custInfo
+					.get("telephone")))) {
+				params.addAttr("fxSendAutoRewardManager", "1");
+			} else {
+				params.removeAttr("fxSendAutoRewardManager");
+			}
+			params.setService("fxProgressRecordService");
+			params.setMethod("queryShowByPage");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryProcessRecord error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 发放自动佣金奖励
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/sendAutoReward")
+	@ResponseBody
+	public AppResult autoSendReward(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+	        RequestUtil.setAttr(params, request);
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxSendAutoRewardManager = SysParamsUtil.getStringParamByKey("fxSendAutoRewardManager", "18126382005");
+			if (!AppProperties.isDebug() && !fxSendAutoRewardManager.contains(telephone)) {
+				result.setSuccess(false);
+				result.setMessage("您没有发放奖励权限！");
+				return result;
+			} 
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			params.addAttr("operator", realName);
+			params.addAttr("operatorTime", new Date());
+			params.addAttr("auditGrant", "1");
+			params.setService("fxProgressRecordService");
+			params.setMethod("progressSucc");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "sendAutoReward error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 申请审核不通过
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/auditApplyNoPass")
+	@ResponseBody
+	public AppResult auditApplyNoPass(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		String applyId = request.getParameter("applyId");
+		String recordId = request.getParameter("recordId");
+		if(StringUtils.isEmpty(applyId) || StringUtils.isEmpty(recordId)){
+			result.setSuccess(false);
+			result.setMessage("缺少必要参数");
+			return result;
+		}
+		try {
+			AppParam params = new AppParam();
+	        RequestUtil.setAttr(params, request);
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxSendAutoRewardManager = SysParamsUtil.getStringParamByKey("fxSendAutoRewardManager", "18126382005");
+			if (!AppProperties.isDebug() && !fxSendAutoRewardManager.contains(telephone)) {
+				result.setSuccess(false);
+				result.setMessage("您没有审核权限！");
+				return result;
+			} 
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			params.setService("fxProgressRecordService");
+			params.setMethod("auditApplyNoPass");
+			params.addAttr("operator", realName);
+			params.addAttr("operatorTime", new Date());
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "auditApplyNoPass error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		result.setMessage("申请记录已改为未通过");
+		return result;
+	}
+	
+	/**
+	 * 申请审核中
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/auditPassing")
+	@ResponseBody
+	public AppResult auditPassing(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		String applyId = request.getParameter("applyId");
+		String recordId = request.getParameter("recordId");
+		if(StringUtils.isEmpty(applyId) || StringUtils.isEmpty(recordId)){
+			result.setSuccess(false);
+			result.setMessage("缺少必要参数");
+			return result;
+		}
+		try {
+			AppParam params = new AppParam();
+	        RequestUtil.setAttr(params, request);
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxSendAutoRewardManager = SysParamsUtil.getStringParamByKey("fxSendAutoRewardManager", "18126382005");
+			if (!AppProperties.isDebug() && !fxSendAutoRewardManager.contains(telephone)) {
+				result.setSuccess(false);
+				result.setMessage("您没有审核权限！");
+				return result;
+			} 
+			params.setService("fxProgressRecordService");
+			params.setMethod("update");
+			params.addAttr("status", 4);
+			params.addAttr("operator", custInfo.get("realName"));
+			params.addAttr("operatorTime", new Date());
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "auditPassing error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		result.setMessage("已改为申请中状态");
+		return result;
+	}
+	
+	/**
+	 * 修改申请基本信息
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/modifyApplyInfo")
+	@ResponseBody
+	public AppResult modifyApplyInfo(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String applyId = request.getParameter("applyId");
+			String fxApplyName = request.getParameter("fxApplyName");
+			String fxCardNo = request.getParameter("fxCardNo");
+			if (StringUtils.isEmpty(applyId) || StringUtils.isEmpty(fxApplyName)
+					|| StringUtils.isEmpty(fxCardNo)) {
+				result.setSuccess(false);
+				result.setMessage("缺少必要参数！");
+				return result;
+			}
+			// 校验身份证号码格式
+			fxCardNo = fxCardNo.toUpperCase();
+			AppResult validateResult = FxCustomerUtil.validateCardNo(fxCardNo);
+			if (!validateResult.isSuccess()) {
+				return validateResult;
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxModifyApplyInfoRole", "18126382005");
+            if(!fxRoleTel.contains(StringUtil.getString(custInfo.get("telephone")))){
+            	result.setSuccess(false);
+            	result.setMessage("您没有对应的权限！");
+            	return result;
+            }
+			AppParam params = new AppParam();
+			params.setService("fxApplyRecordService");
+			params.setMethod("modifyApplyInfo");
+			params.addAttr("applyId", applyId);
+			params.addAttr("applyName", fxApplyName);// 申请人姓名
+			params.addAttr("cardNo", fxCardNo);// 申请人身份证
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "modifyApplyInfo error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 查询申请详情
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/queryApplyDtl")
+	@ResponseBody
+	public AppResult queryApplyDtl(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String applyId = request.getParameter("applyId");
+			if (StringUtils.isEmpty(applyId)) {
+				result.setSuccess(false);
+				result.setMessage("applyId为空！");
+				return result;
+			}
+			AppParam params = new AppParam();
+			params.setService("fxApplyRecordService");
+			params.setMethod("queryFxTgDtl");
+			params.addAttr("applyId", applyId);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(params);
+			if (queryResult.getRows().size() > 0) {
+				result.putAttr("applyInfo", queryResult.getRow(0));
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryApplyDtl error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 自动佣金发放(按天统计)
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/queryAutoRewardCount")
+	@ResponseBody
+	public AppResult queryAutoRewardCount(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxFundRecordService");
+			params.setMethod("queryAutoRewardByPage");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryAutoRewardCount error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 自动佣金发放(总的统计)
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/queryAutoRewardSummary")
+	@ResponseBody
+	public AppResult queryAutoRewardSummary(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxFundRecordService");
+			params.setMethod("queryAutoRewardSummary");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(params);
+			if(queryResult.getRows().size() > 0){
+				result.putAttr("summary", queryResult.getRow(0));
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryAutoRewardSummary error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 高风险数据处理
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("applyData/excTmpHandle")
+	@ResponseBody
+	public AppResult excTmpHandle(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String fxUpgradeHandleRole = SysParamsUtil.getStringParamByKey("fxUpgradeHandleRole", "1,13");// 分销升级处理权限
+			if(!CustInfoUtil.isFxFullInfoRole(custInfo, fxUpgradeHandleRole)){
+				result.setMessage("抱歉，您没有处理的权限！");
+				result.setSuccess(false);
+				return result;
+			}
+			AppParam params = new AppParam();
+			params.setService("fxExcTmpService");
+			params.setMethod("excDataHandle");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "excTmpHandle error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询资金列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("rewardData/queryFundList")
+	@ResponseBody
+	public AppResult queryFundList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			params.setService("fxFundRecordService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("realName", realName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryFundList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询反馈数据列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/queryFeedbackList")
+	@ResponseBody
+	public AppResult queryFeedbackList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String refererName = request.getParameter("refererName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(refererName) && refererName.contains("*")){
+				refererName = refererName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			params.setService("fxSuccessRecordService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("refererName", refererName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryFeedbackList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 信用卡反馈数据导入
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/feedbackImport")
+	@ResponseBody
+	public AppResult feedbackImport(MultipartHttpServletRequest request) {
+		AppResult result = new AppResult();
+		String[] keys = {"backStatus","prodId","auditDate","applyName","applyTel","cardNo",
+				"applyDate","sex","company","creditAmt","params"};//每列的key
+		try {
+			// 根据用户信息判断是否有导入权限
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据导入权限
+			if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+            	result.setSuccess(false);
+            	result.setMessage("抱歉，您没有导入反馈数据的权限！");
+            	return result;
+            }
+			List<Map<String,Object>> dataList = ExportUtil.readExcel(keys,request);
+			int feedbackImportMaxRecords = SysParamsUtil.getIntParamByKey("feedbackImportMaxRecords", 1000);
+			if(dataList.size() > feedbackImportMaxRecords){
+				result.setSuccess(false);
+				result.setMessage("数据已超过"+feedbackImportMaxRecords+"条，请分批导入！");
+				return result;
+			}
+		
+			for(Map<String,Object> row : dataList){
+				String applyName = StringUtil.getString(row.get("applyName"));// 申请人姓名
+				String auditDateStr = StringUtil.getString(row.get("auditDate"));// 批卡日期
+				String applyDateStr = StringUtil.getString(row.get("applyDate"));// 申请日期
+				String applyTel = StringUtil.getString(row.get("applyTel"));// 申请人电话
+				String cardNo = StringUtil.getString(row.get("cardNo"));// 申请人身份证号码
+				if (StringUtils.isEmpty(applyName)
+						|| StringUtils.isEmpty(StringUtil.getString(row.get("prodId")))
+						|| StringUtils.isEmpty(auditDateStr)
+						|| StringUtils.isEmpty(applyDateStr)
+						|| StringUtils.isEmpty(StringUtil.getString(row.get("backStatus")))) {
+					throw new SysException("申请人姓名、产品ID、批卡日期、申请日期、银行反馈状态不能为空！");
+				}
+				if (StringUtils.isEmpty(applyTel) && StringUtils.isEmpty(cardNo)) {
+					throw new SysException("申请人手机、身份证号码必填一项！");
+				}
+				if (!StringUtils.isEmpty(cardNo) && cardNo.length() <= 4) {
+					throw new SysException("身份证号码格式不对！");
+				}
+				Pattern pattern = Pattern.compile("先生|女士");
+				Matcher matcher = pattern.matcher(applyName);
+				if (matcher.find()){
+					throw new SysException(applyName + "：申请人姓名为先生或女士！");
+				}
+				try {
+					SimpleDateFormat sdf = new SimpleDateFormat(DateUtil.DATE_PATTERN_YYYY_MM_DD);
+					sdf.parse(auditDateStr);
+					sdf.parse(applyDateStr);
+				} catch (ParseException e) {
+					throw new SysException("日期格式不正确：" + auditDateStr + ":" + applyDateStr + " parttern:" + DateUtil.DATE_PATTERN_YYYY_MM_DD);
+				}
+				DateUtil.toDateByString(auditDateStr, DateUtil.DATE_PATTERN_YYYY_MM_DD);// 处理时间格式是否正确
+				String prodId = StringUtil.getString(row.get("prodId"));
+				Map<String,Object> prodInfo = FxProdUtil.getFxProdDetailByCache(prodId);
+				if(null == prodInfo || prodInfo.isEmpty()){
+					throw new SysException("产品ID" + prodId + "信息不存在！");
+				}
+				String amtType = StringUtil.getString(prodInfo.get("amtType"));// 佣金类型
+				String prodName = StringUtil.getString(prodInfo.get("prodName"));// 产品名称
+				row.put("amtType", amtType);
+				row.put("prodName", prodName);
+				row.put("operator", realName);// 操作人
+				row.put("settleAmt", 0);// 结算金额
+				row.put("matchStatus", FxConstant.MATCH_STATUS_2);// 2-待匹配
+			}
+			AppParam params = new AppParam();
+			params.addAttr("dataList", dataList);// 反馈数据
+			params.setService("fxSuccessRecordService");
+			params.setMethod("newBatchImportData");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+			if (!result.isSuccess()) {
+				int errCount = NumberUtil.getInt(result.getAttr("errCount"), 0);
+				String msg = "第" + errCount + "行数据导入失败，错误信息：" +  result.getMessage();
+				result.setSuccess(false);
+				result.setMessage(msg);
+				return result;
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "feedbackImport error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 保险数据导入
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/policyImport")
+	@ResponseBody
+	public AppResult policyImport(MultipartHttpServletRequest request) {
+		AppResult result = new AppResult();
+		String[] keys = {"prodId","applyName","insuranceNo","buyPrice"};//每列的key
+		try {
+			// 根据用户信息判断是否有导入权限
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据导入权限
+			if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+            	result.setSuccess(false);
+            	result.setMessage("抱歉，您没有导入反馈数据的权限！");
+            	return result;
+            }
+			List<Map<String,Object>> dataList = ExportUtil.readExcel(keys,request);
+			int feedbackImportMaxRecords = SysParamsUtil.getIntParamByKey("feedbackImportMaxRecords", 1000);
+			if(dataList.size() > feedbackImportMaxRecords){
+				result.setSuccess(false);
+				result.setMessage("数据已超过"+feedbackImportMaxRecords+"条，请分批导入！");
+				return result;
+			}
+			int maxBuyPrice = SysParamsUtil.getIntParamByKey("fxBuyPriceMaxLimit", 5000);// 分销最大保险费用限制
+			for(Map<String,Object> row : dataList){
+				String prodId = StringUtil.getString(row.get("prodId"));//产品ID
+				String applyName = StringUtil.getString(row.get("applyName"));// 申请人姓名
+				String insuranceNo = StringUtil.getString(row.get("insuranceNo"));// 保单号
+				String buyPriceStr = StringUtil.getString(row.get("buyPrice"));// 保单金额
+				if (StringUtils.isEmpty(applyName)
+						|| StringUtils.isEmpty(prodId)
+						|| StringUtils.isEmpty(insuranceNo)
+						|| StringUtils.isEmpty(buyPriceStr)
+						) {
+					throw new SysException("产品ID、申请人姓名、保单号、保单金额不能为空！");
+				}
+				Pattern pattern = Pattern.compile("先生|女士");
+				Matcher matcher = pattern.matcher(applyName);
+				if (matcher.find()){
+					throw new SysException(applyName + "：申请人姓名为先生或女士！");
+				}
+				Map<String,Object> prodInfo = FxProdUtil.getFxProdDetailByCache(prodId);
+				if(null == prodInfo || prodInfo.isEmpty()){
+					throw new SysException("产品ID" + prodId + "信息不存在！");
+				}
+				double buyPrice = NumberUtil.getDouble(buyPriceStr, 0);
+				if (buyPrice > maxBuyPrice) {
+					throw new SysException(buyPrice +"保费超过最大金额限制，请重新导入！");
+				}
+				String prodName = StringUtil.getString(prodInfo.get("prodName"));// 产品名称
+				row.put("prodName", prodName);
+				row.put("operator", realName);// 操作人
+				row.put("backStatus", "1");// 1-申请成功
+				row.put("matchStatus", FxConstant.MATCH_STATUS_2);// 2-待匹配
+			}
+			AppParam params = new AppParam();
+			params.addAttr("dataList", dataList);// 反馈数据
+			params.setService("fxSuccessRecordService");
+			params.setMethod("policyBatchImport");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+			if (!result.isSuccess()) {
+				int errCount = NumberUtil.getInt(result.getAttr("errCount"), 0);
+				String msg = "第" + errCount + "行数据导入失败，错误信息：" +  result.getMessage();
+				result.setSuccess(false);
+				result.setMessage(msg);
+				return result;
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "policyImport error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+
+	/**
+	 * 贷款数据导入
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/loanImport")
+	@ResponseBody
+	public AppResult loanImport(MultipartHttpServletRequest request) {
+		AppResult result = new AppResult();
+		String[] keys = {"prodId","applyName","applyTel","cardNo",
+				"creditAmt","creditDeadline","creditRate"};//每列的key
+		try {
+			// 根据用户信息判断是否有导入权限
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据导入权限
+			if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+            	result.setSuccess(false);
+            	result.setMessage("抱歉，您没有导入反馈数据的权限！");
+            	return result;
+            }
+			List<Map<String,Object>> dataList = ExportUtil.readExcel(keys,request);
+			int feedbackImportMaxRecords = SysParamsUtil.getIntParamByKey("feedbackImportMaxRecords", 1000);
+			if(dataList.size() > feedbackImportMaxRecords){
+				result.setSuccess(false);
+				result.setMessage("数据已超过"+feedbackImportMaxRecords+"条，请分批导入！");
+				return result;
+			}
+			int maxCreditAmt = SysParamsUtil.getIntParamByKey("fxCreditAmtMaxLimit", 2000000);// 分销最大放款金额限制
+			for(Map<String,Object> row : dataList){
+				String applyName = StringUtil.getString(row.get("applyName"));// 申请人姓名
+				String applyTel = StringUtil.getString(row.get("applyTel"));// 申请人电话
+				String cardNo = StringUtil.getString(row.get("cardNo"));// 申请人身份证号码
+				String prodId = StringUtil.getString(row.get("prodId"));// 产品ID
+				String creditAmtStr = StringUtil.getString(row.get("creditAmt"));// 放款金额
+				String creditRateStr = StringUtil.getString(row.get("creditRate"));// 放款利率
+				if (StringUtils.isEmpty(applyName) || StringUtils.isEmpty(prodId)
+						 || StringUtils.isEmpty(creditAmtStr)) {
+					throw new SysException("申请人姓名、产品ID不能为空！");
+				}
+				if (StringUtils.isEmpty(applyTel) && StringUtils.isEmpty(cardNo)) {
+					throw new SysException("申请人手机、身份证号码必填一项！");
+				}
+				Pattern pattern = Pattern.compile("先生|女士");
+				Matcher matcher = pattern.matcher(applyName);
+				if (matcher.find()){
+					throw new SysException(applyName + "：申请人姓名为先生或女士！");
+				}
+				Map<String,Object> prodInfo = FxProdUtil.getFxProdDetailByCache(prodId);
+				if(null == prodInfo || prodInfo.isEmpty()){
+					throw new SysException("产品ID" + prodId + "信息不存在！");
+				}
+				double creditAmt = new BigDecimal(creditAmtStr).setScale(2,RoundingMode.HALF_UP).doubleValue(); 
+				if (creditAmt > maxCreditAmt) {
+					throw new SysException(creditAmt +"放款金额超过最大金额限制，请重新导入！");
+				}
+				String prodName = StringUtil.getString(prodInfo.get("prodName"));// 产品名称
+				row.put("prodName", prodName);
+				row.put("operator", realName);// 操作人
+				row.put("backStatus", "1");// 1-申请成功
+				if (!StringUtils.isEmpty(creditRateStr)) {
+					row.put("creditRate", new BigDecimal(creditRateStr).setScale(2,RoundingMode.HALF_UP));// 利率转换
+				}
+				row.put("matchStatus", FxConstant.MATCH_STATUS_2);// 2-待匹配
+			}
+			AppParam params = new AppParam();
+			params.addAttr("dataList", dataList);// 反馈数据
+			params.setService("fxSuccessRecordService");
+			params.setMethod("newBatchImportData");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+			if (!result.isSuccess()) {
+				int errCount = NumberUtil.getInt(result.getAttr("errCount"), 0);
+				String msg = "第" + errCount + "行数据导入失败，错误信息：" +  result.getMessage();
+				result.setSuccess(false);
+				result.setMessage(msg);
+				return result;
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "loanImport error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/***
+	 * 反馈数据,Excel导出
+	 * @param request
+	 * @param response
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping("feedbackData/feedbackExport")
+	@ResponseBody
+	public AppResult exportExcel(HttpServletRequest request,HttpServletResponse response) {
+		AppResult result = new AppResult();
+		PrintWriter printWriter = null;
+		OutputStream os = null;
+		try {
+			int exportSize = SysParamsUtil.getIntParamByKey("feedbackDataMaxExportSize", 1000);// 最大导出条数
+			String refererName = request.getParameter("refererName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(refererName) && refererName.contains("*")){
+				refererName = refererName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			printWriter = response.getWriter();
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxSuccessRecordService");
+			params.setMethod("queryViewByPage");
+			params.setEveryPage(exportSize);
+			params.addAttr("refererName", refererName);
+			params.setOrderBy("importTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			if (StringUtils.isEmpty(params.getAttr("exportTitles"))) {
+				result.setMessage("导出Excel表头不能为空！");
+				result.setSuccess(false);
+				return result;
+			}
+			if (StringUtils.isEmpty(params.getAttr("exportParams"))) {
+				result.setMessage("导出查询参数不能为空！");
+				result.setSuccess(false);
+				return result;
+			}
+			String exportTitles = params.removeAttr("exportTitles").toString();
+			String exportParams = params.removeAttr("exportParams").toString();// 查询参数
+			Map<String, Object> queryParams = JsonUtil.getInstance().json2Object(exportParams, Map.class);
+			params.addAttrs(queryParams);
+			result = RemoteInvoke.getInstance().callNoTx(params);
+			
+			// 遍历Excel表头
+			LinkedHashMap<String, String> exchangeTitle = new LinkedHashMap<String, String>();
+			JSONArray titleJson = JSONArray.parseArray(exportTitles);
+			for (int i = 0; i < titleJson.size(); i++) {
+				Map<String,String> titleMap=(Map<String,String>)titleJson.get(i);
+				if(titleMap.containsKey("title")&&titleMap.containsKey("name")){
+					exchangeTitle.put(titleMap.get("title"),titleMap.get("name"));
+				}
+			}
+			String fileName = "银行反馈数据";
+			fileName = fileName + "_" + DateUtil.toStringByParttern(new Date(),
+        			DateUtil.DATE_PATTERNYYYYMMDDHHMMSSSSS) + ".xls";
+			response.reset();// 清空输出流
+			response.setHeader("Content-disposition", "attachment; filename=" + new String(fileName.getBytes(),"iso-8859-1"));
+			// 设定输出文件头
+			response.setContentType("application/msexcel");// 定义输出类型
+			response.setCharacterEncoding("UTF-8");
+			os = response.getOutputStream();
+			ExportUtil.writeExcel(os, exchangeTitle, result.getRows());// 数据导出处理
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e,"FxBusiAction exportExcel error");
+			ExceptionUtil.setExceptionMessage(e, result,DuoduoSession.getShowLog());
+			printWriter.print("error exportExcel:" + e.getMessage());
+			printWriter.flush();
+		} finally {
+			FileUtil.closeQuietly(printWriter);
+			FileUtil.closeQuietly(os);
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 反馈数据结算佣金
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/settleAmount")
+	@ResponseBody
+	public AppResult settleAmount(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		String fxSettleAmountOperFlag = (String)RedisUtils.getRedisService().get("fxSettleAmountOperFlag");
+		if("1".equals(fxSettleAmountOperFlag)){
+			result.setSuccess(false);
+			result.setMessage("结算操作正在进行中，请稍后！");
+			return result;
+		}
+		RedisUtils.getRedisService().set("fxSettleAmountOperFlag", "1");
+		String customerId = StoreUserUtil.getCustomerId(request);
+		Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+		String realName = StringUtil.getString(custInfo.get("realName"));
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxSuccessRecordService");
+			params.setMethod("settleAmount");
+			params.addAttr("operator", realName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+			RedisUtils.getRedisService().set("fxSettleAmountOperFlag", "0");
+			if (result.isSuccess()) {
+				String errorMsg = StringUtil.getString(result.getAttr("errorMsg"));
+				if (!StringUtils.isEmpty(errorMsg)) {
+					result.setSuccess(false);
+					result.setMessage(errorMsg);
+					return result;
+				}
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "settleAmount error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 反馈数据人工匹配
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("feedbackData/manualMatch")
+	@ResponseBody
+	public AppResult manualMatch(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		String succId = request.getParameter("succId");
+		String fxApplyName = request.getParameter("fxApplyName");
+		String fxApplyTel = request.getParameter("fxApplyTel");
+		String prodId = request.getParameter("prodId");
+		if (StringUtils.isEmpty(succId) || StringUtils.isEmpty(fxApplyName)
+				|| StringUtils.isEmpty(fxApplyTel)
+				|| StringUtils.isEmpty(prodId)) {
+			result.setSuccess(false);
+			result.setMessage("缺少必要参数！");
+			return result;
+		}
+		String customerId = StoreUserUtil.getCustomerId(request);
+		Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+		String realName = StringUtil.getString(custInfo.get("realName"));
+		String telephone = StringUtil.getString(custInfo.get("telephone"));
+		String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据权限
+		if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+        	result.setSuccess(false);
+        	result.setMessage("抱歉，您没有人工匹配的权限！");
+        	return result;
+        }
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxSuccessRecordService");
+			params.setMethod("manualMatch");
+			params.addAttr("succId", succId);
+			params.addAttr("fxApplyName", fxApplyName);// 申请人姓名
+			params.addAttr("fxApplyTel", fxApplyTel);// 申请人手机号
+			params.addAttr("prodId", prodId);// 产品id
+			params.addAttr("operator", realName);// 操作人
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "manualMatch error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询提现数据
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("withdrawData/queryWithdrawList")
+	@ResponseBody
+	public AppResult queryWithdrawList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			params.setService("fxWithdrawService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("realName", realName);
+			params.setOrderBy("createTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryWithdrawList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 提现申请审核通过
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("withdrawData/auditPass")
+	@ResponseBody
+	public AppResult auditPass(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			
+			AppParam params = new AppParam();
+			params.setService("fxWithdrawService");
+			params.setMethod("auditAll");
+			params.addAttr("ids", request.getParameter("ids"));
+			params.addAttr("auditBy", realName);// 审核人
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "withdraw auditPass error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 提现申请取消(审核不通过)
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("withdrawData/auditNoPass")
+	@ResponseBody
+	public AppResult auditNoPass(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			params.setService("fxWithdrawService");
+			params.setMethod("auditNoPass");
+			params.addAttr("withdrawId", request.getParameter("withdrawId"));
+			params.addAttr("auditDesc", request.getParameter("auditDesc"));
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "withdraw auditNoPass error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 提现发放佣金
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("withdrawData/sendReward")
+	@ResponseBody
+	public AppResult sendReward(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String withdrawIds = request.getParameter("withdrawIds");
+			if (StringUtils.isEmpty(withdrawIds)) {
+				result.setSuccess(false);
+				result.setMessage("缺少必要参数！");
+				return result;
+			}
+			boolean canSendFxRewardFlag = SysParamsUtil.getBoleanByKey("canSendFxRewardFlag", true);// 是否可以发佣金
+			if(!canSendFxRewardFlag){
+				result.setSuccess(false);
+				result.setMessage("发放佣金功能暂不可用，请等待后续通知！");
+				return result;
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据导入权限
+			if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+            	result.setSuccess(false);
+            	result.setMessage("抱歉，您没有佣金发放权限！");
+            	return result;
+            }
+			String realName = StringUtil.getString(custInfo.get("realName"));
+//			boolean fxWeixinEnterprisePay = SysParamsUtil.getBoleanByKey("fxWeixinEnterprisePay", false);//分销微信企业支付
+//			if(fxWeixinEnterprisePay){
+//				String fxGzhId = SysParamsUtil.getStringParamByKey(SysParamsUtil.KEY_FX_GZHID, "6");
+//				Map<String,Object> gzhInfo = ConfigUtil.getGzhInfo(fxGzhId);
+//				result = FxFundUtil.batchSendReward(withdrawIds,realName,gzhInfo);
+//				return result;
+//			}
+			result = FxFundUtil.batchSendReward(withdrawIds,realName,null);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "sendReward error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 提现查询佣金交易状态
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("withdrawData/querySendStatus")
+	@ResponseBody
+	public AppResult querySendStatus(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String withdrawIds = request.getParameter("withdrawIds");
+			String queryType = request.getParameter("queryType");// 查询类型
+			if (StringUtils.isEmpty(withdrawIds) || StringUtils.isEmpty(queryType)) {
+				result.setSuccess(false);
+				result.setMessage("缺少必要参数！");
+				return result;
+			}
+			if ("fx".equals(queryType)) {// 分销提现交易状态查询
+				result = FxFundUtil.batchQueryRewardStatus(withdrawIds);
+			} else if ("tj".equals(queryType)) {// 推荐贷款提现交易状态查询
+				result = CustFundUtil.batchQueryRewardStatus(withdrawIds);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "querySendStatus error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 下载Excel模板
+	 * @param request
+	 * @param response
+	 */
+	@RequestMapping("feedbackData/getFeedbackTemp")
+	public void getFeedbackTemp(HttpServletRequest request,HttpServletResponse response){
+		try {
+			Resource resource = new DefaultResourceLoader().getResource("classpath:/config/bankDataTemp.xlsx");
+			response.setHeader("Content-disposition", "attachment; filename=bankDataTemp.xlsx");
+			response.setContentType("application/excel");// 定义输出类型
+			response.setContentType("application/octet-stream;charset=UTF-8");
+			ServletOutputStream out = response.getOutputStream();
+			out.write(FileUtils.readFileToByteArray(resource.getFile()));
+            out.flush();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	
+	/**
+	 * 查询升级活动记录列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("activityReward/queryRewardRecord")
+	@ResponseBody
+	public AppResult queryRewardRecord(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxUpgradeRecordService");
+			params.setMethod("queryActivityByPage");
+			params.addAttr("realName", realName);
+			params.setOrderBy("createTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryRewardRecord error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 升级活动总的统计
+	 */
+	@RequestMapping("activityReward/queryUpgradeActivitySum")
+	@ResponseBody
+	public AppResult queryUpgradeActivitySum(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			Date now = new Date();
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxUpgradeRecordService");
+			params.setMethod("queryActivitySum");
+			params.addAttr("todayStartTime", DateUtil.getDayFirstSecond(now));
+			params.addAttr("todayEndTime", DateUtil.getDayLastSecond(now));
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(params);
+			if(queryResult.getRows().size() > 0){
+				result.putAttr("summary", queryResult.getRow(0));
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryFxLotterySum error");
+			ExceptionUtil.setExceptionMessage(e, result,
+					DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询红包领取记录
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("activityReward/queryLotteryRecord")
+	@ResponseBody
+	public AppResult queryLotteryRecord(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxLotteryRecordService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("realName", realName);
+			params.setOrderBy("createTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryLotteryRecord error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询分销资金池列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxFundPool/queryFundPoolList")
+	@ResponseBody
+	public AppResult queryFundPoolList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			params.setService("fxFundPoolService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("realName", realName);
+			params.setOrderBy("createTime");
+			params.setOrderValue("desc");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryFundPoolList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 资金池数据,预结算操作
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxFundPool/preSettleHandle")
+	@ResponseBody
+	public AppResult preSettleHandle(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));// 操作人
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String fxRoleTel = SysParamsUtil.getStringParamByKey("fxFeedbackImportRole", "18277103611");// 分销反馈数据导入权限
+			if(!AppProperties.isDebug() && !fxRoleTel.contains(telephone)){
+            	result.setSuccess(false);
+            	result.setMessage("您没有预结算权限！");
+            	return result;
+            }
+			
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxFundPoolService");
+			params.setMethod("preSettleHandle");
+			params.addAttr("operator", realName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "preSettleHandle error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 资金池数据检测
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxFundPool/poolDataCheck")
+	@ResponseBody
+	public AppResult poolDataCheck(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));// 操作人
+			
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxFundPoolService");
+			params.setMethod("poolDataCheck");
+			params.addAttr("operator", realName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "poolDataCheck error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 资金池数据结算
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxFundPool/poolDataSettle")
+	@ResponseBody
+	public AppResult poolDataSettle(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));// 操作人
+			
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxFundPoolService");
+			params.setMethod("poolDataSettle");
+			params.addAttr("operator", realName);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "poolDataSettle error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	
+	/***************** 推荐贷款start  **********************/
+	/**
+	 * 查询推荐提现列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("tjWithdrawtList/queryTjWithdrawList")
+	@ResponseBody
+	public AppResult queryTjWithdrawList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("withdrawService");
+			params.setMethod("queryShowByPage");
+			params.setOrderBy("createTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryTjWithdrawList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 查询锁粉记录列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fansRecord/queryFansList")
+	@ResponseBody
+	public AppResult queryFansList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			String realName = request.getParameter("realName");// 用户姓名或手机号
+			if(!StringUtils.isEmpty(realName) && realName.contains("*")){
+				realName = realName.replaceFirst("\\*", "\\%").replaceAll("\\*", "");
+			}
+			params.setService("fxFansRecordService");
+			params.setMethod("queryViewByPage");
+			params.addAttr("realName", realName);
+			params.setOrderBy("createTime");
+			params.setOrderValue("DESC");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryFansList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 推荐贷款提现申请审核通过
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("tjWithdrawtList/tjAuditPass")
+	@ResponseBody
+	public AppResult tjAuditPass(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			
+			AppParam params = new AppParam();
+			params.setService("withdrawService");
+			params.setMethod("tjAuditAll");
+			params.addAttr("ids", request.getParameter("ids"));
+			params.addAttr("auditBy", realName);// 审核人
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "withdraw tjAuditPass error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 推荐贷款提现申请取消(审核不通过)
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("tjWithdrawtList/tjAuditNoPass")
+	@ResponseBody
+	public AppResult tjAuditNoPass(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			params.setService("withdrawService");
+			params.setMethod("tjAuditNoPass");
+			params.addAttr("withdrawId", request.getParameter("withdrawId"));
+			params.addAttr("auditDesc", request.getParameter("auditDesc"));
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "withdraw tjAuditNoPass error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 推荐贷款发放佣金
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("tjWithdrawtList/tjSendReward")
+	@ResponseBody
+	public AppResult tjSendReward(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String withdrawIds = request.getParameter("withdrawIds");
+			if (StringUtils.isEmpty(withdrawIds)) {
+				result.setSuccess(false);
+				result.setMessage("缺少必要参数！");
+				return result;
+			}
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			result = CustFundUtil.batchSendReward(withdrawIds,realName);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "tjSendReward error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	/***************** 推荐贷款end  **********************/
+	
+	/***************** 客户分配给讲师start  **********************/
+	/**
+	 * 已分配给讲师的客户列表
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxTrainAllot/queryAllotList")
+	@ResponseBody
+	public AppResult queryAllotList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			
+			String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String telephone = StringUtil.getString(custInfo.get("telephone"));
+			String sysFullInfoRoles = SysParamsUtil.getStringParamByKey("sysFullInfoRole", "1,13");// 可查看完整手机号的权限
+			if(CustInfoUtil.isFxFullInfoRole(custInfo, sysFullInfoRoles)){
+				params.addAttr("roleType", "1");
+			}
+			params.setService("fxTrainAllotService");
+			params.setMethod("queryShowByPage");
+			params.addAttr("traninTel", telephone);// 讲师手机号 
+			params.addAttr("startJoinTime", SysParamsUtil.getStringParamByKey(
+					"fxTrainStartJoinTime", "2018-10-19"));// 参与开始时间 
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryAllotList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 讲师像指定用户发送短信消息
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxTrainAllot/sendSms")
+	@ResponseBody
+	public AppResult sendSms(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String allotIds = request.getParameter("allotIds");// 分配id
+		    if (StringUtils.isEmpty(allotIds)){
+		    	result.setSuccess(false);
+            	result.setMessage("缺少必传参数！");
+            	return result;
+		    }
+		    String customerId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String realName = StringUtil.getString(custInfo.get("realName"));
+			
+			AppParam param = new AppParam();
+			param.setService("fxTrainAllotService");
+			param.setMethod("sendSms");
+			param.addAttr("allotIds", allotIds);
+			param.addAttr("sendBy", realName);// 发送人
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(param);
+			if (result.isSuccess()) {
+				@SuppressWarnings("unchecked")
+				List<String> list = (List<String>)result.getAttr("telList");
+				// 给客户发送短信
+				for (String telephone : list) {
+					SmsTenXunSendUtil.sendTplSms(1400143663,
+							"fdb1f1a48d693ed8aa3b2409679a1d63", "分销", telephone,
+							SysParamsUtil.getStringParamByKey("fxAllotTempId",
+									"210536"), new ArrayList<String>());
+				}
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "sendSms error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 讲师核卡统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxTrainAllot/trainCountList")
+	@ResponseBody
+	public AppResult trainCountList(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam param = new AppParam();
+			param.setService("fxTrainAllotService");
+			param.setMethod("trainCountList");
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().call(param);
+			if (result.isSuccess()) {
+				@SuppressWarnings("unchecked")
+				List<String> list = (List<String>)result.getAttr("telList");
+				// 给客户发送短信
+				for (String telephone : list) {
+					SmsTenXunSendUtil.sendTplSms(1400143663,
+							"fdb1f1a48d693ed8aa3b2409679a1d63", "分销", telephone,
+							SysParamsUtil.getStringParamByKey("fxAllotTempId",
+									"210536"), new ArrayList<String>());
+				}
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "sendSms error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/***************** 客户分配给讲师end  **********************/
+	
+	/**
+	 * 培训评价
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxEval/evalData")
+	@ResponseBody
+	public AppResult evalData(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxTrainEvalService");
+			params.setMethod("queryShowByPage");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "evalData error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 培训评价统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("fxEval/evalCount")
+	@ResponseBody
+	public AppResult evalCount(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("fxTrainEvalService");
+			params.setMethod("queryEvalTotalByPage");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "evalCount error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 讲师提成统计
+	 */
+	@RequestMapping("fxEval/queryTrainingFee")
+	@ResponseBody
+	public AppResult queryTrainingFee(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("sumTrainerPerformanceService");
+			params.setMethod("queryByPage");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryTrainingFee error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+}

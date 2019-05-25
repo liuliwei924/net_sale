@@ -1,0 +1,72 @@
+package org.xxjr.goods.util;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+public class PartnerUtil {
+	/** 合作商缓存key  **/
+	private final static String KEY_SHOP_PARTNER = "key_shop_partner";
+	
+	/**
+	 * 查询合作商
+	 * @param gzhId
+	 */
+	public static Map<String, Object> getPartner(String partnerCode){
+		if(StringUtils.isEmpty(partnerCode)){
+			return null;
+		}
+		List<Map<String, Object>> list =  queryList();
+		for (int i = 0; i < list.size(); i++) {
+			if(partnerCode.equals(list.get(i).get("partnerCode").toString())){
+				return list.get(i);
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询合作商
+	 * @param gzhId
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> queryList(){
+		List<Map<String, Object>> list = (List<Map<String, Object>>) RedisUtils
+				.getRedisService().get(KEY_SHOP_PARTNER);
+		if(list == null){
+			list = refreshPartnerList();
+		}
+		return list;
+	}
+
+	
+	
+	/**
+	 * 刷新资讯类型
+	 * @param gzhId
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshPartnerList(){
+		AppParam param = new AppParam();
+		param.setService("partnerService");
+		param.setMethod("query");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sho));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() > 0){
+			List<Map<String, Object>> info = result.getRows();
+			RedisUtils.getRedisService().set(KEY_SHOP_PARTNER, (Serializable)info, 3600 * 64);
+			return info;
+		}
+		return null;
+	}
+}

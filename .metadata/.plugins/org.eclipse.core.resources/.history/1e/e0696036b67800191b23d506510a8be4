@@ -1,0 +1,262 @@
+package org.xxjr.busi.util.wz;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.BorrowRobUtils;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.wx.utils.WXRequestUtil;
+import org.xxjr.wx.utils.WXUtil;
+
+public class WeiZhanUtil {
+	
+	/**
+	 * 是否可以修改名片
+	 * @param gzhId
+	 * @param wxId
+	 * @return
+	 */
+	public static boolean canEditCard(Object customerId){
+		AppParam param = new AppParam();
+		param.setService("cardInfoLogService");
+		param.setMethod("query");
+		param.addAttr("customerId", customerId);
+		param.addAttr("checkCanEdit", "1");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() >= 4){
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * 用户微名片信息
+	 * @param openid
+	 * @param gzhId
+	 */
+	public static Map<String,Object> queryCustCard(Object customerId){
+		AppParam param = new AppParam();
+		param.setService("wzCustService");
+		param.setMethod("query");
+		param.addAttr("customerId", customerId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 根据unionid查微名片信息
+	 * @param unionid
+	 * @param gzhId
+	 */
+	public static Map<String,Object> queryWzInfoByUnionid(Object unionid, Object gzhId){
+		AppParam param = new AppParam();
+		param.setService("busiCustService");
+		param.setMethod("query");
+		param.addAttr("unionid", unionid);
+		param.addAttr("gzhId", gzhId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return null;
+	}
+	
+	/**
+	 * 查询用户微站个人风采图片
+	 * @param customerId
+	 */
+	public static List<Map<String,Object>> queryCustImage(Object customerId){
+		AppParam param = new AppParam();
+		param.setService("wzImageService");
+		param.setMethod("query");
+		param.addAttr("customerId", customerId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		return result.getRows();
+	}
+	
+	/**
+	 * 查询文章内容
+	 * @param type
+	 * @param gzhId
+	 * @param customerId
+	 * @param articleId
+	 * @return
+	 */
+	public static Map<String,Object> queryArticleInfo(String type, Object gzhId, Object customerId, Object articleId){
+		if("0".equals(type)){
+			return querySysNovel(gzhId, articleId);
+		}else if("1".equals(type)){
+			return queryCustArticle(customerId, articleId);
+		}
+		return new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 查询原创文章
+	 * @param customerId
+	 * @param articleId
+	 * @return
+	 */
+	public static Map<String,Object> queryCustArticle(Object customerId, Object articleId){
+		AppParam param = new AppParam();
+		param.setService("wzArticleService");
+		param.setMethod("query");
+		param.addAttr("articleId", articleId);
+		param.addAttr("customerId", customerId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 查询系统资讯
+	 * @param gzhId
+	 * @param articleId
+	 * @return
+	 */
+	public static Map<String,Object> querySysNovel(Object gzhId, Object novelId){
+		AppParam param = new AppParam();
+		param.setService("zixunService");
+		param.setMethod("query");
+		param.addAttr("novelId", novelId);
+		param.addAttr("gzhId", gzhId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		if(result.getRows().size() > 0){
+			return result.getRow(0);
+		}
+		return new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 微站会员 微信支付
+	 * @param params
+	 * @return
+	 */
+	public static AppResult wxPay(AppParam params) {
+		AppResult result = new AppResult();
+		Object customerId = params.getAttr("customerId");
+		Object amountObj = params.getAttr("amount");
+		Object payType = params.getAttr("payType");
+		if(StringUtils.isEmpty(customerId) || StringUtils.isEmpty(amountObj)|| StringUtils.isEmpty(payType)){
+			result.setSuccess(Boolean.FALSE);
+			result.setMessage("缺少参数：用户ID或金额或支付类型");
+			return result;
+		}
+		BigDecimal payAmount = new BigDecimal(amountObj.toString()).setScale(2, RoundingMode.HALF_UP);
+		// 微信支付
+		Object openid = params.getAttr("openid");
+		Object gzhId = params.getAttr("gzhId");
+		Object appId = params.getAttr("appId");
+		Object apiKey = params.getAttr("apiKey");
+		Object mchId = params.getAttr("mchId");
+		//测试
+		boolean fromApp = false;
+		AppParam wxpayOrderParam = new AppParam(AppProperties.getProperties(
+													DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_zx),
+											   "wxpayOrderService","insert");
+		if("2".equals(payType.toString())){
+			wxpayOrderParam.addAttr("businessId", "0");
+		}else if("3".equals(payType.toString())){
+			wxpayOrderParam.addAttr("businessId", params.getAttr("businessId"));
+		}
+		wxpayOrderParam.addAttr("customerId", customerId);
+		wxpayOrderParam.addAttr("gzhId", gzhId);
+		wxpayOrderParam.addAttr("isApp", fromApp ? "1" : "0");
+		wxpayOrderParam.addAttr("payType", params.getAttr("payType"));
+		wxpayOrderParam.addAttr("openid", openid);
+		
+		wxpayOrderParam.addAttr("amount", amountObj);
+		wxpayOrderParam.addAttr("status",0);
+		wxpayOrderParam.addAttr("createTime", new Date());
+		AppResult wxpayOrderResult =  RemoteInvoke.getInstance().call(wxpayOrderParam);
+		
+		if(wxpayOrderResult.isSuccess()){
+			Object orderId = wxpayOrderResult.getAttr("orderId");
+			String notifyUrl = "https://phone.xxjr.com/busi/Thrid/Sys/wxPayBack/"+gzhId;
+			AppParam param = new AppParam();
+			param.addAttr("appid", appId);
+			param.addAttr("mch_id", mchId);
+			param.addAttr("apiKey", apiKey);
+			param.addAttr("openid", openid);
+			param.addAttr("trade_type", "JSAPI");
+			param.addAttr("notify_url", notifyUrl); 
+			param.addAttr("body", "小小金融-信息服务费");
+			param.addAttr("out_trade_no", "wz"+orderId);
+			param.addAttr("total_fee", payAmount.multiply(new BigDecimal(100)).intValue());
+			param.addAttr("attach", orderId);
+			Map<String, String> payInfo = new HashMap<String, String>();
+			try {
+				payInfo = WXRequestUtil.unifiedOrder(param);
+			} catch (Exception e) {
+				throw new SysException("微信支付请求失败！");
+			}
+			Object prepayId = payInfo.get("prepay_id");
+			LogerUtil.error(BorrowRobUtils.class,"payInfo=:" + payInfo);
+			if(StringUtils.isEmpty(prepayId)){
+				result.setSuccess(false);
+				result.setMessage("获取微信预支付订单失败，请稍后再试！");
+				return result;
+			}
+			
+			long timeStamp = System.currentTimeMillis() / 1000;
+			String nonceStr =  WXUtil.getNonceStr();
+			Map<String,Object> signParam = new HashMap<String, Object>();
+			String sign = null;
+			if(fromApp){
+				signParam.put("appid", appId);
+				signParam.put("prepayid", prepayId);
+				signParam.put("partnerid", mchId);
+				signParam.put("noncestr", nonceStr);
+				signParam.put("package", "Sign=WXPay");
+				signParam.put("timestamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}else{
+				signParam.put("appId", appId);
+				signParam.put("nonceStr", nonceStr);
+				signParam.put("signType", "MD5");
+				signParam.put("package", "prepay_id="+prepayId);
+				signParam.put("timeStamp", timeStamp);
+				sign = WXUtil.getSignData(signParam, "sign", "&", apiKey.toString());
+			}
+			Map<String,Object> payParams = new HashMap<String, Object>();
+			payParams.put("orderId", orderId);
+			payParams.put("appId", appId);
+			payParams.put("sign", sign);
+			payParams.put("prepayId", prepayId);
+			payParams.put("timeStamp", timeStamp);
+			payParams.put("nonceStr", nonceStr);
+			payParams.put("mchId", mchId);
+			result.putAttr("payParams", payParams);
+		}
+		return result;
+	}
+}

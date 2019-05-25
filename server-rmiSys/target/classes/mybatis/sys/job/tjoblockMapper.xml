@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JOBLOCK">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			lockId as "lockId",
+			businessType as "businessType",  <!-- 业务类型 -->
+			businessId as "businessId",  <!-- 业务ID号 -->
+			serverName as "serverName",  <!-- 服务名称 -->
+			DATE_FORMAT(startTime,'%Y-%m-%d %H:%i:%s') as "startTime", <!-- 开始时间 -->
+			executeDesc as "executeDesc" <!-- 执行描述 -->
+		FROM t_job_lock
+		<where>
+			<if test="lockId != null and lockId != ''">
+			  and lockId = #{lockId}
+			 </if>
+			<if test="businessType != null and businessType != ''">
+				and businessType = #{businessType}
+			</if>
+			<if test="businessId != null and businessId != ''">
+				and businessId = #{businessId}
+			</if>
+			<if test="serverName != null and serverName != ''">
+				and serverName = #{serverName}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				and startTime = #{startTime}
+			</if>
+			<if test="executeDesc != null and executeDesc != ''">
+				and executeDesc = #{executeDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_job_lock 
+		<where>
+		<if test="lockId != null and lockId != ''">
+		    and lockId = #{lockId}
+		 </if>
+		<if test="businessType != null and businessType != ''">
+			and businessType = #{businessType}
+		</if>
+		<if test="businessId != null and businessId != ''">
+			and businessId = #{businessId}
+		</if>
+		<if test="serverName != null and serverName != ''">
+			and serverName = #{serverName}
+		</if>
+		<if test="startTime != null and startTime != ''">
+			and startTime = #{startTime}
+		</if>
+		<if test="executeDesc != null and executeDesc != ''">
+			and executeDesc = #{executeDesc}
+		</if>
+		</where>
+	</select>
+
+	<select id="queryoften" resultType="map" parameterType="map">
+		SELECT
+			lockId, 
+			businessType, 
+			businessId,
+			serverName,
+			executeDesc
+		FROM t_job_lock
+		WHERE
+			 <![CDATA[startTime <= DATE_ADD(NOW(),INTERVAL -30 MINUTE)]]>  
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="lockId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_job_lock (
+			businessType,
+			businessId,
+			serverName,
+			startTime,
+			executeDesc
+		)
+		VALUES ( 
+			#{businessType, jdbcType=VARCHAR}, 
+			#{businessId, jdbcType=VARCHAR}, 
+			#{serverName, jdbcType=VARCHAR}, 
+			now(), 
+			#{executeDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_job_lock 
+		<where> 
+			lockId = #{lockId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_job_lock  
+		<set>
+			<if test="businessType != null">
+				businessType = #{businessType, jdbcType=VARCHAR},  
+			</if>
+			<if test="businessId != null">
+				businessId = #{businessId, jdbcType=VARCHAR},  
+			</if>
+			<if test="serverName != null">
+				serverName = #{serverName, jdbcType=VARCHAR},  
+			</if>
+			<if test="startTime != null">
+				startTime = #{startTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="executeDesc != null">
+				executeDesc = #{executeDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  lockId = #{lockId}
+		</where>
+	</update>
+</mapper>

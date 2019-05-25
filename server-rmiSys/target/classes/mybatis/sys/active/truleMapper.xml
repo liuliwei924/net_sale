@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RULE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			ruleId as "ruleId",
+			activeId as "activeId",  <!-- 活动ID -->
+			ruleIndex as "ruleIndex",  <!-- 规则顺序 -->
+			rewardId as "rewardId",  <!-- 奖励类型 -->
+			rewardValue as "rewardValue",  <!-- 奖励值 -->
+			rewardDesc as "rewardDesc" 
+		FROM t_rule
+		<where>
+			<if test="ruleId != null and ruleId != ''">
+			  and ruleId = #{ruleId}
+			 </if>
+			<if test="activeId != null and activeId != ''">
+				and activeId = #{activeId}
+			</if>
+			<if test="ruleIndex != null and ruleIndex != ''">
+				and ruleIndex = #{ruleIndex}
+			</if>
+			<if test="rewardId != null and rewardId != ''">
+				and rewardId = #{rewardId}
+			</if>
+			<if test="rewardValue != null and rewardValue != ''">
+				and rewardValue = #{rewardValue}
+			</if>
+			<if test="rewardDesc != null and rewardDesc != ''">
+				and rewardDesc = #{rewardDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_rule 
+		<where>
+		<if test="ruleId != null and ruleId != ''">
+		    and ruleId = #{ruleId}
+		 </if>
+		<if test="activeId != null and activeId != ''">
+			and activeId = #{activeId}
+		</if>
+		<if test="ruleIndex != null and ruleIndex != ''">
+			and ruleIndex = #{ruleIndex}
+		</if>
+		<if test="rewardId != null and rewardId != ''">
+			and rewardId = #{rewardId}
+		</if>
+		<if test="rewardValue != null and rewardValue != ''">
+			and rewardValue = #{rewardValue}
+		</if>
+		<if test="rewardDesc != null and rewardDesc != ''">
+			and rewardDesc = #{rewardDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="ruleId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_rule (
+			activeId,
+			ruleIndex,
+			rewardId,
+			rewardValue,
+			rewardDesc
+		)
+		VALUES ( 
+			#{activeId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{ruleIndex, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{rewardId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{rewardValue, jdbcType=VARCHAR}, 
+			#{rewardDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_rule 
+		<where> 
+			ruleId = #{ruleId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_rule  
+		<set>
+			<if test="activeId != null">
+				activeId = #{activeId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="ruleIndex != null">
+				ruleIndex = #{ruleIndex, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardId != null">
+				rewardId = #{rewardId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="rewardValue != null">
+				rewardValue = #{rewardValue, jdbcType=VARCHAR},  
+			</if>
+			<if test="rewardDesc != null">
+				rewardDesc = #{rewardDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  ruleId = #{ruleId}
+		</where>
+	</update>
+</mapper>

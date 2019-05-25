@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FUNDTYPE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			fundType as "fundType",
+			fundName as "fundName",  <!-- 类型名称 -->
+			amountType as "amountType",  <!-- 操作类型(0 其他 1 充值 2 提现 3 投资 4回款 5 奖励) -->
+			fundDesc as "fundDesc",  <!-- 类型描述 -->
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime", <!-- 创建时间 -->
+			createBy as "createBy" <!-- 创建人 -->
+		FROM t_fund_type
+		<where>
+			<if test="fundType != null and fundType != ''">
+			  and fundType = #{fundType}
+			 </if>
+			<if test="fundName != null and fundName != ''">
+				and fundName = #{fundName}
+			</if>
+			
+			<if test="likeFundName != null and likeFundName != ''">
+				and ( fundName like '%${amountType}%' or fundType like '%${amountType}%' )
+			</if>
+			
+			<if test="amountType != null and amountType != ''">
+				and amountType = #{amountType}
+			</if>
+			<if test="fundDesc != null and fundDesc != ''">
+				and fundDesc = #{fundDesc}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="createBy != null and createBy != ''">
+				and createBy = #{createBy}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_fund_type 
+		<where>
+		<if test="fundType != null and fundType != ''">
+		    and fundType = #{fundType}
+		 </if>
+		 <if test="likeFundName != null and likeFundName != ''">
+			and ( fundName like '%${amountType}%' or fundType like '%${amountType}%' )
+		</if>
+		<if test="fundName != null and fundName != ''">
+			and fundName = #{fundName}
+		</if>
+		<if test="amountType != null and amountType != ''">
+			and amountType = #{amountType}
+		</if>
+		<if test="fundDesc != null and fundDesc != ''">
+			and fundDesc = #{fundDesc}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="createBy != null and createBy != ''">
+			and createBy = #{createBy}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_fund_type (
+			fundType,
+			fundName,
+			amountType,
+			fundDesc,
+			createTime,
+			createBy
+		)
+		VALUES ( 
+			#{fundType, jdbcType=VARCHAR}, 
+			#{fundName, jdbcType=VARCHAR}, 
+			<if test="amountType !=null ">
+			#{amountType, jdbcType=VARCHAR}, 
+			</if>
+			<if test="amountType ==null ">
+			0 ,
+			</if>
+			#{fundDesc, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{createBy, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_fund_type 
+		<where> 
+			fundType = #{fundType}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_fund_type  
+		<set>
+			<if test="fundName != null">
+				fundName = #{fundName, jdbcType=VARCHAR},  
+			</if>
+			<if test="amountType != null">
+				amountType = #{amountType, jdbcType=VARCHAR},  
+			</if>
+			<if test="fundDesc != null">
+				fundDesc = #{fundDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  fundType = #{fundType}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTLOANCONTACT">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			contactId,
+			customerId, 
+			name, 
+			telephone, 
+			relation
+		FROM t_cust_loan_contact
+		<include refid="queryWhereSql"></include>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_loan_contact 
+		<include refid="queryWhereSql"></include>
+	</select>
+
+	<sql id="queryWhereSql">
+		<where>
+			<if test="contactId != null and contactId != ''">
+			    and contactId = #{contactId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="name != null and name != ''">
+				and name = #{name}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="relation != null and relation != ''">
+				and relation = #{relation}
+			</if>
+			</where>
+	</sql>
+	
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="contactId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_loan_contact (
+			customerId,
+			name,
+			telephone,
+			relation
+		)
+		VALUES ( 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{name, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			<if test="relation !=null ">
+			#{relation, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="relation ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_cust_loan_contact 
+		<where> 
+			contactId = #{contactId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_cust_loan_contact  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="name != null">
+				name = #{name, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="relation != null">
+				relation = #{relation, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  contactId = #{contactId}
+		</where>
+	</update>
+</mapper>

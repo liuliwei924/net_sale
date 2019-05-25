@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="STOREOPTEXT">
+
+	<select id="queryAllotCount" resultType="map" parameterType="map">
+		SELECT COUNT(1) as 'totalCount', orderType FROM t_borrow_apply n LEFT JOIN t_borrow_base n1 ON n.applyId = n1.applyId 
+		WHERE 
+			<![CDATA[n.createTime>=#{startTime} AND n.createTime<=#{endTime}]]>
+			AND n.`status` in(0,2,10) 
+			AND n.lastStore IS NULL
+			AND FIND_IN_SET(IFNULL(n1.cityName,n.cityName),(select allotCitys FROM t_base_cfg )) 
+			<if test="orderFlag==1">
+				AND n.applyType in(1,2,6) AND n.haveDetail=1 AND n1.loanAmount>=4
+			</if>
+			<if test="orderFlag==0">
+				AND n.haveDetail=0 AND n.applyType not in(3,4) AND IF(n1.loanAmount IS NULL,5,n1.loanAmount)>=4
+			</if>
+			GROUP BY n.orderType
+	</select>
+	
+	<!-- 回收4手单 -->
+	<update id="callBackOrder4" parameterType="map">
+		UPDATE t_borrow_apply t 
+		JOIN t_cust_level t1 ON t.lastStore = t1.customerId
+		SET
+			 t.`status`=0,
+			 t.lastStore = null,
+			 t.orgId = null,
+			 t.updateTime = NOW()
+		WHERE
+			t.orderType=4 
+			AND t.storeStatus !=6 
+			AND t.transTime IS NOT NULL
+			AND t.recorder IS NULL
+			AND <![CDATA[DATE_ADD(t.transTime,INTERVAL IF(t.haveDetail=0,#{N_transOrderDay4},#{S_transOrderDay4}) day)<NOW()]]> 
+			AND NOT EXISTS(select 1 from t_exclusive_order n where n.applyId = t.applyId and n.customerId=t.lastStore )
+	</update>
+	
+	<update id="storeTranOrder" parameterType="map">
+		UPDATE t_borrow_apply t 
+		JOIN t_cust_level t1 ON t.lastStore = t1.customerId 
+		SET
+		 t.`status`=10,
+		 t.`storeStatus`=0,
+		 t.stageStatus=2,
+		 t.lastStore = null,
+		 t.orgId = null,
+		 t.createTime = NOW(),
+		 t.orderType = IF(t.storeStatus=0,t.orderType,t.orderType+1)
+		WHERE
+			<![CDATA[(t.transTime<NOW() OR(t.storeStatus=0 AND t.createTime< DATE_ADD(now(),INTERVAL -#{orderNoDealHours} hour))) AND t.orderType<4]]> 
+			AND t.applyType NOT IN(3,4) 
+			AND t.recorder IS NULL 
+			AND t.transTime IS NOT NULL
+			AND t.storeStatus !=6 
+			AND NOT EXISTS(select 1 from t_exclusive_order n where n.applyId = t.applyId and n.customerId=t.lastStore )
+	</update>
+	
+	<update id="resetOrder" parameterType="map">
+		UPDATE t_borrow_apply t  
+		SET
+		 t.`status`=0,
+		 t.lastStore = null,
+		 t.orgId = null,
+		 t.`storeStatus`=0,
+		 t.createTime = NOW(),
+		 t.orderType = #{orderType}
+		WHERE t.applyId = #{applyId} and t.lastStore=#{customerId}
+	</update>
+	
+	<!--不需要-->
+	<update id="notNeedDeal" parameterType="map">
+		UPDATE t_borrow_apply t 
+		SET t.`status` = 2,
+			<if test="roleType !=1">
+				t.lastStore = #{customerId},
+			</if>
+			t.stageStatus=3,
+			t.storeStatus=7,
+			t.updateTime = NOW()
+		WHERE t.applyId = #{applyId}
+	</update>
+	
+	<!-- 转单处理 -->
+	<update id="transDeal">
+		update t_borrow_store_apply set lastStore = #{lastStore},
+		orgId = #{orgId}
+		<where>
+			  applyId = #{applyId}
+		</where>
+	
+	</update>
+	
+	<!-- 手功分单修改分单信息 -->
+	<update id="storeAllotOrderByHand" parameterType="map">
+		UPDATE t_borrow_store_apply t 
+		SET t.`status` = 2,
+			t.orderStatus = -1,
+			t.orgId =#{orgId},
+			t.lastStore=#{customerId} ,
+			t.allotTime = NOW(),
+			t.allotDesc = '网销池手工分单',
+			t.allotBy = #{allotBy},
+			<if test="isHideFlag != null">
+				t.isHideFlag = #{isHideFlag, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backStatus != null">
+				t.backStatus = #{backStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backDesc != null">
+				t.backDesc = #{backDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="backReDesc != null">
+				t.backReDesc = #{backReDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="custLabel != null">
+				t.custLabel = #{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			t.updateTime = NOW()
+		WHERE t.applyId=#{applyId} and t.lastStore IS NULL
+	</update>
+</mapper>

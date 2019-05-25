@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
+    <wb-module deploy-name="xxjr-admin-busi">
+        <wb-resource deploy-path="/" source-path="/target/m2e-wtp/web-resources"/>
+        <wb-resource deploy-path="/" source-path="/src/main/webapp" tag="defaultRootSource"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/java"/>
+        <wb-resource deploy-path="/WEB-INF/classes" source-path="/src/main/resources"/>
+        <dependent-module archiveName="xxjr-admin-util-2.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xxjr-admin-util/xxjr-admin-util">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="message-util-2.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/message-util/message-util">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="xxjr-admin-active-2.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xxjr-admin-active/xxjr-admin-active">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="xcb-test-3.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xcb-test/xcb-test">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="xcb-common-3.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xcb-common/xcb-common">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="xcb-model-3.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xcb-model/xcb-model">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="xcb-zk-3.0.0.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/xcb-zk/xcb-zk">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <property name="context-root" value="xxjr-admin-busi"/>
+        <property name="java-output-path" value="/xxjr-admin-busi/src/main/webapp/WEB-INF/classes"/>
+    </wb-module>
+</project-modules>

@@ -1,0 +1,180 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.busi.util.push.PushUtil;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson.serializer.SerializerFeature;
+
+
+/***
+ * 那嘉数据推送
+ *
+ */
+@PushCode(3)
+public class PushNaJiaUtil implements PushUtil{
+	
+	public static final String url = "http://api.najiajf.com/api/apply/ywxapply";
+	
+//	public static final String test_url = "http://apipre.najiajf.com/api/apply/ywxapply";
+	/*
+	 * 测试:
+	 * AppKey：123
+	 * AppSecret：AHJ6BC0ADF2IUKI3B1DC0LPC29LL98JN
+	 * inscode:VQCC4OVJVW
+	 * 正式:
+	 * appkey：123
+	 * appsecret：AHJ6BC0ADF2IUKI3B1DC0LPC29LL98JN
+	 * inscode:QW7EKW9GOW
+	 * */
+	
+	public int pushData(Map<String, Object> row, Integer pushType) {
+		int status = 2;
+		try {
+			Map<String, Object> config = PushPlatformUtils.getConfigByCode(pushType);
+			
+			if ((!PushPlatformUtils.checkChannelOpen(config))) {
+				LogerUtil.log(PushNaJiaUtil.class, config.get("pushName") + "推送未打开");
+				return 3;
+			}
+			if ((!PushPlatformUtils.checkChannelMaxCount(config))) {
+				LogerUtil.log(PushNaJiaUtil.class, config.get("pushName") + "推送已达上限");
+				return 3;
+			}
+			if ((!PushPlatformUtils.getInsureCondition(row, config))) {
+				LogerUtil.log(PushNaJiaUtil.class, config.get("pushName") + "筛选条件无法通过");
+				return 4;
+			}
+			Map<String,Object> sendParam = new HashMap<String,Object>();
+			Map<String,String> connParam = new HashMap<String,String>();
+			String appkey = SysParamsUtil.getStringParamByKey("najie_appkey", "123");
+			String appsecret = SysParamsUtil.getStringParamByKey("najie_appSecret",
+					"AHJ6BC0ADF2IUKI3B1DC0LPC29LL98JN");
+			String inscode = SysParamsUtil.getStringParamByKey("najie_inscode", "QW7EKW9GOW");
+			connParam.put("appkey", appkey);
+			connParam.put("appsecret", appsecret);
+			connParam.put("inscode",inscode);
+			connParam.put("method", "ywxapply");
+			connParam.put("v","1.0");
+			connParam.put("applytype","2");
+			sendParam.put("Name", row.get("applyName"));//申请人姓名
+			sendParam.put("Mobile", row.get("telephone"));//申请人电话号码
+			sendParam.put("CityName",row.get("cityName"));//申请人所在城市
+			sendParam.put("LoanAmount", NumberUtil.getDouble(row.get("loanAmount"), 0) * 10000);//申请金额
+			sendParam.put("Income",row.get("income"));//申请人月收入
+			sendParam.put("ApplyIp", "120.76.214.73");//ip
+			sendParam.put("ComeFrom", "移动");//客户端来源 移动/PC
+			sendParam.put("MediaSource", "小小金融");//客户
+			sendParam.put("GetCusType", "主动赠险");//获客方式
+			signData(row,connParam,sendParam);
+			JSONArray jsonArray = new JSONArray();
+			jsonArray.add(sendParam);
+			connParam.put("applydatas", JSON.toJSONString(jsonArray, SerializerFeature.UseSingleQuotes));
+			Map<String, Object> resultMap = PushPlatformUtils.httpPost(PushNaJiaUtil.url, connParam, true);
+			
+			AppParam updateParam = new AppParam("insurancePushPoolService", "updateStatus");
+			updateParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+			updateParam.addAttrs(row);
+			updateParam.addAttr("pushType", pushType);
+			Boolean succ = Boolean.parseBoolean(StringUtil.getString(resultMap.get("Success")));
+			if(succ){
+				status = 1;
+			}
+			updateParam.addAttr("message", "success:" + resultMap.get("Success") + "," + resultMap.get("Message"));
+			updateParam.addAttr("status", status);
+			RemoteInvoke.getInstance().call(updateParam);
+			LogerUtil.log("那嘉数据推送任务AutoPushNaJiaJob end");
+		} catch (Exception e) {
+			LogerUtil.error(PushNaJiaUtil.class, e, "AutoPushNaJiaJob >>>>>>>>>>>>>>>>>>error");
+		}
+		return status;
+	}
+	
+	
+	 public static void signData(Map<String, Object> row,Map<String,String> connParams,Map<String,Object> params) {  
+		    //性别  处理
+		    String identifyNo = StringUtil.getString(row.get("identifyNo"));
+		    Integer sex = IdCardResolveUtil.getSex(identifyNo);
+		    if (sex == -1) {
+		    	sex = NumberUtil.getInt(row.get("sex"), -1);
+			}
+		    if (sex > -1) {
+				if (sex == 1) {
+					params.put("Sex", "M");
+				} else {
+					params.put("Sex", "F");
+				}
+			}
+		    
+		    
+		    //出生日期 处理 
+		    String birthday = IdCardResolveUtil.getBirthday(identifyNo);
+		    int age = NumberUtil.getInt(row.get("age"), -1);
+		    params.put("Birth", PushPlatformUtils.getBirthDay(birthday, age)); 
+		    
+		    connParams.put("timestamp", DateUtil.toStringByParttern(new Date(), "yyyy-MM-dd HH:mm:ss"));
+		    StringBuffer content = new StringBuffer();
+		    // 按照key做首字母升序排列
+		    Map<String,Object> allParam = new HashMap<String,Object>();
+		    JSONObject obj = new JSONObject();
+		    JSONArray array = new JSONArray();
+		    obj.putAll(params);
+		    array.add(obj);
+		    String appSecret = connParams.remove("appsecret").toLowerCase();
+		    allParam.put("applydatas", JSON.toJSONString(array, SerializerFeature.UseSingleQuotes));
+		    allParam.putAll(connParams);
+		    List<String> keys = new ArrayList<String>(allParam.keySet());
+		    Collections.sort(keys, String.CASE_INSENSITIVE_ORDER);
+		    content.append(appSecret);
+		    for (int i = 0; i < keys.size(); i++)
+		    {
+		        String key = (String) keys.get(i);
+		        Object value = allParam.get(key);
+		        if(!StringUtils.isEmpty(value)){
+		        	 content.append(key + value.toString());
+		        }
+		    }
+		    content.append(appSecret);
+		    String signSrc = content.toString().toLowerCase();
+			try {
+				MessageDigest md = MessageDigest.getInstance("SHA-1");
+				md.update(signSrc.getBytes("UTF-8"));
+				byte[] digest = md.digest();
+				StringBuffer hexstr = new StringBuffer();
+				String shaHex = "";
+				for (int i = 0; i < digest.length; i++) {
+					shaHex = Integer.toHexString(digest[i] & 0xFF);
+					if (shaHex.length() < 2) {
+						hexstr.append(0);
+					}
+					hexstr.append(shaHex);
+				}
+				connParams.put("sign", hexstr.toString());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}  
+}

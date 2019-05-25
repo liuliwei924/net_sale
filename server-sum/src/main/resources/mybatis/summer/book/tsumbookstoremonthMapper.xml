@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMBOOKSTOREMONTH">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			sucBookCount, 
+			preBookCount, 
+			failBookCount,
+			manualCount,
+			visitorCount
+		FROM t_sum_book_store_month
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="sucBookCount != null and sucBookCount != ''">
+				and sucBookCount = #{sucBookCount}
+			</if>
+			<if test="preBookCount != null and preBookCount != ''">
+				and preBookCount = #{preBookCount}
+			</if>
+			<if test="failBookCount != null and failBookCount != ''">
+				and failBookCount = #{failBookCount}
+			</if>
+			<if test="manualCount != null and manualCount != ''">
+				and manualCount = #{manualCount}
+			</if>
+			<if test="visitorCount != null and visitorCount != ''">
+				and visitorCount = #{visitorCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_book_store_month 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="sucBookCount != null and sucBookCount != ''">
+			and sucBookCount = #{sucBookCount}
+		</if>
+		<if test="preBookCount != null and preBookCount != ''">
+			and preBookCount = #{preBookCount}
+		</if>
+		<if test="failBookCount != null and failBookCount != ''">
+			and failBookCount = #{failBookCount}
+		</if>
+		<if test="manualCount != null and manualCount != ''">
+			and manualCount = #{manualCount}
+		</if>
+		<if test="visitorCount != null and visitorCount != ''">
+			and visitorCount = #{visitorCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_book_store_month (
+			recordDate,
+			customerId,
+			orgId,
+			orgName,
+			cityName,
+			sucBookCount,
+			preBookCount,
+			failBookCount,
+			manualCount,
+			visitorCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=VARCHAR}, 
+			</if>
+			<if test="customerId !=null ">
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if> 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="sucBookCount !=null ">
+			#{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucBookCount ==null ">
+			0 ,
+			</if>
+			<if test="preBookCount !=null ">
+			#{preBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="preBookCount ==null ">
+			0 ,
+			</if>
+			<if test="failBookCount !=null ">
+			#{failBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="failBookCount ==null ">
+			0 ,
+			</if>
+			<if test="manualCount !=null ">
+			#{manualCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="manualCount ==null ">
+			0 ,
+			</if>
+			<if test="visitorCount !=null ">
+			#{visitorCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="visitorCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_book_store_month 
+		<where> 
+			recordDate = #{recordDate} AND 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_book_store_month  
+		<set>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgName != null">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="sucBookCount != null">
+				sucBookCount = #{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="preBookCount != null">
+				preBookCount = #{preBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failBookCount != null">
+				failBookCount = #{failBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="manualCount != null">
+				manualCount = #{manualCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="visitorCount != null">
+				visitorCount = #{visitorCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	
+	<delete id="deleteByMonth" parameterType="map">
+		DELETE FROM t_sum_book_store_month 
+		<where> 
+			recordDate = #{toMonth}
+			<if test="orgId != null and orgId != ''">
+		    	and orgId = #{orgId}
+		 	</if>
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_book_store_month  (
+			recordDate,
+			customerId,
+			orgId, 
+			orgName, 
+			cityName, 
+			sucBookCount, 
+			preBookCount, 
+			failBookCount,
+			manualCount,
+			visitorCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.customerId}, 
+		  #{item.orgId}, 
+		  #{item.orgName}, 
+		  #{item.cityName}, 
+		  #{item.sucBookCount}, 
+		  #{item.preBookCount},
+		  #{item.failBookCount},
+		  #{item.manualCount},
+		  #{item.visitorCount}
+		  )
+		</foreach>
+	</insert>
+</mapper>

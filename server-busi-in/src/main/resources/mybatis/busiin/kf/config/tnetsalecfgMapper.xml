@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="NETSALECFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			configId,
+			minHours, 
+			maxHours, 
+			saleCount, 
+			cityName, 
+			inOrderType, 
+			enable
+		FROM t_net_sale_cfg
+		<where>
+			<if test="configId != null and configId != ''">
+			  and configId = #{configId}
+			 </if>
+			<if test="minHours != null and minHours != ''">
+				and minHours = #{minHours}
+			</if>
+			<if test="maxHours != null and maxHours != ''">
+				and maxHours = #{maxHours}
+			</if>
+			<if test="saleCount != null and saleCount != ''">
+				and saleCount = #{saleCount}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="inOrderType != null and inOrderType != ''">
+				and inOrderType = #{inOrderType}
+			</if>
+			<if test="enable != null and enable != ''">
+				and enable = #{enable}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_net_sale_cfg 
+		<where>
+		<if test="configId != null and configId != ''">
+		    and configId = #{configId}
+		 </if>
+		<if test="minHours != null and minHours != ''">
+			and minHours = #{minHours}
+		</if>
+		<if test="maxHours != null and maxHours != ''">
+			and maxHours = #{maxHours}
+		</if>
+		<if test="saleCount != null and saleCount != ''">
+			and saleCount = #{saleCount}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="inOrderType != null and inOrderType != ''">
+			and inOrderType = #{inOrderType}
+		</if>
+		<if test="enable != null and enable != ''">
+			and enable = #{enable}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="configId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_net_sale_cfg (
+			minHours,
+			maxHours,
+			saleCount,
+			cityName,
+			inOrderType,
+			enable
+		)
+		VALUES ( 
+			#{minHours, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{maxHours, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{saleCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			<if test="inOrderType !=null ">
+			#{inOrderType, jdbcType=VARCHAR}, 
+			</if>
+			<if test="inOrderType ==null ">
+			1 ,
+			</if>
+			<if test="enable !=null ">
+			#{enable, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="enable ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_net_sale_cfg 
+		<where> 
+			configId = #{configId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_net_sale_cfg  
+		<set>
+			<if test="minHours != null">
+				minHours = #{minHours, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="maxHours != null">
+				maxHours = #{maxHours, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="saleCount != null">
+				saleCount = #{saleCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="inOrderType != null">
+				inOrderType = #{inOrderType, jdbcType=VARCHAR},  
+			</if>
+			<if test="enable != null">
+				enable = #{enable, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  configId = #{configId}
+		</where>
+	</update>
+</mapper>

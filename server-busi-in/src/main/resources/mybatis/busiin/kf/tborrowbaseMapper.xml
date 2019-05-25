@@ -1,0 +1,728 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWBASE">
+      <sql id="querySqlWhere">
+   		 <where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="loanAmount != null and loanAmount != ''">
+				and loanAmount = #{loanAmount}
+			</if>
+			<if test="loanDeadline != null and loanDeadline != ''">
+				and loanDeadline = #{loanDeadline}
+			</if>
+			<if test="loanPurpose != null and loanPurpose != ''">
+				and loanPurpose = #{loanPurpose}
+			</if>
+			<if test="score != null and score != ''">
+				and score = #{score}
+			</if>
+			<if test="price != null and price != ''">
+				and price = #{price}
+			</if>
+			<if test="age != null and age != ''">
+				and age = #{age}
+			</if>
+			<if test="sex != null and sex != ''">
+				and sex = #{sex}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="cityArea != null and cityArea != ''">
+				and cityArea = #{cityArea}
+			</if>
+			<if test="workType != null and workType != ''">
+				and workType = #{workType}
+			</if>
+			<if test="socialType != null and socialType != ''">
+				and socialType = #{socialType}
+			</if>
+			<if test="socialMonth != null and socialMonth != ''">
+				and socialMonth = #{socialMonth}
+			</if>
+			<if test="isLocal != null and isLocal != ''">
+				and isLocal = #{isLocal}
+			</if>
+			<if test="fundType != null and fundType != ''">
+				and fundType = #{fundType}
+			</if>
+			<if test="havePinan != null and havePinan != ''">
+				and havePinan = #{havePinan}
+			</if>
+			<if test="haveCredit != null and haveCredit != ''">
+				and haveCredit = #{haveCredit}
+			</if>
+			<if test="creditType != null and creditType != ''">
+				and creditType = #{creditType}
+			</if>
+			<if test="houseType != null and houseType != ''">
+				and houseType = #{houseType}
+			</if>
+			<if test="carType != null and carType != ''">
+				and carType = #{carType}
+			</if>
+			<if test="desc != null and desc != ''">
+				and `desc` = #{desc}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="education != null and education != ''">
+				and education = #{education}
+			</if>
+			<if test="zimaScore != null and zimaScore != ''">
+				and zimaScore = #{zimaScore}
+			</if>
+			<if test="identifyNo != null and identifyNo != ''">
+				and identifyNo = #{identifyNo}
+			</if>
+			<if test="fundNum != null and fundNum != ''">
+				and fundNum = #{fundNum}
+			</if>
+		</where>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			loanAmount, 
+			loanDeadline, 
+			loanPurpose, 
+			pageReferer,
+			score, 
+			price, 
+			age, 
+			sex,
+			insure, 
+			cityName, 
+			cityArea, 
+			workType, 
+			socialType, 
+			socialMonth, 
+			fundMonth,
+			identifyNo,
+			education,
+			zimaScore,
+			isLocal, 
+			fundType,
+			fundNum,
+			havePinan, 
+			contactTime,
+			haveCredit, 
+			creditType, 
+			houseType, 
+			carType, 
+			`desc`, 
+			applyIp,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM T_BORROW_BASE
+		<include refid="querySqlWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryBaseInfo" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			base.applyId,
+			base.loanAmount, 
+			base.loanDeadline, 
+			base.loanPurpose, 
+			base.pageReferer,
+			base.score, 
+			base.price, 
+			base.age, 
+			base.sex, 
+			base.insure,
+			base.cityName, 
+			base.cityArea, 
+			base.workType, 
+			base.socialType, 
+			base.socialMonth,
+			base.socialAmount,
+			base.isLocal, 
+			base.fundType,
+			base.fundMonth,
+			base.fundAmount,
+			base.fundNum,
+			(CASE
+				WHEN base.havePinan <= 0 THEN 0
+				WHEN base.havePinan <= 5000 THEN 5000
+				WHEN base.havePinan <= 8000 THEN 8000
+				WHEN base.havePinan >= 10000 and base.havePinan < 30000 THEN 15000
+				WHEN base.havePinan >= 30000 and base.havePinan < 50000 THEN 35000
+				WHEN base.havePinan >= 50000 and base.havePinan < 100000 THEN 55000
+				WHEN base.havePinan >= 100000 THEN 100000
+				else base.havePinan
+			END) as havePinan,
+			base.contactTime,
+			base.haveCredit, 
+			(CASE
+				WHEN base.creditType =3 THEN 5
+				else base.creditType
+			END) as creditType,
+			(CASE
+				WHEN base.houseType > 4 THEN 1
+				else base.houseType
+			END) as houseType,
+			base.carType,
+			base.`desc`, 
+			base.liabiAmount,
+			base.education, 
+			base.zimaScore, 
+			base.identifyNo,
+			DATE_FORMAT(base.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime,
+			DATE_FORMAT(base.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			car.carYears,
+			car.carPrice,
+			car.carUsed,
+			car.carMortgage,
+			car.carBrand,
+			car.carModel,
+			car.carLocal,
+			car.carMonth,
+			car.carMonthPay,
+			house.houseVal,
+			house.houseYears,
+			house.housePlace,
+			house.houseMortgage,
+			house.houseLoans,
+			house.houseCard,
+			house.houseMonth,
+			house.houseMonthPay,
+			house.myLoanHouse,
+			income.workCmp,
+			income.incomeMonths,
+			income.wagesType,
+			income.income,
+			(CASE
+				WHEN income.incomeMonth > 0 and income.incomeMonth < 2000 THEN 1500
+				WHEN income.incomeMonth >= 2000 and income.incomeMonth < 4000 THEN 3500
+				WHEN income.incomeMonth >= 4000 and income.incomeMonth < 8000 THEN 5000
+				WHEN income.incomeMonth >= 8000 and income.incomeMonth < 15000 THEN 10000
+				WHEN income.incomeMonth >= 15000 THEN 15000
+				else income.incomeMonth
+			END) as incomeMonth,
+			income.jobMonth,
+			income.manageYear,
+			income.managePlace,
+			income.licenceLimit,
+			income.cashMonth,
+			income.pubManageLine,
+			income.hasLicense,
+			income.myLicense,
+			insure.insurType,
+			insure.insurMonth,
+			insure.insurMonthAmt,
+			insure.insurSelf,
+			insure.companyName,
+			insure.insurYearAmt,
+			credit.sumAmount,
+			credit.useAmount,
+			credit.overdueCount,
+			credit.haveCurOver as 'curOverType']]>
+		FROM T_BORROW_BASE base
+		LEFT JOIN t_borrow_car car ON car.applyId = base.applyId
+		LEFT JOIN t_borrow_house house ON house.applyId = base.applyId
+		LEFT JOIN t_borrow_income income ON income.applyId = base.applyId
+		LEFT JOIN t_borrow_insure insure ON insure.applyId = base.applyId
+		LEFT JOIN t_borrow_credit credit ON credit.applyId = base.applyId
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and base.applyId = #{applyId}
+			 </if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryText" resultType="map" parameterType="map">
+		SELECT
+			loanAmount, 
+			loanDeadline, 
+			loanPurpose,
+			score, 
+			price, 
+			age, 
+			(CASE 
+				WHEN sex =1 THEN '男'
+				WHEN sex =0 THEN '女'
+				ELSE '未知'
+			END) as 'sexText',
+			cityName, 
+			cityArea,
+			(CASE 
+				WHEN workType =1 THEN '无固定职业'
+				WHEN workType =2 THEN '企业主'
+				WHEN workType =3 THEN '个体户'
+				WHEN workType =4 THEN '上班族'
+				WHEN workType =5 THEN '学生'
+				ELSE '无职业'
+			END) as 'workTypeText', 
+			workType,
+			(CASE 
+				WHEN socialType =1 THEN '有本地社保'
+				ELSE '无，未缴纳'
+			END) as 'socialTypeText', 
+			socialMonth, 
+			(CASE 
+				WHEN isLocal =1 THEN '本地户籍'
+				WHEN isLocal =2 THEN '外地户籍'
+				ELSE '未知'
+			END) as 'isLocalText', 
+			(CASE 
+				WHEN fundType =1 THEN '有本地公积金'
+				ELSE '无，未缴纳'
+			END) as 'fundTypeText',
+			contactTime,
+			(CASE 
+				WHEN creditType =1 THEN '信用良好，无逾期'
+				WHEN creditType =3 THEN '有过逾期 '
+				ELSE '无信用卡，贷款'
+			END) as 'creditTypeText',
+			(CASE 
+				WHEN houseType =1 THEN '有房,但不确认房产类型'
+				WHEN houseType =3 THEN '商品房(按揭) '
+				WHEN houseType =4 THEN '商品房(全款) '
+				WHEN houseType =5 THEN '军产房'
+				WHEN houseType =6 THEN '办公楼 '
+				WHEN houseType =7 THEN '厂房 '
+				WHEN houseType =8 THEN '商铺'
+				WHEN houseType =9 THEN '自建房/小产权房'
+				WHEN houseType =10 THEN '经适/限价房 '
+				WHEN houseType =11 THEN '房改/危改房'
+				WHEN houseType =12 THEN '福利房'
+				ELSE '无房产'
+			END) as 'houseTypeText',
+			houseType,
+			(CASE 
+				WHEN carType =1 THEN '名下有车'
+				WHEN carType =2 THEN '准备买车  '
+				WHEN carType =3 THEN '贷款车  '
+				WHEN carType =4 THEN '全款车  '
+				ELSE '无车'
+			END) as 'carTypeText',
+			carType,
+			IF(havePinan>0,CONCAT(havePinan,'元'),'') as 'haveWeiLiText',
+			`desc` 
+		FROM T_BORROW_BASE
+		WHERE applyId = ${applyId}
+	</select>
+	
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_BASE 
+		<include refid="querySqlWhere"/>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO T_BORROW_BASE (
+			applyId,
+			loanAmount,
+			loanDeadline,
+			loanPurpose,
+			score,
+			price,
+			age,
+			sex,
+			cityName,
+			cityArea,
+			workType,
+			socialType,
+			socialMonth,
+			isLocal,
+			fundType,
+			havePinan,
+			haveCredit,
+			creditType,
+			houseType,
+			carType,
+			pageReferer,
+			`desc`,
+			contactTime,
+			applyTime,
+			updateTime,
+			education,
+			zimaScore,
+			identifyNo,
+			fundMonth,
+			insure,
+			applyIp,
+			iszhapian,
+			pageDetail,
+			birthday,
+			userAgent,
+			fundNum
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="loanAmount !=null ">
+			#{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="loanDeadline !=null ">
+			#{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="loanDeadline ==null ">
+			0 ,
+			</if>
+			#{loanPurpose, jdbcType=VARCHAR}, 
+			<if test="score !=null ">
+			#{score, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="score ==null ">
+			0 ,
+			</if>
+			<if test="price !=null ">
+			#{price, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="price ==null ">
+			0 ,
+			</if>
+			#{age, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="sex !=null ">
+			#{sex, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sex ==null ">
+			2 ,
+			</if>
+			#{cityName, jdbcType=VARCHAR}, 
+			#{cityArea, jdbcType=VARCHAR}, 
+			#{workType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{socialType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{socialMonth, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="isLocal !=null ">
+			#{isLocal, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isLocal ==null ">
+			2 ,
+			</if>
+			#{fundType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="havePinan !=null ">
+			#{havePinan, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="havePinan ==null ">
+			0 ,
+			</if>
+			<if test="haveCredit !=null ">
+			#{haveCredit, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="haveCredit ==null ">
+			0 ,
+			</if>
+			#{creditType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{houseType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{carType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{pageReferer, jdbcType=VARCHAR}, 
+			#{desc, jdbcType=VARCHAR}, 
+			#{contactTime, jdbcType=VARCHAR}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{education, jdbcType=VARCHAR}, 
+			#{zimaScore, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{identifyNo, jdbcType=VARCHAR},
+			#{fundMonth, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="insure == null">
+			0,
+			</if>
+			<if test="insure != null">
+			#{insure, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			#{applyIp, jdbcType=VARCHAR},
+			<if test="iszhapian == null">
+			0
+			</if>
+			<if test="iszhapian != null">
+			#{iszhapian, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			,
+			#{pageDetail, jdbcType=VARCHAR},
+			#{birthday, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{userAgent, jdbcType=VARCHAR},
+			<if test="fundNum !=null ">
+			#{fundNum, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="fundNum ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_BORROW_BASE 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE T_BORROW_BASE  
+		<set>
+			<if test="loanAmount != null">
+				loanAmount = #{loanAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanDeadline != null">
+				loanDeadline = #{loanDeadline, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanPurpose != null">
+				loanPurpose = #{loanPurpose, jdbcType=VARCHAR},  
+			</if>
+			<if test="pageDetail != null">
+				pageDetail = #{pageDetail, jdbcType=VARCHAR},  
+			</if>
+			<if test="score != null">
+				score = #{score, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="price != null">
+				price = #{price, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="age != null">
+				age = #{age, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sex != null">
+				sex = #{sex, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="cityName != null and cityName !=''">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityArea != null and cityArea !=''">
+				cityArea = #{cityArea, jdbcType=VARCHAR},  
+			</if>
+			<if test="workType != null">
+				workType = #{workType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="socialType != null">
+				socialType = #{socialType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="birthday != null">
+				birthday = #{birthday, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="socialMonth != null">
+				socialMonth = #{socialMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isLocal != null">
+				isLocal = #{isLocal, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundType != null">
+				fundType = #{fundType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="fundMonth != null">
+				fundMonth = #{fundMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="havePinan != null">
+				havePinan = #{havePinan, jdbcType=NUMERIC,typeHandler=NumberHandler},   
+			</if>
+			<if test="haveCredit != null">
+				haveCredit = #{haveCredit, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="creditType != null">
+				creditType = #{creditType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="userAgent != null">
+				userAgent = #{userAgent, jdbcType=VARCHAR},  
+			</if>
+			<if test="houseType != null">
+				houseType = #{houseType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="carType != null">
+				carType = #{carType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="desc != null">
+				`desc` = #{desc, jdbcType=VARCHAR},  
+			</if>
+			<if test="contactTime != null">
+				contactTime = #{contactTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="fundAmount != null">
+				fundAmount = #{fundAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="socialAmount != null">
+				socialAmount = #{socialAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="liabiAmount != null">
+				liabiAmount = #{liabiAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="education != null">
+				education = #{education, jdbcType=VARCHAR},  
+			</if>
+			<if test="insure != null">
+				insure = #{insure, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="zimaScore != null">
+				zimaScore = #{zimaScore, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="identifyNo != null">
+				identifyNo = #{identifyNo, jdbcType=VARCHAR},
+			</if>
+			<if test="applyIp != null">
+				applyIp = #{applyIp, jdbcType=VARCHAR},
+			</if>
+			<if test="fundNum != null">
+				fundNum = #{fundNum, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+	
+	<select id="querySeniorInfo" resultType="map" parameterType="map">
+		SELECT
+			t.applyId as 'applyId',
+			IFNULL(t.applyName,'') as 'applyName',
+			t.telephone as 'telephone',
+			IFNULL(t.channelDetail,'') as 'channelDetail',
+			IFNULL(t1.cityName,'') as 'cityName',
+			IFNULL(t1.workType,'1') as 'workType',
+			IFNULL(t1.houseType,'2') as 'houseType',
+			IFNULL(t1.carType,'2') as 'carType',
+			IFNULL(t1.loanAmount,'0') as 'loanAmount',
+			IFNULL(t1.socialType,'2') as 'socialType',
+			IFNULL(t1.fundType,'2') as 'fundType',
+			IFNULL(t2.income,'0') as 'income',
+			IFNULL(t2.pubManageLine,'') as 'pubManageLine',
+			IFNULL(t3.insurType,'0') as 'insurType'
+		FROM t_borrow_apply t
+		LEFT JOIN t_borrow_base t1 on t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 on t.applyId = t2.applyId
+		LEFT JOIN t_borrow_insure t3 on t.applyId = t3.applyId  
+		<where>
+			  t.applyId = #{applyId}
+		</where>
+	</select>
+	
+	<select id="queryDetail" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			IFNULL(t.houseType,0) as 'houseType', 
+			IFNULL(t.carType,0) as 'carType', 
+			t.`desc`, 
+			t1.houseVal, 
+			t1.houseYears, 
+			t1.housePlace, 
+			t1.houseMortgage, 
+			t1.houseLoans, 
+			t1.houseCard,
+			t2.carYears, 
+			t2.carPrice, 
+			t2.carUsed, 
+			t2.carMortgage, 
+			t2.carBrand, 
+			t2.carModel, 
+			t2.carLocal,
+			IFNULL(t3.insurType,0) as 'insurType', 
+			t3.insurMonth, 
+			t3.insurMonthAmt, 
+			t3.insurSelf
+		FROM T_BORROW_BASE t
+		LEFT JOIN t_borrow_house t1 on t.applyId = t1.applyId 
+		LEFT JOIN t_borrow_car t2 on t.applyId = t2.applyId
+		LEFT JOIN t_borrow_insure t3 on t.applyId = t3.applyId  
+		<where>
+			t.applyId=#{applyId}
+		</where>
+	</select>
+	
+	<select id="queryNewBorrow" resultType="map" parameterType="map">
+		SELECT
+			t.createTime ,
+			(CASE timestampdiff(DAY,t.createTime,NOW())
+			WHEN 0 THEN
+			IF(timestampdiff(HOUR,t.applyTime,NOW())=0,
+			IF(timestampdiff(MINUTE,t.applyTime,NOW())=0,'1分钟前',
+			CONCAT(timestampdiff(MINUTE,t.applyTime,NOW()),'分钟前')),
+			CONCAT(timestampdiff(HOUR,t.applyTime,NOW()),'小时前'))
+			ELSE CONCAT(timestampdiff(DAY,t.applyTime,NOW()),'天前')
+			END) as "diffDay",
+			CONCAT(substr(t.telephone,1,4),'*****') as cityName,
+			CONCAT(substr(t.telephone,1,4),'*****') as realName,
+			CONCAT('申请',round(loanAmount),'万元贷款') treatDesc
+		FROM t_borrow_apply t JOIN t_borrow_base t1 on t.applyId = t1.applyId
+	    WHERE t1.loanAmount >1
+   			and t.applyTime >= DATE_ADD(NOW(),INTERVAL -1 day)
+			order by createTime desc limit  #{size}
+	</select>
+	
+	<select id="queryTransferToXxjr" resultType="map" parameterType="map">
+	<![CDATA[
+	SELECT
+			t.applyName as 'realName', 
+			t.telephone, 
+			t.channelDetail as 'sourceName', 
+			t.channelDetail,
+			t.status,
+			IF(t.kfStatus=6,t.updateTime,now()) as 'applyTime',
+			IF(t1.loanAmount=0 OR t1.loanAmount IS NULL,3,t1.loanAmount) as 'loanAmount',
+			t1.loanDeadline,
+			t1.cityName,
+			t1.cityArea,
+			t1.workType,
+			t1.socialType,
+			t1.fundType,
+			t1.creditType,
+			t1.houseType,
+			t1.carType,
+			t1.`desc` as 'loanDesc',
+			t1.havePinan as 'haveWeiLi',
+			(CASE 
+				WHEN t1.workType =1 THEN t2.cashMonth
+				WHEN t1.workType =2 THEN t2.pubManageLine*10000
+				WHEN t1.workType =3 THEN cashMonth
+				ELSE t2.income
+			END) as 'income',
+			(CASE 
+				WHEN t2.pubManageLine > 0 and t2.pubManageLine < 1 THEN 0.9
+				WHEN t2.pubManageLine >= 1 and t2.pubManageLine < 3 THEN 2
+				WHEN t2.pubManageLine >= 3 and t2.pubManageLine < 5 THEN 4
+				WHEN t2.pubManageLine >= 5 and t2.pubManageLine < 10 THEN 8
+				WHEN t2.pubManageLine >= 10 and t2.pubManageLine < 30 THEN 20
+				WHEN t2.pubManageLine >= 30 THEN 31
+				ELSE 0
+			END) as 'pubAmount',
+			(CASE 
+				WHEN t2.incomeMonth > 0 and t2.incomeMonth < 1 THEN 0.9
+				WHEN t2.incomeMonth >= 1 and t2.incomeMonth < 3 THEN 2
+				WHEN t2.incomeMonth >= 3 and t2.incomeMonth < 5 THEN 4
+				WHEN t2.incomeMonth >= 5 and t2.incomeMonth < 10 THEN 8
+				WHEN t2.incomeMonth >= 10 and t2.incomeMonth < 30 THEN 20
+				WHEN t2.incomeMonth >= 30 THEN 31
+				ELSE 0
+			END) as 'totalAmount',
+			t2.wagesType,
+			t3.houseMortgage,
+			t4.carMortgage,
+			t2.workCmp as 'cmpType',
+			t1.zimaScore,
+			t1.education,
+			t1.identifyNo,
+			t4.carMonthPay,
+			t3.houseMonthPay,
+			t2.manageYear,
+			t5.insurType,
+			t5.insurMonthAmt,
+			t5.insurMonth,
+			t1.age,
+      		t1.sex
+		FROM t_borrow_apply t 
+		JOIN t_borrow_base t1 ON t.applyId = t1.applyId
+		LEFT JOIN t_borrow_income t2 ON t.applyId = t2.applyId
+		LEFT JOIN t_borrow_house t3 ON t.applyId = t3.applyId
+		LEFT JOIN t_borrow_car t4 ON t.applyId = t4.applyId
+		LEFT JOIN t_borrow_insure t5 ON t.applyId = t5.applyId
+		WHERE t.applyId = #{applyId}
+	]]>
+	</select>
+</mapper>

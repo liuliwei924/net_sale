@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCHANNELCFG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			cfgId,
+			channelCode, 
+			percent,
+			minTotalNum
+		FROM t_borrow_channel_cfg
+		<where>
+			<if test="cfgId != null and cfgId != ''">
+			  and cfgId = #{cfgId}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="percent != null and percent != ''">
+				and percent = #{percent}
+			</if>
+			<if test="minTotalNum != null and minTotalNum != ''">
+				and minTotalNum = #{minTotalNum}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_channel_cfg 
+		<where>
+		<if test="cfgId != null and cfgId != ''">
+		    and cfgId = #{cfgId}
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="percent != null and percent != ''">
+			and percent = #{percent}
+		</if>
+		<if test="minTotalNum != null and minTotalNum != ''">
+			and minTotalNum = #{minTotalNum}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="cfgId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_channel_cfg (
+			channelCode,
+			percent,
+			minTotalNum
+		)
+		VALUES ( 
+			#{channelCode, jdbcType=VARCHAR},
+			<if test="percent !=null ">
+				#{percent, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="percent ==null ">
+			 	100,
+			</if> 
+			<if test="minTotalNum !=null ">
+				#{minTotalNum, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="minTotalNum ==null ">
+			 	0
+			</if> 
+			
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_channel_cfg 
+		<where> 
+			cfgId = #{cfgId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_channel_cfg  
+		<set>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="percent != null">
+				percent = #{percent, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="minTotalNum != null">
+				minTotalNum = #{minTotalNum, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  cfgId = #{cfgId}
+		</where>
+	</update>
+</mapper>

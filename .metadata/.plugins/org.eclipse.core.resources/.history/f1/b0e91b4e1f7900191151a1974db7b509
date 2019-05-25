@@ -1,0 +1,97 @@
+package org.xxjr.open.util;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.core.service.SoaManager;
+import org.llw.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.ServiceKey;
+
+public class MerchantUtil {
+	/**
+	 * 商户标识
+	 */
+	private static final String MERCHANT_CFG="OPEN_MERCHANT_CFG";
+	
+	
+	/**
+	 * 根据商户号查询商户配置信息
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getCfgByMerId(Object merchantId){
+		if(!StringUtils.isEmpty(merchantId)){
+			List<Map<String, Object>> config = (List<Map<String, Object>>) RedisUtils
+					.getRedisService().get(MERCHANT_CFG);
+			if(config == null){
+				config = refreshMerchantCfg();
+			}
+			for (int i = 0; i < config.size(); i++) {
+				Map<String,Object> configMap = config.get(i);
+				String merchant = configMap.get("merchantId").toString();
+				if(merchantId.toString().equals(merchant)){
+					return configMap;
+				}
+			}
+		}
+		return new HashMap<String,Object>();
+	}
+	
+	/**
+	 * 根据商户ID查询商户配置信息
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getCfgByOrgId(Object orgId){
+		if(!StringUtils.isEmpty(orgId)){
+			List<Map<String, Object>> config = (List<Map<String, Object>>) RedisUtils
+					.getRedisService().get(MERCHANT_CFG);
+			if(config == null){
+				config = refreshMerchantCfg();
+			}
+			for (int i = 0; i < config.size(); i++) {
+				Map<String,Object> configMap = config.get(i);
+				String org = configMap.get("org").toString();
+				if(orgId.toString().equals(org)){
+					return configMap;
+				}
+			}
+		}
+		return new HashMap<String,Object>();
+	}
+		
+	/**
+	 * 刷新查询商户配置信息
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshMerchantCfg(){
+		AppParam param = new AppParam();
+		param.setService("orgService");
+		param.setMethod("queryDtl");
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_open));
+		//若没有相应的对象，使用远程调用 
+		AppResult result = new AppResult();
+		if (SpringAppContext.getBean("orgService") == null) {
+			result = RemoteInvoke.getInstance().call(param);
+		}else{
+			result = SoaManager.getInstance().invoke(param);
+		}
+		List<Map<String, Object>> config = new ArrayList<Map<String, Object>>();
+		if(result.getRows().size() > 0){
+			config = result.getRows();
+			RedisUtils.getRedisService().set(MERCHANT_CFG, (Serializable)config, 3600 * 24 *7);
+		}
+		return config;
+	}
+
+	
+}

@@ -1,0 +1,184 @@
+package org.xxjr.cust.annual;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.annual.MeetingConfigUtil;
+
+@Lazy
+@Service
+public class MeetingUserService extends BaseService {
+	private static final String NAMESPACE = "MEETINGUSER";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	
+	/**
+	 * 添加数据处理
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult insertBatch(AppParam params) {
+		AppResult result = new AppResult();
+		List<Map<String, Object>> list = (List<Map<String, Object>>) params
+				.getAttr("list");
+		int size = super.getDao().batchInsert(NAMESPACE, "insertBatch",
+				list, params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * save
+	 * @param params
+	 * @return
+	 */
+	public AppResult save(AppParam params) {
+		AppResult result = new AppResult();
+		Object id = params.getAttr("userId");
+		if(StringUtils.isEmpty(id)){
+			result = this.insert(params);
+		}else{
+			result = this.update(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("userId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("userId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	/**
+	 * 查询176个未中奖用户
+	 */
+	public AppResult queryDrawUserInfo(AppParam params) {
+		return super.query(params, NAMESPACE, "queryDrawUserInfo");
+	}
+	
+	/**
+	 * 随机抽奖用户
+	 */
+	public AppResult getWinUserInfo(AppParam params) {
+		String roundId = StringUtil.getString(params.getAttr("roundId"));
+		AppResult result = super.query(params, NAMESPACE, "getWinUserInfo");
+		if (result.getRows().size() > 0) {
+			List<String> userIdList = new ArrayList<>();
+			for (Map<String, Object> map : result.getRows()) {
+				userIdList.add(map.get("userId").toString());
+			}
+			AppParam updateUser = new AppParam();
+			updateUser.addAttr("userIdList", userIdList);
+			int size = super.getDao().update(NAMESPACE, "batchUpdateMeetingUser", updateUser.getAttr(), params.getDataBase());
+			if (size > 0) {
+				//抽奖结束，更新状态为2
+				MeetingConfigUtil.updateStatus(roundId,"2");
+			}
+			//保存中奖用户信息
+			for (Map<String,Object> map : result.getRows()) {
+				map.put("roundId", roundId);
+				map.put("status", "0");
+				//维护中奖用户缓存信息
+				RedisUtils.getRedisService().del("key_MEETING_CUST_INFO"+map.get("userId"));
+			}
+			AppParam saveWin = new AppParam("meetingWinnerService","batchInsertMeetinWinner");
+			saveWin.addAttr("list", result.getRows());
+			SoaManager.getInstance().invoke(saveWin);
+		}
+		return result;
+	}
+
+	
+	/**
+	 * 用户批量导入
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult batchInsertMeetingUser(AppParam params) {
+		AppResult result = new AppResult();
+		List<Map<String,Object>> list = (List<Map<String, Object>>) params.getAttr("insertList");
+		int size = super.getDao().batchInsert(NAMESPACE, "batchInsertMeetingUser", list, params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+}

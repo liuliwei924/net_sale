@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATBOOK">
+    <sql id="querySqlWhere">
+    	<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="address != null and address != ''">
+				and address = #{address}
+			</if>
+			<if test="bookDesc != null and bookDesc != ''">
+				and bookDesc = #{bookDesc}
+			</if>
+			<if test="bookTime != null and bookTime != ''">
+				and bookTime = #{bookTime}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId =#{orgId}
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and orgId in (${userOrgs})
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				<![CDATA[ and createTime >= #{applyTime} ]]>
+			</if>
+				
+		</where>
+    </sql>
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			address, 
+			bookTime ,
+			visitTime ,
+			bookDesc,
+			status, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			updateBy, 
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime,
+			orgId  
+		FROM t_treat_book
+		<include refid="querySqlWhere"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_book 
+		<include refid="querySqlWhere"/>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+		    t.applyId,
+			t.address as 'bookAddress', 
+			t.status as 'bookStatus', 
+			t.bookTime,
+			t1.applyName,
+			t1.telephone,
+			t2.loanAmount,
+			t2.loanDeadline,
+			t2.contactTime,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as robTime 
+		FROM t_treat_book t
+		JOIN t_borrow_apply t1 ON t.applyId = t1.applyId AND t1.storeStatus=2
+	  	JOIN t_borrow_base t2 ON t.applyId = t2.applyId 
+		<include refid="showSql"/>
+		order by t.createTime desc
+	</select>
+	
+	<select id="queryShowCount" resultType="int"  parameterType="map">
+		SELECT COUNT(t.applyId) 
+		FROM t_treat_book t
+		JOIN t_borrow_apply t1 ON t.applyId = t1.applyId AND t1.storeStatus=2
+	  	JOIN t_borrow_base t2 ON t.applyId = t2.applyId 
+		<include refid="showSql"/>
+	</select>
+	
+	<sql id="showSql">
+		<where>
+			t.customerId=#{lastStore}
+			<if test="applyName != null and applyName != ''">
+				and t1.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and t1.telephone=#{telephone}
+			</if>
+			<if test="startTime != null and startTime != ''">
+				<![CDATA[ and DATE_FORMAT(t.createTime,'%Y-%m-%d') >= #{startTime} ]]>
+			</if>
+			<if test="endTime != null and endTime != ''">
+				<![CDATA[ and DATE_FORMAT(t.createTime,'%Y-%m-%d') <= #{endTime} ]]>
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 查询门店预约信息 -->
+	<select id="queryBookInfo" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.customerId, 
+			t1.realName,
+			t.address, 
+			bookTime,
+			bookDesc,
+			t.`status`, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			t.updateBy, 
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_treat_book t
+		LEFT JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		WHERE t.applyId = #{applyId}
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_treat_book (
+			applyId,
+			customerId,
+			address,
+			bookDesc,
+			bookTime,
+			visitTime,
+			recCustId,
+			status,
+			createTime,
+			updateBy,
+			updateTime,
+			orgId
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{address, jdbcType=VARCHAR}, 
+			#{bookDesc, jdbcType=VARCHAR}, 
+			#{bookTime, jdbcType=VARCHAR}, 
+			#{visitTime, jdbcType=VARCHAR},
+			#{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_book 
+		<where> 
+			applyId = #{applyId}
+		    <if test="customerId != null">
+				AND customerId = #{customerId}
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_book  
+		<set>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR},  
+			</if>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="bookDesc != null">
+				bookDesc = #{bookDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="bookTime != null">
+				bookTime = #{bookTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="visitTime != null">
+				visitTime = #{visitTime, jdbcType=VARCHAR},  
+			</if>
+			<if test="recCustId != null and  recCustId !='' ">
+				recCustId = #{recCustId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

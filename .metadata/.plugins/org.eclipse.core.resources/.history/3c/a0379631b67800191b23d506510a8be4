@@ -1,0 +1,343 @@
+package org.xxjr.busi.util.wd;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.IDCardValidate;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+public class ProdConditionUtil {
+	
+	/**
+	 * app获取符合条件的微店产品
+	 * @param request
+	 * @return
+	 */
+	public static AppResult appQueryConformProd (AppParam params) {
+		AppResult result = new AppResult();
+		Object workType = params.getAttr("workType");
+		if (StringUtils.isEmpty(workType)) {
+			throw new SysException("职业身份不能为空");
+		}
+		try {
+			AppParam param = new AppParam("wdProductService", "queryConformProd");
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+			param.addAttr("cityName", params.getAttr("cityName"));
+			param.addAttr("applyAmount", params.getAttr("applyAmount"));
+			param.addAttr("workType", workType);
+			if (!StringUtils.isEmpty(params.getAttr("wagesType"))) {
+				if (Integer.valueOf(params.getAttr("wagesType").toString()) == 1) {
+					param.addAttr("cardAmt", params.getAttr("income"));
+				}else {
+					param.addAttr("income", params.getAttr("income"));
+				}
+			}
+			param.addAttr("pubAmount", params.getAttr("pubAmount"));
+			param.addAttr("journal", params.getAttr("totalAmount"));
+			param.addAttr("manageYear", params.getAttr("manageYear"));
+			param.addAttr("licenceLimit", params.getAttr("hasLicense"));
+			param.addAttr("houseVal", params.getAttr("houseVal"));
+			param.addAttr("houseType", params.getAttr("houseType"));
+			param.addAttr("carType", params.getAttr("carType"));
+			param.addAttr("carVal", params.getAttr("carPrice"));
+			param.addAttr("insurType", params.getAttr("insurType"));
+			param.addAttr("insurPayType", params.getAttr("insurPayType"));
+			param.addAttr("insurCount", params.getAttr("insurMonth"));
+			param.addAttr("socialType",  params.getAttr("socialType"));
+			param.addAttr("fundType", params.getAttr("fundType"));
+			param.addAttr("zhimaScore", StringUtils.isEmpty(params.getAttr("zimaScore")) ? params.getAttr("zimaScore") : NumberUtil.getInt(params.getAttr("zimaScore")));
+			param.addAttr("creditType",  params.getAttr("creditType"));
+			param.addAttr("insurAmt", params.getAttr("insurMonthAmt"));
+			param.addAttr("insurMonth", params.getAttr("insurMonth"));
+			param.addAttr("houseMonthPay", params.getAttr("houseMonthPay"));
+			int weiLiDai = NumberUtil.getInt(params.getAttr("haveWeiLi"),0);
+			if (weiLiDai > 0) {
+				param.addAttr("weiLiDai", weiLiDai);
+			}
+			if (!StringUtils.isEmpty(params.getAttr("identifyNo"))) {
+				param.addAttr("age", IDCardValidate.getCardAge(params.getAttr("identifyNo").toString()));
+			}else {
+				param.addAttr("age", params.getAttr("age"));
+			}
+			param.addAttr("limit", 3);
+			param.addAttr("inStatus", params.getAttr("inStatus"));
+			param.addAttr("productId", params.getAttr("productId"));
+			param.addAttr("uuid", params.getAttr("wdUuid"));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+			if (result.getRows().size() > 0) {
+				StringBuffer prodIds = new StringBuffer();
+					for (Map<String, Object> map : result.getRows()) {
+						 Object prods = map.get("productId");
+						 prodIds.append(prods+",");
+						 String rateOffRate = StringUtil.getString(map.get("rateOffRate"));
+						 if(!StringUtils.isEmpty(rateOffRate) && rateOffRate.indexOf("-") >0){
+				           	 String[] rates = rateOffRate.split("-");
+				           	 map.remove("rateOffRate");
+				           	 map.put("rateMin", rates[0]);
+				           	 map.put("rateMax", rates[1]);
+				         }
+					}
+				String[] arrayProdIds = prodIds.toString().split(",");
+				Arrays.sort(arrayProdIds);
+				result.putAttr("title", appGetTitile(arrayProdIds));
+			}
+		} catch (Exception e) {
+			LogerUtil.error(ProdConditionUtil.class, e, "queryConformProd error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 获取符合条件的微店产品
+	 * @param request
+	 * @return
+	 */
+	public static AppResult queryConformProd (AppParam params) {
+		AppResult result = new AppResult();
+		Object workType = params.getAttr("workType");
+		if (StringUtils.isEmpty(workType)) {
+			throw new SysException("职业身份不能为空");
+		}
+		try {
+			AppParam param = new AppParam("wdProductService", "queryConformProd");
+			param.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+			param.addAttr("cityName", params.getAttr("cityName"));
+			param.addAttr("applyAmount", params.getAttr("applyAmount"));
+			param.addAttr("workType", workType);
+			if (!StringUtils.isEmpty(params.getAttr("wagesType"))) {
+				if (Integer.valueOf(params.getAttr("wagesType").toString()) == 1) {
+					param.addAttr("cardAmt", params.getAttr("income"));
+				}else {
+					param.addAttr("income", params.getAttr("income"));
+				}
+			}
+			param.addAttr("pubAmount", params.getAttr("pubAmount"));
+			param.addAttr("journal", params.getAttr("totalAmount"));
+			param.addAttr("manageYear", params.getAttr("manageYear"));
+			param.addAttr("licenceLimit", params.getAttr("hasLicense"));
+			param.addAttr("houseVal", params.getAttr("houseVal"));
+			param.addAttr("houseType", params.getAttr("houseType"));
+			param.addAttr("carType", params.getAttr("carType"));
+			param.addAttr("carVal", params.getAttr("carPrice"));
+			param.addAttr("insurType", params.getAttr("insurType"));
+			param.addAttr("insurPayType", params.getAttr("insurPayType"));
+			param.addAttr("insurCount", params.getAttr("insurMonth"));
+			param.addAttr("socialType",  params.getAttr("socialType"));
+			param.addAttr("fundType", params.getAttr("fundType"));
+			param.addAttr("zhimaScore", StringUtils.isEmpty(params.getAttr("zimaScore")) ? params.getAttr("zimaScore") : NumberUtil.getInt(params.getAttr("zimaScore")));
+			param.addAttr("creditType",  params.getAttr("creditType"));
+			param.addAttr("insurAmt", params.getAttr("insurMonthAmt"));
+			param.addAttr("insurMonth", params.getAttr("insurMonth"));
+			param.addAttr("houseMonthPay", params.getAttr("houseMonthPay"));
+			int weiLiDai = NumberUtil.getInt(params.getAttr("haveWeiLi"),0);
+			if (weiLiDai > 0) {
+				param.addAttr("weiLiDai", weiLiDai);
+			}
+			if (!StringUtils.isEmpty(params.getAttr("identifyNo"))) {
+				param.addAttr("age", IDCardValidate.getCardAge(params.getAttr("identifyNo").toString()));
+			}else {
+				param.addAttr("age", params.getAttr("age"));
+			}
+			param.addAttr("limit", 3);
+			param.addAttr("inStatus", params.getAttr("inStatus"));
+			param.addAttr("productId", params.getAttr("productId"));
+			param.addAttr("uuid", params.getAttr("wdUuid"));
+			result = RemoteInvoke.getInstance().callNoTx(param);
+			if (result.getRows().size() > 0) {
+				StringBuffer prodIds = new StringBuffer();
+					for (Map<String, Object> map : result.getRows()) {
+						 Object prods = map.get("productId");
+						 prodIds.append(prods+",");
+						 String rateOffRate = StringUtil.getString(map.get("rateOffRate"));
+						 if(!StringUtils.isEmpty(rateOffRate) && rateOffRate.indexOf("-") >0){
+				           	 String[] rates = rateOffRate.split("-");
+//				           	 map.remove("rateOffRate");
+				           	 map.put("rateMin", rates[0]);
+				           	 map.put("rateMax", rates[1]);
+				         }
+					}
+				String[] arrayProdIds = prodIds.toString().split(",");
+				Arrays.sort(arrayProdIds);
+				result.putAttr("title", getTitile(arrayProdIds));
+			}
+		} catch (Exception e) {
+			LogerUtil.error(ProdConditionUtil.class, e, "queryConformProd error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取匹配产品的提示语
+	 * @param chs
+	 * @return
+	 */
+	 public static String getTitile(String[] chs) {  
+		 if ("".equals(chs[0]) || chs.length == 0) {
+			return "";
+		}
+	       int len = chs.length;  
+	       int rate1 = 0;
+	       int rate2 = 0;
+	       int rate3 = 0;
+	       String title1 = "";
+	       String title2 = "";
+	       String title3 = "";
+	        int nbits = 1 << len;  
+	        for (int i = 0; i < nbits; ++i) {  
+	            int t;  
+	            int q = 0;
+	            for (int j = 0; j <= len; j++) { 
+	                t = 1 << j;  
+	                if ((t & i) != 0) { // 与运算，同为1时才会是1 
+	                	q++;
+	                	Random random = new Random();
+	                	int min = 55; int max = 59;
+	                	rate1 = random.nextInt(max)%(max-min+1) + min;
+	                	min = 70;max = 75;
+	                	rate2 = random.nextInt(max)%(max-min+1) + min;
+	                	min = 76;max = 80;
+	                	rate3 = random.nextInt(max)%(max-min+1) + min;
+	                	String contant = "<p style='font-size: .26rem;color: #f9621e'> 当前您的贷款成功率为<span style='font-size: .3rem;color: #fe0000'>";
+	                	title1 = contant+rate1+"%</span>,再多选择一个产品可提升至<span style='font-size: .3rem;color: #fe0000'>"+rate2+"%</span>左右";
+	                	if (len == 1) {
+	                		title1 = contant+rate1+"%</span>,选择多个产品可提高贷款成功率";
+	                	}
+	                	title2 = contant+rate2+"%</span>,再多选择一个产品可提升至<span style='font-size: .3rem;color: #fe0000'>"+rate3+"%</span>左右";
+	                	if (len == 2) {
+	                		title2 = contant+rate2+"%</span>,选择多个产品可提高贷款成功率";
+						}
+	                	title3 = contant+rate3+"%</span>,选择多个产品可提高贷款成功率";
+	                	 if (q==1 && StringUtils.isEmpty(RedisUtils.getRedisService().get("prodTitle"+chs[j]))) {
+                			 RedisUtils.getRedisService().set("prodTitle"+chs[j], title1,1200);
+		                   }
+		                   if (q==2) {
+		                	   if (j==1 && StringUtils.isEmpty(RedisUtils.getRedisService().get("prodTitle"+chs[j-1]+chs[j]))) {
+		                		   RedisUtils.getRedisService().set("prodTitle"+chs[j-1]+chs[j], title2,1200);
+		                	   	}
+		                	   if (j==2) {
+		                		   min = 76;max = 80;
+		   	                	   rate3 = random.nextInt(max)%(max-min+1) + min;
+		                		   title2 = contant+rate2+"%</span>,再多选择一个产品可提升至<span style='font-size: .3rem;color: #fe0000'>"+rate3+"%</span>左右";
+		                		   if (StringUtils.isEmpty(RedisUtils.getRedisService().get("prodTitle"+chs[j-2]+chs[j]))) {
+		                			   RedisUtils.getRedisService().set("prodTitle"+chs[j-2]+chs[j], title2,1200);
+		                		   }
+		                		   min = 76;max = 80;
+		                		   rate3 = random.nextInt(max)%(max-min+1) + min;
+		                		   title2 = contant+rate2+"%</span>,再多选择一个产品可提升至<span style='font-size: .3rem;color: #fe0000'>"+rate3+"%</span>左右";
+		                		   if (StringUtils.isEmpty(RedisUtils.getRedisService().get("prodTitle"+chs[j-1]+chs[j]))) {
+		                			   RedisUtils.getRedisService().set("prodTitle"+chs[j-1]+chs[j], title2,1200);
+		                		   }
+		                	   }
+		                   }
+		                   if (q==3) {
+		                	   if (j>=2 && StringUtils.isEmpty(RedisUtils.getRedisService().get("prodTitle"+chs[j-2]+chs[j-1]+chs[j]))) {
+		                		   RedisUtils.getRedisService().set("prodTitle"+chs[j-2]+chs[j-1]+chs[j], title3,1200);
+		                	   }
+		                   }
+	                }
+	                
+	            }
+	            q = 0;
+	        }
+	       String title = "当前没有适合您的贷款产品";
+	       switch (len){
+	       	   case 1:title = title1; break;
+		       case 2:title = title2; break;
+		       case 3:title = title3; break; 
+	       }
+	         return title;
+	    }  
+	 
+	 
+	 	/**
+		 * app获取匹配产品的提示语
+		 * @param chs
+		 * @return
+		 */
+		 public static Map<String,Object> appGetTitile(String[] chs) {  
+			 Map<String,Object> result = new HashMap<String, Object>();
+			 if ("".equals(chs[0]) || chs.length == 0) {
+				return result;
+			}
+		       int len = chs.length;  
+		       int rate1 = 0;
+		       int rate2 = 0;
+		       int rate3 = 0;
+		       String title1 = "";
+		       String title2 = "";
+		       String title3 = "";
+		        int nbits = 1 << len;  
+		        for (int i = 0; i < nbits; ++i) {  
+		            int t;  
+		            int q = 0;
+		            for (int j = 0; j <= len; j++) { 
+		                t = 1 << j;  
+		                if ((t & i) != 0) { // 与运算，同为1时才会是1 
+		                	q++;
+		                	Random random = new Random();
+		                	int min = 55; int max = 59;
+		                	rate1 = random.nextInt(max)%(max-min+1) + min;
+		                	min = 70;max = 75;
+		                	rate2 = random.nextInt(max)%(max-min+1) + min;
+		                	min = 76;max = 80;
+		                	rate3 = random.nextInt(max)%(max-min+1) + min;
+		                	String contant = "当前您的贷款成功率为";
+		                	title1 = contant+rate1+",再多选择一个产品可提升至"+rate2+"%左右";
+		                	if (len == 1) {
+		                		title1 = contant+rate1+"%,选择多个产品可提高贷款成功率";
+		                	}
+		                	title2 = contant+rate2+"%,再多选择一个产品可提升至"+rate3+"%左右";
+		                	if (len == 2) {
+		                		title2 = contant+rate2+"%,选择多个产品可提高贷款成功率";
+							}
+		                	title3 = contant+rate3+"%,选择多个产品可提高贷款成功率";
+		                	 if (q==1 ) {
+	                			result.put(chs[j], title1);
+			                   }
+			                   if (q==2) {
+			                	   if (j==1) {
+			                		   result.put(chs[j-1]+","+chs[j], title2);
+			                	   	}
+			                	   if (j==2) {
+			                		   min = 76;max = 80;
+			   	                	   rate3 = random.nextInt(max)%(max-min+1) + min;
+			                		   title2 = contant+rate2+"%,再多选择一个产品可提升至"+rate3+"%左右";
+			                		   result.put(chs[j-2]+","+chs[j], title2);
+			                		  
+			                		   min = 76;max = 80;
+			                		   rate3 = random.nextInt(max)%(max-min+1) + min;
+			                		   title2 = contant+rate2+"%,再多选择一个产品可提升至"+rate3+"%左右";
+			                		   
+			                		   result.put(chs[j-1]+","+chs[j], title2);			            
+			                	   }
+			                   }
+			                   if (q==3) {
+			                	   result.put(chs[j-2]+","+chs[j-1]+","+chs[j], title3);
+			                   }
+		                }
+		            }
+		            q = 0;
+		        }
+		         return result;
+		    }  
+}

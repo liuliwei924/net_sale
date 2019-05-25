@@ -1,0 +1,112 @@
+package org.xxjr.busi.util.push.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.util.StringUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.CountGradeUtil;
+import org.xxjr.busi.util.borrow.IdCardResolveUtil;
+import org.xxjr.busi.util.push.AbstractLoanUtil;
+import org.xxjr.busi.util.push.PushCode;
+import org.xxjr.busi.util.push.PushPlatformUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+
+/***
+ * 宜信数据推送 
+ *
+ */
+@PushCode(4)
+public class PushYiXinUtil extends AbstractLoanUtil{
+	
+	@Override
+	public Map<String, Object> response(Map<String, Object> row)
+			throws Exception {
+		int status = 2;
+		Object message = null;
+		String url = SysParamsUtil.getStringParamByKey("push_yixin_cfg_url", "http://47.100.215.56:8080/transfer/api/post");
+		Map<String, String> param = conversionData(row);
+		Map<String, Object> resultMap = PushPlatformUtils.httpPost(url, param, true);
+		if (resultMap != null && (!resultMap.isEmpty())) {
+			if (NumberUtil.getInt(resultMap.get("res"), -1) == 0) {
+				status = 1;
+			}
+		}
+		message = resultMap.get("msg");
+		Map<String, Object> response = new HashMap<String, Object>();
+		response.put("status", status);
+		response.put("message", message);
+		return response;
+	}
+
+	public static Map<String, String> conversionData (Map<String, Object> param) {
+		String sourceCode = SysParamsUtil.getStringParamByKey("push_yixin_cfg_sourceCode", "HK-1KQDO4");
+		String secretKey = SysParamsUtil.getStringParamByKey("push_yixin_cfg_secretKey", "5ba35993ab4c39b427ea00e7");
+		Map<String, String> obj = new HashMap<String, String>();
+		obj.put("sourceCode", sourceCode);
+		obj.put("secretKey", secretKey);
+		obj.put("tel", StringUtil.objectToStr(param.get("telephone")));
+		obj.put("gender", "1".equals(param.get("sex")) ? "男" : "女");
+		obj.put("username", PushPlatformUtils.isPushTest() ? "测试" : StringUtil.objectToStr(param.get("applyName")));
+		obj.put("city", StringUtil.objectToStr(param.get("cityName")));
+		
+		String identifyNo = StringUtil.getString(param.get("identifyNo"));
+		String birthday = IdCardResolveUtil.getBirthday(identifyNo);
+		int age = IdCardResolveUtil.getAge(identifyNo);
+		if (age == -1) {
+			age = NumberUtil.getInt(param.get("age"), -1);
+		}
+		obj.put("birthDate", PushPlatformUtils.getBirthDay(birthday,age));
+		obj.put("loanMoney", StringUtil.objectToStr(NumberUtil.getDouble(param.get("loanAmount"), 0) * 10000));
+		obj.put("salaryType", NumberUtil.getInt(param.get("wagesType"), 1) == 1 ? "银行代发" : "现金发放");
+		
+		double income = 5000;
+		if ((!StringUtils.isEmpty(param.get("income"))) && (NumberUtil.getDouble(param.get("income"), 0) > 0)) {
+			income = NumberUtil.getDouble(param.get("income"), 0.0);
+		}else if ((!StringUtils.isEmpty(param.get("pubManageLine"))) && (NumberUtil.getDouble(param.get("pubManageLine"), 0) > 0)) {
+			double pubManageLine = NumberUtil.getDouble(param.get("pubManageLine"), 0);
+			income = pubManageLine * 10000;
+		}else if ((!StringUtils.isEmpty(param.get("cashMonth"))) && (NumberUtil.getDouble(param.get("cashMonth"), 0) > 0)) {
+			income = NumberUtil.getDouble(param.get("cashMonth"), 0);
+		}
+		obj.put("monthlyIncome", StringUtil.objectToStr(income));
+		int workType = NumberUtil.getInt(param.get("workType"), 0);
+		if (workType == 4) {
+			param.put("jobType", "上班族");
+		}else if (workType == 2 || workType == 3) {
+			param.put("jobType", "私营业主");
+		}else {
+			param.put("jobType", "无业");
+		}
+		
+		String houseData = SysParamsUtil.getStringParamByKey("push_yixin_cfg_houseData", "有房（无贷款）;有房（贷款中）;无房");
+		String[] houseArray = houseData.split(";");
+		if (NumberUtil.getInt(param.get("houseType"), 0) == 4) {
+			obj.put("houseLoanInfo", houseArray[0]);
+		}else if (NumberUtil.getInt(param.get("houseType"), 0) == 3) {
+			obj.put("houseLoanInfo", houseArray[1]);
+		}else {
+			obj.put("houseLoanInfo", houseArray[2]);
+		}
+		
+		
+		String carData = SysParamsUtil.getStringParamByKey("push_yixin_cfg_carData", "有车（无贷款）;有车（贷款中）;无车");
+		String[] carArray = carData.split(";");
+		if (NumberUtil.getInt(param.get("carType"), 0) == 4) {
+			obj.put("carLoanInfo", carArray[0]);
+		}else if (NumberUtil.getInt(param.get("carType"), 0) == 3) {
+			obj.put("carLoanInfo", carArray[1]);
+		}else {
+			obj.put("carLoanInfo", carArray[2]);
+		}
+		obj.put("socialInsurance", CountGradeUtil.judgeSocialType(NumberUtil.getInt(param.get("socialType"), 0)) ? "缴费1年以上" : "无社保");
+		obj.put("socialFund", CountGradeUtil.judgeFundType(NumberUtil.getInt(param.get("fundType"), 0)) ? "缴费1年以上" : "无公积金");
+		obj.put("policy", CountGradeUtil.judgeInsurType(NumberUtil.getInt(param.get("insurType"),0)) ? "年缴费2400以上" : "无寿险保单");
+		obj.put("creditCard", NumberUtil.getInt(param.get("creditType"),2) != 2 ? "无" : "有");
+		obj.put("weilidai", NumberUtil.getInt(param.get("havePinan"),0) > 0 ? "有" : "无");
+		obj.put("ip", StringUtil.objectToStr(param.get("applyIp")));
+		return obj;
+	}
+	
+}

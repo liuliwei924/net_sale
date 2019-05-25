@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMTOTALTIME">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			costAmount, 
+			browseCount, 
+			storeCount, 
+			kfReceivedCount
+		FROM t_sum_total_time
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="applyCount != null and applyCount != ''">
+				and applyCount = #{applyCount}
+			</if>
+			<if test="seniorCount != null and seniorCount != ''">
+				and seniorCount = #{seniorCount}
+			</if>
+			<if test="notFillCount != null and notFillCount != ''">
+				and notFillCount = #{notFillCount}
+			</if>
+			<if test="costAmount != null and costAmount != ''">
+				and costAmount = #{costAmount}
+			</if>
+			<if test="browseCount != null and browseCount != ''">
+				and browseCount = #{browseCount}
+			</if>
+			<if test="storeCount != null and storeCount != ''">
+				and storeCount = #{storeCount}
+			</if>
+			<if test="kfReceivedCount != null and kfReceivedCount != ''">
+				and kfReceivedCount = #{kfReceivedCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_time 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="applyCount != null and applyCount != ''">
+			and applyCount = #{applyCount}
+		</if>
+		<if test="seniorCount != null and seniorCount != ''">
+			and seniorCount = #{seniorCount}
+		</if>
+		<if test="notFillCount != null and notFillCount != ''">
+			and notFillCount = #{notFillCount}
+		</if>
+		<if test="costAmount != null and costAmount != ''">
+			and costAmount = #{costAmount}
+		</if>
+		<if test="browseCount != null and browseCount != ''">
+			and browseCount = #{browseCount}
+		</if>
+		<if test="storeCount != null and storeCount != ''">
+			and storeCount = #{storeCount}
+		</if>
+		<if test="kfReceivedCount != null and kfReceivedCount != ''">
+			and kfReceivedCount = #{kfReceivedCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_total_time (
+			recordDate,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			costAmount,
+			browseCount,
+			storeCount,
+			totalSignCount,
+			sucBookCount,
+			kfReceivedCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="applyCount !=null ">
+			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyCount ==null ">
+			0 ,
+			</if>
+			<if test="seniorCount !=null ">
+			#{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="seniorCount ==null ">
+			0 ,
+			</if>
+			<if test="notFillCount !=null ">
+			#{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notFillCount ==null ">
+			0 ,
+			</if>
+			<if test="costAmount !=null ">
+			#{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="costAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="browseCount !=null ">
+			#{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="browseCount ==null ">
+			0 ,
+			</if>
+			<if test="storeCount !=null ">
+			#{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeCount ==null ">
+			0 ,
+			</if>
+			<if test="totalSignCount !=null ">
+			#{totalSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="totalSignCount ==null ">
+			0 ,
+			</if>
+			<if test="sucBookCount !=null ">
+			#{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucBookCount ==null ">
+			0 ,
+			</if>
+			<if test="kfReceivedCount !=null ">
+			#{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="kfReceivedCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_total_time 
+		<where> 
+			recordDate = #{recordDate}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_total_time  
+		<set>
+			<if test="applyCount != null">
+				applyCount = #{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="seniorCount != null">
+				seniorCount = #{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notFillCount != null">
+				notFillCount = #{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeCount != null">
+				storeCount = #{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="kfReceivedCount != null">
+				kfReceivedCount = #{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_total_time 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_total_time  (
+			recordDate,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			costAmount,
+			browseCount,
+			storeCount,
+			totalSignCount,
+			sucBookCount,
+			kfReceivedCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.applyCount}, 
+		  #{item.seniorCount}, 
+		  #{item.notFillCount}, 
+		  #{item.costAmount}, 
+		  #{item.browseCount}, 
+		  #{item.storeCount},
+		  #{item.totalSignCount},
+		  #{item.sucBookCount},
+		  #{item.kfReceivedCount}
+		  )
+		</foreach>
+  </insert>
+  
+  <sql id="totalSql">
+		 <if test="recordDate != null and recordDate != ''">
+		  	and t1.recordDate = #{recordDate}
+		 </if>
+		 <if test="startRecordDate != null and startRecordDate != ''">
+		  	and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+		 </if>
+		  <if test="endRecordDate != null and endRecordDate != ''">
+		 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+		 </if>
+		 <if test="startRecordMonth != null and startRecordDate != ''">
+		  	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m')>= #{startRecordMonth}]]>
+		 </if>
+		 <if test="endRecordMonth != null and endRecordDate != ''">
+		 	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+		 </if>
+	</sql>
+	
+	<!--按申请时间日统计（按申请时间） -->
+	<select id="totalDay" resultType="map" parameterType="map">
+		SELECT
+			t1.recordDate,
+			IFNULL(t1.applyCount,0) as applyCount,
+			IFNULL(t1.browseCount,0) as browseCount,
+			IFNULL(t1.costAmount,0) as costAmount,
+			IFNULL(ROUND(t1.costAmount/t1.applyCount,2),IFNULL(t1.costAmount,0)) as 'costMoney',
+			IFNULL(t1.notFillCount,0) as notFillCount,
+			IFNULL(t1.seniorCount,0) as seniorCount,
+			IFNULL(t1.storeCount,0) as storeCount,
+			IFNULL(t1.totalSignCount,0) as totalSignCount,
+			IFNULL(t1.sucBookCount,0) as sucBookCount,
+			IFNULL(t1.kfReceivedCount,0) as kfReceivedCount,
+			IFNULL(t2.saleCount,0) as saleCount,
+			IFNULL(t2.saleAmount,0) as saleAmount,
+			IFNULL(t2.saleScore,0) as saleScore,
+			IFNULL(t2.sucSaleCount,0) as sucSaleCount,
+			IFNULL(t2.sucSaleAmount,0) as sucSaleAmount,
+			IFNULL(t2.sucSaleScore,0) as sucSaleScore,
+			IFNULL(t3.retCount,0) as retCount,
+			IFNULL(t3.retAmount,0) as retAmount,
+			IFNULL(t3.sucRetCount,0) as sucRetCount,
+			IFNULL(t3.sucRetAmount,0) as sucRetAmount
+		FROM
+			t_sum_total_time t1
+		LEFT JOIN t_sum_sale_time t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_ret_time t3 ON t1.recordDate = t3.recordDate
+		<where>
+			<include refid="totalSql"/>
+		</where>
+		   ORDER by t1.recordDate DESC,t1.applyCount DESC
+	</select>
+	
+	<select id="totalDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_total_time t1
+		<where>
+			<include refid="totalSql"/>
+		</where>
+	</select>
+	
+	<!--按申请时间月统计（按申请时间） -->
+	<select id="totalMonth" resultType="map" parameterType="map">
+		SELECT
+			DATE_FORMAT(t1.recordDate, '%Y-%m') AS recordDate,
+			IFNULL(SUM(t1.applyCount),0) AS applyCount,
+			IFNULL(SUM(t1.browseCount),0) AS browseCount,
+			IFNULL(SUM(t1.costAmount),0) AS costAmount,
+			IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoney',
+			IFNULL(SUM(t1.notFillCount),0) AS notFillCount,
+			IFNULL(SUM(t1.seniorCount),0) AS seniorCount,
+			IFNULL(SUM(t1.storeCount),0) AS storeCount,
+			IFNULL(SUM(t1.totalSignCount),0) AS totalSignCount,
+			IFNULL(SUM(t1.sucBookCount),0) AS sucBookCount,
+			IFNULL(SUM(t1.kfReceivedCount),0) AS kfReceivedCount,
+			IFNULL(SUM(t2.saleCount),0) AS saleCount,
+			IFNULL(SUM(t2.saleAmount),0) AS saleAmount,
+			IFNULL(SUM(t2.saleScore),0) AS saleScore,
+			IFNULL(SUM(t2.sucSaleCount),0) AS sucSaleCount,
+			IFNULL(SUM(t2.sucSaleAmount),0) AS sucSaleAmount,
+			IFNULL(SUM(t2.sucSaleScore),0) AS sucSaleScore,
+			IFNULL(SUM(t3.retCount),0) AS retCount,
+			IFNULL(SUM(t3.retAmount),0) AS retAmount,
+			IFNULL(SUM(t3.sucRetCount),0) AS sucRetCount,
+			IFNULL(SUM(t3.sucRetAmount),0) AS sucRetAmount
+		FROM
+			t_sum_total_time t1
+		LEFT JOIN t_sum_sale_time t2 ON t1.recordDate = t2.recordDate
+		LEFT JOIN t_sum_ret_time t3 ON t1.recordDate = t3.recordDate
+		<where>
+			<include refid="totalSql"/>
+		</where>
+			GROUP BY
+				DATE_FORMAT(t1.recordDate, '%Y-%m')
+		   ORDER by t1.recordDate DESC,t1.applyCount DESC
+	</select>
+	
+	<select id="totalMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT COUNT(1) FROM t_sum_total_time t1
+		<where>
+			<include refid="totalSql"/>
+		</where>
+		GROUP BY DATE_FORMAT(t1.recordDate, '%Y-%m')) tabl
+	</select>
+	
+	<!-- 更新花费  -->
+	<update id="updateTotalCost" parameterType="map">
+		UPDATE t_sum_total_time  
+		<set>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+		</where>
+	</update>
+</mapper>

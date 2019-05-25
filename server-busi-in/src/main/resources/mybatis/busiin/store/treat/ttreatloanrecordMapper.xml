@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="TREATLOANRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			loanNo, 
+			reContractId,
+			applyId, 
+			lendAmount, 
+			DATE_FORMAT(lendDate,'%Y-%m-%d') as lendDate , 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  
+		FROM t_treat_loan_record
+		<where>
+			<if test="recordId != null and recordId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="lendAmount != null and lendAmount != ''">
+				and lendAmount = #{lendAmount}
+			</if>
+			<if test="lendDate != null and lendDate != ''">
+				and lendDate = #{lendDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_treat_loan_record 
+		<where>
+		<if test="recordId != null and recordId != ''">
+		    and recordId = #{recordId}
+		 </if>
+		<if test="loanNo != null and loanNo != ''">
+			and loanNo = #{loanNo}
+		</if>
+		<if test="reContractId != null and reContractId != ''">
+			and reContractId = #{reContractId}
+		</if>
+		<if test="applyId != null and applyId != ''">
+			and applyId = #{applyId}
+		</if>
+		<if test="lendAmount != null and lendAmount != ''">
+			and lendAmount = #{lendAmount}
+		</if>
+		<if test="lendDate != null and lendDate != ''">
+			and lendDate = #{lendDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_treat_loan_record (
+			loanNo,
+			reContractId,
+			applyId,
+			lendAmount,
+			lendDate,
+			createTime
+		)
+		VALUES ( 
+			#{loanNo, jdbcType=VARCHAR}, 
+			#{reContractId, jdbcType=VARCHAR},
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="lendAmount !=null ">
+			#{lendAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="lendAmount ==null ">
+			0.00 ,
+			</if>
+			#{lendDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_treat_loan_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	<delete id="deleteBy" parameterType="map">
+		DELETE FROM t_treat_loan_record 
+		<where> 
+			applyId = #{applyId}
+			<if test="reContractId != null and reContractId != ''">
+				and reContractId = #{reContractId}
+			</if>
+			<if test="loanNo != null and loanNo != ''">
+				and loanNo = #{loanNo}
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_treat_loan_record  
+		<set>
+			<if test="loanNo != null">
+				loanNo = #{loanNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="reContractId != null">
+				reContractId = #{reContractId, jdbcType=VARCHAR},  
+			</if>
+			<if test="applyId != null">
+				applyId = #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="lendAmount != null">
+				lendAmount = #{lendAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="lendDate != null">
+				lendDate = #{lendDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>

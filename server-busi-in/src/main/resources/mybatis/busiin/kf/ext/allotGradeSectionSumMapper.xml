@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ALLOTGRADESECTIONSUM">
+
+	<!-- 共用的条件处理sql -->
+	<sql id="commonTimeSql">
+		<![CDATA[t.applyTime>= #{startRecordDate} AND t.applyTime<=#{endRecordDate}]]>
+		<if test="channelCode != null and channelCode != ''">
+			AND t.channelCode = #{channelCode}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			AND t.cityName like '${cityName}%'
+		</if>
+		<if test="channelName != null and channelName != ''">
+			AND t1.channelName like '${channelName}%'
+		</if>
+		<if test="teamNo != null and teamNo != ''">
+			AND team.teamNo = #{teamNo}
+		</if>
+	</sql>
+	
+	<!-- allotCity数量查询sql-->
+	<select id="allotGradeCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(1)
+		FROM(
+		SELECT
+			COUNT(1)
+		FROM
+			t_borrow_apply t
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+		) tab
+	</select>
+	<!-- allotCity数量查询sql-->
+	<select id="allotCityCount" resultType="int" parameterType="map">
+		SELECT
+			COUNT(1)
+		FROM(
+		SELECT
+			COUNT(1)
+		FROM
+			t_borrow_apply t
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+		GROUP BY
+			t.cityName) tab
+	</select>
+	<!-- allotChannelCode数量查询sql-->
+	<select id="allotChannelCodeCount" resultType="int" parameterType="map">
+		SELECT  
+			COUNT(1)
+		FROM(
+		SELECT
+			COUNT(1)
+		FROM
+			t_borrow_apply t
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+		GROUP BY
+			t.channelCode) tab
+	</select>
+	
+	
+	<!-- 日期  城市 等级 （ABCDEF） 去向(网销，电销，贷超，客服，小贷，保险) -->
+	<select id="allotCity" resultType="map" parameterType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) AS applyTime, 
+			t.cityName,
+			count(CASE WHEN t.grade='A' THEN 1 END) AS A ,
+			count(CASE WHEN t.grade='B' THEN 1 END) AS B ,
+			count(CASE WHEN t.grade='C' THEN 1 END) AS C ,
+			count(CASE WHEN t.grade='D' THEN 1 END) AS D ,
+			count(CASE WHEN t.grade='E' THEN 1 END) AS E ,
+			count(CASE WHEN t.grade='F' THEN 1 END) AS F ,
+			count(CASE WHEN t.allotFlag=1 THEN 1 END) AS netSales,
+			count(CASE WHEN t.allotFlag=2 THEN 1 END) AS loanShop,
+			count(CASE WHEN t.allotFlag=3 THEN 1 END) AS electSales,
+			count(CASE WHEN t.allotFlag=4 THEN 1 END) AS custService,
+			count(CASE WHEN t.allotFlag=5 THEN 1 END) AS smallLoan,
+			count(CASE WHEN t.allotFlag=6 THEN 1 END) AS insurance,
+			count(CASE WHEN t.allotFlag=7 THEN 1 END) AS smallLoan_insurance
+		FROM
+			t_borrow_apply t
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+		GROUP BY
+			t.cityName
+	</select>
+	
+	<!-- 日期 渠道 等级 （ABCDEF） 去向(网销，电销，贷超，客服，小贷，保险) -->
+	<select id="allotChannelCode" resultType="map" parameterType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) AS applyTime, 
+			t.channelCode,
+			CONCAT_WS('-',team.teamName,t1.channelName) as 'channelName',
+			count(CASE WHEN t.grade='A' THEN 1 END) AS A ,
+			count(CASE WHEN t.grade='B' THEN 1 END) AS B ,
+			count(CASE WHEN t.grade='C' THEN 1 END) AS C ,
+			count(CASE WHEN t.grade='D' THEN 1 END) AS D ,
+			count(CASE WHEN t.grade='E' THEN 1 END) AS E ,
+			count(CASE WHEN t.grade='F' THEN 1 END) AS F ,
+			count(CASE WHEN t.allotFlag=1 THEN 1 END) AS netSales,
+			count(CASE WHEN t.allotFlag=2 THEN 1 END) AS loanShop,
+			count(CASE WHEN t.allotFlag=3 THEN 1 END) AS electSales,
+			count(CASE WHEN t.allotFlag=4 THEN 1 END) AS custService,
+			count(CASE WHEN t.allotFlag=5 THEN 1 END) AS smallLoan,
+			count(CASE WHEN t.allotFlag=6 THEN 1 END) AS insurance,
+			count(CASE WHEN t.allotFlag=7 THEN 1 END) AS smallLoan_insurance
+		FROM
+			t_borrow_apply t
+		LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+		LEFT JOIN t_borrow_team team ON t1.teamNo = team.teamNo
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+		GROUP BY
+			t.channelCode
+	</select>
+	
+	<!-- 日期 等级 （ABCDEF） 去向(网销，电销，贷超，客服，小贷，保险) -->
+	<select id="allotGrade" resultType="map" parameterType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) AS applyTime, 
+			count(CASE WHEN t.grade='A' THEN 1 END) AS A ,
+			count(CASE WHEN t.grade='B' THEN 1 END) AS B ,
+			count(CASE WHEN t.grade='C' THEN 1 END) AS C ,
+			count(CASE WHEN t.grade='D' THEN 1 END) AS D ,
+			count(CASE WHEN t.grade='E' THEN 1 END) AS E ,
+			count(CASE WHEN t.grade='F' THEN 1 END) AS F ,
+			count(CASE WHEN t.allotFlag=1 THEN 1 END) AS netSales,
+			count(CASE WHEN t.allotFlag=2 THEN 1 END) AS loanShop,
+			count(CASE WHEN t.allotFlag=3 THEN 1 END) AS electSales,
+			count(CASE WHEN t.allotFlag=4 THEN 1 END) AS custService,
+			count(CASE WHEN t.allotFlag=5 THEN 1 END) AS smallLoan,
+			count(CASE WHEN t.allotFlag=6 THEN 1 END) AS insurance,
+			count(CASE WHEN t.allotFlag=7 THEN 1 END) AS smallLoan_insurance
+		FROM
+			t_borrow_apply t
+		<where>
+			<include refid="commonTimeSql"/>
+		</where>
+	</select>
+</mapper>

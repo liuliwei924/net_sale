@@ -1,0 +1,80 @@
+package org.xxjr.tools.util;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.llw.model.cache.RedisUtils;
+
+public class FanAddressUtil {
+	public static final String CASH_KEY="FanAddress";
+	public static final String CASH_KEY_CITY="FanCITYSAddress";
+	
+	
+	/***
+	 * 获取相应城市的位置信息
+	 * @param customerId
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>>  getFanAddres(String cityName){
+		List<Map<String,Object>>  list = ((List<Map<String, Object>>) RedisUtils.getRedisService().get(CASH_KEY + cityName));
+		if(list==null || list.isEmpty()){
+			list = refershFanAddres(cityName);
+		}
+		return list;
+	}
+	
+	/***
+	 * 刷新相应城市的位置信息
+	 * @param customerId
+	 */
+	public static List<Map<String,Object>> refershFanAddres(String cityName){
+		//设置当前城市的信息
+		AppParam param  = new AppParam();
+		param.setService("fanAddressService");
+		param.setMethod("query");
+		param.addAttr("cityName", cityName);
+		param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+"tools"));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		RedisUtils.getRedisService().set(CASH_KEY + cityName, (Serializable)result.getRows(), 60*60*4);
+		return result.getRows();
+	}
+
+	/***
+	 * 刷新所有城市信息
+	 * @param customerId
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String,Object>> getCityList(){
+		List<Map<String,Object>> cityList = ((List<Map<String, Object>>) RedisUtils.getRedisService().get(CASH_KEY_CITY));
+		if(cityList==null || cityList.isEmpty()){
+			cityList = refershCityList();
+		}
+		return cityList;
+	}
+	
+	/***
+	 * 刷新所有城市信息
+	 * @param customerId
+	 */
+	public static List<Map<String,Object>> refershCityList(){
+		//设置可以选择的城市
+		AppParam param = new AppParam();
+		param.setService("fanAddressService");
+		param.setMethod("queryGroupEn");
+		param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+"tools"));
+		AppResult result = RemoteInvoke.getInstance().call(param);
+		for(Map<String,Object> row: result.getRows()){
+			row.put("cityNames", row.remove("cityName").toString().split(","));
+		}
+		RedisUtils.getRedisService().set(CASH_KEY_CITY, (Serializable)result.getRows(), 60*60*4);
+		return result.getRows();
+	}
+	
+}
+

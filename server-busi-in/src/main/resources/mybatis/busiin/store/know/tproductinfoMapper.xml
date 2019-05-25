@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="PRODUCTINFO">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			productId,
+			productName, 
+			productType, 
+			fileUrl, 
+			lastUpload,
+			orgId,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_product_info
+		<where>
+			<if test="productId != null and productId != ''">
+			  and productId = #{productId}
+			 </if>
+			<if test="productName != null and productName != ''">
+				and productName = #{productName}
+			</if>
+			<if test="productType != null and productType != ''">
+				and productType = #{productType}
+			</if>
+			<if test="fileUrl != null and fileUrl != ''">
+				and fileUrl = #{fileUrl}
+			</if>
+			<if test="lastUpload != null and lastUpload != ''">
+				and lastUpload = #{lastUpload}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_product_info 
+		<where>
+		<if test="productId != null and productId != ''">
+		    and productId = #{productId}
+		 </if>
+		<if test="productName != null and productName != ''">
+			and productName = #{productName}
+		</if>
+		<if test="productType != null and productType != ''">
+			and productType = #{productType}
+		</if>
+		<if test="fileUrl != null and fileUrl != ''">
+			and fileUrl = #{fileUrl}
+		</if>
+		<if test="lastUpload != null and lastUpload != ''">
+			and lastUpload = #{lastUpload}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="productId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_product_info (
+			productName,
+			productType,
+			fileUrl,
+			lastUpload,
+			orgId,
+			createTime,
+			updateTime
+		)
+		VALUES ( 
+			#{productName, jdbcType=VARCHAR}, 
+			#{productType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{fileUrl, jdbcType=VARCHAR}, 
+			#{lastUpload, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			now()
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_product_info 
+		<where> 
+			productId = #{productId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_product_info  
+		<set>
+			<if test="productName != null">
+				productName = #{productName, jdbcType=VARCHAR},  
+			</if>
+			<if test="productType != null">
+				productType = #{productType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="fileUrl != null">
+				fileUrl = #{fileUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="lastUpload != null">
+				lastUpload = #{lastUpload, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  productId = #{productId}
+		</where>
+	</update>
+	
+	<select id="queryProductList" parameterType="map" resultType="map">
+		SELECT
+			t.productId,
+			t.productName, 
+			t.productType, 
+			t.fileUrl, 
+			t.lastUpload,
+			t.orgId,
+			t2.orgName,
+			concat(t2.orgNo,'-',t2.orgName) as orgText,
+			t1.realName,
+			t3.typeName,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM t_product_info t 
+		LEFT JOIN t_busi_cust t1 on t.lastUpload = t1.customerId
+		LEFT JOIN t_org t2 on t.orgId = t2.orgId
+		JOIN t_product_type t3 on t.productType = t3.typeId
+		<include refid="productSQL"></include>
+		ORDER BY t.updateTime desc
+	</select>
+	
+	<select id="queryProductCount" parameterType="map" resultType="int">
+		SELECT count(*) from t_product_info t 
+		LEFT JOIN t_busi_cust t1 on t.lastUpload = t1.customerId
+		LEFT JOIN t_org t2 on t.orgId = t2.orgId
+		JOIN t_product_type t3 on t.productType = t3.typeId
+		<include refid="productSQL"></include>
+	</select>
+	
+	 <sql id="productSQL">
+	 	<where>
+	    	<if test="productId != null and productId != ''">
+			    and t.productId = #{productId}
+			 </if>
+			<if test="productName != null and productName != ''">
+				and t.productName like CONCAT('%',#{productName},'%')
+			</if>
+			<if test="productType != null and productType != ''">
+				and t.productType = #{productType}
+			</if>
+			<if test="fileUrl != null and fileUrl != ''">
+				and t.fileUrl = #{fileUrl}
+			</if>
+			<if test="lastUpload != null and lastUpload != ''">
+				and t.lastUpload = #{lastUpload}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId = #{orgId}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and t.createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and t.updateTime = #{updateTime}
+			</if>
+			<if test="startDate != null and startDate != ''">
+			 <![CDATA[and t.createTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.createTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+		</where>
+	</sql>
+</mapper>

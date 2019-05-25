@@ -1,0 +1,420 @@
+package org.xxjr.mq.listener.receiver;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.PreDestroy;
+
+import org.ddq.active.mq.XxjrMqSendUtil;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
+import org.llw.ddq.mq.rabbitmq.RabbitMqConfig;
+import org.llw.xxjr.fx.util.FxConstant;
+import org.llw.xxjr.fx.util.FxCustomerUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.xxjr.mq.listener.consumer.RabbitMqConsumer;
+import org.xxjr.mq.listener.util.XxjrInitAnnotation;
+import org.xxjr.sms.SendSmsByUrl;
+import org.xxjr.sms.SmsTenXunSendUtil;
+import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SmsConfigUtil;
+import org.xxjr.sys.util.SysParamsUtil;
+import org.xxjr.sys.util.ValidUtils;
+import org.xxjr.sys.util.message.MessageConstants;
+import org.xxjr.sys.util.message.MessageTemplateUtil;
+
+/**
+ * 分销系统 消息处理
+ * @author Administrator
+ *
+ */
+@Component
+@XxjrInitAnnotation(beanName="fxMessageReceiver",initMethod="init")
+public class FxMessageReceiver extends RabbitMqConsumer{
+	
+	@Autowired
+	private RabbitMqConfig rabbitMqConfig;
+	
+	@Value("${rabbit.queue.fxQueue}")
+	private String queueName;
+
+	@SuppressWarnings("unchecked")
+	public void onMessage(Map<String, Object> messageInfo) {
+		try {
+			LogerUtil.log("FxMessageReceiver params:" + messageInfo.toString());
+			String messageType = (String) messageInfo.get("messageType");
+			Map<String, Object> messageTemplate = MessageTemplateUtil.getMessageTemplate(messageType);
+			if(messageTemplate==null){
+				LogerUtil.error(FxMessageReceiver.class, "not found messageType:" + messageType);
+				return;
+			}
+			
+			int flagWx = Integer.valueOf(messageTemplate
+					.get("flagWx") ==null ? "0" : messageTemplate.get("flagWx").toString());
+			int flagWxTemplate = Integer.valueOf(messageTemplate
+					.get("flagWxTemplate") ==null ? "0" : messageTemplate.get("flagWxTemplate").toString());
+			int flagSms = Integer.valueOf(messageTemplate
+					.get("flagSms")==null ? "0" : messageTemplate.get("flagSms").toString());
+			int flagEmail = Integer.valueOf(messageTemplate
+					.get("flagEmail") ==null ? "0" : messageTemplate.get("flagEmail").toString());
+			int flagMessage = Integer.valueOf(messageTemplate
+					.get("flagMessage") ==null ? "0" : messageTemplate.get("flagMessage").toString());
+			int isUser = Integer.valueOf(messageTemplate
+					.get("isUser") ==null ? "0" : messageTemplate.get("isUser").toString());
+			Object custId = messageInfo.get("custId");
+			String content = StringUtil.getString(messageTemplate.get("content"));
+			String title = (String) messageTemplate.get("title");
+			String emailContent = (String) messageTemplate.get("emailContent");
+			Map<String,Object> params = (Map<String, Object>) messageInfo.get("params"); //使用的参数信息
+			if(params == null){
+				params = new HashMap<String,Object>();
+			}
+			Map<String,Object> custInfo = new HashMap<String, Object>();
+			if (custId != null) {
+				custInfo = FxCustomerUtil.getCustIdentify(custId.toString());
+				params.put("custId", custId);
+			}
+			content = MessageTemplateUtil.getMessageContent(params, content);
+			// 微信文本信息
+			if (flagWx == 1 && flagWxTemplate == 0) {
+				sendWxMessage(content, custInfo, messageInfo);
+			}
+			// 微信模板消息
+			if (flagWxTemplate == 1) {
+				sendWxTemplateMessage(messageType, custInfo, params);
+			}
+			//发送sms
+			if (flagSms == 1) {
+				sendHttpSMS(StringUtil.getString(params.get("telephone")), 
+						StringUtils.isEmpty(messageTemplate.get("smsContent")) ? content
+								: MessageTemplateUtil.getMessageContent(params,
+										(String) messageTemplate
+												.get("smsContent")), params,messageTemplate);
+			}
+			//发送email
+			if (flagEmail == 1) {
+				emailContent = MessageTemplateUtil.getMessageContent(params, content);
+				sendHttpEmail(params.get("email"), title, emailContent, messageInfo);
+			}
+			//发送站内信
+			if (flagMessage == 1 && custId != null) {
+				sendCustMessage(
+					StringUtils.isEmpty(messageTemplate.get("smsContent"))
+							? content:
+								MessageTemplateUtil.getMessageContent(params, 
+										(String)messageTemplate.get("smsContent")), messageType, title, params);
+			}
+			if(isUser ==1  && custId != null){
+				sendAdmminMessage((String)messageTemplate.get("userContent"), messageType, title, params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(FxMessageReceiver.class, e, "FxMessageReceiver mq execute error!");
+			XxjrMqSendUtil.saveFailureLog("FxMessageReceiver", messageInfo);
+		}
+
+	}
+		
+	/**
+	 * 发送微信文本通知
+	 * @param content
+	 * @param custInfo
+	 * @param messageInfo
+	 * @return
+	 */
+	private static boolean sendWxMessage(String content, Map<String,Object> custInfo, Map<String, Object> messageInfo ){
+		AppParam mqParam = new AppParam();
+		mqParam.setService("sendMqMessageService");
+		mqParam.setMethod("sendTextMessage");
+		mqParam.addAttr("content", content);
+		Object openid = custInfo.get("openid");
+		Object gzhId = SysParamsUtil.getStringParamByKey("xxjrGzh", "11");
+		// 有分销公众号openid 优先使用分销公众号模板消息
+		if(!StringUtils.isEmpty(custInfo.get("fxOpenid"))){
+			gzhId = SysParamsUtil.getStringParamByKey(SysParamsUtil.KEY_FX_GZHID, "6");
+			openid = custInfo.get("fxOpenid");
+		}
+		mqParam.addAttr("openid", openid);
+		mqParam.addAttr("gzhId", gzhId);
+		mqParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_wx));
+		try {
+			if (SpringAppContext.getBean("sendMqMessageService") != null) {
+				SoaManager.getInstance().invoke(mqParam);;
+			}else{
+				mqParam.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START +
+								ServiceKey.Key_wx));
+				RemoteInvoke.getInstance().call(mqParam);
+			}
+			return true;
+		} catch (Exception e1) {
+			LogerUtil.error(FxMessageReceiver.class, e1, "FxMessageReceiver sendWxMessage execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendWxMessage", messageInfo);
+		}
+		return false;
+	}
+	
+	/**
+	 * 发送微信模版消息
+	 * @param messageType
+	 * @param custInfo
+	 * @param params
+	 * @return
+	 */
+	private static boolean sendWxTemplateMessage(String messageType, Map<String,Object> custInfo, Map<String, Object> params){
+		if(StringUtils.isEmpty(custInfo.get("fxOpenid"))){
+			LogerUtil.error(FxMessageReceiver.class, custInfo.get("custId") + " fxOpenid is null");
+			return false;
+		}
+		Map<String, Object> templateInfo = MessageTemplateUtil.getWxTemplateInfo(messageType + "Xxzq");
+		if(templateInfo == null){
+			LogerUtil.error(FxMessageReceiver.class, messageType + " templateInfo is null");
+			return false;
+		}
+		Map<String,Object> paramMap = getWXTemplateContent(templateInfo, params);
+
+		Map<String,Object> msgparams = new HashMap<String, Object>(); 
+		msgparams.put("paramMap", paramMap);
+		msgparams.put("url", MessageTemplateUtil.getMessageContent(params, StringUtil.getString(templateInfo.get("templateUrl"))));
+		msgparams.put("templateId", templateInfo.get("templateId"));
+		
+		msgparams.put("openid", custInfo.get("fxOpenid"));
+		msgparams.put("gzhId", SysParamsUtil.getStringParamByKey(SysParamsUtil.KEY_FX_GZHID, "6"));
+		
+		AppParam mqParam = new AppParam();
+		mqParam.setService("sendMqMessageService");
+		mqParam.setMethod("sendTemplateMessage");
+		mqParam.addAttrs(msgparams);
+		mqParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_wx));
+		try {
+			if (SpringAppContext.getBean("sendMqMessageService") != null) {
+				SoaManager.getInstance().invoke(mqParam);;
+			}else{
+				mqParam.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START +
+								ServiceKey.Key_wx));
+				RemoteInvoke.getInstance().call(mqParam);
+			}
+			return true;
+		} catch (Exception e1) {
+			LogerUtil.error(FxMessageReceiver.class, e1, "FxMessageReceiver sendWxTemplateMessage execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendWxTemplateMessage", params);
+		}
+		return false;
+	}
+	
+	/**
+	 * 填充模板消息内容
+	 * @param templateInfo
+	 * @param params
+	 * @return
+	 */
+	private static Map<String,Object> getWXTemplateContent(Map<String, Object> templateInfo, Map<String,Object> params){
+		Map<String,Object> infoMap = new HashMap<String, Object>(); 
+		infoMap.put("first", MessageTemplateUtil.getMessageContent(params, templateInfo.get("first").toString()));
+		if(!StringUtils.isEmpty(params.get("firstOpt1"))){
+			infoMap.put("first", MessageTemplateUtil.getMessageContent(params, templateInfo.get("firstOpt1").toString()));
+		}
+		if(!StringUtils.isEmpty(params.get("firstOpt2"))){
+			infoMap.put("first", MessageTemplateUtil.getMessageContent(params, templateInfo.get("firstOpt2").toString()));
+		}
+		infoMap.put("firstColor", params.get("firstColor")); 
+		infoMap.put("keyword1", MessageTemplateUtil.getMessageContent(params, templateInfo.get("keyword1").toString()));
+		infoMap.put("keyword1Color", params.get("keyword1Color")); 
+		infoMap.put("keyword2", MessageTemplateUtil.getMessageContent(params, templateInfo.get("keyword2").toString()));
+		infoMap.put("keyword2Color", params.get("keyword2Color")); 
+		if(!StringUtils.isEmpty(templateInfo.get("keyword3"))){
+			infoMap.put("keyword3", MessageTemplateUtil.getMessageContent(params, templateInfo.get("keyword3").toString()));
+			infoMap.put("keyword3Color", params.get("keyword3Color")); 
+		}
+		if(!StringUtils.isEmpty(templateInfo.get("keyword4"))){
+			infoMap.put("keyword4", MessageTemplateUtil.getMessageContent(params, templateInfo.get("keyword4").toString()));
+			infoMap.put("keyword4Color", params.get("keyword4Color")); 
+		}
+		infoMap.put("remark", MessageTemplateUtil.getMessageContent(params, templateInfo.get("remark").toString()));
+		infoMap.put("remarkColor", params.get("remarkColor")); 
+		return infoMap;
+	}
+	
+	/***
+	 * 发送短信通知
+	 * @param telephone
+	 * @param content
+	 * @param messageInfo
+	 * @return
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private static boolean sendHttpSMS(String telephone,String content,Map<String, Object> messageInfo,Map<String,Object> templateInfo){
+		if(StringUtils.isEmpty(telephone)){
+			LogerUtil.error(FxMessageReceiver.class, "sendHttpSMS telephone is null");
+			return false;
+		}
+		boolean isSendSucc = false;
+		try{
+			// 模板ID|appid|appkey|短信签名|短信厂商
+			String templateId = StringUtil.getString(templateInfo.get("templateId"));
+			if(!StringUtils.isEmpty(templateId)){
+				String params = StringUtil.getString(templateInfo.get("params"));
+				String paramVals = MessageTemplateUtil.getMessageContent(messageInfo, params);
+				String[] paramArr  = org.apache.commons.lang.StringUtils.stripAll(paramVals.split(",|，"));
+				ArrayList<String> paramList = new ArrayList();
+				Collections.addAll(paramList, paramArr);
+				SmsTenXunSendUtil.sendTplSms(FxConstant.getSmsTxAppId(),
+						FxConstant.getSmsTxAppKey(), "小小攒钱", telephone,
+						templateId, paramList);
+			}else{
+				String smsUrl = SmsConfigUtil.getSMSInfo(content, telephone);
+				AppResult smsResult = SendSmsByUrl.sendSMSInfo(smsUrl, content, telephone, null);
+				isSendSucc = smsResult.isSuccess();
+			}
+		} catch (Exception e1) {
+			LogerUtil.error(FxMessageReceiver.class, e1, "sendHttpSMS execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendHttpSMS", messageInfo);
+		}
+		return isSendSucc;
+	}
+	
+	/***
+	 * 发送邮件
+	 * @param email
+	 * @param title
+	 * @param emailConent
+	 * @param messageInfo
+	 * @return
+	 */
+	private static boolean sendHttpEmail(Object email,String title,String emailConent,Map<String, Object> messageInfo){
+		try{
+			if(!StringUtils.isEmpty(email) && ValidUtils.validateEmail(email.toString())){
+				//EmailSendUtil.sendHtmlMail(email.toString(), title, emailConent,(String) messageInfo.get("messageType"));
+				return true;
+			}
+		} catch (Exception e1) {
+			LogerUtil.error(FxMessageReceiver.class, e1, "sendHttpEmail execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendHttpEmail", messageInfo);
+		}
+		return false;
+	}
+	
+	/**
+	 *添加用户消息
+	 * @param content 消息内容
+	 * @param messageType 消息类型
+	 * @param title 标题
+	 * @param param 参数
+	 * @return
+	 */
+	private static AppResult sendCustMessage(String content ,String messageType,String title,Map<String, Object> param) {
+		
+		AppParam messageInfo  = new AppParam();
+		param.put("createDate", DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMM));
+		messageInfo.addAttrs(param);
+		
+		//添加站内信息
+		AppParam addMessage  = new AppParam();
+		addMessage.setMethod("insert");
+		addMessage.setService("custMessageService");
+		addMessage.addAttr("msgTo", param.get("userName"));
+		addMessage.addAttr("customerId", param.get("customerId"));
+		addMessage.addAttr("msgFrom", param.get("sendBy")==null?"admin":"小小金融");
+		addMessage.addAttr("sendTime", new Date());
+		addMessage.addAttr("subject", title);
+		addMessage.addAttr("content", content);
+		addMessage.addAttr("flag", MessageConstants.messageFlag_1);
+		addMessage.addAttr("sendFlag", "1");
+		addMessage.addAttr("sendParams", "");
+		addMessage.addAttr("messageType", messageType);
+		AppResult result = new AppResult();
+		try{
+			if (SpringAppContext.getBean("custMessageService") == null) {
+				if (param.get("isMjb") != null) {
+					addMessage.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_mjb));
+				}else {
+					addMessage.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				}
+				result = RemoteInvoke.getInstance().call(addMessage);
+			}else{
+				result = SoaManager.getInstance().invoke(addMessage);
+			}
+		}catch(Exception e){
+			LogerUtil.error(FxMessageReceiver.class, e, "sendCustMessage execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendCustMessage", param);
+		}
+		return result;
+	}
+	/**
+	 * 添加管理员消息
+	 * @param content 消息内容
+	 * @param messageType 消息类型
+	 * @param title 标题
+	 * @param param 参数
+	 * @return
+	 */
+	private static AppResult sendAdmminMessage(String content ,String messageType,String title,Map<String, Object> param) {
+		
+		AppParam messageInfo  = new AppParam();
+		param.put("createDate", DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMM));
+		messageInfo.addAttrs(param);
+		
+		//添加站内信息
+		AppParam addMessage  = new AppParam();
+		addMessage.setMethod("insert");
+		addMessage.setService("userMessageService");
+		addMessage.addAttr("msgTo", param.get("userName"));
+		addMessage.addAttr("userId", param.get("userId")==null?SysParamsUtil.getStringParamByKey("adminUser", "1"):
+			param.get("userId"));
+		addMessage.addAttr("msgFrom", param.get("sendBy")==null?"admin":"小小金融");
+		addMessage.addAttr("sendTime", new Date());
+		addMessage.addAttr("subject", title);
+		addMessage.addAttr("content", content);
+		addMessage.addAttr("flag", MessageConstants.messageFlag_1);
+		addMessage.addAttr("sendFlag", "1");
+		addMessage.addAttr("sendParams", "");
+		addMessage.addAttr("messageType", messageType);
+		AppResult result = new AppResult();
+		try{
+			if (SpringAppContext.getBean("userMessageService") == null) {
+				addMessage.setRmiServiceName(AppProperties
+						.getProperties(DuoduoConstant.RMI_SERVICE_START + "sys"));
+				result = RemoteInvoke.getInstance().call(addMessage);
+			}else{
+				result = SoaManager.getInstance().invoke(addMessage);
+			}
+		}catch(Exception e){
+			LogerUtil.error(FxMessageReceiver.class , e, "sendAdmminMessage execute error!");
+			XxjrMqSendUtil.saveFailureLog("sendAdmminMessage", param);
+		}
+		return result;
+	}
+
+	@Override
+	public void init(String queueName ,RabbitMqConfig rabbitMqConfig) {
+		super.init(queueName,rabbitMqConfig);
+	}
+	
+    public void init() {
+		init(queueName,rabbitMqConfig);
+	}
+	
+	@PreDestroy
+	public void destroy(){
+		reaseResource();
+	}
+	
+}

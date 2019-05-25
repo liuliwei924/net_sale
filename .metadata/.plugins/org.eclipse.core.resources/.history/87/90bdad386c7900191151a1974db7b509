@@ -1,0 +1,79 @@
+package org.xxjr.job.listener.col;
+
+import java.util.Calendar;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.llw.ddq.job.core.BaseExecteJob;
+import org.llw.ddq.job.util.JobConstant;
+import org.llw.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 删除协议序号表并重置 从1开始自增长
+ * @author Administrator
+ *
+ */
+@Lazy
+@Component
+public class CollectDailyIndexJob implements BaseExecteJob {
+	
+	@Override
+	public AppResult executeJob(AppParam param) {
+		LogerUtil.debug("ResetTreatyIndexJob start");
+		Object processId = param.getAttr(JobConstant.KEY_processId);
+		
+		AppResult result = new AppResult();
+		AppParam delParams = new AppParam();
+		delParams.setService("treayIndexService");
+		delParams.setMethod("truncate");
+		delParams.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_col));
+		try {
+			RemoteInvoke.getInstance().call(delParams);
+		} catch (Exception e) {
+			LogerUtil.error(CollectDailyIndexJob.class, e, "ResetTreatyIndexJob error");
+			JobUtil.addProcessExecute(processId, "重置表t_treay_index从1自增长失败:" + e.getMessage());
+		}
+		LogerUtil.debug("ResetTreatyIndexJob over");
+		result.setMessage("重置表t_treay_index从1自增长成功");
+		
+		//当收款添加超过48小时的数据，自动为审核不通过-1
+		AppParam overdueParam = new AppParam("payRecordService","autoOverdue");
+		overdueParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_col));
+		Calendar treatyCal = Calendar.getInstance();
+		treatyCal.add(Calendar.DATE, -2);
+		overdueParam.addAttr("endTime", treatyCal.getTime());
+		try {
+			AppResult updateResult = RemoteInvoke.getInstance().call(overdueParam);
+			int overdueSize = Integer.valueOf(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE).toString());
+			LogerUtil.log("overdueSize:" + overdueSize);
+		} catch (Exception e) {
+			LogerUtil.error(CollectDailyIndexJob.class,  e, "autoOverdue error");
+		}
+		
+		// 删除3天前的无用的资料数据
+		AppParam delParam = new AppParam("treatyMaterialService","delInvalidFile");
+		delParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_col));
+		Calendar delCal = Calendar.getInstance();
+		delCal.add(Calendar.DATE, -3);
+		delParam.addAttr("endTime", delCal.getTime());
+		try {
+			RemoteInvoke.getInstance().call(delParam);
+		} catch (Exception e) {
+			LogerUtil.error(CollectDailyIndexJob.class,  e, "delInvalidFile error");
+		}
+		return result;
+	}
+}

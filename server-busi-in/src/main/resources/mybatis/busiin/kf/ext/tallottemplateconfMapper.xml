@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ALLOTTEMPLATECONF">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			tempId,
+			grade, 
+			tempName, 
+			netSales, 
+			loanShop, 
+			electSales, 
+			custService, 
+			smallLoan, 
+			insurance
+		FROM t_allot_template_conf
+		<where>
+			<if test="tempId != null and tempId != ''">
+			  and tempId = #{tempId}
+			 </if>
+			<if test="grade != null and grade != ''">
+				and grade = #{grade}
+			</if>
+			<if test="tempName != null and tempName != ''">
+				and tempName = #{tempName}
+			</if>
+			<if test="netSales != null and netSales != ''">
+				and netSales = #{netSales}
+			</if>
+			<if test="loanShop != null and loanShop != ''">
+				and loanShop = #{loanShop}
+			</if>
+			<if test="electSales != null and electSales != ''">
+				and electSales = #{electSales}
+			</if>
+			<if test="custService != null and custService != ''">
+				and custService = #{custService}
+			</if>
+			<if test="smallLoan != null and smallLoan != ''">
+				and smallLoan = #{smallLoan}
+			</if>
+			<if test="insurance != null and insurance != ''">
+				and insurance = #{insurance}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="query2allot" resultType="map" parameterType="map">
+		SELECT
+			netSales, 
+			loanShop, 
+			electSales, 
+			custService, 
+			smallLoan, 
+			insurance
+		FROM t_allot_template_conf 
+		WHERE
+			tempName = #{tempName} AND grade = #{grade}
+	</select>
+	
+	<select id="queryTempName" resultType="map" parameterType="map">
+		SELECT DISTINCT
+			tempName
+		FROM t_allot_template_conf 
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_allot_template_conf 
+		<where>
+		<if test="tempId != null and tempId != ''">
+		    and tempId = #{tempId}
+		 </if>
+		<if test="grade != null and grade != ''">
+			and grade = #{grade}
+		</if>
+		<if test="tempName != null and tempName != ''">
+			and tempName = #{tempName}
+		</if>
+		<if test="netSales != null and netSales != ''">
+			and netSales = #{netSales}
+		</if>
+		<if test="loanShop != null and loanShop != ''">
+			and loanShop = #{loanShop}
+		</if>
+		<if test="electSales != null and electSales != ''">
+			and electSales = #{electSales}
+		</if>
+		<if test="custService != null and custService != ''">
+			and custService = #{custService}
+		</if>
+		<if test="smallLoan != null and smallLoan != ''">
+			and smallLoan = #{smallLoan}
+		</if>
+		<if test="insurance != null and insurance != ''">
+			and insurance = #{insurance}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="tempId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_allot_template_conf (
+			grade,
+			tempName,
+			netSales,
+			loanShop,
+			electSales,
+			custService,
+			smallLoan,
+			insurance
+		)
+		VALUES ( 
+			#{grade, jdbcType=VARCHAR}, 
+			#{tempName, jdbcType=VARCHAR}, 
+			#{netSales, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{loanShop, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{electSales, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{custService, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{smallLoan, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{insurance, jdbcType=INTEGER,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_allot_template_conf 
+		<where> 
+			tempName = #{tempName}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_allot_template_conf  
+		<set>
+			<if test="grade != null">
+				grade = #{grade, jdbcType=VARCHAR},  
+			</if>
+			<if test="tempName != null">
+				tempName = #{tempName, jdbcType=VARCHAR},  
+			</if>
+			<if test="netSales != null">
+				netSales = #{netSales, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanShop != null">
+				loanShop = #{loanShop, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="electSales != null">
+				electSales = #{electSales, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="custService != null">
+				custService = #{custService, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="smallLoan != null">
+				smallLoan = #{smallLoan, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="insurance != null">
+				insurance = #{insurance, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  tempId = #{tempId}
+		</where>
+	</update>
+</mapper>

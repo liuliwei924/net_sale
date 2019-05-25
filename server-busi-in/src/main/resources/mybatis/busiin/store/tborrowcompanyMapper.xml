@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWCOMPANY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			compName, 
+			compAddress, 
+			compTel, 
+			workAge, 
+			industry, 
+			compJob
+		FROM t_borrow_company
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="compName != null and compName != ''">
+				and compName = #{compName}
+			</if>
+			<if test="compAddress != null and compAddress != ''">
+				and compAddress = #{compAddress}
+			</if>
+			<if test="compTel != null and compTel != ''">
+				and compTel = #{compTel}
+			</if>
+			<if test="workAge != null and workAge != ''">
+				and workAge = #{workAge}
+			</if>
+			<if test="industry != null and industry != ''">
+				and industry = #{industry}
+			</if>
+			<if test="compJob != null and compJob != ''">
+				and compJob = #{compJob}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_borrow_company 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="compName != null and compName != ''">
+			and compName = #{compName}
+		</if>
+		<if test="compAddress != null and compAddress != ''">
+			and compAddress = #{compAddress}
+		</if>
+		<if test="compTel != null and compTel != ''">
+			and compTel = #{compTel}
+		</if>
+		<if test="workAge != null and workAge != ''">
+			and workAge = #{workAge}
+		</if>
+		<if test="industry != null and industry != ''">
+			and industry = #{industry}
+		</if>
+		<if test="compJob != null and compJob != ''">
+			and compJob = #{compJob}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="applyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_borrow_company (
+			applyId,
+			compName,
+			compAddress,
+			compTel,
+			workAge,
+			industry,
+			compJob
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{compName, jdbcType=VARCHAR}, 
+			#{compAddress, jdbcType=VARCHAR}, 
+			#{compTel, jdbcType=VARCHAR}, 
+			<if test="workAge !=null ">
+			#{workAge, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="workAge ==null ">
+			1 ,
+			</if>
+			#{industry, jdbcType=VARCHAR}, 
+			#{compJob, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_borrow_company 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_borrow_company  
+		<set>
+			<if test="compName != null">
+				compName = #{compName, jdbcType=VARCHAR},  
+			</if>
+			<if test="compAddress != null">
+				compAddress = #{compAddress, jdbcType=VARCHAR},  
+			</if>
+			<if test="compTel != null">
+				compTel = #{compTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="workAge != null">
+				workAge = #{workAge, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="industry != null">
+				industry = #{industry, jdbcType=VARCHAR},  
+			</if>
+			<if test="compJob != null">
+				compJob = #{compJob, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

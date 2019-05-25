@@ -1,0 +1,1 @@
+ALTER TABLE t_treat_info ADD COLUMN signTime datetime DEFAULT NULL COMMENT '实际签单时间';

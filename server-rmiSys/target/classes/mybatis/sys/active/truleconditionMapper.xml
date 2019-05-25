@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="RULECONDITION">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			conditionId as "conditionId",
+			ruleId as "ruleId",  
+			conditionIndex as "conditionIndex",  
+			paramKey as "paramKey",  
+			paramJudy as "paramJudy",  
+			paramValue as "paramValue",  
+			paramAppend as "paramAppend" <!-- 与后续条件-->
+		FROM t_rule_condition
+		<where>
+			<if test="conditionId != null and conditionId != ''">
+			  and conditionId = #{conditionId}
+			 </if>
+			<if test="ruleId != null and ruleId != ''">
+				and ruleId = #{ruleId}
+			</if>
+			<if test="conditionIndex != null and conditionIndex != ''">
+				and conditionIndex = #{conditionIndex}
+			</if>
+			<if test="paramKey != null and paramKey != ''">
+				and paramKey = #{paramKey}
+			</if>
+			<if test="paramJudy != null and paramJudy != ''">
+				and paramJudy = #{paramJudy}
+			</if>
+			<if test="paramValue != null and paramValue != ''">
+				and paramValue = #{paramValue}
+			</if>
+			<if test="paramAppend != null and paramAppend != ''">
+				and paramAppend = #{paramAppend}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_rule_condition 
+		<where>
+		<if test="conditionId != null and conditionId != ''">
+		    and conditionId = #{conditionId}
+		 </if>
+		<if test="ruleId != null and ruleId != ''">
+			and ruleId = #{ruleId}
+		</if>
+		<if test="conditionIndex != null and conditionIndex != ''">
+			and conditionIndex = #{conditionIndex}
+		</if>
+		<if test="paramKey != null and paramKey != ''">
+			and paramKey = #{paramKey}
+		</if>
+		<if test="paramJudy != null and paramJudy != ''">
+			and paramJudy = #{paramJudy}
+		</if>
+		<if test="paramValue != null and paramValue != ''">
+			and paramValue = #{paramValue}
+		</if>
+		<if test="paramAppend != null and paramAppend != ''">
+			and paramAppend = #{paramAppend}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="conditionId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_rule_condition (
+			ruleId,
+			conditionIndex,
+			paramKey,
+			paramJudy,
+			paramValue,
+			paramAppend
+		)
+		VALUES ( 
+			#{ruleId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{conditionIndex, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{paramKey, jdbcType=VARCHAR}, 
+			#{paramJudy, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{paramValue, jdbcType=VARCHAR}, 
+			#{paramAppend, jdbcType=INTEGER,typeHandler=NumberHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_rule_condition 
+		<where> 
+			<if test="conditionId != null">
+				and conditionId = #{conditionId}
+			</if>
+			<if test="ruleId != null">
+				and ruleId = #{ruleId}
+			</if>
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_rule_condition  
+		<set>
+			<if test="ruleId != null">
+				ruleId = #{ruleId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="conditionIndex != null">
+				conditionIndex = #{conditionIndex, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="paramKey != null">
+				paramKey = #{paramKey, jdbcType=VARCHAR},  
+			</if>
+			<if test="paramJudy != null">
+				paramJudy = #{paramJudy, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="paramValue != null">
+				paramValue = #{paramValue, jdbcType=VARCHAR},  
+			</if>
+			<if test="paramAppend != null">
+				paramAppend = #{paramAppend, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  conditionId = #{conditionId}
+		</where>
+	</update>
+</mapper>

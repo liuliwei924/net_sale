@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="NETSTOREPOOL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			cityName, 
+			gradeType, 
+			orderType, 
+			DATE_FORMAT(recordDate,'%Y-%m-%d') as recordDate , 
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			orgId, 
+			lastStore,
+			DATE_FORMAT(nextRecordDate,'%Y-%m-%d') as nextRecordDate
+		FROM t_net_store_pool
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="gradeType != null and gradeType != ''">
+				and gradeType = #{gradeType}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}
+			</if>
+			<if test="recordDate != null and recordDate != ''">
+				and recordDate = #{recordDate}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and lastStore = #{lastStore}
+			</if>
+			<if test="nextRecordDate != null and nextRecordDate != ''">
+				and nextRecordDate = #{nextRecordDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_net_store_pool 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="cityNames != null and cityNames != ''">
+			AND cityName in (${cityNames})
+		</if>
+		<if test="gradeType != null and gradeType != ''">
+			and gradeType = #{gradeType}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="recordDate != null and recordDate != ''">
+			and recordDate = #{recordDate}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="lastStore != null and lastStore != ''">
+			and lastStore = #{lastStore}
+		</if>
+		<if test="nextRecordDate != null and nextRecordDate != ''">
+			and nextRecordDate = #{nextRecordDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+	
+	<!-- 3 天没分配出去的去挂卖 -->
+	<select id="queryOverTimeToSale" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.cityName
+		FROM t_net_store_pool t
+		<where>
+			<![CDATA[t.createTime<= date_add(NOW(), INTERVAL #{storeOrderToSaleDay} day)
+			and t.orderType=1
+			and t.gradeType in('A','B','C','D','E')
+			and nextRecordDate<=CURDATE()
+			]]> 
+		</where>
+		ORDER BY t.createTime ASC,t.gradeType DESC
+		LIMIT #{size}
+	</select>
+	
+	<!-- 网销门店单子没有分配出去的去挂卖 -->
+	<update id="storeOrderToSale" parameterType="map">
+		UPDATE t_borrow_apply t
+		SET
+			t.`status`=3,
+			t.haveDetail=1,
+			t.stageStatus=1,
+			t.kfStatus = 0,
+			t.lockBy = NULL,
+			t.lockTime = NULL,
+			t.lastKf = NULL,
+			t.lastKfTime=NULL,
+			t.updateTime = NOW(),
+			t.lastKfDesc='网销单子未分配去挂卖 '
+		WHERE
+		 t.applyId=#{applyId}
+	</update>
+	
+
+	<select id="queryGroupByCity" resultType="map" parameterType="map">
+		SELECT count(1) as 'totalCount',cityName FROM t_net_store_pool
+		WHERE cityName !=''
+		AND FIND_IN_SET(cityName,(select allotCitys FROM t_base_cfg ))
+		<if test="applyType != null and applyType != ''">
+			and applyType = #{applyType}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="cityNames !=null and cityNames !=''">
+			AND cityName in (${cityNames})
+		</if>
+		
+	    group by cityName
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_net_store_pool (
+			applyId,
+			cityName,
+			gradeType,
+			orderType,
+			recordDate,
+			applyTime,
+			createTime,
+			orgId,
+			lastStore,
+			nextRecordDate
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			#{cityName, jdbcType=VARCHAR}, 
+			#{gradeType, jdbcType=VARCHAR}, 
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{nextRecordDate, jdbcType=DATE,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="deleteAll" parameterType="map">
+		DELETE FROM t_net_store_pool 
+	</delete>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_net_store_pool 
+		<where> 
+			applyId = #{applyId}
+			<if test="orderType != null">
+				AND orderType = #{orderType}
+			</if>
+		</where>
+	</delete>
+	
+	<update id="updateAllotFlag" parameterType="map">
+		UPDATE t_borrow_apply t JOIN t_net_store_pool t1 ON t.applyId = t1.applyId
+		SET t.allotFlag = 1
+	</update>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_net_store_pool  
+		<set>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="gradeType != null">
+				gradeType = #{gradeType, jdbcType=VARCHAR},  
+			</if>
+			<if test="orderType != null">
+				orderType = #{orderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="recordDate != null">
+				recordDate = #{recordDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="lastStore != null">
+				lastStore = #{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="nextRecordDate != null">
+				nextRecordDate = #{nextRecordDate, jdbcType=DATE,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+
+	<!-- 查询给业务员分单的新单子 -->
+	<select id="getStoreAllotNewOrder" resultType="map" parameterType="map">
+		SELECT 
+			n.applyId,
+			n.orderType,
+			n.lastStore,
+			n.applyTime,
+			n1.applyName,
+			n2.allotGrade,
+			n2.isCost,
+			n1.telephone,
+			n1.applyCount
+		FROM t_net_store_pool n
+		JOIN t_borrow_store_apply n1 on n.applyId = n1.applyId
+		LEFT JOIN t_borrow_channel n2 on n1.channelCode = n2.channelCode
+		WHERE n.cityName=#{cityName}
+			AND n1.lastStore IS NULL
+			AND n.orderType = #{orderType}
+			<if test="orgId != null and orgId != ''">
+				AND n.orgId= #{orgId}
+			</if>
+			AND (n.lastStore IS NULL OR n.lastStore !=#{customerId})
+		ORDER BY n2.allotGrade DESC, n.applyTime DESC , n.applyId
+		LIMIT #{allotOrderCount}
+	</select>
+	
+	<!-- 查询给业务员分单的再分配单子 -->
+	<select id="getStoreAllotAgainOrder" resultType="map" parameterType="map">
+		SELECT 
+			n.applyId,
+			n.orderType,
+			n.lastStore,
+			n.applyTime,
+			n2.allotGrade,
+			n2.isCost,
+			n1.applyName,
+			n1.telephone,
+			n1.applyCount
+		FROM t_net_store_pool n 
+		JOIN t_borrow_store_apply n1 on n.applyId = n1.applyId
+		LEFT JOIN t_borrow_channel n2 on n1.channelCode = n2.channelCode
+		WHERE n.cityName=#{cityName} 
+			AND n1.lastStore IS NULL
+			AND n.orderType = 2 
+			<if test="orgId != null and orgId != ''">
+				AND n.orgId=#{orgId}
+			</if>
+			AND (n.lastStore IS NULL OR n.lastStore !=#{customerId})
+			<![CDATA[AND n.nextRecordDate <= CURDATE() ]]>
+		ORDER BY n2.allotGrade DESC,RAND()
+		LIMIT #{allotOrderCount}
+	</select>
+	
+	<!-- 分单更新操作 -->
+	<update id="storeAllotOrderByUpdate" parameterType="map">
+		UPDATE t_borrow_store_apply t 
+		SET t.`status` = 2,
+			t.orderStatus = -1,
+			t.orgId =#{orgId},
+			t.lastStore=#{customerId} ,
+			t.allotTime = NOW(),
+			t.allotDesc = '系统分单',
+			t.allotBy = 'sys',
+			<if test="isHideFlag != null">
+				t.isHideFlag = #{isHideFlag, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backStatus != null">
+				t.backStatus = #{backStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="backDesc != null">
+				t.backDesc = #{backDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="backReDesc != null">
+				t.backReDesc = #{backReDesc, jdbcType=VARCHAR},
+			</if>
+			<if test="custLabel != null">
+				t.custLabel = #{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			t.updateTime = NOW()
+		WHERE t.applyId=#{applyId} and t.lastStore IS NULL
+	</update>
+	
+	<select id="queryTransferData" parameterType="map" resultType="map">
+		SELECT
+			t.applyId,
+			t.applyTime
+		FROM t_net_store_pool net
+		JOIN t_borrow_apply t ON net.applyId = t.applyId
+		JOIN t_borrow_base t1 ON net.applyId = t1.applyId
+		<where>
+			<![CDATA[
+			and t.applyTime >= #{startTime}
+			and t.applyTime <= #{endTime}
+			and t.cityName = #{cityName}
+			and net.orderType IN (#{inOrderType})
+			and t1.loanAmount > 0
+			]]>
+		</where>
+		ORDER BY net.createTime DESC
+		LIMIT #{saleCount}
+	</select>
+	
+	<update id="updateTransStatus" parameterType="map">
+		UPDATE t_net_store_pool
+		SET isTransfer = 1
+		where applyId = #{applyId}
+	</update>
+	
+	<update id="updateNetStatus" parameterType="map">
+		UPDATE t_borrow_store_apply t
+		SET
+		 t.`status`=5,
+		 t.lastStore = IF(t.orderStatus=-1 AND t.lastStore IS NOT NULL,NULL,t.lastStore)
+		WHERE
+		   t.applyId = #{applyId}
+	</update>
+	
+	
+	<select id="queryAllotPondStatics" resultType="map" parameterType="map">
+		SELECT 
+		  t.cityName,
+		  COUNT(
+		  	(
+		      CASE
+		        WHEN t.orderType = 1
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS totalCount,
+		  COUNT(
+		    (
+		      CASE
+		        WHEN t.orderType = 2 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS againCount,
+		  COUNT(
+		    (
+		      CASE
+		        <![CDATA[WHEN t.applyTime > DATE_SUB(CURDATE(), INTERVAL 3 DAY)]]>
+		        AND t.orderType = 1 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS containThree,
+		  COUNT(
+		    (
+		      CASE
+		        <![CDATA[WHEN t.applyTime <= DATE_SUB(CURDATE(), INTERVAL 3 DAY)]]> 
+		        AND t.orderType = 1 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS exceedThree
+		FROM
+		  t_net_store_pool t 
+		  join t_borrow_store_apply t1 on t1.applyId = t.applyId
+		  join t_borrow_channel t2 on t2.channelCode = t1.channelCode
+		<where>
+			and FIND_IN_SET(t.cityName,(select allotCitys FROM t_base_cfg ))
+			<if test="cityName != null and cityName != ''">
+				and t.cityName = #{cityName}
+			</if>
+			<if test="isCost != null and isCost != ''">
+				and t2.isCost = #{isCost}
+			</if>
+		</where>
+		GROUP BY t.cityName 
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryAllotPondStaticsCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM (SELECT 
+		  t.cityName,
+		  COUNT(
+		  	(
+		      CASE
+		        WHEN t.orderType = 1
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS totalCount,
+		  COUNT(
+		    (
+		      CASE
+		        WHEN t.orderType = 2 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS againCount,
+		  COUNT(
+		    (
+		      CASE
+		        <![CDATA[WHEN t.applyTime > DATE_SUB(CURDATE(), INTERVAL 3 DAY)]]> 
+		        AND t.orderType = 1 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS containThree,
+		  COUNT(
+		    (
+		      CASE
+		        <![CDATA[WHEN t.applyTime <= DATE_SUB(CURDATE(), INTERVAL 3 DAY)]]>  
+		        AND t.orderType = 1 
+		        THEN t.applyId 
+		      END
+		    )
+		  ) AS exceedThree 
+		FROM
+		  t_net_store_pool t 
+		  join t_borrow_store_apply t1 on t1.applyId = t.applyId
+		  join t_borrow_channel t2 on t2.channelCode = t1.channelCode
+		<where>
+			and FIND_IN_SET(t.cityName,(select allotCitys FROM t_base_cfg))
+			<if test="cityName != null and cityName != ''">
+				and t.cityName = #{cityName}
+			</if>
+			<if test="isCost != null and isCost != ''">
+				and t2.isCost = #{isCost}
+			</if>
+		</where>
+		GROUP BY t.cityName) tab
+	</select>
+	
+	<select id="queryNetOrderGroupByCity" resultType="map" parameterType="map">
+		SELECT 
+			count(1) as 'orderCount',
+			cityName,
+			GROUP_CONCAT(applyId) as applyIds
+		FROM t_net_store_pool
+		WHERE cityName !=''
+		AND FIND_IN_SET(cityName,(select allotCitys FROM t_base_cfg))
+		AND (orgId is NULL or orgId = '') and orderType = 1
+		<if test="startCreateDate != null and startCreateDate != ''">
+			<![CDATA[AND createTime >= #{startCreateDate}
+		  	 AND createTime < DATE_ADD(#{startCreateDate}, INTERVAL 1 DAY)]]>
+		</if>
+	    group by cityName
+	</select>
+	
+	<update id="updateOrderOrgId" parameterType="map">
+		UPDATE t_net_store_pool  
+		SET orgId = #{orgId}
+		<where>
+			<if test="applyId != null and applyId != ''">
+				AND applyId = #{applyId}
+			</if>
+			<if test="applyIdIn != null and applyIdIn != ''">
+				AND applyId IN (${applyIdIn})
+			</if>
+		</where>
+	</update>
+</mapper>

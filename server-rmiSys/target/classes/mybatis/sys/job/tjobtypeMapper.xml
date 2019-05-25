@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="JOBTYPE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			typeCode as "typeCode",
+			typeName as "typeName",  <!-- 类型名称 -->
+			typeDesc as "typeDesc",  <!-- 类型描述 -->
+			isOne as "isOne",  <!-- 任务唯一 0 否 1 是 -->
+			serviceNode as "serviceNode",<!-- 所属服务节点 cust，busi，sys -->
+			dealBean as "dealBean",  <!-- 任务处理bean -->
+			notifyType as "notifyType",  <!-- 通知方式(0 无 1 SMS 2 邮箱) -->
+			notifyTel as "notifyTel",  <!-- 通知手机号 -->
+			notifyEmail as "notifyEmail",  <!-- 邮箱 -->
+			createBy as "createBy",  <!-- 创建人 -->
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime", <!-- 创建时间 -->
+			updateBy as "updateBy",  <!-- 修改人 -->
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime" <!-- 修改时间 -->
+		FROM t_job_type
+		<where>
+			<if test="typeCode != null and typeCode != ''">
+			  and typeCode = #{typeCode}
+			 </if>
+			<if test="typeName != null and typeName != ''">
+				and (type_name like '%${typeName}%' or typeCode  like '%${typeName}%' or typeDesc  like '%${typeName}%' )
+			</if>
+			
+			<if test="isOne != null and isOne != ''">
+				and isOne = #{isOne}
+			</if>
+			<if test="dealBean != null and dealBean != ''">
+				and dealBean = #{dealBean}
+			</if>
+			<if test="serviceNode != null and serviceNode != ''">
+				and serviceNode = #{serviceNode}
+			</if>
+			<if test="notifyType != null and notifyType != ''">
+				and notifyType = #{notifyType}
+			</if>
+			<if test="notifyTel != null and notifyTel != ''">
+				and notifyTel = #{notifyTel}
+			</if>
+			<if test="notifyEmail != null and notifyEmail != ''">
+				and notifyEmail = #{notifyEmail}
+			</if>
+			
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_job_type 
+		<where>
+		<if test="typeCode != null and typeCode != ''">
+			  and typeCode = #{typeCode}
+			 </if>
+			<if test="typeName != null and typeName != ''">
+				and (type_name like '%${typeName}%' or typeCode  like '%${typeName}%' or typeDesc  like '%${typeName}%' )
+			</if>
+			
+			<if test="isOne != null and isOne != ''">
+				and isOne = #{isOne}
+			</if>
+			<if test="dealBean != null and dealBean != ''">
+				and dealBean = #{dealBean}
+			</if>
+			<if test="serviceNode != null and serviceNode != ''">
+				and serviceNode = #{serviceNode}
+			</if>
+			<if test="notifyType != null and notifyType != ''">
+				and notifyType = #{notifyType}
+			</if>
+			<if test="notifyTel != null and notifyTel != ''">
+				and notifyTel = #{notifyTel}
+			</if>
+			<if test="notifyEmail != null and notifyEmail != ''">
+				and notifyEmail = #{notifyEmail}
+			</if>
+			
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="typeCode">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_job_type (
+			typeCode,
+			typeName,
+			typeDesc,
+			isOne,
+			dealBean,
+			serviceNode，
+			notifyType,
+			notifyTel,
+			notifyEmail,
+			createBy,
+			createTime,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{typeCode, jdbcType=VARCHAR}, 
+			#{typeName, jdbcType=VARCHAR}, 
+			#{typeDesc, jdbcType=VARCHAR}, 
+			#{isOne, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{dealBean, jdbcType=VARCHAR}, 
+			#{serviceNode, jdbcType=VARCHAR}, 
+			<if test="notifyType !=null ">
+			#{notifyType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notifyType ==null ">
+			0 ,
+			</if>
+			#{notifyTel, jdbcType=VARCHAR}, 
+			#{notifyEmail, jdbcType=VARCHAR}, 
+			#{createBy, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_job_type 
+		<where> 
+			typeCode = #{typeCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_job_type  
+		<set>
+			<if test="typeName != null">
+				typeName = #{typeName, jdbcType=VARCHAR},  
+			</if>
+			<if test="typeDesc != null">
+				typeDesc = #{typeDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="isOne != null">
+				isOne = #{isOne, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="dealBean != null">
+				dealBean = #{dealBean, jdbcType=VARCHAR},  
+			</if>
+			<if test="serviceNode != null">
+				serviceNode = #{serviceNode, jdbcType=VARCHAR},  
+			</if>
+			<if test="notifyType != null">
+				notifyType = #{notifyType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notifyTel != null">
+				notifyTel = #{notifyTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="notifyEmail != null">
+				notifyEmail = #{notifyEmail, jdbcType=VARCHAR},  
+			</if>
+			<if test="createBy != null">
+				createBy = #{createBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  typeCode = #{typeCode}
+		</where>
+	</update>
+</mapper>

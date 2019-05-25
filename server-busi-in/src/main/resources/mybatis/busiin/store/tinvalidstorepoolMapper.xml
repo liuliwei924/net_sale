@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="INVALIDSTOREPOOL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			customerId, 
+			applyName, 
+			telephone, 
+			cityName, 
+			channelCode, 
+			orderStatus, 
+			lastStore, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  ,
+			custLabel, 
+			orderType, 
+			orgId, 
+			DATE_FORMAT(allotTime,'%Y-%m-%d %H:%i:%s') as allotTime  ,
+			allotBy, 
+			allotDesc, 
+			invalidDesc
+		FROM t_invalid_store_pool
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				and applyName = #{applyName}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and channelCode = #{channelCode}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				and orderStatus = #{orderStatus}
+			</if>
+			<if test="lastStore != null and lastStore != ''">
+				and lastStore = #{lastStore}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="applyTime != null and applyTime != ''">
+				and applyTime = #{applyTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				and custLabel = #{custLabel}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				and orderType = #{orderType}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="allotTime != null and allotTime != ''">
+				and allotTime = #{allotTime}
+			</if>
+			<if test="allotBy != null and allotBy != ''">
+				and allotBy = #{allotBy}
+			</if>
+			<if test="allotDesc != null and allotDesc != ''">
+				and allotDesc = #{allotDesc}
+			</if>
+			<if test="invalidDesc != null and invalidDesc != ''">
+				and invalidDesc = #{invalidDesc}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_invalid_store_pool 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="customerId != null and customerId != ''">
+			and customerId = #{customerId}
+		</if>
+		<if test="applyName != null and applyName != ''">
+			and applyName = #{applyName}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="channelCode != null and channelCode != ''">
+			and channelCode = #{channelCode}
+		</if>
+		<if test="orderStatus != null and orderStatus != ''">
+			and orderStatus = #{orderStatus}
+		</if>
+		<if test="lastStore != null and lastStore != ''">
+			and lastStore = #{lastStore}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="applyTime != null and applyTime != ''">
+			and applyTime = #{applyTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="custLabel != null and custLabel != ''">
+			and custLabel = #{custLabel}
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and orderType = #{orderType}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="allotTime != null and allotTime != ''">
+			and allotTime = #{allotTime}
+		</if>
+		<if test="allotBy != null and allotBy != ''">
+			and allotBy = #{allotBy}
+		</if>
+		<if test="allotDesc != null and allotDesc != ''">
+			and allotDesc = #{allotDesc}
+		</if>
+		<if test="invalidDesc != null and invalidDesc != ''">
+			and invalidDesc = #{invalidDesc}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_invalid_store_pool (
+			applyId,
+			customerId,
+			applyName,
+			telephone,
+			cityName,
+			channelCode,
+			orderStatus,
+			lastStore,
+			createTime,
+			applyTime,
+			updateTime,
+			custLabel,
+			orderType,
+			orgId,
+			allotTime,
+			allotBy,
+			allotDesc,
+			invalidDesc
+		)
+		VALUES ( 
+			#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{applyName, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=CHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{channelCode, jdbcType=VARCHAR}, 
+			<if test="orderStatus !=null ">
+			#{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderStatus ==null ">
+			-1 ,
+			</if>
+			#{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			<if test="custLabel !=null ">
+			#{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="custLabel ==null ">
+			0 ,
+			</if>
+			<if test="orderType !=null ">
+			#{orderType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orderType ==null ">
+			1 ,
+			</if>
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{allotBy, jdbcType=VARCHAR}, 
+			#{allotDesc, jdbcType=VARCHAR}, 
+			#{invalidDesc, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_invalid_store_pool 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_invalid_store_pool  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyName != null">
+				applyName = #{applyName, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=CHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelCode != null">
+				channelCode = #{channelCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="orderStatus != null">
+				orderStatus = #{orderStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="lastStore != null">
+				lastStore = #{lastStore, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="applyTime != null">
+				applyTime = #{applyTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="custLabel != null">
+				custLabel = #{custLabel, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orderType != null">
+				orderType = #{orderType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="allotTime != null">
+				allotTime = #{allotTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="allotBy != null">
+				allotBy = #{allotBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="allotDesc != null">
+				allotDesc = #{allotDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="invalidDesc != null">
+				invalidDesc = #{invalidDesc, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+	<select id="queryInvalidOrder" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+		  *
+		FROM
+		(
+			SELECT
+				t.applyId,
+				t.customerId,
+				t.applyName,
+				t.telephone,
+				t.cityName,
+				t.channelCode,
+				t.orderStatus,
+				t.lastStore,
+				t.createTime,
+				t.applyTime,
+				t.updateTime,
+				t.custLabel,
+				t.orderType,
+				t.orgId,
+				t.allotTime,
+				t.allotBy,
+				t.allotDesc,
+				t1.handleDesc AS invalidDesc
+			FROM
+				t_borrow_store_apply t
+			LEFT JOIN t_store_handle_record t1 ON t.applyId = t1.applyId
+			WHERE
+				t.applyTime < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+			AND t.orderStatus = 7
+			AND (
+				t1.handleDesc LIKE CONCAT('%', '拒接', '%')
+				OR t1.handleDesc LIKE CONCAT('%', '关机', '%')
+				OR t1.handleDesc LIKE CONCAT('%', '空号', '%')
+				OR t1.handleDesc LIKE CONCAT('%', '未接听', '%')
+			)
+			ORDER BY t.applyTime asc
+			LIMIT 1000
+		) AS tab1
+		UNION
+		SELECT
+		  *
+		FROM
+		(
+			SELECT
+				t.applyId,
+				t.customerId,
+				t.applyName,
+				t.telephone,
+				t.cityName,
+				t.channelCode,
+				t.orderStatus,
+				t.lastStore,
+				t.createTime,
+				t.applyTime,
+				t.updateTime,
+				t.custLabel,
+				t.orderType,
+				t.orgId,
+				t.allotTime,
+				t.allotBy,
+				t.allotDesc,
+				t1.handleDesc AS invalidDesc
+			FROM
+				t_borrow_store_apply t
+			LEFT JOIN t_store_handle_record t1 ON t.applyId = t1.applyId
+			WHERE
+				t.applyTime < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+			AND t.orderStatus = 8
+			ORDER BY t.applyTime asc
+			LIMIT 1000
+		) AS tab2]]>
+	</select>
+	<insert id="batchInsertInvalidPool" parameterType="ArrayList">
+		REPLACE INTO t_invalid_store_pool (
+			applyId,
+			customerId,
+			applyName,
+			telephone,
+			cityName,
+			channelCode,
+			orderStatus,
+			lastStore,
+			createTime,
+			applyTime,
+			updateTime,
+			custLabel,
+			orderType,
+			orgId,
+			allotTime,
+			allotBy,
+			allotDesc,
+			invalidDesc
+		)
+		VALUES		
+		<foreach collection="list" item="item" index="index" separator=",">
+		  (
+		  #{item.applyId}, 
+		  #{item.customerId}, 
+		  #{item.applyName},
+		  #{item.telephone}, 
+		  #{item.cityName},
+		  #{item.channelCode},
+	      #{item.orderStatus},
+	      #{item.lastStore},
+	      now(),
+	      #{item.applyTime},
+	      now(),
+	      #{item.custLabel},
+	      #{item.orderType},
+	      #{item.orgId},
+	      #{item.allotTime},
+	      #{item.allotBy},
+	      #{item.allotDesc},
+	      #{item.invalidDesc}
+		  )
+		</foreach>
+	</insert>
+	<delete id="batchDeleteInvalidOrder" parameterType="map">
+		DELETE FROM t_borrow_store_apply 
+		<where> 
+		applyId in(
+			<foreach collection="list" item="item" index="index" separator=",">
+		  		#{item.applyId}
+			</foreach>
+		)
+		</where>
+	</delete>
+	<delete id="batchDeleteExclusiveOrder" parameterType="map">
+		DELETE FROM t_exclusive_order 
+		<where> 
+		applyId in(
+			<foreach collection="list" item="item" index="index" separator=",">
+		  		#{item.applyId}
+			</foreach>
+		)
+		</where>
+	</delete>
+	<delete id="deleteInvalidOrder" parameterType="map">
+		DELETE FROM t_borrow_store_apply 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<!-- 查询已加入无效订单池但网销申请表暂未删除的订单 -->
+	<select id="queryRelationInvalidOrder" resultType="map" parameterType="map">
+		<![CDATA[
+			SELECT
+				t.applyId
+			FROM
+				t_borrow_store_apply t 
+			JOIN t_invalid_store_pool t1 ON t.applyId = t1.applyId
+			WHERE
+				t.applyTime < DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
+			AND t.orderStatus in (7,8)
+		]]>
+	</select>
+	
+	<!-- 查询无效池列表 -->
+		<select id="queryInvalidPool" resultType="map" parameterType="map">
+		SELECT
+			t.applyId,
+			t.customerId, 
+			t.applyName, 
+			f_hide_phone(t.telephone) telephone,
+			t.cityName, 
+			t.channelCode, 
+			t.orderStatus,
+			(
+				CASE
+				WHEN t.orderStatus =- 1 THEN
+					'待跟进'
+				WHEN t.orderStatus = 0 THEN
+					'跟进中'
+				WHEN t.orderStatus = 1 THEN
+					'未上门待签约'
+				WHEN t.orderStatus = 2 THEN
+					'已上门待签约'
+				WHEN t.orderStatus = 3 THEN
+					'已上门签约'
+				WHEN t.orderStatus = 4 THEN
+					'进件审核中'
+				WHEN t.orderStatus = 5 THEN
+					'银行已放款'
+				WHEN t.orderStatus = 6 THEN
+					'银行已拒绝'
+				WHEN t.orderStatus = 7 THEN
+					'无效客户'
+				WHEN t.orderStatus = 8 THEN
+					'空号/错号'
+				ELSE
+					'未知'
+				END
+			) AS orderStatusText,
+			t.lastStore, 
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime  ,
+			DATE_FORMAT(t.applyTime,'%Y-%m-%d %H:%i:%s') as applyTime  ,
+			DATE_FORMAT(t.updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  ,
+			t.custLabel, 
+				(
+				CASE t.custLabel
+				WHEN 0 THEN
+					'0星：默认未了解的客户'
+				WHEN 1 THEN
+					'1星：无条件无可贷点'
+				WHEN 2 THEN
+					'2星：有条件暂时不能进件的'
+				WHEN 3 THEN
+					'2星+：有需求要约上门客户'
+				WHEN 4 THEN
+					'3星：可做小贷的客户'
+				WHEN 5 THEN
+					'4星：可做银行的客户'
+				ELSE
+					'未知'
+				END
+			) AS custLabelText,
+			t.orderType, 
+						(
+				CASE t.orderType
+				WHEN 1 THEN
+					'新申请'
+				ELSE
+					'再分配'
+				END
+			) AS orderTypeText,
+			t.orgId, 
+			DATE_FORMAT(t.allotTime,'%Y-%m-%d %H:%i:%s') as allotTime  ,
+			t.allotBy, 
+			t.allotDesc, 
+			t.invalidDesc,
+			t1.applyCount,
+			(select count(*) from ${tableName} t1 where t.applyId = t1.applyId and t1.handleType =1) as followCount,
+			t2.loanAmount,
+			t3.realName AS currentDeal,
+			f_asset_info_new(t.applyId) as 'assetInfo',
+			concat(t4.orgNo, '-', t4.orgName) AS orgName,
+			(CASE t5.type
+				WHEN 1 THEN '自有平台'
+				WHEN 2 THEN '推广渠道'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN '历史数据'
+				WHEN 5 THEN '推广渠道'
+				WHEN 6 THEN '测试数据'
+				ELSE 'API接口'
+				END
+			) AS channelTypeText
+		FROM t_invalid_store_pool t
+   	    LEFT JOIN t_borrow_apply t1 on t.applyId = t1.applyId
+   	    LEFT JOIN T_BORROW_BASE t2 ON t2.applyId = t.applyId
+   	    LEFT JOIN t_busi_cust t3 ON t3.customerId = t1.lastStore
+   	    LEFT JOIN t_org t4 ON t4.orgId = t.orgId
+   	    LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+   	   	 <include refid="queryWhereSql"/>
+   	   	 ORDER BY t.updateTime DESC
+   	    </select>
+   	    
+   	 <!-- 查询再分配池列表信息条数-->
+	<select id="queryInvalidPoolCount" resultType="int" parameterType="map">
+		SELECT 
+		  COUNT(1)
+		FROM
+		  t_invalid_store_pool t 
+   	    LEFT JOIN t_borrow_apply t1 on t.applyId = t1.applyId
+   	    LEFT JOIN t_borrow_base t2 ON t2.applyId = t.applyId
+   	    LEFT JOIN t_busi_cust t3 ON t3.customerId = t1.lastStore
+   	    LEFT JOIN t_org t4 ON t4.orgId = t3.orgId
+   	    LEFT JOIN t_borrow_channel t5 ON t5.channelCode = t.channelCode
+		<include refid="queryWhereSql"/>
+	</select>
+	
+   	    <sql id="queryWhereSql">
+   	   		<where>
+	  		<if test="startDate != null and startDate != ''">
+				 <![CDATA[AND t.applyTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.applyTime <= #{endDate}]]>
+			</if>
+	  		<if test="startHandleDate != null and startHandleDate != ''">
+				 <![CDATA[AND t.updateTime >= #{startHandleDate}]]>
+			</if>
+			<if test="endHandleDate != null and endHandleDate != ''">
+				<![CDATA[AND t.updateTime <= #{endHandleDate}]]>
+			</if>
+			<if test="cityName != null and cityName != ''">
+				AND t.cityName = #{cityName}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t.`orgId`=#{orgId}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				AND t.`orderType`=#{orderType}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				AND t.`telephone`=#{telephone}
+			</if>
+			<if test="applyName != null and applyName != ''">
+				AND t.`applyName` LIKE CONCAT(#{applyName},'%')
+			</if>
+			<if test="custLabel != null and custLabel != ''">
+				AND t.`custLabel`=#{custLabel}
+			</if>
+			<if test="orderType != null and orderType != ''">
+				AND t.`orderType`=#{orderType}
+			</if>
+			<if test="storeRealName != null and storeRealName != ''">
+				AND t3.`realName` LIKE CONCAT(#{storeRealName},'%')
+			</if>
+			<if test="invalidDesc != null and invalidDesc != ''">
+				and t.invalidDesc like CONCAT('%',#{invalidDesc},'%')
+			</if>
+			<if test="channelType != null and channelType != ''">
+				and t5.type = #{channelType}
+			</if>
+			<if test="queryChannelType != null and queryChannelType != ''">
+				AND t5.`type` = #{queryChannelType}
+			</if>
+		</where>
+	</sql>
+</mapper>

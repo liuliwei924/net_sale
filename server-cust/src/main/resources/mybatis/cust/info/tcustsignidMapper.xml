@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="CUSTSIGNID">
+
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+		id,
+		customerId,
+		signId,
+		signType,
+		uuid,
+		DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime ,
+		DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime
+		FROM
+		t_cust_signid
+		<where>
+			<if test="id != null and id != ''">
+				and id = #{id}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="signId != null and signId != ''">
+				and signId = #{signId}
+			</if>
+			<if test="signType != null and signType != ''">
+				and signType = #{signType}
+			</if>
+			<if test="uuid != null and uuid != ''">
+				and uuid = #{uuid}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_cust_signid
+		<where>
+			<if test="id != null and id != ''">
+				and id = #{id}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="signId != null and signId != ''">
+				and signId = #{signId}
+			</if>
+			<if test="signType != null and signType != ''">
+				and signType = #{signType}
+			</if>
+			<if test="uuid != null and uuid != ''">
+				and uuid = #{uuid}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+	</select>
+	<select id="queryBeforeSignId" parameterType="map" resultType="map">
+		select signId FROM t_cust_signid 
+		where
+		customerId=#{customerId}
+		and
+		signType=#{signType}
+		and	<![CDATA[createTime<NOW()]]>
+		and <![CDATA[signid not like #{signId}]]>
+	</select>
+
+	<select id="querySignId" parameterType="map" resultType="map">
+		select *
+		from t_cust_signid
+		where
+		customerId=#{customerId}
+		and
+		signType=#{signType}
+		ORDER BY
+		createTime
+		DESC
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER"
+			keyProperty="id">
+			SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_cust_signid (
+		customerId,
+		signId,
+		signType,
+		uuid,
+		createTime,
+		updateTime
+		)
+		VALUES (
+		#{customerId,
+		jdbcType=BIGINT,typeHandler=NumberHandler},
+		#{signId,
+		jdbcType=VARCHAR},
+		#{signType,
+		jdbcType=VARCHAR},
+		#{uuid,
+		jdbcType=VARCHAR},
+		#{createTime,
+		jdbcType=TIMESTAMP,typeHandler=DateHandler},
+		#{updateTime,
+		jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+
+	<delete id="delete" parameterType="map">
+		<if test="delType==1">
+			DELETE FROM t_cust_signid
+			<where>
+				id = #{id}
+			</where>
+		</if>
+		<if test="delType==2">
+			DELETE FROM t_cust_signid
+			<where>
+				customerId=#{customerId}
+				and
+				signType=#{signType}
+				and
+			<![CDATA[createTime<NOW()]]>
+				and
+		    <![CDATA[signid not like #{signId}]]>
+			</where>
+		</if>
+		<if test="delType==3">
+			delete from t_cust_signid
+			<where>
+				signId=#{signId}
+			</where>
+
+		</if>
+	</delete>
+
+	<update id="update" parameterType="map">
+		UPDATE t_cust_signid
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId,
+				jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="signId != null">
+				signId = #{signId,
+				jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="signType != null">
+				signType = #{signType, jdbcType=VARCHAR},
+			</if>
+			<if test="uuid != null">
+				uuid = #{uuid, jdbcType=VARCHAR},
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime,
+				jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime,
+				jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			id = #{id}
+		</where>
+	</update>
+
+</mapper>

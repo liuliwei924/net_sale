@@ -1,0 +1,466 @@
+package org.xxjr.busi.util.wd;
+
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.StringUtil;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.util.StringUtils;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.cust.util.info.MapLocaltionUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+import com.google.common.collect.ImmutableMap;
+
+public class WdShopUtil {
+ 
+	private static final String CacheKey_WD = "CacheKey_WD_Key_";
+	
+	/**
+	 * 推荐人的微店信息
+	 */
+	private static final String CacheKey_Referer_WD = "CacheKey_Referer_WD_";
+	
+	/**
+	 * 每个城市抢单前三名
+	 */
+	private static final String Cache_Front_CityWD = "Cache_Front_CityWD_";
+	
+	/**微店数据保留时长为 1小时**/
+	public static Integer WD_CACHE_TIME = 60*60*1;
+	
+	/**
+	 * 获取推荐人微店信息
+	 * @param customerId
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getRefererWd(Object referer, HttpServletRequest request){
+		List<Map<String, Object>> refererWd = (List<Map<String, Object>>) RedisUtils
+				.getRedisService().get(CacheKey_Referer_WD + referer);
+		if(refererWd == null){
+			refererWd = refreshRefererWd(referer, request);
+		}
+		return refererWd;
+	}
+	
+	/**
+	 * 刷新推荐人微店信息
+	 * @param customerId
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshRefererWd(Object referer, HttpServletRequest request){
+		AppParam referParam = new AppParam("wdShopService","remcomAdvisers");
+		referParam.addAttr("customerId", referer);
+		Map<String,Object> localMap = MapLocaltionUtil.getLocationInfo(request);
+		referParam.addAttr("longitude", localMap.get(MapLocaltionUtil.BaiDu_longitude));
+		referParam.addAttr("latitude", localMap.get(MapLocaltionUtil.BaiDu_latitude));
+		referParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START+"busi"));
+		AppResult refererResult = RemoteInvoke.getInstance().call(referParam);
+		RedisUtils.getRedisService().set(CacheKey_Referer_WD + referer, (Serializable)refererResult.getRows(), WD_CACHE_TIME);
+		return refererResult.getRows();
+	}
+	
+	/**
+	 * 获取城市抢单前三名的微店
+	 * @param customerId
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static List<Map<String, Object>> getFrontCityWd(String cityName){
+		List<Map<String, Object>> frontWd = (List<Map<String, Object>>) RedisUtils
+				.getRedisService().get(Cache_Front_CityWD + cityName);
+		if(frontWd == null){
+			frontWd = refreshFrontCityWd(cityName);
+		}
+		return frontWd;
+	}
+	
+	/**
+	 * 刷新城市抢单前三名的微店
+	 * @param customerId
+	 * @return
+	 */
+	public static List<Map<String, Object>> refreshFrontCityWd(String cityName){
+		AppParam frontParam = new AppParam("wdShopService", "queryFrontWd");
+		frontParam.addAttr("cityName", cityName);
+		frontParam.setRmiServiceName(AppProperties.
+				getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult frontResult = RemoteInvoke.getInstance().call(frontParam);
+		RedisUtils.getRedisService().set(Cache_Front_CityWD + cityName, (Serializable)frontResult.getRows(), WD_CACHE_TIME);
+		return frontResult.getRows();
+	}
+	
+	/**
+	 * 微店基本信息
+	 * @param customerId
+	 * @return
+	 */
+	public static Map<String, Object> queryWdInfo(String customerId, String wdUuid){
+		AppParam params = new AppParam("wdShopService", "query");
+		if(StringUtils.isEmpty(customerId) && StringUtils.isEmpty(wdUuid)){
+			return new HashMap<String, Object>();
+		}
+		params.addAttr("customerId", customerId);
+		params.addAttr("uuid", wdUuid);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		
+		if(result.getRows().size() > 0){
+			Map<String, Object> wdMap = result.getRow(0);
+			wdMap.put("headImage", CustomerIdentify.getCustIdentify(customerId).get("userImage"));
+			return wdMap;
+		}
+		return new HashMap<String, Object>();
+	}
+	
+	/**
+	 * 查询微店排行
+	 * @param  type 0-申请排行 1-浏览排行
+	 * @return
+	 */
+	public static List<Map<String, Object>> wdRanking(int type,int currentPage, int pageSize){
+		AppParam params = new AppParam("wdShopService", "queryBaseView");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		params.setEveryPage(pageSize);
+		params.setCurrentPage(currentPage);
+		if(type == 1){
+			params.setOrderBy("browseCount");
+			params.setOrderValue("desc");
+		}else{
+			params.setOrderBy("applyCount");
+			params.setOrderValue("desc");
+		}
+		AppResult result = RemoteInvoke.getInstance().call(params);
+		List<Map<String, Object>> list = result.getRows();
+		result = null;
+		return list;
+	}
+	
+	/**
+	 * 更新微店点赞，浏览，申请量
+	 * 
+	 * @param property
+	 * @param clickCount browseCount applyCount
+	 */
+	public static void updateCount(String customerId, String property) {
+		try {
+			AppParam params = new AppParam("wdShopService", "updateCount");
+			params.addAttr(property, 1);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+			params.addAttr("customerId", customerId);
+			AppResult result = RemoteInvoke.getInstance().call(params);
+			if(result.isSuccess()){
+				refreshWdCache(customerId, "wdInfo");
+			}
+		} catch (Exception e) {
+			// igonre
+		}
+	}
+
+	/**
+	 * 微店统计
+	 * @param customerId 用户Id
+	 * @param month 统计月份
+	 */
+	public static AppResult wdApplyStatistic(String customerId){
+		Calendar c = Calendar.getInstance();
+		AppParam wdParam = new AppParam("wdShopService", "query");
+        AppResult result = new AppResult();
+        if(StringUtils.isEmpty(customerId)){
+			customerId =" @@";
+		}
+		wdParam.addAttr("customerId", customerId);
+		wdParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult wdResult = RemoteInvoke.getInstance().call(wdParam);
+		Integer startMonth = 1;
+		if(wdResult.getRows().size() > 0){//找出微店注册的开始月份
+			Map<String,Object> wdMap = wdResult.getRow(0);
+			String dStr = wdMap.get("createTime").toString();
+			if(c.get(Calendar.YEAR) == Integer.parseInt(dStr.substring(0, 4)))
+				startMonth = Integer.parseInt(dStr.substring(5, 7));//月份
+		}else{//没有微店直接返回
+			return result;
+		}
+		
+		wdResult = null;
+		AppParam params = new AppParam("wdCreditApplyService", "wdApplyStatistic");
+		params.addAttr("customerId", customerId);
+		params.addAttr("year", c.get(Calendar.YEAR));
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+        wdResult = RemoteInvoke.getInstance().call(params);//取出今年的数据
+        List<Map<String, Object>> dataList = wdResult.getRows();
+        Map<Integer,int[]> monthMap = new LinkedHashMap<Integer,int[]>();
+        int curMonth = c.get(Calendar.MONTH)+1;
+        for(;curMonth>=startMonth;curMonth--){//初始化数据
+        	monthMap.put(curMonth, null);
+        }
+        for(Map<String, Object> dataMap : dataList){
+        	int count = Integer.parseInt(dataMap.get("count").toString());
+        	String dateStr = dataMap.get("date").toString();
+        	int month = Integer.parseInt(dateStr.substring(5,7));
+        	int day = Integer.parseInt(dateStr.substring(8,10));
+        	if(monthMap.containsKey(month)){
+        		if(monthMap.get(month) == null){
+            		c.set(Calendar.MONTH, month-1);
+            		int datas[] = new int[c.getActualMaximum(Calendar.DATE)+1];
+            		datas[day] = count;
+            		monthMap.put(month, datas);
+        		}else{
+        			monthMap.get(month)[day]=count;
+        		}
+        	}
+        }
+       
+        result.putAttr("dayCount", WdApplyUtil.wdApplyCount(customerId, 1));//今日申请
+		result.putAttr("historyCount", WdApplyUtil.wdApplyCount(customerId, 2));//历史申请
+		result.putAttr("countData", monthMap);//每个月的数据统计
+		result.putAttr("monthsKey", monthMap.keySet());//所有月份集合
+		result.putAttr("currentMonth", c.get(Calendar.MONTH)+1);
+		wdResult = null;
+		return result;
+	}
+	
+	/**
+	 * 编辑微店
+	 * @param params
+	 * @return
+	 */
+	public static AppResult editWdShop(AppParam params){
+		AppResult result = new AppResult();
+		boolean custFlag = Boolean.parseBoolean(params.getAttr("isAdd").toString());
+		String customerId =  params.getAttr("customerId").toString();
+		/*result = validCust(customerId);
+		if(!result.isSuccess()){
+			return result;
+		}*/
+		params.setService("wdShopService");
+		params.setMethod(custFlag ? "insert" : "update"); 
+		params.addAttr("customerId", customerId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		
+		result =  RemoteInvoke.getInstance().call(params);
+		if(result.isSuccess()){
+			refreshWdCache(customerId, "wdInfo");
+		}
+		return result;
+	}
+	
+	/***
+	 * 校验用户身份信息
+	 * @param customerId
+	 * @return
+	 */
+	public static AppResult validCust(String customerId) {
+		AppResult result = new AppResult();
+		Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+		Object realName = custInfo.get("realName");
+		Object company = custInfo.get("company");
+		if(StringUtils.isEmpty(realName)){
+			 result.setMessage("请在个人中心处理实名认证，实名认证通过后才可以处理该功能");
+			 result.setErrorCode("0001");
+			 result.setSuccess(false);
+			 return result;
+		}
+		
+		if(StringUtils.isEmpty(company)){
+			 result.setMessage("请在个人中心处理工作认证，工作认证通过后才可以处理该功能");
+			 result.setErrorCode("0002");
+			 result.setSuccess(false);
+			 return result;
+		}
+		return result;
+	}
+	
+	/**
+	 * 微店模板列表
+	 * @param params
+	 * @return
+	 */
+	public static AppResult templateList(AppParam params){
+		params.setService("wdTemplateService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		return RemoteInvoke.getInstance().call(params);
+	}
+	
+	/**
+	 * 微店模板信息
+	 * @param params
+	 * @return
+	 */
+	public static Map<String,Object> wdTemplateInfo(String tempId){
+		AppParam params = new AppParam();
+		params.setService("wdTemplateService");
+		params.setMethod("query");
+		params.addAttr("tempId", tempId);
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result =  RemoteInvoke.getInstance().call(params);
+		return result.getRows().size()>0 ? result.getRow(0) : result.getAttr();
+	}
+
+	/**
+	 * 
+	 * @param orderBy 排序值
+	 * @param orderValue desc  asc 
+	 * @param rankLimit 排名值的上限
+	 * @return
+	 */
+	public static String myWdRank(String orderBy,String orderValue, int rankLimit){
+		AppParam params = new AppParam("wdShopService", "myWdRank");
+		params.setOrderBy(orderBy);
+		params.setOrderValue(orderValue);
+		params.addAttr("rankValue", orderBy);
+		params.addAttr("rankLimit", rankLimit);
+		params.addAttr("customerId", CustomerUtil.getCustId());
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result =  RemoteInvoke.getInstance().call(params);
+		Object rank = result.getAttr("rank");
+		if(StringUtils.isEmpty(rank) || Integer.parseInt(rank.toString()) == 0){
+			rank = "未上榜";
+		}
+		return rank.toString() ;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String,Object> getWdCache(String customerId){
+		
+		Map<String,Object> wdMap = (Map<String,Object>)RedisUtils.getRedisService().get(CacheKey_WD+customerId);
+		if(wdMap == null){
+			wdMap = refreshWdCache(customerId,"all");
+		}
+		Map<String,Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+		wdMap.put("headImage",  custInfo.get("userImage"));
+		wdMap.put("cityName", StringUtils.isEmpty(custInfo.get("cityName"))?"深圳市":custInfo.get("cityName"));
+		return wdMap;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static Map<String,Object> refreshWdCache(String customerId,String type){
+		Map<String, Object> wdMap = null;
+		if("all".equals(type)){
+			wdMap = new HashMap<String, Object>();
+			RedisUtils.getRedisService().del(CacheKey_WD+customerId);
+		}else{
+			wdMap = (Map<String,Object>)RedisUtils.getRedisService().get(CacheKey_WD+customerId);
+			if(wdMap == null){
+				wdMap = new HashMap<String, Object>();
+				type = "all";
+			}
+		}
+		
+		//微店信息
+		if("wdInfo".equals(type) || "all".equals(type)){
+			Map<String, Object> wdInfoMap = WdShopUtil.queryWdInfo(customerId, null);
+			boolean haveWd = (wdInfoMap != null && !wdInfoMap.isEmpty());
+			if(haveWd){
+				wdMap.put("uuid", wdInfoMap.get("uuid"));
+				wdMap.put("shopName", wdInfoMap.get("shopName"));
+				wdMap.put("minLoanAmt", wdInfoMap.get("minLoanAmt"));
+				wdMap.put("maxLoanAmt", wdInfoMap.get("maxLoanAmt"));
+				wdMap.put("loanType", wdInfoMap.get("loanType"));
+				Object minRate = wdInfoMap.get("minRate")==null?0.1:wdInfoMap.get("minRate");
+				Object maxRate = wdInfoMap.get("maxRate")==null?0.1:wdInfoMap.get("maxRate");
+				wdMap.put("minRate", minRate);
+				wdMap.put("maxRate", maxRate);
+				wdMap.put("clickCount", wdInfoMap.get("clickCount"));
+				wdMap.put("browseCount", wdInfoMap.get("browseCount"));
+				wdMap.put("applyCount", wdInfoMap.get("applyCount"));
+				wdMap.put("tempId", wdInfoMap.get("tempId"));
+				wdMap.put("workLimit", wdInfoMap.get("workLimit"));
+				wdMap.put("shopDesc", wdInfoMap.get("shopDesc"));
+				wdMap.put("createTime", wdInfoMap.get("createTime"));
+				wdMap.put("proCount", wdInfoMap.get("proCount"));
+				wdMap.put("proNames", wdInfoMap.get("proNames"));
+				wdMap.put("rateRange", ImmutableMap.of("rateMin",minRate,"rateMax",maxRate));
+				wdMap.put("dayOrderNum", wdInfoMap.get("dayOrderNum"));
+				wdMap.put("dayExpendAmount", wdInfoMap.get("dayExpendAmount"));
+				//审核状态和审批意见
+				wdMap.put("applyStatus", wdInfoMap.get("applyStatus"));
+				wdMap.put("auditDesc", wdInfoMap.get("auditDesc") == null?"":wdInfoMap.get("auditDesc"));
+				
+				
+			}
+			wdMap.put("haveWd", haveWd);
+		}
+		
+		if((boolean)wdMap.get("haveWd")){
+			//微店成功案例个数
+			if("caseCount".equals(type) || "all".equals(type)){
+				wdMap.put("caseCount", WdCaseUtil.getWdCaseCount(customerId));
+			}
+			
+			RedisUtils.getRedisService().set(CacheKey_WD+customerId,(Serializable)wdMap,WD_CACHE_TIME);
+		}else{
+			
+			wdMap.put("proCount", 0);
+			wdMap.put("caseCount", 0);
+			wdMap.put("rateRange", ImmutableMap.of("rateMin",0,"rateMax",0));
+		}
+
+		return wdMap;
+	}
+	
+	/**
+	 * 贷款成功后，推荐3个信贷经理
+	 * @param attr
+	 * @return
+	 */
+	public static List<Map<String,Object>> queryAdvisers(Map<String,Object> attr){
+		AppParam param = new AppParam();
+		param.setService("wdShopService");
+		param.setMethod("queryAdvisers");
+		param.addAttrs(attr);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + "busi"));
+		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+		return result.getRows();
+	}
+	/**
+	 * 删除短信模板
+	 * @param urlId
+	 */
+	public static void delSmsCustTemp(Object urlId){
+		AppParam param = new AppParam("smsCustShorturlService", "delete");
+		param.addAttr("urlId", urlId);
+		param.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+		RemoteInvoke.getInstance().call(param);
+	}
+	/**
+	 * 
+	 * 通过产品id查找微店UUID
+	 * @param attr
+	 * @return
+	 */
+//	public static String queryWdUuidByProId(Object productId){
+//		AppParam param = new AppParam("wdShopService","queryWdUuidByProId");
+//		param.addAttr("productId", productId);
+//		param.setRmiServiceName(AppProperties
+//				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+//		AppResult result = RemoteInvoke.getInstance().callNoTx(param);
+//		return StringUtil.getString(result.getAttr("uuid"));
+//	}
+}

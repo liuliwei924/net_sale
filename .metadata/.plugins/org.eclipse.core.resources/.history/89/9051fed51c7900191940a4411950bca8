@@ -1,0 +1,282 @@
+package org.xxjr.busi.util;
+
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.web.page.PageUtil;
+import org.llw.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+public class AuthLoanUtil {
+	/** 基本额度*/
+	public final static String DATA_QUOTA_BASE = "base";
+	/** 实名认证额度*/
+	public final static String DATA_QUOTA_IDENTITYAUTH = "identityAuth";
+	/** 公积金额度*/
+	public final static String DATA_QUOTA_FUND = "fund";
+	/** 社保额度*/
+	public final static String DATA_QUOTA_SOCIAL = "social";
+	/** 运营商额度*/
+	public final static String DATA_QUOTA_CARRIER = "carrier";
+	/** 学历额度*/
+	public final static String DATA_QUOTA_CHSI = "chsi";
+	/** 京东额度*/
+	public final static String DATA_QUOTA_JINGDONG = "jingdong";
+	/** 支付宝额度*/
+	public final static String DATA_QUOTA_ALIPAY = "alipay";
+	
+	/** 缓存30天*/
+	public static final int base_cache_time = 60*60*24*30;
+	
+	//授权额度配置缓存key
+	public static final String AUTH_QUOTA_CFG = "authQuotaCfg";
+	//用户总授权额度
+	public static final String CUST_TOTAL_QUOTA="cust_total_quota_";
+	
+	/**
+	 * 获取用户申请信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult getCustApplyInfo(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("applyInfoService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("applyInfoService") == null) {
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		}else {
+			result = SoaManager.getInstance().callNoTx(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取用户授权额度详情
+	 * @param params
+	 * @return
+	 */
+	public static AppResult getCustQuota(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custQuotaService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("custQuotaService") == null) {
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		}else {
+			result = SoaManager.getInstance().callNoTx(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 刷新用户额度
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static int refreshCustTotalQuota(AppParam params) {
+		int quota = 0;
+		AppResult custQuota = getCustQuota(params);
+		if (custQuota.getRows().size() > 0) {
+			for (Map<String, Object> quotaMap : custQuota.getRows()) {
+				quota += NumberUtil.getInt(quotaMap.get("quota"), 0);
+			}
+		}
+		RedisUtils.getRedisService().set(
+				CUST_TOTAL_QUOTA + params.getAttr("customerId"), quota, base_cache_time);
+		return quota;
+	}
+	
+	/**
+	 * 获取用户总的授权额度
+	 * 
+	 * @param params
+	 * @return
+	 */
+	public static int getCustTotalQuota(AppParam params) {
+		Integer quota = (Integer) RedisUtils.getRedisService().get(
+				CUST_TOTAL_QUOTA + params.getAttr("customerId"));
+		if (StringUtils.isEmpty(quota)) {
+			quota = refreshCustTotalQuota(params);
+		}
+		return quota;
+	}
+	
+	/**
+	 * 获取额度配置信息
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> getAuthQuotaCfg(){
+		Map<String,Object> map =  (Map<String, Object>) RedisUtils.getRedisService().get(AUTH_QUOTA_CFG);
+		if(map==null || map.isEmpty()){
+			map = refershAuthQuotaCfg();
+		}
+		return map;
+	}
+	/**
+	 * 刷新额度配置信息
+	 * @return
+	 */
+	public static Map<String,Object> refershAuthQuotaCfg(){
+		AppResult result = new AppResult();
+		AppParam queryParam = new AppParam("authQuotaCfgService", "query");
+		queryParam.setOrderBy("configId");
+		queryParam.setOrderValue(PageUtil.ORDER_DESC);
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("authQuotaCfgService") == null) {
+			result = RemoteInvoke.getInstance().callNoTx(queryParam);
+		}else {
+			result = SoaManager.getInstance().callNoTx(queryParam);
+		}
+		Map<String,Object> map = new HashMap<String, Object>();
+		for(int i=0;i<result.getRows().size();i++){
+			map.put((String) result.getRow(i).get("authType"), result.getRow(i).get("quota"));
+		}
+		RedisUtils.getRedisService().set(AUTH_QUOTA_CFG, (Serializable)map, base_cache_time);
+		return map;
+	}
+	
+	/**
+	 * 保存用户额度信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult saveCustQuota(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custQuotaService");
+		params.setMethod("save");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("custQuotaService") == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else {
+			result = SoaManager.getInstance().invoke(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取用户授权状态
+	 * @param params
+	 * @return
+	 */
+	public static AppResult getCustAuthStatus(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custAuthService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("custQuotaService") == null) {
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		}else {
+			result = SoaManager.getInstance().callNoTx(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 更新授权状态
+	 * @param params
+	 * @return
+	 */
+	public static AppResult updateAuthStatus(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custQuotaService");
+		params.setMethod("saveQuota");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));		
+		if (SpringAppContext.getBean("custQuotaService") == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else {
+			result = SoaManager.getInstance().invoke(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 更新用户额度
+	 * @param params
+	 * @return
+	 */
+	public static AppResult updateQuota(AppParam params){
+		AppResult result = new AppResult();
+		//根据数据类型从t_auth_quota_cfg表中获取额度
+		Map<String, Object> authQutoaCfg = getAuthQuotaCfg();
+		int quota = NumberUtil.getInt(authQutoaCfg.get(params.getAttr("authType")),0);
+		//更新到t_cust_quota中
+		AppParam param = new AppParam();
+		param.addAttr("customerId", params.getAttr("customerId"));
+		param.addAttr("authType", params.getAttr("authType"));
+		param.addAttr("quota", quota);
+		result = saveCustQuota(param);
+		//如果更新用户额度成功，刷新用户总额度
+		if(result.isSuccess()){
+			AppParam quotaParam = new AppParam();
+			quotaParam.addAttr("customerId", params.getAttr("customerId"));
+			refreshCustTotalQuota(quotaParam);
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 保存用户授权状态
+	 * @param params
+	 * @return
+	 */
+	public static AppResult saveCustAuthStatus(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custAuthService");
+		params.setMethod("save");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("custAuthService") == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else {
+			result = SoaManager.getInstance().invoke(params);
+		}
+		return result;
+	}
+	
+	/**
+	 * 获取用户授权信息
+	 * @param params
+	 * @return
+	 */
+	public static AppResult getAuthMainInfo(AppParam params){
+		AppResult result = new AppResult();
+		params.setService("custAuthMainInfoService");
+		params.setMethod("query");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_open));
+		if (SpringAppContext.getBean("custAuthMainInfoService") == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else {
+			result = SoaManager.getInstance().invoke(params);
+		}
+		return result;
+	}
+}

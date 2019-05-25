@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ALLOTCITYTEMPLATE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			cityTempId,
+			cityName, 
+			netSalesCount, 
+			electSalesCount, 
+			loanShopCount, 
+			custServiceCount, 
+			smallLoanCount, 
+			insuranceCount, 
+			tempName
+		FROM t_allot_city_template
+		<where>
+			<if test="cityTempId != null and cityTempId != ''">
+			  and cityTempId = #{cityTempId}
+			 </if>
+			<if test="cityName != null and cityName != ''">
+				and cityName like '%${cityName}%'
+			</if>
+			<if test="netSalesCount != null and netSalesCount != ''">
+				and netSalesCount = #{netSalesCount}
+			</if>
+			<if test="electSalesCount != null and electSalesCount != ''">
+				and electSalesCount = #{electSalesCount}
+			</if>
+			<if test="loanShopCount != null and loanShopCount != ''">
+				and loanShopCount = #{loanShopCount}
+			</if>
+			<if test="custServiceCount != null and custServiceCount != ''">
+				and custServiceCount = #{custServiceCount}
+			</if>
+			<if test="smallLoanCount != null and smallLoanCount != ''">
+				and smallLoanCount = #{smallLoanCount}
+			</if>
+			<if test="insuranceCount != null and insuranceCount != ''">
+				and insuranceCount = #{insuranceCount}
+			</if>
+			<if test="tempName != null and tempName != ''">
+				and tempName = #{tempName}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+		<if test="cityOrder != null and allotCitys != null and allotCitys != ''">
+			ORDER by IF(FIND_IN_SET(cityName,#{allotCitys}),1,0) DESC
+		</if>
+	</select>
+
+	<select id="query2allot" resultType="map" parameterType="map">
+		SELECT
+			netSalesCount, 
+			electSalesCount, 
+			loanShopCount, 
+			custServiceCount, 
+			smallLoanCount, 
+			insuranceCount,
+			tempName
+		FROM t_allot_city_template 
+		WHERE
+			 cityName like '%${cityName}%'
+	</select>
+	
+	<select id="queryCityType" resultType="map" parameterType="map">
+		SELECT
+			cityType
+		FROM t_allot_kf_city 
+		WHERE
+			 cityName like '%${cityName}%'
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_allot_city_template 
+		<where>
+		<if test="cityTempId != null and cityTempId != ''">
+		    and cityTempId = #{cityTempId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and cityName like '%${cityName}%'
+		</if>
+		<if test="netSalesCount != null and netSalesCount != ''">
+			and netSalesCount = #{netSalesCount}
+		</if>
+		<if test="electSalesCount != null and electSalesCount != ''">
+			and electSalesCount = #{electSalesCount}
+		</if>
+		<if test="loanShopCount != null and loanShopCount != ''">
+			and loanShopCount = #{loanShopCount}
+		</if>
+		<if test="custServiceCount != null and custServiceCount != ''">
+			and custServiceCount = #{custServiceCount}
+		</if>
+		<if test="smallLoanCount != null and smallLoanCount != ''">
+			and smallLoanCount = #{smallLoanCount}
+		</if>
+		<if test="insuranceCount != null and insuranceCount != ''">
+			and insuranceCount = #{insuranceCount}
+		</if>
+		<if test="tempName != null and tempName != ''">
+			and tempName = #{tempName}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="cityTempId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_allot_city_template (
+			cityName,
+			netSalesCount,
+			electSalesCount,
+			loanShopCount,
+			custServiceCount,
+			smallLoanCount,
+			insuranceCount,
+			tempName
+		)
+		VALUES ( 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{netSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{electSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{loanShopCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{custServiceCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{smallLoanCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{insuranceCount, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{tempName, jdbcType=VARCHAR}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_allot_city_template 
+		<where> 
+			cityTempId = #{cityTempId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_allot_city_template  
+		<set>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="netSalesCount != null">
+				netSalesCount = #{netSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="electSalesCount != null">
+				electSalesCount = #{electSalesCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="loanShopCount != null">
+				loanShopCount = #{loanShopCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="custServiceCount != null">
+				custServiceCount = #{custServiceCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="smallLoanCount != null">
+				smallLoanCount = #{smallLoanCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="insuranceCount != null">
+				insuranceCount = #{insuranceCount, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="tempName != null">
+				tempName = #{tempName, jdbcType=VARCHAR}
+			</if>
+		</set>
+		<where>
+			  cityTempId = #{cityTempId}
+		</where>
+	</update>
+</mapper>

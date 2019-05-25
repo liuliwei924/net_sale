@@ -1,0 +1,324 @@
+package org.xxjr.cust.fund;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.active.mq.message.CustMessageSend;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+@Lazy
+@Service
+@Slf4j
+public class CustCouponService extends BaseService {
+	private static final String NAMESPACE = "CUSTCOUPON";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryShow
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShow(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"queryShow","queryShowCount");
+	}
+	
+	
+	/**后台列表
+	 * queryView
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryView(AppParam params) {
+		return super.queryByPage(params, NAMESPACE,"queryView","queryViewCount");
+	}
+	
+	
+	/**判断能用的优惠券
+	 * queryCanUseCoupon
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCanUseCoupon(AppParam params) {
+		return super.query(params, NAMESPACE,"queryCanUseCoupon");
+	}
+	
+	/**验证能用的优惠券
+	 * queryCanUseCoupon
+	 * @param params
+	 * @return
+	 */
+	public AppResult verifiUseCoupon(AppParam params) {
+		return super.query(params, NAMESPACE,"verifiUseCoupon");
+	}
+	
+	/**判断用户选择的优惠券是否能用
+	 * judgeIsCanUse
+	 * @param params
+	 * @return
+	 */
+	public AppResult judgeIsCanUse(AppParam params) {
+		int size = getDao().count(NAMESPACE, "judgeIsCanUse",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**判断用户选择的优惠券是否能用
+	 * queryCouponCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCouponCount(AppParam params) {
+		return super.query(params, NAMESPACE,"queryCouponCount");
+	}
+	
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**查询客服的赠送条件
+	 * queryGiveCond
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryGiveCond(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryGiveCond",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**验证券是否被使用过（客服赠送的）
+	 * queryGiveCond
+	 * @param params
+	 * @return
+	 */
+	public AppResult usedKfCouponCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "usedKfCouponCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/***
+	 * batchSendKfCoupons 处理根据 insert 方法
+	 * @param param 参数信息
+	 * @param namespace 命名空间
+	 * @return
+	 */
+	public AppResult batchSendKfCoupons(AppParam param){
+		int size = getDao().insert(NAMESPACE, "batchSendKfCoupons", param.getAttr(), param.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		return backContext;
+	}
+	
+	/**
+	 * 分享邀请批量发送优惠券
+	 * @param param
+	 * @return
+	 */
+	public AppResult batchSendInviteCoupons(AppParam param){
+		AppResult result = new AppResult();
+		Object telephone = param.getAttr("telephone");
+		Object customerId = param.getAttr("customerId");
+		//判断是否有对应邀请记录
+		AppParam queryParam = new AppParam("ticketRecordService","query");
+		queryParam.addAttr("telephone", telephone);
+		AppResult tickResult = SoaManager.getInstance().invoke(queryParam);
+		if(tickResult.getRows().size() <= 0){
+			return result;
+		}
+		//维护原有用户表推荐人信息
+		Map<String,Object> ticketInfo = tickResult.getRow(0);
+		if(!StringUtils.isEmpty(ticketInfo.get("inviteCustId"))){
+			AppParam custParam = new AppParam("customerService","update");
+			custParam.addAttr("customerId", customerId);
+			custParam.addAttr("referer", ticketInfo.get("inviteCustId"));
+			SoaManager.getInstance().invoke(custParam);
+		}
+		int size = getDao().insert(NAMESPACE, "batchSendInviteCoupons", param.getAttr(), param.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
+		
+		AppParam params = new AppParam("inviteRecordService","insert");
+		params.addAttr("customerId", customerId);
+		params.addAttr("registerReward", "充值券");
+		params.addAttr("parentId", tickResult.getRow(0).get("inviteCustId"));
+		SoaManager.getInstance().invoke(params);
+		
+		if(result.isSuccess()){
+			try {
+				Map<String,Object> paramsMap = new HashMap<String,Object>();
+				paramsMap.put("customerId", customerId);
+				CustMessageSend messageSend = SpringAppContext.getBean(CustMessageSend.class);
+				messageSend.sendCustMessage(customerId.toString(), "sendIviteCoupons", paramsMap);
+			} catch (Exception e) {
+				log.error("feedbackReply error", e);
+			}
+		}
+
+		return result;
+	}
+
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		params.addAttr("updateTime", new Date());
+		return super.update(params, NAMESPACE);
+	}
+	
+	
+	/**解锁
+	 * unLock
+	 * @param params
+	 * @return
+	 */
+	public AppResult unLock(AppParam params) {
+		AppResult result = new AppResult();
+		int size = getDao().update(NAMESPACE, "unLock", params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+		
+	}
+	
+	/**激活
+	 * handleActive
+	 * @param params
+	 * @return
+	 */
+	public AppResult handleActive(AppParam params) {
+		AppResult result = new AppResult();
+		int size = getDao().update(NAMESPACE, "handleActive", params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+		
+	}
+	
+	/**
+	 * successUsedCoupon
+	 * @param params
+	 * @return
+	 */
+	public AppResult successUsedCoupon(AppParam params) {
+		AppResult result = new AppResult();
+		if(StringUtils.isEmpty(params.getAttr("couponId")) || 
+				StringUtils.isEmpty(params.getAttr("customerId"))){
+			result.setSuccess(false);
+			result.setMessage("使用优惠券缺少必传参数,[所有参数：" + params.getAttr() + "]");
+			return result;
+		}
+	
+		int size = getDao().update(NAMESPACE, "successUsedCoupon", params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+		
+	}
+	
+	
+	/**
+	 * updateCouponStatus
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateCouponStatus(AppParam params) {
+		AppResult result = new AppResult();
+		if(StringUtils.isEmpty(params.getAttr("startDate")) || 
+				StringUtils.isEmpty(params.getAttr("endDate"))){
+			result.setSuccess(false);
+			result.setMessage("必传参数为空");
+			return result;
+		}
+		// 未激活的券激活
+		int actvieCount= getDao().update(NAMESPACE, "handleActive", params.getAttr(), params.getDataBase());
+		
+		//将使用中改成有效
+		int useingCount= getDao().update(NAMESPACE, "unLock", params.getAttr(), params.getDataBase());
+		
+		//将过期的改成失效
+		int invalidCount= getDao().update(NAMESPACE, "updateInvalid", params.getAttr(), params.getDataBase());
+		
+		result.putAttr("actvieCount", actvieCount);
+		result.putAttr("useingCount", useingCount);
+		result.putAttr("invalidCount", invalidCount);
+		return result;
+		
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("couponId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("couponId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	
+}

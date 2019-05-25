@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FILEGROUP">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			groupCode ,
+			dbName ,  
+			isLocal,
+			typeAll ,  
+			typeDesc ,  
+			updateBy ,  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime"
+		FROM t_file_group
+		<where>
+			<if test="groupCode != null and groupCode != ''">
+			  and groupCode = #{groupCode}
+			 </if>
+			<if test="dbName != null and dbName != ''">
+				and dbName = #{dbName}
+			</if>
+			<if test="isLocal != null and isLocal != ''">
+				and isLocal = #{isLocal}
+			</if>
+			<if test="typeAll != null and typeAll != ''">
+				and typeAll = #{typeAll}
+			</if>
+			<if test="typeDesc != null and typeDesc != ''">
+				and typeDesc = #{typeDesc}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_file_group 
+		<where>
+		<if test="groupCode != null and groupCode != ''">
+		    and groupCode = #{groupCode}
+		 </if>
+		<if test="dbName != null and dbName != ''">
+			and dbName = #{dbName}
+		</if>
+		<if test="typeAll != null and typeAll != ''">
+			and typeAll = #{typeAll}
+		</if>
+		<if test="typeDesc != null and typeDesc != ''">
+			and typeDesc = #{typeDesc}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+	
+	<select id="querySummary" resultType="map" parameterType="map">
+		SELECT 
+			t.groupCode,
+			t.typeDesc,
+			COUNT(t1.id) as 'count'
+		FROM t_file_group t
+		LEFT JOIN t_file_list t1 ON t.groupCode = t1.groupCode  WHERE t.isLocal = 1
+		GROUP BY t.groupCode
+	</select>
+
+	<insert id="insert" parameterType="map">
+		
+		INSERT INTO t_file_group (
+			groupCode,
+			dbName,
+			isLocal,
+			typeAll,
+			typeDesc,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{groupCode, jdbcType=VARCHAR},
+			#{dbName, jdbcType=VARCHAR}, 
+			#{isLocal, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			#{typeAll, jdbcType=VARCHAR}, 
+			#{typeDesc, jdbcType=VARCHAR}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_file_group 
+		<where> 
+			groupCode = #{groupCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_file_group  
+		<set>
+			<if test="dbName != null">
+				dbName = #{dbName, jdbcType=VARCHAR},  
+			</if>
+			<if test="typeAll != null">
+				typeAll = #{typeAll, jdbcType=VARCHAR},  
+			</if>
+			<if test="typeDesc != null">
+				typeDesc = #{typeDesc, jdbcType=VARCHAR},  
+			</if>
+			<if test="isLocal != null">
+				isLocal = #{isLocal, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  groupCode = #{groupCode}
+		</where>
+	</update>
+</mapper>

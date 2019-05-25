@@ -1,0 +1,4514 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMUTILEXT">
+	<!--渠道基本数据统计 -->
+	<select id="channelBase" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+	   				#{today} as 'recordDate',
+					ch.channelCode,
+					ch.channelName,
+					ch.`type` as channelType,
+		  			0 as 'costAmount',
+		   			0 as 'browseCount',
+		      		0 as 'kfReceivedCount',
+					IFNULL(t.applyCount,0) as 'applyCount',
+					IFNULL(t.seniorCount,0) as 'seniorCount',
+		      		IFNULL(t.notFillCount,0) as 'notFillCount',
+				    IFNULL(t1.storeCount,0) as 'storeCount'
+				FROM 
+				t_borrow_channel ch 
+				 LEFT JOIN 
+				(SELECT 
+					 n.channelCode as 'channelCode',
+					 COUNT(n.applyId) as 'applyCount',
+			         COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount',
+								COUNT(CASE WHEN n.grade='F' THEN 1 END) as 'notFillCount'
+		         FROM t_borrow_apply n
+			     WHERE n.applyTime >= #{today} and n.applyTime < DATE_ADD(#{today},INTERVAL 1 day)
+				 GROUP BY n.channelCode
+		        ) as t ON t.channelCode = ch.channelCode
+			     LEFT JOIN 
+				 (SELECT 
+					  COUNT(DISTINCT n.applyId) as 'storeCount',
+			          e1.channelCode as 'channelCode'
+				 FROM ${tableName} n JOIN t_borrow_apply e1 ON e1.applyId = n.applyId 
+			     WHERE n.handleType=0 AND n.createTime >= #{today} and n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+				 GROUP BY e1.channelCode
+			     ) as t1 ON ch.channelCode = t1.channelCode
+			   
+    ]]>
+	</select>
+
+	
+	<!--门店经理基本数据统计 -->
+	<select id="storeBase" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  #{today} as 'recordDate',
+		  t.customerId AS 'customerId',
+		  t.realName AS 'realName',
+		  t.groupName AS 'groupName',
+		  t.orgId AS 'orgId',
+		  t1.isNet AS 'isNet',
+		  t1.orgName AS 'orgName',
+		  t1.cityName AS 'cityName',
+		  (SELECT 
+		    COUNT(1) 
+		  FROM
+		    ${tableName} n 
+		  WHERE t.customerId = n.storeBy 
+		    AND n.isFeedback = 1 
+		    AND n.createTime >= #{today}
+		    AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+		  ) AS 'feedBackCount',
+		  (SELECT 
+		      COUNT(DISTINCT n1.applyId) 
+		    FROM
+		      t_borrow_store_apply n1 
+		    WHERE n1.lastStore = t.customerId 
+		      AND n1.`status` = 2 
+		      AND n1.orderType = 1 
+		      AND n1.allotTime >= #{today}
+		      AND n1.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+		   ) AS 'receiveCount',
+		   (SELECT 
+		    	COUNT(DISTINCT n1.applyId) 
+		    FROM
+		    	t_borrow_store_apply n1 
+		    WHERE n1.lastStore = t.customerId 
+		        AND n1.orderStatus = -1 
+		        AND n1.orderType = 1 
+		        AND n1.createTime >= #{today}
+		        AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+		    ) AS 'dealCount',
+		    (SELECT 
+		     	COUNT(DISTINCT n1.applyId) 
+		     FROM
+		        t_borrow_store_apply n1
+		     WHERE n1.lastStore = t.customerId 
+		         AND n1.STATUS = 2 
+		         AND n1.orderType = 2 
+		         AND n1.allotTime >= #{today}
+		         AND n1.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+		    ) AS 'againAllto',
+		    (SELECT 
+		        COUNT(DISTINCT n1.applyId) 
+		     FROM
+		        t_borrow_store_apply n1 
+		     WHERE n1.lastStore = t.customerId 
+	            AND n1.STATUS = 2 
+	            AND n1.orderType = 2 
+	            AND n1.orderStatus = - 1 
+	            AND n1.allotTime >= #{today}
+	            AND n1.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+		     ) AS 'noHandlCount',
+           (SELECT 
+              COUNT(n1.applyId) 
+            FROM
+              t_store_cost_record n1 
+            WHERE n1.customerId = t.customerId 
+              AND n1.createTime >= #{today}
+              AND n1.status = 0 
+              AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+           ) AS 'costCount',
+           (SELECT 
+              COUNT(n1.applyId) 
+            FROM
+              t_store_cost_record n1 
+            WHERE n1.customerId = t.customerId 
+              AND n1.createTime >= #{today}
+              AND n1.status = 1 
+              AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+           ) AS 'backCostCount',
+           IFNULL(tab20.handelTime, 0) AS 'handelTime',
+           IFNULL(tab21.applyHandelTime, 0) AS 'applyHandelTime',
+		   IFNULL(tab22.applyAllotTime, 0) AS 'applyAllotTime',
+		   IFNULL(tab23.custLabel0, 0) AS 'custLabel0',
+		   IFNULL(tab23.custLabel1, 0) AS 'custLabel1',
+		   IFNULL(tab23.custLabel2, 0) AS 'custLabel2',
+		   IFNULL(tab23.custLabel3, 0) AS 'custLabel3',
+		   IFNULL(tab23.custLabel4, 0) AS 'custLabel4',
+		   IFNULL(tab23.custLabel5, 0) AS 'custLabel5',
+		   IFNULL(tab24.newApplyCount,0) as 'newApplyCount'
+           FROM
+           t_busi_cust t 
+           LEFT JOIN t_org t1 ON t.orgId = t1.orgId 
+           LEFT JOIN(
+               SELECT 
+		        	truncate(AVG(handel_time),2)  as 'handelTime',
+		        	tab.storeBy
+		       FROM
+	             (SELECT 
+	                  IFNULL(
+	                    TIMESTAMPDIFF(
+	                      MINUTE,
+	                      MAX(n1.createTime),
+	                      MIN(n.`createTime`)
+	                    ),
+	                    0
+	                  ) handel_time,
+	                  n.applyId,
+	                  n.`storeBy` 
+	                FROM
+	                  ${tableName} n 
+	                  JOIN ${tableName} n1 
+	                    ON n.applyId = n1.applyId 
+	                    AND n.orderType = 1 
+	                    AND n.handleType != 0 
+	                    AND n.handleType != 29 
+	                    AND n.handleType != 30
+	                    AND n1.handleType = 0 
+	                    AND n1.orderType = 1 
+	                    AND n1.createTime < n.createTime
+	                WHERE n.createTime >= #{today}
+	                  AND n.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+	                  AND n1.createTime >= #{today}
+	                  GROUP BY n.`applyId`
+	               ) tab 
+            GROUP BY tab.storeBy) tab20
+            ON t.customerId = tab20.storeBy
+            LEFT JOIN 
+				(SELECT
+					truncate(AVG(applyHandelTime),2) AS applyHandelTime,
+					tab.storeBy
+				FROM
+				(
+					SELECT
+						IFNULL(
+							TIMESTAMPDIFF(
+								MINUTE,
+								n1.applyTime,
+								MIN(n.`createTime`)
+							),
+							0
+						) applyHandelTime,
+						n.applyId,
+					n.`storeBy`
+				FROM
+					${tableName} n
+				JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+				AND n.orderType = 1
+				AND n.handleType != 0
+				AND n.handleType != 29
+				AND n.handleType != 30
+				AND n1.orderType = 1
+				AND n1.applyTime < n.createTime
+			WHERE
+				n1.applyTime >= DATE_ADD(#{today}, INTERVAL -1 DAY)
+				AND n1.applyTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				AND n.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY n.`applyId`
+			having MIN(n.createTime) >= #{today}
+			) tab
+			GROUP BY tab.storeBy) tab21 
+			ON t.customerId = tab21.storeBy
+		 	LEFT JOIN
+			  (SELECT
+				truncate(AVG(applyAllotTime),2) AS applyAllotTime,
+				tab.lastStore
+			  FROM
+			  (
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n.applyTime,
+							n.allotTime
+						),
+						0
+					) applyAllotTime,
+					n.applyId,
+					n.`lastStore`
+				FROM
+					t_borrow_store_apply n
+				WHERE
+					n.applyTime >= DATE_ADD(#{today}, INTERVAL - 1 DAY)
+				AND n.orderType = 1
+				AND n.applyTime < n.allotTime
+				AND n.applyTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				AND n.allotTime >= #{today}
+				AND n.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				GROUP BY n.`applyId`
+			 ) tab
+			 GROUP BY tab.lastStore) tab22
+	 		ON t.customerId = tab22.lastStore
+	 		LEFT JOIN 
+	 		(SELECT
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 0 THEN
+						applyId
+					END
+				) AS custLabel0,
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 1 THEN
+						applyId
+					END
+				) AS custLabel1,
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 2 THEN
+						applyId
+					END
+				) AS custLabel2,
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 3 THEN
+						applyId
+					END
+				) AS custLabel3,
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 4 THEN
+						applyId
+					END
+				) AS custLabel4,
+				COUNT(
+					CASE
+					WHEN n.`custLabel` = 5 THEN
+						applyId
+					END
+				) AS custLabel5,
+				n.`lastStore`
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.applyTime >= #{today}
+				AND n.applyTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY
+				n.`lastStore`
+			) tab23 ON t.customerId = tab23.lastStore
+			LEFT JOIN (
+			  SELECT 
+			    COUNT(DISTINCT n1.applyId) AS newApplyCount,
+				n1.storeBy
+			  FROM
+			    ${tableName} n1
+			  WHERE  n1.handleType = 0 
+			    AND n1.orderType = 1 
+			    AND n1.createTime >= #{today}
+	            AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+	            GROUP BY n1.storeBy
+			) tab24 ON tab24.storeBy = t.customerId
+             WHERE t.roleType IN (3, 6, 7, 8, 9) 
+               AND t.orgId != 60 
+               AND t1.isCount = 1 
+               AND t.orgId = #{orgId}]]>
+	</select>
+	
+	<!--门店基本数据统计 -->
+	<select id="orgBase" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+			#{today} as 'recordDate',
+			t.orgId as 'orgId',
+			t.orgName as 'orgName',
+			t.cityName as 'cityName',
+			t.isNet as 'isNet',
+			IFNULL(tab1.feedBackCount,0) as feedBackCount,
+			IFNULL(tab2.recPersonCount,0)as recPersonCount,
+			IFNULL(tab3.receiveCount,0) as receiveCount,
+			IFNULL(tab4.dealCount,0) as dealCount,
+			IFNULL(tab5.handelTime,0) as handelTime,
+			IFNULL(tab6.applyHandelTime,0) as applyHandelTime,
+			IFNULL(tab7.applyAllotTime,0) as applyAllotTime
+		FROM t_org t
+		LEFT JOIN  (
+			SELECT
+				COUNT(DISTINCT n1.applyId) as feedBackCount,
+				n1.orgId
+			FROM
+				${tableName} n1
+			WHERE n1.isFeedback = 1
+			AND n1.createTime >= #{today}
+			AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY n1.orgId
+		) as tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(
+					DISTINCT CASE
+					WHEN n1.handleType = 0 
+					THEN n1.storeBy
+					END
+				) AS recPersonCount,
+				n1.orgId
+			FROM
+				${tableName} n1
+			WHERE
+				n1.createTime >= #{today}
+			AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY n1.orgId
+		) as tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN(
+			SELECT 
+			    COUNT(DISTINCT n1.applyId) as receiveCount,
+			   	n2.orgId
+			  FROM
+			    t_borrow_store_apply n1
+			    JOIN t_busi_cust n2 
+			      ON n1.lastStore = n2.customerId  
+			  WHERE n2.roleType IN (3,6,7,8,9)
+			    AND n1.`status` = 2
+			    AND n1.orderType = 1 
+			    AND n1.allotTime >= #{today}
+			    AND n1.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			    GROUP BY n2.orgId
+		) as tab3 ON tab3.orgId = t.orgId
+		LEFT JOIN(
+			SELECT 
+			    COUNT(DISTINCT n1.applyId) as dealCount,
+			    n2.orgId
+			  FROM
+			    t_borrow_store_apply n1 
+			    JOIN t_busi_cust n2 
+			      ON n1.lastStore = n2.customerId  
+			  WHERE n2.roleType IN (3,6,7,8,9)
+			    AND n1.orderStatus = -1 
+			    AND n1.orderType = 1 
+			    AND n1.createTime >= #{today}
+			    AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			    GROUP BY n2.orgId
+		) as tab4 ON tab4.orgId = t.orgId
+		LEFT JOIN
+		  	(SELECT
+				truncate(AVG(handel_time),2) AS handelTime,
+				tab.orgId
+			FROM
+			(
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							MAX(n1.createTime),
+							MIN(n.`createTime`)
+						),
+						0
+					) handel_time,
+					n.applyId,
+					n2.orgId
+				FROM
+					${tableName} n
+				JOIN ${tableName} n1 ON n.applyId = n1.applyId
+				AND n.orderType = 1
+				AND n.handleType != 0
+				AND n.handleType != 29
+				AND n.handleType != 30
+				AND n1.handleType = 0
+				AND n1.orderType = 1
+				AND n1.createTime < n.createTime
+				JOIN t_busi_cust n2 ON n2.customerId = n.storeBy
+				WHERE
+					n.createTime >= #{today}
+				AND n.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				AND n1.createTime >= #{today}
+				GROUP BY n.`applyId`
+		  ) tab
+		  GROUP BY tab.orgId) tab5
+		  ON t.`orgId` = tab5.orgId
+		LEFT JOIN 
+		 	(SELECT
+				truncate(AVG(applyHandelTime),2) AS applyHandelTime,
+				tab.orgId
+			FROM
+		 	(SELECT
+				IFNULL(
+					TIMESTAMPDIFF(
+						MINUTE,
+						n1.applyTime,
+						MIN(n.`createTime`)
+					),
+					0
+				) applyHandelTime,
+				n.applyId,
+				n2.orgId
+			FROM
+				${tableName} n
+			JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+			AND n.orderType = 1
+			AND n.handleType != 0
+			AND n.handleType != 29
+			AND n.handleType != 30
+			AND n1.orderType = 1
+			AND n1.applyTime < n.createTime
+			JOIN t_busi_cust n2 ON n.storeBy = n2.customerId
+			WHERE
+				n1.applyTime >= DATE_ADD(#{today}, INTERVAL - 1 DAY)
+			AND n1.applyTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			AND n.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+			GROUP BY
+				n.`applyId`
+			HAVING
+				MIN(n.createTime) >= #{today}
+		) tab
+		 GROUP BY tab.orgId) tab6
+		 ON t.`orgId` = tab6.orgId 
+		LEFT JOIN (
+			SELECT
+				truncate(AVG(applyAllotTime),2) AS applyAllotTime,
+				tab.orgId
+			FROM
+			(
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n.applyTime,
+							n.allotTime
+						),
+						0
+					) applyAllotTime,
+					n.applyId,
+					n1.orgId
+				FROM
+					t_borrow_store_apply n
+					JOIN t_busi_cust n1 ON n.lastStore = n1.customerId
+				WHERE
+					n.applyTime >= DATE_ADD(#{today}, INTERVAL - 1 DAY)
+				AND n.orderType = 1
+				AND n.applyTime < n.allotTime
+				AND n.applyTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				AND n.allotTime >= #{today}
+				AND n.allotTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
+				GROUP BY n.`applyId`
+			) tab
+		 GROUP BY tab.orgId) tab7
+		 ON t.`orgId` = tab7.orgId
+		WHERE t.orgType=1 AND t.orgId !=60 
+		AND t.isCount = 1]]>
+	</select>
+	
+	<!--渠道上门统计  -->
+	<select id="channelBook" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+   		#{today} as 'recordDate',
+		t.channelCode,
+		t.channelName,
+		t.`type` as channelType,
+	 	(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=3 AND n1.channelCode=t.channelCode
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+		) as 'sucBookCount',
+		(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=1 AND n1.channelCode=t.channelCode
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+		) as 'preBookCount',
+		(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=2 AND n1.channelCode=t.channelCode
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+		) as 'failBookCount'
+		FROM t_borrow_channel t	
+		WHERE t.channelCode !='kaniu' ]]>
+	</select>
+	<!--客服上门统计  -->
+	<select id="kfBook" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			#{today} as 'recordDate',
+			t.customerId as 'kf', 
+			t.realName as 'kfName',
+			(SELECT COUNT(DISTINCT e.applyId) FROM t_treat_book e JOIN t_borrow_apply r ON r.applyId = e.applyId  WHERE e.`status`=3 
+				AND e.updateTime >= #{today}
+ 				AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+				AND r.lastKf = t.customerId
+			) as 'sucBookCount',
+			(SELECT COUNT(DISTINCT e.applyId) FROM t_treat_book e JOIN t_borrow_apply r ON r.applyId = e.applyId  WHERE e.`status`=1
+				AND e.updateTime >= #{today}
+ 				AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+				AND r.lastKf = t.customerId
+			) as 'preBookCount',
+			(SELECT COUNT(DISTINCT e.applyId) FROM t_treat_book e JOIN t_borrow_apply r ON r.applyId = e.applyId  WHERE e.`status`=2
+				AND e.updateTime >= #{today}
+ 				AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+				AND r.lastKf = t.customerId
+			) as 'failBookCount'
+		FROM t_busi_cust t WHERE t.roleType in(1,2) AND  t.customerId in (${isSummaryKf})
+		]]>
+	</select> 
+	
+	<!--门店上门统计  -->
+	<select id="storeBook" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		 	#{today} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+		  	(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId
+			AND tv.visitTime >= #{today}
+ 			AND tv.visitTime < DATE_ADD(#{today},INTERVAL 1 day)
+		  	) as 'sucBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE t.customerId = n.customerId AND n.`status`=1 
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'preBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE t.customerId = n.customerId AND n.`status`=2 
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'failBookCount',
+			(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId AND tv.visitType = 1
+			AND tv.visitTime >= #{today}
+ 			AND tv.visitTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) AS 'manualCount',
+			(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId AND tv.visitType = 2 
+			AND tv.visitTime >= #{today}
+ 			AND tv.visitTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) AS 'visitorCount'
+		FROM t_busi_cust t 
+		LEFT JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE t.roleType in(3,6,7,8,9) AND t.orgId = #{orgId} AND t.orgId !=60 AND t1.isCount = 1]]>
+	</select>
+	
+	<!--总的上门统计(按处理时间) -->
+	<select id="sumTotalBook" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		 	#{today} as 'recordDate',
+		  	(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE  n.`status`=3 
+		  	AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+		  	) as 'sucBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE  n.`status`=1 
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'preBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE  n.`status`=2 
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'failBookCount'
+		FROM DUAL ]]>
+	</select>
+	
+	
+	<!--渠道签单统计  -->
+	<select id="channelSign" resultType="map" parameterType="map">
+			<![CDATA[SELECT 
+			   	#{today} as 'recordDate',
+				t.channelCode,
+				t.channelName,
+				t.`type` as channelType,
+			    IFNULL(tab1.sucSignCount,0) as 'sucSignCount',
+				IFNULL(tab1.sucSignAmt,0) as 'sucSignAmt',
+			    IFNULL(tab2.failSignCount,0) as 'failSignCount',
+				IFNULL(tab2.failSignAmt,0) as 'failSignAmt',
+			    IFNULL(tab3.signingCount,0) as 'signingCount',
+				IFNULL(tab3.signingAmt,0) as 'signingAmt'
+			FROM t_borrow_channel t	
+		   	LEFT JOIN
+		    (SELECT COUNT(1) as 'sucSignCount', SUM(n.signAmount) as 'sucSignAmt',n1.channelCode FROM t_treat_info n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=2 
+			    AND n.updateTime >= #{today}
+ 				AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			    GROUP BY n1.channelCode ) as tab1
+			    ON t.channelCode = tab1.channelCode
+		    LEFT JOIN
+		    (SELECT COUNT(1) as 'failSignCount', SUM(n.signAmount) as 'failSignAmt',n1.channelCode FROM t_treat_info n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=3 
+			    AND n.updateTime >= #{today}
+ 				AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day) 
+			    GROUP BY n1.channelCode ) as tab2
+			    ON t.channelCode = tab2.channelCode
+		    LEFT JOIN
+		    (SELECT COUNT(1) as 'signingCount', SUM(n.signAmount) as 'signingAmt',n1.channelCode FROM t_treat_info n JOIN t_borrow_apply n1 ON n.applyId = n1.applyId WHERE n.`status`=1 
+			    AND n.updateTime >= #{today}
+ 				AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			    GROUP BY n1.channelCode ) as tab3
+			    ON t.channelCode = tab3.channelCode
+		  WHERE  t.channelCode !='kaniu' ]]>
+	</select>
+	<!--客服签单统计  -->
+	<select id="kfSign" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			#{today} as 'recordDate',
+			t.customerId as 'kf', 
+			t.realName as 'kfName',
+			IFNULL(tab2.sucSignCount,0) as 'sucSignCount',
+			IFNULL(tab2.sucSignAmt,0) as 'sucSignAmt',
+		    IFNULL(tab3.failSignCount,0) as 'failSignCount',
+			IFNULL(tab3.failSignAmt,0) as 'failSignAmt',
+		    IFNULL(tab1.signingCount,0) as 'signingCount',
+			IFNULL(tab1.signingAmt,0) as 'signingAmt'
+		FROM t_busi_cust t 
+		LEFT JOIN
+		(SELECT COUNT(1) as 'signingCount', SUM(e.signAmount) as 'signingAmt', n1.lastKf FROM t_treat_info e JOIN t_borrow_apply n1 ON e.applyId = n1.applyId  WHERE e.`status`=1
+			AND e.updateTime >= #{today}
+ 			AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			GROUP BY n1.lastKf ) as tab1
+			ON t.customerId = tab1.lastKf
+		LEFT JOIN
+		(SELECT COUNT(1) as 'sucSignCount', SUM(e.signAmount) as 'sucSignAmt', n1.lastKf FROM t_treat_info e JOIN t_borrow_apply n1 ON e.applyId = n1.applyId  WHERE e.`status`=2 
+			AND e.updateTime >= #{today}
+ 			AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day) 
+			GROUP BY n1.lastKf ) as tab2
+			ON t.customerId = tab2.lastKf
+		LEFT JOIN
+		(SELECT COUNT(1) as 'failSignCount', SUM(e.signAmount) as 'failSignAmt', n1.lastKf FROM t_treat_info e JOIN t_borrow_apply n1 ON e.applyId = n1.applyId  WHERE e.`status`=3 
+			AND e.updateTime >= #{today}
+ 			AND e.updateTime < DATE_ADD(#{today},INTERVAL 1 day) 
+		 	GROUP BY n1.lastKf ) as tab3
+			ON t.customerId = tab3.lastKf
+		WHERE t.roleType in(1,2) AND t.customerId in (${isSummaryKf}) ]]>
+	</select>
+	<!--门店经理签单统计  -->
+	<select id="storeSign" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		 	#{today} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			COUNT(
+				CASE
+				WHEN t.`status` = 1
+				AND t.createTime >= #{today}
+				AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+				1
+				END
+			) AS 'signingCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 1
+					AND t.createTime >= #{today}
+					AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'signingAmt',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2
+				AND t.updateTime >= #{today}
+				AND t.updateTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+				1
+				END
+			) AS 'sucSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 2
+					AND t.updateTime >= #{today}
+					AND t.updateTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'sucSignAmt',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2
+				AND (t.failureCause != null OR t.failureCause != '')
+				AND t.updateTime >= #{today}
+				AND t.updateTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+				1
+				END
+			) AS 'failSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 2
+					AND (t.failureCause != null OR t.failureCause != '')
+					AND t.updateTime >= #{today}
+					AND t.updateTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'failSignAmt',
+			COUNT(
+				CASE
+				WHEN t.createTime >= #{today}
+				AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+				1
+				END
+			) AS 'totalSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.createTime >= #{today}
+					AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'totalSignAmt',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.createTime >= #{today}
+					AND t.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY) THEN
+					t.treatyWill
+					END
+				),
+				0
+			) AS 'treatyWill'
+		FROM
+			t_treat_info t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE
+			t.orgId = #{orgId}
+		AND t.orgId != 60
+		AND t1.isCount = 1
+		GROUP BY t.customerId]]>
+	</select>
+	
+	<!--总的签单统计(按处理时间)  -->
+	<select id="sumTotalSign" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		 	#{today} as 'recordDate',
+			IFNULL(tab1.signingCount ,0) as 'signingCount',	
+  			IFNULL(tab1.signingAmt ,0) as 'signingAmt',
+  			IFNULL(tab2.sucSignCount ,0) as 'sucSignCount',	
+  			IFNULL(tab2.sucSignAmt ,0) as 'sucSignAmt',
+  			IFNULL(tab3.failSignCount ,0) as 'failSignCount',	
+  			IFNULL(tab3.failSignAmt ,0) as 'failSignAmt',
+  			IFNULL(tab4.totalSignCount, 0) AS 'totalSignCount',
+			IFNULL(tab4.totalSignAmt, 0) AS 'totalSignAmt',
+			IFNULL(tab4.treatyWill, 0) AS 'treatyWill'
+		FROM 
+		  	(SELECT #{today} as 'recordDate' FROM DUAL) as tab0
+		 LEFT JOIN 
+			(SELECT #{today} as 'recordDate', COUNT(1) as signingCount,  IFNULL(SUM(n.signAmount) ,0) as signingAmt 
+			FROM t_treat_info n WHERE  n.`status`=1 
+			AND n.createTime >= #{today}
+ 			AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as tab1
+		ON tab0.recordDate=tab1.recordDate
+		LEFT JOIN 
+			(SELECT #{today} as 'recordDate', COUNT(1) as sucSignCount,  IFNULL(SUM(n.signAmount) ,0) as sucSignAmt 
+			FROM t_treat_info n WHERE  n.`status`=2 
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as tab2 
+		ON tab0.recordDate=tab2.recordDate
+		LEFT JOIN 
+			(SELECT #{today} as 'recordDate', COUNT(1) as failSignCount,  IFNULL(SUM(n.signAmount) ,0) as failSignAmt 
+			FROM t_treat_info n WHERE  n.`status`=2
+			AND (n.failureCause != null OR n.failureCause != '')
+			AND n.updateTime >= #{today}
+ 			AND n.updateTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as tab3
+		ON tab0.recordDate=tab3.recordDate
+		LEFT JOIN 
+			(SELECT #{today} as 'recordDate', COUNT(1) as totalSignCount,  IFNULL(SUM(n.signAmount) ,0) as totalSignAmt, IFNULL(SUM(n.treatyWill) ,0) AS treatyWill
+			FROM t_treat_info n WHERE
+			 n.createTime >= #{today}
+ 			AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as tab4
+		ON tab0.recordDate=tab4.recordDate ]]>
+	</select>
+	
+	
+		<!-- 客服挂卖统计 -->
+	<select id="saleSumaryByKf" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			#{recordDate} as 'recordDate',
+			t.customerId as 'kf', 
+			t.realName as 'kfName', 
+			IFNULL(tab1.saleCount,0) as 'saleCount',
+			IFNULL(tab1.saleAmount,0) as 'saleAmount',
+			IFNULL(tab1.saleScore,0) as 'saleScore',
+			IFNULL(tab2.sucSaleCount,0) as 'sucSaleCount',
+			IFNULL(tab2.sucSaleAmount,0) as 'sucSaleAmount',
+			IFNULL(tab2.sucSaleScore,0) as 'sucSaleScore',
+			IFNULL(tab3.failSaleCount,0) as 'failSaleCount',
+			IFNULL(tab3.failSaleAmount,0) as 'failSaleAmount',
+			IFNULL(tab3.failSaleScore,0) as 'failSaleScore'
+		FROM t_busi_cust t
+    	LEFT JOIN
+		(SELECT r.lastKf, COUNT(DISTINCT e.applyId) as 'saleCount', IFNULL(SUM(e.costPrice)/100,0) as 'saleAmount', IFNULL(SUM(e.costScore),0) as 'saleScore' FROM t_borrow_sel_record e JOIN t_borrow_apply r ON r.applyId = e.applyId 
+				 WHERE
+				 e.createTime >= #{recordDate}
+				 AND e.handleType = 1
+ 				 AND e.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+				 GROUP BY r.lastKf
+		 ) as tab1 ON tab1.lastKf = t.customerId
+    	LEFT JOIN
+		(SELECT r.lastKf, COUNT(DISTINCT e.applyId) as 'sucSaleCount', IFNULL(SUM(e.costPrice*e.discount)/100,0) as 'sucSaleAmount', IFNULL(SUM(e.costScore),0) as 'sucSaleScore' FROM t_borrow_sel_record e JOIN t_borrow_apply r ON r.applyId = e.applyId 
+				 WHERE
+				  e.createTime >= #{recordDate}
+ 				  AND e.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+				  AND e.handleType = 2  GROUP BY r.lastKf
+		 ) as tab2 ON tab2.lastKf = t.customerId
+		LEFT JOIN
+		(SELECT r.lastKf, COUNT(DISTINCT e.applyId) as 'failSaleCount', IFNULL(SUM(e.costPrice*e.discount)/100,0) as 'failSaleAmount', IFNULL(SUM(e.costScore),0) as 'failSaleScore' FROM t_borrow_sel_record e JOIN t_borrow_apply r ON r.applyId = e.applyId 
+			 WHERE 
+			 e.updateTime >= #{recordDate}
+ 			 AND e.updateTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+			 AND e.handleType = 4  GROUP BY r.lastKf
+		 ) as tab3 ON tab3.lastKf = t.customerId
+	  
+	  WHERE t.roleType in(1,2) AND t.customerId in(${isSummaryKf}) ]]>
+	</select>
+	
+	<!-- 挂卖基本统计 -->
+	<select id="saleByBase" resultType="map" parameterType="map">
+		<![CDATA[
+ 		SELECT 
+			tab1.recordDate,
+		  	IFNULL(tab1.saleCount,0) AS 'saleCount',
+			ROUND(IFNULL(tab1.saleAmount,0),2) AS 'saleAmount',
+			IFNULL(tab1.saleScore,0) AS 'saleScore',
+		  	IFNULL(tab2.failSaleCount,0) AS 'failSaleCount',
+			ROUND(IFNULL(tab2.failSaleAmount,0),2) AS 'failSaleAmount',
+			IFNULL(tab2.failSaleScore,0) AS 'failSaleScore',
+		  	IFNULL(tab3.sucSaleCount,0) AS 'sucSaleCount',
+			ROUND(IFNULL(tab3.sucSaleAmount,0),2) AS 'sucSaleAmount',
+			IFNULL(tab3.sucSaleScore,0) AS 'sucSaleScore'
+		FROM
+		 (SELECT 
+			#{recordDate} AS 'recordDate',
+		   COUNT(DISTINCT t.applyId) AS 'saleCount',
+			 SUM(t.costPrice) / 100 AS 'saleAmount',
+			 SUM(t.costScore) AS 'saleScore'
+			FROM t_borrow_sel_record t 
+		  WHERE t.handleType=1 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		) AS tab1
+		LEFT JOIN
+		(SELECT 
+			#{recordDate} AS 'recordDate',
+		   COUNT(DISTINCT t.applyId) AS 'failSaleCount',
+			 SUM(t.costPrice*t.discount) / 100 AS 'failSaleAmount',
+			 SUM(t.costScore) AS 'failSaleScore'
+			FROM t_borrow_sel_record t 
+		  WHERE t.handleType=4 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		) AS tab2 ON tab1.recordDate = tab2.recordDate
+		LEFT JOIN
+		(SELECT 
+			#{recordDate} AS 'recordDate',
+		   COUNT(DISTINCT t.applyId) AS 'sucSaleCount',
+			 SUM(t.costPrice*t.discount) / 100 AS 'sucSaleAmount',
+			 SUM(t.costScore) AS 'sucSaleScore'
+			FROM t_borrow_sel_record t 
+		  WHERE t.handleType=2 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		) AS tab3 ON tab1.recordDate = tab3.recordDate
+			 ]]>
+	</select>
+
+	<!-- 按渠道挂卖统计 -->
+	<select id="saleByChannel" resultType="map" parameterType="map">
+		<![CDATA[
+		SELECT 
+			tab0.recordDate,
+			tab0.channelCode,
+			tab0.channelName,
+			tab0.channelType,
+		  	IFNULL(tab1.saleCount,0) AS 'saleCount',
+			ROUND(IFNULL(tab1.saleAmount,0),2) AS 'saleAmount',
+			IFNULL(tab1.saleScore,0) AS 'saleScore',
+		  	IFNULL(tab2.failSaleCount,0) AS 'failSaleCount',
+			ROUND(IFNULL(tab2.failSaleAmount,0),2) AS 'failSaleAmount',
+			IFNULL(tab2.failSaleScore,0) AS 'failSaleScore',
+		  	IFNULL(tab3.sucSaleCount,0) AS 'sucSaleCount',
+			ROUND(IFNULL(tab3.sucSaleAmount,0),2) AS 'sucSaleAmount',
+			IFNULL(tab3.sucSaleScore,0) AS 'sucSaleScore'
+		FROM
+		(SELECT 
+			#{recordDate} AS 'recordDate',
+			t1.channelCode as 'channelCode',
+			ch.type as 'channelType',
+			ch.channelName as 'channelName'
+		FROM t_borrow_sel_record t 
+			JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+			LEFT JOIN t_borrow_channel ch ON ch.channelCode = t1.channelCode
+		  WHERE t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		  AND t1.channelCode IS NOT NULL 
+		  GROUP BY t1.channelCode
+		) AS tab0
+		LEFT JOIN 
+		 (SELECT 
+			#{recordDate} AS 'recordDate',
+			t1.channelCode as 'channelCode',
+		   COUNT(DISTINCT t.applyId) AS 'saleCount',
+		   SUM(t.costPrice) / 100 AS 'saleAmount',
+		   SUM(t.costScore) AS 'saleScore'
+		FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+		  WHERE t.handleType=1 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		  GROUP BY t1.channelCode
+		) AS tab1 ON tab0.recordDate = tab1.recordDate AND tab0.channelCode = tab1.channelCode
+		LEFT JOIN
+		(SELECT 
+			#{recordDate} AS 'recordDate',
+			t1.channelCode as 'channelCode',
+		   	COUNT(DISTINCT t.applyId) AS 'failSaleCount',
+			SUM(t.costPrice*t.discount) / 100 AS 'failSaleAmount',
+			SUM(t.costScore) AS 'failSaleScore'
+		 FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+		  WHERE t.handleType=4 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		  GROUP BY t1.channelCode
+		) AS tab2 ON tab0.recordDate = tab2.recordDate AND tab0.channelCode = tab2.channelCode
+		LEFT JOIN
+		(SELECT 
+			#{recordDate} AS 'recordDate',
+			t1.channelCode as 'channelCode',
+		   COUNT(DISTINCT t.applyId) AS 'sucSaleCount',
+		   SUM(t.costPrice*t.discount) / 100 AS 'sucSaleAmount',
+		   SUM(t.costScore) AS 'sucSaleScore'
+		  FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+		  WHERE t.handleType=2 AND t.createTime >= #{recordDate} AND t.createTime < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		  GROUP BY t1.channelCode
+		) AS tab3 ON tab0.recordDate = tab3.recordDate AND tab0.channelCode = tab3.channelCode
+	 ]]>
+	</select>
+	
+	<!-- 按渠道回款统计 -->
+	<select id="retByChannel" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+	    #{recordDate} as 'recordDate',
+		t.channelCode,
+		t.channelName,
+		t.type as 'channelType',
+		IFNULL(tab1.retCount,0) as 'retCount',
+		IFNULL(tab1.retAmount,0) AS 'retAmount',
+		IFNULL(tab1.sucRetCount,0) AS 'sucRetCount',
+		IFNULL(tab1.sucRetAmount,0) AS 'sucRetAmount'			
+		FROM t_borrow_channel t
+     		LEFT JOIN 
+		( SELECT
+			m1.channelCode,
+			COUNT(CASE WHEN n.status = 1 OR n.status = 2 then 1 END) AS 'retCount',
+			SUM(CASE WHEN n.status = 1 OR n.status = 2 then n.feeAmount END) as 'retAmount',
+			COUNT(CASE WHEN n.status = 2 then 1 END) AS 'sucRetCount',
+			SUM(CASE WHEN n.status = 2 then n.feeAmount END) as 'sucRetAmount'
+			FROM t_treat_success n
+			JOIN t_borrow_apply m1 ON n.applyId = m1.applyId
+			WHERE
+			n.feeAmountDate >= #{recordDate}
+	 		AND n.feeAmountDate < DATE_ADD(#{recordDate},INTERVAL 1 day)
+			GROUP BY m1.channelCode
+		) as tab1 ON t.channelCode=tab1.channelCode
+		]]>
+	</select>
+	
+	<!-- 门店人员回款统计 -->
+	<select id="retSumaryByStore" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			#{recordDate} as 'recordDate',
+			t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			COUNT(
+				CASE
+				WHEN t.`status` in(1,2) THEN
+					t.applyId
+				END
+			) AS 'retCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` in(1,2) THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'retAmount',
+			COUNT(
+				CASE
+				WHEN t.`status` = 1 THEN
+					t.applyId
+				END
+			) AS 'chkRetCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` = 1 THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'chkRetAmount',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2 THEN
+					t.applyId
+				END
+			) AS 'sucRetCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` = 2 THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'sucRetAmount'
+		FROM
+			t_treat_success t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE
+			t.orgId = #{orgId}
+		AND t.orgId != 60
+		AND t.feeAmountDate >= #{recordDate}
+		AND t.feeAmountDate < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		AND t1.isCount = 1
+		GROUP BY t.customerId]]>
+	</select>
+	
+	
+	<!-- 按时间回款基本统计 -->
+	<select id="retByBase" resultType="map" parameterType="map">
+	   <![CDATA[SELECT
+	   #{recordDate} AS 'recordDate',
+	   COUNT(CASE WHEN t.`status` = 1 OR t.`status` = 2 then 1 END) AS 'retCount',
+	   IFNULL(SUM(CASE WHEN t.`status` = 1 OR t.`status` = 2 then t.feeAmount END),0) AS 'retAmount',
+	   COUNT(CASE WHEN t.`status` = 1 then 1 END) AS 'chkRetCount',
+	   IFNULL(SUM(CASE WHEN t.`status` = 1 then t.feeAmount END),0)  AS 'chkRetAmount',
+	   COUNT(CASE WHEN t.`status` = 2 then 1 END) AS 'sucRetCount',
+	   IFNULL(SUM(CASE WHEN t.`status`= 2 then t.feeAmount END),0) AS 'sucRetAmount'
+	   FROM
+	   t_treat_success t
+	   WHERE
+	   t.feeAmountDate >= #{recordDate}
+	   AND t.feeAmountDate < DATE_ADD(#{recordDate},INTERVAL 1 day)
+		]]>
+	</select>
+	
+	<!-- 查询总的花费 -->
+	<select id="queryTotalCost" resultType="map" parameterType="map">
+	<![CDATA[SELECT
+		#{recordDate} AS 'recordDate',
+		IFNULL(SUM(amount), 0) AS 'costAmount',
+		IFNULL(SUM(browseCount), 0) AS 'browseCount'
+	FROM
+		t_borrow_channel_cost
+	WHERE
+	 recordDate >= #{recordDate}
+	 AND recordDate < DATE_ADD(#{recordDate},INTERVAL 1 day)]]> 
+	</select>
+	
+	<!-- 查询渠道花费 -->
+	<select id="queryChannelCost" resultType="map" parameterType="map">
+		<![CDATA[ SELECT
+		#{recordDate} AS 'recordDate',
+		channelCode,
+		IFNULL(amount, 0) AS 'costAmount',
+		IFNULL(browseCount, 0) AS 'browseCount'
+		FROM
+		t_borrow_channel_cost
+		WHERE
+		 recordDate >= #{recordDate}
+		 AND recordDate < DATE_ADD(#{recordDate},INTERVAL 1 day)]]> 
+	</select>
+	
+	
+	<!-- 分组查询待处理相关统计 -->
+	<select id="queryGroupCountByDeal" parameterType="map" resultType="map">
+		SELECT
+		t1.groupName,
+		t1.teamName,
+		COUNT(DISTINCT t.applyId) as count
+		FROM
+		t_borrow_store_apply t
+		JOIN t_busi_cust t1 ON t.lastStore = t1.customerId
+		<where>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[t.allotTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.allotTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				AND t.`status`=#{status}
+			</if>
+			<if test="orderStatus != null and orderStatus != ''">
+				AND t.orderStatus=#{orderStatus}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t1.`orgId`=#{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND t1.groupName=#{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				AND t1.teamName=#{teamName}
+			</if>
+			<if test="roleTypeNot != null and roleTypeNot != ''">
+				AND t1.roleType != #{roleTypeNot}
+			</if>
+		</where>
+		<if test="groupByTeam != null and groupByTeam != ''">
+			GROUP BY t1.teamName
+		</if>
+		<if test="groupByGroup != null and groupByGroup != ''">
+			GROUP BY t1.groupName
+		</if>
+	</select>
+	<!-- 分组查询签单相关统计 -->
+	<select id="queryGroupCountBySign" parameterType="map" resultType="map">
+		SELECT
+		t1.groupName,
+		t1.teamName,
+	  	(case when #{isCount}=1 then COUNT(DISTINCT t.applyId)  else SUM(t.signAmount) end ) as count
+		FROM
+		t_treat_info t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<where>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[t.updateTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.updateTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				AND t.`status`=#{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t1.`orgId`=#{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND t1.groupName=#{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				AND t1.teamName=#{teamName}
+			</if>
+			<if test="roleTypeNot != null and roleTypeNot != ''">
+				AND t1.roleType != #{roleTypeNot}
+			</if>
+		</where>
+		<if test="groupByTeam != null and groupByTeam != ''">
+			GROUP BY t1.teamName
+		</if>
+		<if test="groupByGroup != null and groupByGroup != ''">
+			GROUP BY t1.groupName
+		</if>
+	</select>
+	
+	<!-- 分组查询接单及反馈相关统计 -->
+	<select id="queryGroupByRecOrBack" parameterType="map" resultType="map">
+		SELECT
+		t1.groupName,
+		t1.teamName,
+	  	COUNT(DISTINCT t.applyId) as count
+		FROM
+		${tableName} t
+		USE INDEX(createTime)
+		JOIN t_busi_cust t1 ON t.storeBy = t1.customerId
+		<where>
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[t.createTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.createTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				AND t.`status`=#{status}
+			</if>
+			<if test="handleType != null and handleType != ''">
+				AND t.handleType=#{handleType}
+			</if>
+			<if test="isFeedback != null and isFeedback != ''">
+				AND t.isFeedback=#{isFeedback}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t1.`orgId`=#{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND t1.groupName=#{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				AND t1.teamName=#{teamName}
+			</if>
+			<if test="roleTypeNot != null and roleTypeNot != ''">
+				AND t1.roleType != #{roleTypeNot}
+			</if>
+		</where>
+		<if test="groupByTeam != null and groupByTeam != ''">
+			GROUP BY t1.teamName
+		</if>
+		<if test="groupByGroup != null and groupByGroup != ''">
+			GROUP BY t1.groupName
+		</if>
+	</select>
+	
+	<!-- 分组查询上门相关统计 -->
+	<select id="queryGroupCountByBook" parameterType="map" resultType="map">
+		SELECT
+		t1.groupName,
+		t1.teamName,
+	  	COUNT(DISTINCT t.applyId) as count
+		FROM
+		t_treat_book t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<where>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[t.updateTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.updateTime < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				AND t.`status`=#{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t1.`orgId`=#{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND t1.groupName=#{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				AND t1.teamName=#{teamName}
+			</if>
+			<if test="roleTypeNot != null and roleTypeNot != ''">
+				AND t1.roleType != #{roleTypeNot}
+			</if>
+		</where>
+		<if test="groupByTeam != null and groupByTeam != ''">
+			GROUP BY t1.teamName
+		</if>
+		<if test="groupByGroup != null and groupByGroup != ''">
+			GROUP BY t1.groupName
+		</if>
+	</select>
+	
+	<!-- 分组查询回款相关统计 -->
+	<select id="queryGroupCountByRet" parameterType="map" resultType="map">
+		SELECT
+		t1.groupName,
+		t1.teamName,
+	  	(case when #{isCount}=1 then COUNT(DISTINCT t.applyId)  else 
+	  		IFNULL(SUM( CASE WHEN t.queryStatus = 2 then t.feeAmount END),
+		 	IFNULL(SUM( CASE WHEN t.queryStatus = 1 then t.feeAmount END),0)) end ) as count
+		FROM
+		t_treat_success t
+		JOIN t_busi_cust t1 ON t.customerId = t1.customerId
+		<where>
+			<if test="startDate != null and startDate != ''">
+				 <![CDATA[t.feeAmountDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND t.feeAmountDate < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+			</if>
+			<if test="status != null and status != ''">
+				AND t.`status`=#{status}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND t1.`orgId`=#{orgId}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				AND t1.groupName=#{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				AND t1.teamName=#{teamName}
+			</if>
+			<if test="roleTypeNot != null and roleTypeNot != ''">
+				AND t1.roleType != #{roleTypeNot} 
+			</if>
+		</where>
+		<if test="groupByTeam != null and groupByTeam != ''">
+			GROUP BY t1.teamName
+		</if>
+		<if test="groupByGroup != null and groupByGroup != ''">
+			GROUP BY t1.groupName
+		</if>
+	</select>
+	
+	
+	<!--门店经理基本数据月度统计 -->
+	<select id="storeBaseMonth" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		 	#{toMonth} as 'recordDate',
+			t.customerId  as 'customerId',
+			t.realName as 'realName',
+			t.groupName as 'groupName',
+			t.orgId as 'orgId',
+			t1.isNet as 'isNet',
+		 	t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+		 	(SELECT 
+		 		COUNT(DISTINCT n.applyId) 
+		 	FROM 
+		 		${tableName} n 
+		 	WHERE t.customerId = n.storeBy 
+		 		AND n.isFeedback=1
+		 	 	AND DATE_FORMAT(n.createTime, '%Y-%m') = #{toMonth}
+		 	) as 'feedBackCount',
+		 	(SELECT 
+			    COUNT(DISTINCT n1.applyId) 
+			  FROM
+			    t_borrow_store_apply n1 
+			  WHERE n1.lastStore = t.customerId 
+			    AND n1.`status` = 2 
+			    AND n1.orderType = 1 
+			    AND DATE_FORMAT(n1.allotTime, '%Y-%m') = #{toMonth}) AS 'receiveCount',
+			  (SELECT 
+			    COUNT(DISTINCT n1.applyId) 
+			  FROM
+			    t_borrow_store_apply n1 
+			  WHERE n1.lastStore = t.customerId 
+			    AND n1.orderStatus = -1 
+			    AND n1.orderType = 1 
+			    AND DATE_FORMAT(n1.allotTime, '%Y-%m') = #{toMonth}) AS 'dealCount',
+			 (SELECT
+					COUNT(DISTINCT n1.applyId)
+				FROM
+					t_borrow_store_apply n1
+				WHERE
+					n1.lastStore = t.customerId
+				AND n1. STATUS = 2
+				AND n1.orderType = 2
+				AND DATE_FORMAT(n1.allotTime, '%Y-%m') = #{toMonth}) AS 'againAllto',
+			(SELECT
+					COUNT(DISTINCT n1.applyId)
+				FROM
+					t_borrow_store_apply n1
+				WHERE
+					n1.lastStore = t.customerId
+				AND n1. STATUS = 2
+				AND n1.orderType = 2
+				AND n1.orderStatus = -1
+				AND DATE_FORMAT(n1.allotTime, '%Y-%m') = #{toMonth}) AS 'noHandlCount',
+			(SELECT 
+			    COUNT(n1.applyId) 
+			  FROM
+			    t_store_cost_record n1 
+			  WHERE n1.customerId = t.customerId
+			   AND n1.status = 0
+			   AND DATE_FORMAT(n1.createTime, '%Y-%m') = #{toMonth}) AS 'costCount',
+			(SELECT 
+			    COUNT(n1.applyId) 
+			  FROM
+			    t_store_cost_record n1 
+			  WHERE n1.customerId = t.customerId
+			   AND n1.status = 1
+			   AND DATE_FORMAT(n1.createTime, '%Y-%m') = #{toMonth}) AS 'backCostCount',
+			(SELECT
+			    COUNT(1) 
+			  FROM
+			    t_store_online_record n 
+			  WHERE n.`loginStatus` = 3 
+			    AND DATE_FORMAT(n.createTime, '%Y-%m') = #{toMonth}
+			    AND n.`customerId` = t.customerId
+			) AS 'leaveCount',
+			IFNULL(tab23.custLabel0, 0) AS 'custLabel0',
+			IFNULL(tab23.custLabel1, 0) AS 'custLabel1',
+			IFNULL(tab23.custLabel2, 0) AS 'custLabel2',
+			IFNULL(tab23.custLabel3, 0) AS 'custLabel3',
+			IFNULL(tab23.custLabel4, 0) AS 'custLabel4',
+			IFNULL(tab23.custLabel5, 0) AS 'custLabel5',
+			(SELECT
+				COUNT(DISTINCT n1.applyId)
+			  FROM
+			    ${tableName} n1
+			  WHERE  n1.handleType = 0
+			    AND n1.orderType = 1
+			    AND DATE_FORMAT(n1.createTime, '%Y-%m') = #{toMonth}
+			    AND n1.storeBy = t.customerId
+			) AS 'newApplyCount'
+		FROM t_busi_cust t 
+		LEFT JOIN t_org t1 ON t.orgId = t1.orgId
+		LEFT JOIN 
+		(SELECT
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 0 THEN
+					applyId
+				END
+			) AS custLabel0,
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 1 THEN
+					applyId
+				END
+			) AS custLabel1,
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 2 THEN
+					applyId
+				END
+			) AS custLabel2,
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 3 THEN
+					applyId
+				END
+			) AS custLabel3,
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 4 THEN
+					applyId
+				END
+			) AS custLabel4,
+			COUNT(
+				CASE
+				WHEN n.`custLabel` = 5 THEN
+					applyId
+				END
+			) AS custLabel5,
+			n.`lastStore`
+		FROM
+			t_borrow_store_apply n
+		WHERE
+			DATE_FORMAT(n.applyTime, '%Y-%m') = #{toMonth}
+		GROUP BY n.`lastStore`
+		) tab23 ON t.customerId = tab23.lastStore
+		WHERE t.roleType in(3,6,7,8,9)
+		AND t1.isCount = 1
+		AND t.orgId = #{orgId} AND t.orgId !=60]]>
+	</select>
+	
+	
+	<!--门店经理上门统计  -->
+	<select id="storeBookMonth" resultType="map" parameterType="map">
+		SELECT 
+		 	#{toMonth} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+		  	(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId AND DATE_FORMAT(tv.visitTime, '%Y-%m') = #{toMonth}) as 'sucBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE t.customerId = n.customerId AND n.`status`=1 AND DATE_FORMAT(n.updateTime, '%Y-%m') = #{toMonth}) as 'preBookCount',
+			(SELECT COUNT(DISTINCT n.applyId) FROM t_treat_book n WHERE t.customerId = n.customerId AND n.`status`=2 AND DATE_FORMAT(n.updateTime, '%Y-%m') = #{toMonth}) as 'failBookCount',
+			(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId AND tv.visitType = 1 AND DATE_FORMAT(tv.visitTime, '%Y-%m') = #{toMonth}) AS 'manualCount',
+			(SELECT COUNT(DISTINCT tv.applyId) FROM t_treat_visit_detail tv WHERE tv.recCustId = t.customerId AND tv.visitType = 2 AND DATE_FORMAT(tv.visitTime, '%Y-%m') = #{toMonth}) AS 'visitorCount'
+		FROM t_busi_cust t 
+		LEFT JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE t.roleType in(3,6,7,8,9) AND t.orgId = #{orgId} AND t.orgId !=60
+		AND t1.isCount = 1
+	</select>
+	
+	
+	<!--门店经理本月签单统计  -->
+	<select id="storeSignMonth" resultType="map" parameterType="map">
+		SELECT 
+		 	#{toMonth} as 'recordDate',
+		 	t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			COUNT(
+				CASE
+				WHEN t.`status` = 1
+				AND DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth} THEN
+				1
+				END
+			) AS 'signingCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 1
+					AND DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth} THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'signingAmt',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2
+				AND DATE_FORMAT(t.updateTime, '%Y-%m') = #{toMonth} THEN
+				1
+				END
+			) AS 'sucSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 2
+					AND DATE_FORMAT(t.updateTime, '%Y-%m') = #{toMonth} THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'sucSignAmt',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2
+				AND (t.failureCause != null OR t.failureCause != '')
+				AND DATE_FORMAT(t.updateTime, '%Y-%m') = #{toMonth} THEN
+				1
+				END
+			) AS 'failSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN t.`status` = 2
+					AND (t.failureCause != null OR t.failureCause != '')
+					AND DATE_FORMAT(t.updateTime, '%Y-%m') = #{toMonth} THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'failSignAmt',
+			COUNT(
+				CASE
+				WHEN DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth} THEN
+				1
+				END
+			) AS 'totalSignCount',
+			IFNULL(
+				sum(
+					CASE
+					WHEN DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth} THEN
+					t.signAmount
+					END
+				),
+				0
+			) AS 'totalSignAmt',
+			IFNULL(
+				sum(
+					CASE
+					WHEN DATE_FORMAT(t.createTime, '%Y-%m') = #{toMonth} THEN
+					t.treatyWill
+					END
+				),
+				0
+			) AS 'treatyWill'
+		FROM
+			t_treat_info t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		WHERE
+			t.orgId = #{orgId}
+		AND t.orgId != 60
+		AND t1.isCount = 1
+		GROUP BY t.customerId
+	</select>
+	
+	<!-- 门店人员回款统计 -->
+	<select id="storeRetMonth" resultType="map" parameterType="map">
+		SELECT
+			#{toMonth} as 'recordDate',
+			t.customerId  as 'customerId',
+			t.orgId as 'orgId',
+			t1.orgName as 'orgName',
+			t1.cityName as 'cityName',
+			COUNT(
+				CASE
+				WHEN t.`status` in(1,2) THEN
+					t.applyId
+				END
+			) AS 'retCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` in(1,2) THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'retAmount',
+			COUNT(
+				CASE
+				WHEN t.`status` = 1 THEN
+					t.applyId
+				END
+			) AS 'chkRetCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` = 1 THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'chkRetAmount',
+			COUNT(
+				CASE
+				WHEN t.`status` = 2 THEN
+					t.applyId
+				END
+			) AS 'sucRetCount',
+			IFNULL(
+				SUM(
+					CASE
+					WHEN t.`status` = 2 THEN
+						t.feeAmount
+					END
+				),
+				0
+			) AS 'sucRetAmount',
+			0 AS approvalCount,
+			0 AS approvalAmount,
+			0 AS refundsAmount
+		FROM
+			t_treat_success t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		WHERE
+			t.orgId = #{orgId}
+		AND t.orgId != 60
+		AND DATE_FORMAT(t.feeAmountDate, '%Y-%m') = #{toMonth}
+		AND t1.isCount = 1
+		GROUP BY t.customerId
+	</select>
+	
+	
+	<!-- 查询今日概况 -->
+	<select id="queryToDayWork" resultType="map" parameterType="map">
+		SELECT
+			CURDATE() AS 'recordDate',
+			SUM(
+				IFNULL(tab1.receiveCount, 0)
+			) AS receiveCount,
+			SUM(IFNULL(tab1.dealCount, 0)) AS dealCount,
+			SUM(IFNULL(tab1.againAllto, 0)) AS againAllto,
+			SUM(
+				IFNULL(tab1.noHandlCount, 0)
+			) AS noHandlCount,
+			SUM(
+				IFNULL(tab2.signingCount, 0)
+			) AS signingCount,
+			SUM(IFNULL(tab2.signingAmt, 0)) AS signingAmt,
+			0 AS approvalCount,
+			0 AS approvalAmount,
+			SUM(IFNULL(tab3.retAmount, 0)) AS retAmount,
+			SUM(
+				IFNULL(tab4.sucRetAmount, 0)
+			) AS sucRetAmount
+		FROM
+			t_busi_cust t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 1 THEN
+						n.applyId
+					END
+				) AS receiveCount,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 1
+					AND n.orderStatus = - 1 THEN
+						n.applyId
+					END
+				) AS dealCount,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 2 THEN
+						n.applyId
+					END
+				) AS againAllto,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 2
+					AND n.orderStatus = - 1 THEN
+						n.applyId
+					END
+				) AS noHandlCount,
+				n.`lastStore`
+			FROM
+				t_borrow_store_apply n USE INDEX(allotTime)
+			WHERE
+				<![CDATA[n.allotTime >= CURDATE()]]>
+				<if test="customerId != null and customerId != ''">
+					AND n.lastStore = #{customerId}
+				</if>
+				<if test="orgId != null and orgId != ''">
+					AND n.orgId =#{orgId}
+				</if>
+			GROUP BY n.`lastStore`
+		) tab1 ON tab1.`lastStore` = t.customerId
+		LEFT JOIN (
+			SELECT
+				COUNT(n2.applyId) AS signingCount,
+				IFNULL(SUM(n2.signAmount), 0) AS signingAmt,
+				n2.customerId
+			FROM
+				t_treat_info n2
+			WHERE
+				n2.`status` = 1
+			<![CDATA[AND n2.createTime >= CURDATE()]]>
+			<if test="customerId != null and customerId != ''">
+				AND n2.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n2.orgId =#{orgId}
+			</if>
+			GROUP BY n2.customerId
+		) tab2 ON t.`customerId` = tab2.customerId
+		LEFT JOIN (
+			SELECT
+				IFNULL(SUM(n3.feeAmount), 0) AS retAmount,
+				n3.`customerId`
+			FROM
+				t_treat_success n3
+			WHERE
+				<![CDATA[n3.feeAmountDate >= CURDATE()]]>
+			<if test="customerId != null and customerId != ''">
+				AND n3.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n3.orgId =#{orgId}
+			</if>
+			GROUP BY n3.customerId
+		) tab3 ON t.`customerId` = tab3.customerId
+		LEFT JOIN (
+			SELECT
+				IFNULL(SUM(n4.feeAmount), 0) AS sucRetAmount,
+				n4.`customerId`
+			FROM
+				t_treat_success n4
+			WHERE
+				n4.`status` = 2
+			<![CDATA[AND n4.feeAmountDate >= CURDATE()]]>
+			<if test="customerId != null and customerId != ''">
+				AND n4.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n4.orgId =#{orgId}
+			</if>
+		  GROUP BY n4.customerId
+		) tab4 ON t.`customerId` = tab4.customerId
+		WHERE
+			t.roleType IN (3, 6, 7, 8, 9)
+		AND t.orgId != 60
+		AND t1.isCount = 1
+		<include refid="sqlRoleQuery"/>
+	</select>
+	
+	<!-- 查询本周工作情况 -->
+	<select id="queryThisWeekCase" resultType="map" parameterType="map">
+		 SELECT
+			CURDATE() AS 'recordDate',
+			SUM(
+				IFNULL(tab1.receiveCount, 0)
+			) AS receiveCount,
+			SUM(IFNULL(tab1.dealCount, 0)) AS dealCount,
+			SUM(IFNULL(tab1.againAllto, 0)) AS againAllto,
+			SUM(
+				IFNULL(tab1.noHandlCount, 0)
+			) AS noHandlCount,
+			SUM(
+				IFNULL(tab2.signingCount, 0)
+			) AS signingCount,
+			SUM(IFNULL(tab2.signingAmt, 0)) AS signingAmt,
+			0 AS approvalCount,
+			0 AS approvalAmount,
+			SUM(IFNULL(tab3.retAmount, 0)) AS retAmount,
+			SUM(
+				IFNULL(tab4.sucRetAmount, 0)
+			) AS sucRetAmount
+		FROM
+			t_busi_cust t
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 1 THEN
+						n.applyId
+					END
+				) AS receiveCount,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 1
+					AND n.orderStatus = - 1 THEN
+						n.applyId
+					END
+				) AS dealCount,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 2 THEN
+						n.applyId
+					END
+				) AS againAllto,
+				COUNT(
+					CASE
+					WHEN n.`status` = 2
+					AND n.orderType = 2
+					AND n.orderStatus = - 1 THEN
+						n.applyId
+					END
+				) AS noHandlCount,
+				n.`lastStore`
+			FROM
+				t_borrow_store_apply n USE INDEX(allotTime)
+			WHERE
+				<![CDATA[n.allotTime >= DATE_ADD(
+					CURDATE(),
+					INTERVAL - WEEKDAY(CURDATE()) DAY
+				)
+			AND n.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)]]>
+			<if test="customerId != null and customerId != ''">
+				AND n.lastStore = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n.orgId =#{orgId}
+			</if>
+			GROUP BY n.`lastStore`
+		) tab1 ON tab1.`lastStore` = t.customerId
+		LEFT JOIN (
+			SELECT
+				COUNT(n2.applyId) AS signingCount,
+				IFNULL(SUM(n2.signAmount), 0) AS signingAmt,
+				n2.customerId
+			FROM
+				t_treat_info n2
+			WHERE
+				n2.`status` = 1
+			<![CDATA[AND n2.createTime >= DATE_ADD(
+				CURDATE(),
+				INTERVAL - WEEKDAY(CURDATE()) DAY
+			)
+			AND n2.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)]]>
+			<if test="customerId != null and customerId != ''">
+				AND n2.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n2.orgId =#{orgId}
+			</if>
+			GROUP BY n2.customerId
+		) tab2 ON t.`customerId` = tab2.customerId
+		LEFT JOIN (
+			SELECT
+				IFNULL(SUM(n3.feeAmount), 0) AS retAmount,
+				n3.`customerId`
+			FROM
+				t_treat_success n3
+			WHERE
+				<![CDATA[n3.feeAmountDate >= DATE_ADD(
+					CURDATE(),
+					INTERVAL - WEEKDAY(CURDATE()) DAY
+				)
+			AND n3.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)]]>
+			<if test="customerId != null and customerId != ''">
+				AND n3.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n3.orgId =#{orgId}
+			</if>
+			GROUP BY n3.customerId
+		) tab3 ON t.`customerId` = tab3.customerId
+		LEFT JOIN (
+			SELECT
+				IFNULL(SUM(n4.feeAmount), 0) AS sucRetAmount,
+				n4.`customerId`
+			FROM
+				t_treat_success n4
+			WHERE
+				n4.`status` = 2
+			<![CDATA[AND n4.feeAmountDate >= DATE_ADD(
+				CURDATE(),
+				INTERVAL - WEEKDAY(CURDATE()) DAY
+			)
+			AND n4.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)]]>
+			<if test="customerId != null and customerId != ''">
+				AND n4.customerId = #{customerId}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				AND n4.orgId =#{orgId}
+			</if>
+			GROUP BY n4.customerId
+		) tab4 ON t.`customerId` = tab4.customerId
+		WHERE
+			t.roleType IN (3, 6, 7, 8, 9)
+		AND t.orgId != 60
+		AND t1.isCount = 1
+		<include refid="sqlRoleQuery"/>
+	</select>
+	
+	<sql id="sqlRoleQuery">
+		<if test="orgId != null and orgId != ''">
+			AND t.orgId =#{orgId}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			AND t.orgId in (${userOrgs})
+		</if>
+		<if test="teamName != null and teamName != ''">
+			AND t.teamName = #{teamName}
+		</if>
+		<if test="groupName != null and groupName != ''">
+			AND t.groupName = #{groupName}
+		</if>
+		<if test="customerId != null and customerId != ''">
+			AND t.customerId = #{customerId}
+		</if>
+	</sql>
+	
+	
+	<!-- 门店人员今日统计 -->
+	<select id="queryStoreToDay" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  CURDATE() AS 'recordDate',
+		  t.customerId AS 'customerId',
+		  t.realName AS 'realName',
+		  t.groupName AS 'groupName',
+		  t.orgId AS 'orgId',
+		  concat(t1.orgNo,'-',t1.orgName) as orgName,
+		  t1.cityName AS 'cityName',
+		  IFNULL(tab1.feedBackCount, 0) AS 'feedBackCount',
+		  IFNULL(tab2.receiveCount, 0) AS 'receiveCount',
+		  IFNULL(tab2.dealCount, 0) AS 'dealCount',
+		  IFNULL(tab2.noHandlCount, 0) AS 'noHandlCount',
+		  IFNULL(tab2.againAllto, 0) AS 'againAllto',
+		  IFNULL(tab3.manualCount, 0) AS 'manualCount',
+		  IFNULL(tab3.visitorCount, 0) AS 'visitorCount',
+		  IFNULL(tab4.costCount, 0) AS 'costCount',
+		  IFNULL(tab4.backCostCount, 0) AS 'backCostCount',
+		  IFNULL(tab5.handelTime, 0) AS 'handelTime',
+		  IFNULL(tab6.leaveCount, 0) AS 'leaveCount',
+		  IFNULL(tab7.sucBookCount, 0) AS 'sucBookCount',
+		  IFNULL(tab8.signingCount, 0) AS 'signingCount',
+		  IFNULL(tab8.treatyWill, 0) AS 'treatyWill',
+		  IFNULL(tab8.totalSignCount, 0) AS 'totalSignCount',
+		  IFNULL(tab8.totalSignAmt, 0) AS 'totalSignAmt',
+		  IFNULL(tab9.failSignCount, 0) AS 'failSignCount',
+		  IFNULL(tab9.failSignAmt, 0) AS 'failSignAmt',
+		  IFNULL(tab10.sucRetCount, 0) AS 'sucRetCount',
+		  IFNULL(tab10.sucRetAmount, 0) AS 'sucRetAmount',
+		  IFNULL(tab11.applyHandelTime, 0) AS 'applyHandelTime',
+		  IFNULL(tab12.applyAllotTime, 0) AS 'applyAllotTime',
+		  IFNULL(tab13.custLabel0, 0) AS 'custLabel0',
+		  IFNULL(tab13.custLabel1, 0) AS 'custLabel1',
+		  IFNULL(tab13.custLabel2, 0) AS 'custLabel2',
+		  IFNULL(tab13.custLabel3, 0) AS 'custLabel3',
+		  IFNULL(tab13.custLabel4, 0) AS 'custLabel4',
+		  IFNULL(tab13.custLabel5, 0) AS 'custLabel5',
+		  IFNULL(tab14.newApplyCount, 0) AS 'newApplyCount'
+		FROM
+		  t_busi_cust t 
+		  LEFT JOIN t_org t1 
+		    ON t.orgId = t1.orgId 
+		  LEFT JOIN 
+		    (SELECT 
+		      COUNT(DISTINCT n.applyId) AS feedBackCount,
+		      n.storeBy AS storeBy 
+		    FROM
+		      ${tableName} n 
+		    WHERE n.isFeedback = 1 
+		      AND n.createTime >= CURDATE() 
+		      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n.storeBy) tab1 
+		    ON t.customerId = tab1.storeBy 
+		  LEFT JOIN 
+		    (SELECT 
+		       COUNT(
+		      		DISTINCT CASE
+					WHEN n1.orderType = 1
+					THEN n1.applyId 
+					END
+			   ) AS receiveCount,
+			   COUNT(
+			  		DISTINCT CASE
+					WHEN n1.orderType = 2
+					THEN n1.applyId
+					END
+			   ) AS againAllto,
+		       COUNT(
+					DISTINCT CASE
+					WHEN n1.orderStatus = - 1
+					AND n1.orderType = 1 THEN
+						n1.applyId
+					END
+				) AS dealCount,
+				COUNT(
+					DISTINCT CASE
+					WHEN n1.orderStatus = - 1
+					AND n1.orderType = 2 THEN
+						n1.applyId
+					END
+				) AS noHandlCount,
+		      n1.`lastStore` 
+		    FROM
+		      t_borrow_store_apply n1 
+		    WHERE n1.`status` = 2 
+		      AND n1.allotTime >= CURDATE() 
+		      AND n1.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n1.lastStore) tab2 
+		    ON t.customerId = tab2.lastStore 
+		  LEFT JOIN 
+		    (SELECT 
+		      	COUNT(
+		      		DISTINCT CASE 
+		      		WHEN n1.visitType = 1 THEN 
+		      			n1.applyId 
+		      		END
+		      	) AS manualCount,
+		      	COUNT(
+		      		DISTINCT CASE 
+		      		WHEN n1.visitType = 2 THEN 
+		      			n1.applyId 
+		      		END
+		      	) AS visitorCount,
+		      	n1.`recCustId` 
+		    FROM
+		      t_treat_visit_detail n1 
+		    WHERE 
+		      n1.visitTime >= CURDATE() 
+		      AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n1.recCustId) AS tab3 
+		    ON t.customerId = tab3.recCustId
+		  LEFT JOIN 
+		    (SELECT 
+		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
+		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+		      n1.`customerId` 
+		    FROM
+		      t_store_cost_record n1 
+		    WHERE n1.createTime >= CURDATE()
+		      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n1.customerId) tab4
+		    ON t.customerId = tab4.customerId
+		  LEFT JOIN 
+		    (SELECT 
+		      truncate(AVG(tab.handel_time),2) AS handelTime,
+		      tab.storeBy 
+		    FROM
+		      (SELECT 
+		        IFNULL(
+		          TIMESTAMPDIFF(
+		            MINUTE,
+		            MAX(n1.createTime),
+		            MIN(n.`createTime`)
+		          ),
+		          0
+		        ) handel_time,
+		        n.applyId,
+		        n.`storeBy` 
+		      FROM
+		        ${tableName} n 
+		        JOIN ${tableName} n1 
+		          ON n.applyId = n1.applyId 
+		          AND n.orderType = 1 
+		          AND n.handleType != 0
+		          AND n.handleType != 29
+		          AND n.handleType != 30
+		          AND n1.handleType = 0 
+		          AND n1.orderType = 1 
+		          AND n1.createTime < n.createTime
+		      WHERE n.createTime >= CURDATE() 
+		        AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		        AND n1.createTime >= CURDATE() 
+		      GROUP BY n.`applyId`) tab 
+		    GROUP BY tab.storeBy) tab5 
+		    ON t.customerId = tab5.storeBy 
+		  LEFT JOIN 
+		    (SELECT 
+		      COUNT(1) AS leaveCount,
+		      n.customerId 
+		    FROM
+		      t_store_online_record n 
+		    WHERE n.`loginStatus` = 3 
+		      AND n.createTime >= CURDATE() 
+		      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n.customerId) tab6
+		    ON t.customerId = tab6.customerId 
+		  LEFT JOIN 
+		    (SELECT 
+		      COUNT(DISTINCT n.applyId) sucBookCount,
+		      n.`customerId` 
+		    FROM
+		      t_treat_book n 
+		    WHERE n.`status` = 3 
+		      AND n.updateTime >= CURDATE() 
+		      AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n.customerId) tab7 
+		    ON t.customerId = tab7.customerId 
+		  LEFT JOIN 
+		    (SELECT 
+		      COUNT(DISTINCT CASE WHEN n.`status` = 1 THEN n.applyId END) signingCount,
+		      IFNULL(SUM(CASE WHEN n.`status` = 1 THEN n.treatyWill END), 0) treatyWill,
+		      COUNT(DISTINCT n.applyId) totalSignCount,
+		      IFNULL(SUM(n.signAmount),0) totalSignAmt,
+		      n.`customerId` 
+		    FROM
+		      t_treat_info n 
+		    WHERE n.createTime >= CURDATE() 
+		      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n.customerId) tab8 
+		    ON t.customerId = tab8.customerId 
+		  LEFT JOIN 
+		    (SELECT 
+		    	tab1.customerId,
+		    	COUNT(tab1.applyId) AS failSignCount,
+		   		SUM(tab1.signAmount) AS failSignAmt
+			 	FROM (
+				SELECT
+					n1.customerId,n1.applyId,n1.signAmount
+				FROM
+					t_treat_info n1
+				WHERE
+					n1.updateTime >= CURDATE() AND n1.`status` = 2  
+					AND (n1.failureCause != null OR n1.failureCause != '')
+				GROUP BY n1.applyId)AS tab1 
+			GROUP BY tab1.customerId) tab9 
+		    ON t.customerId = tab9.customerId
+		  LEFT JOIN 
+		    (SELECT 
+		        IFNULL(SUM(CASE WHEN n.`status` = 2 THEN n.feeAmount END),0) sucRetAmount,
+		        COUNT(CASE WHEN n.`status` = 2 THEN n.feeAmount END) sucRetCount,
+		      	n.`customerId` 
+		    FROM
+		      t_treat_success n 
+		    WHERE 
+		      n.feeAmountDate >= CURDATE() 
+		      AND n.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n.customerId) tab10 
+		    ON t.`customerId` = tab10.customerId
+		  LEFT JOIN 
+		    (SELECT
+				truncate(AVG(tab.applyHandelTime),2) AS applyHandelTime,
+				tab.storeBy
+			FROM
+			(
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n1.applyTime,
+							MIN(n.`createTime`)
+						),
+						0
+					) applyHandelTime,
+					n.applyId,
+					n.`storeBy`
+				FROM
+					${tableName} n
+				JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+					AND n.orderType = 1
+					AND n.handleType != 0
+					AND n.handleType != 29
+					AND n.handleType != 30
+					AND n1.orderType = 1
+					AND n1.applyTime < n.createTime
+				WHERE
+					n1.applyTime >= DATE_ADD(CURDATE(), INTERVAL -1 DAY)
+					AND n1.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				GROUP BY n.`applyId`
+				having MIN(n.createTime) >= CURDATE()
+			) tab
+			GROUP BY tab.storeBy) tab11 
+		    ON t.customerId = tab11.storeBy
+		 LEFT JOIN
+		  (SELECT
+			truncate(AVG(tab.applyAllotTime),2) AS applyAllotTime,
+			tab.lastStore
+		  FROM
+		  (
+			SELECT
+				IFNULL(
+					TIMESTAMPDIFF(
+						MINUTE,
+						n.applyTime,
+						n.allotTime
+					),
+					0
+				) applyAllotTime,
+				n.applyId,
+				n.`lastStore`
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+			AND n.orderType = 1
+			AND n.applyTime < n.allotTime
+			AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			AND n.allotTime >= CURDATE()
+			AND n.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			GROUP BY n.`applyId`
+		 ) tab
+		 GROUP BY tab.lastStore) tab12 
+		 ON t.customerId = tab12.lastStore
+		 LEFT JOIN 
+		    (SELECT 
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 0 
+		          THEN applyId 
+		        END
+		      ) AS custLabel0,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 1 
+		          THEN applyId 
+		        END
+		      ) AS custLabel1,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 2 
+		          THEN applyId 
+		        END
+		      ) AS custLabel2,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 3 
+		          THEN applyId 
+		        END
+		      ) AS custLabel3,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 4 
+		          THEN applyId 
+		        END
+		      ) AS custLabel4,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 5 
+		          THEN applyId 
+		        END
+		      ) AS custLabel5,
+		      n.`lastStore` 
+		    FROM
+		      t_borrow_store_apply n 
+		    WHERE n.custLabelUpTime >= CURDATE() 
+		    AND n.custLabelUpTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+		    GROUP BY n.`lastStore`) tab13 
+		    ON t.customerId = tab13.lastStore
+		  LEFT JOIN (
+			  SELECT 
+			    COUNT(DISTINCT n1.applyId) AS newApplyCount,
+				n1.storeBy
+			  FROM
+			    ${tableName} n1
+			  WHERE  n1.handleType = 0 
+			    AND n1.orderType = 1 
+			    AND n1.createTime >= CURDATE()
+	            AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+	            GROUP BY n1.storeBy) tab14 
+	        	ON tab14.storeBy = t.customerId
+		WHERE t.roleType IN (3, 6, 7, 8, 9) 
+		  AND t1.isCount = 1 ]]>
+		  <include refid="sqlQuery"/>
+		  <if test="orderSql == null">
+			ORDER by t.customerId,CONVERT(t1.orgName USING GBK)
+		  </if>
+		  <if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql},CONVERT(t1.orgName USING GBK)
+		  </if>
+	</select>
+
+	<!-- 门店人员今日统计 -->
+	<select id="queryStoreToDayCount" resultType="int" parameterType="map">
+		SELECT 
+		  COUNT(1) 
+		FROM
+		  t_busi_cust t 
+		  LEFT JOIN t_org t1 
+		    ON t.orgId = t1.orgId 
+		WHERE t.roleType IN (3, 6, 7, 8, 9) 
+		  AND t1.isCount = 1 
+		  <include refid="sqlQuery"/>
+	</select>
+	
+	<sql id="sqlQuery">
+		<if test="isNet != null and isNet != ''">
+		    and t1.isNet = #{isNet}
+		</if>
+		<if test="orgId != null and orgId != ''">
+		    and t1.orgId = #{orgId}
+		</if>
+		<if test="orgIdIn != null and orgIdIn != ''">
+		    and t1.orgId in (${orgIdIn})
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+		    and t1.orgId in (${userOrgs})
+		</if>
+		<if test="realName != null and realName != ''">
+		    and t.realName LIKE CONCAT(#{realName},'%') 
+		</if>
+		<if test="groupName != null and groupName != ''">
+				and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+				and t.teamName = #{teamName}
+		</if>
+		<if test="cityName != null and cityName !=''">
+		    and t1.cityName = #{cityName}
+		</if>
+    </sql>
+    
+    <!-- 门店今日统计 -->
+	<select id="queryOrgToDay" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  CURDATE() AS 'recordDate',
+		  t.orgId AS 'orgId',
+		  concat(t.orgNo,'-',t.orgName) as orgName,
+		  t.cityName AS 'cityName',
+		  t.isNet AS 'isNet',
+		  IFNULL(tab2.feedBackCount, 0) AS 'feedBackCount',
+		  IFNULL(tab2.recPersonCount, 0) AS 'recPersonCount',
+		  IFNULL(tab2.newApplyCount,0) AS 'newApplyCount',
+		  IFNULL(tab3.dealCount, 0) AS 'dealCount',
+		  IFNULL(tab3.noHandlCount, 0) AS 'noHandlCount',
+		  IFNULL(tab3.receiveCount, 0) AS 'receiveCount',
+		  IFNULL(tab3.againAllto, 0) AS 'againAllto',
+		  IFNULL(tab4.failSignCount, 0) AS 'failSignCount',
+		  IFNULL(tab4.failSignAmt, 0) AS 'failSignAmt',
+		  IFNULL(tab5.treatyWill, 0) AS 'treatyWill',
+		  IFNULL(tab5.totalSignCount, 0) AS 'totalSignCount',
+		  IFNULL(tab5.totalSignAmt, 0) AS 'totalSignAmt',
+		  IFNULL(tab6.chkRetAmount, 0) AS 'chkRetAmount',
+		  IFNULL(tab6.sucRetCount, 0) AS 'sucRetCount',
+		  IFNULL(tab6.sucRetAmount, 0) AS 'sucRetAmount',
+		  IFNULL(tab7.sucBookCount, 0) AS 'sucBookCount',
+		  IFNULL(tab8.handelTime, 0) AS 'handelTime',
+		  IFNULL(tab9.applyHandelTime, 0) AS 'applyHandelTime',
+		  IFNULL(tab10.applyAllotTime, 0) AS 'applyAllotTime',
+		  IFNULL(tab11.costCount,0) AS 'costCount',
+		  IFNULL(tab11.backCostCount,0) AS 'backCostCount',
+		  IFNULL(tab12.custLabel0, 0) AS 'custLabel0',
+		  IFNULL(tab12.custLabel1, 0) AS 'custLabel1',
+		  IFNULL(tab12.custLabel2, 0) AS 'custLabel2',
+		  IFNULL(tab12.custLabel3, 0) AS 'custLabel3',
+		  IFNULL(tab12.custLabel4, 0) AS 'custLabel4',
+		  IFNULL(tab12.custLabel5, 0) AS 'custLabel5'
+		FROM
+		  t_org t 
+		  LEFT JOIN 
+		  (SELECT
+			COUNT(DISTINCT CASE WHEN n1.isFeedback = 1 THEN n1.applyId END) AS feedBackCount,
+			COUNT(DISTINCT CASE WHEN n1.handleType = 0 THEN n1.storeBy END) AS recPersonCount,
+			COUNT(DISTINCT CASE WHEN n1.handleType = 0 AND n1.orderType = 1 THEN n1.applyId END) AS newApplyCount,
+			n1.orgId
+			FROM
+				${tableName} n1
+			WHERE
+				n1.createTime >= CURDATE()
+			GROUP BY n1.orgId) AS tab2 
+		    ON t.orgId = tab2.orgId 
+		  LEFT JOIN 
+		    (SELECT 
+		      	COUNT(
+					DISTINCT CASE
+					WHEN n1.orderStatus = - 1
+					AND n1.orderType = 1 THEN
+						n1.applyId
+					END
+				) AS dealCount,
+				COUNT(
+					DISTINCT CASE
+					WHEN n1.orderStatus = - 1
+					AND n1.orderType = 2 THEN
+						n1.applyId
+					END
+				) AS noHandlCount,
+				COUNT(
+					DISTINCT CASE
+					WHEN n1.orderType = 1 THEN
+						n1.applyId
+					END
+				) AS receiveCount,
+				COUNT(
+					DISTINCT CASE
+					WHEN n1.orderType = 2 THEN
+						n1.applyId
+					END
+				) AS againAllto,
+		      	n1.orgId 
+		    FROM
+		      t_borrow_store_apply n1 
+		      JOIN t_busi_cust n2 
+		        ON n2.customerId = n1.lastStore 
+		    WHERE 
+		      n1.`status` = 2 
+		      AND n2.roleType IN (3, 6, 7, 8, 9) 
+		      AND n1.allotTime >= CURDATE() 
+		      AND n1.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n2.orgId) AS tab3 
+		    ON t.`orgId` = tab3.orgId
+		    LEFT JOIN 
+		    (SELECT 
+		    	tab1.orgId,
+		    	count(tab1.applyId) AS failSignCount,
+		   		SUM(tab1.signAmount) AS failSignAmt
+			 	FROM (
+				SELECT
+					n1.orgId,n1.applyId,n1.signAmount
+				FROM
+					t_treat_info n1
+				WHERE
+					n1.updateTime >= CURDATE() AND n1.`status` = 2  
+					AND (n1.failureCause != null OR n1.failureCause != '')
+				GROUP BY n1.applyId)AS tab1 
+			GROUP BY tab1.orgId) tab4 ON t.`orgId` = tab4.orgId
+		    LEFT JOIN 
+		    (SELECT 
+		      IFNULL(SUM(CASE WHEN n1.`status` = 1 THEN n1.treatyWill END), 0) AS treatyWill,
+		      COUNT(DISTINCT n1.applyId) AS totalSignCount,
+		      IFNULL(SUM(n1.signAmount), 0) AS totalSignAmt,
+		      n1.`orgId` 
+		    FROM
+		      t_treat_info n1 
+		    WHERE 
+		      n1.createTime >= CURDATE() 
+		      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n1.orgId) tab5 
+		    ON t.`orgId` = tab5.orgId
+		  LEFT JOIN 
+		    (SELECT 
+		        IFNULL(SUM(CASE WHEN n1.`status` = 1 THEN n1.feeAmount END),0) AS chkRetAmount,
+		        COUNT(CASE WHEN n1.`status` = 2 THEN 1 END) AS sucRetCount,
+		        IFNULL(SUM(CASE WHEN n1.`status` = 2 THEN n1.feeAmount END),0) AS sucRetAmount,
+		      	n1.`orgId` 
+		    FROM
+		      t_treat_success n1 
+		    WHERE 
+		      n1.feeAmountDate >= CURDATE() 
+		      AND n1.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    GROUP BY n1.orgId) tab6 
+		    ON t.`orgId` = tab6.orgId
+		   LEFT JOIN 
+		    (SELECT 
+				SUM(tab1.sucBookCount) as sucBookCount,
+				tab1.orgId
+				FROM
+				(SELECT
+					COUNT(DISTINCT n1.applyId) sucBookCount,
+					n2.`orgId`
+				FROM
+					t_treat_visit_detail n1
+				JOIN t_busi_cust n2 ON n1.recCustId = n2.customerId
+				WHERE
+					n1.visitTime >= CURDATE()
+				AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				GROUP BY
+					n2.orgId
+				UNION ALL
+				SELECT
+					COUNT(n1.customerId) sucBookCount,
+					n2.`orgId`
+				FROM
+					t_cust_visit n1
+				JOIN t_busi_cust n2 ON n1.customerId = n2.customerId
+				WHERE
+					n1.createTime >= CURDATE()
+				AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				AND n1.applyId IS NULL
+				GROUP BY
+					n2.orgId)as tab1 GROUP BY tab1.orgId
+				) tab7 ON t.`orgId` = tab7.orgId
+		    LEFT JOIN
+		  	(SELECT
+				truncate(AVG(tab.handel_time),2) AS handelTime,
+				tab.orgId
+			FROM
+			(
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							MAX(n1.createTime),
+							MIN(n.`createTime`)
+						),
+						0
+					) handel_time,
+					n.applyId,
+					n2.orgId
+				FROM
+					${tableName} n
+				USE INDEX(createTime)
+				JOIN ${tableName} n1 ON n.applyId = n1.applyId
+				AND n.orderType = 1
+				AND n.handleType != 0
+				AND n.handleType != 29
+				AND n.handleType != 30
+				AND n1.handleType = 0
+				AND n1.orderType = 1
+				AND n1.createTime < n.createTime
+				JOIN t_busi_cust n2 ON n2.customerId = n.storeBy
+				WHERE
+					n.createTime >= CURDATE()
+				AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				AND n1.createTime >= CURDATE()
+				GROUP BY n.`applyId`
+		  ) tab
+		  GROUP BY tab.orgId) tab8
+		  ON t.`orgId` = tab8.orgId
+		 LEFT JOIN 
+		 	(SELECT
+				truncate(AVG(tab.applyHandelTime),2) AS applyHandelTime,
+				tab.orgId
+			FROM
+		 	(SELECT
+				IFNULL(
+					TIMESTAMPDIFF(
+						MINUTE,
+						n1.applyTime,
+						MIN(n.`createTime`)
+					),
+					0
+				) applyHandelTime,
+				n.applyId,
+				n2.orgId
+			FROM
+				${tableName} n
+			JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+			AND n.orderType = 1
+			AND n.handleType != 0
+			AND n.handleType != 29
+			AND n.handleType != 30
+			AND n1.orderType = 1
+			AND n1.applyTime < n.createTime
+			JOIN t_busi_cust n2 ON n.storeBy = n2.customerId
+			WHERE
+				n1.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+			AND n1.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			GROUP BY
+				n.`applyId`
+			HAVING
+				MIN(n.createTime) >= CURDATE()
+		) tab
+		 GROUP BY tab.orgId) tab9
+		 ON t.`orgId` = tab9.orgId
+		LEFT JOIN (
+			SELECT
+				truncate(AVG(tab.applyAllotTime),2) AS applyAllotTime,
+				tab.orgId
+			FROM
+			(
+				SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n.applyTime,
+							n.allotTime
+						),
+						0
+					) applyAllotTime,
+					n.applyId,
+					n1.orgId
+				FROM
+					t_borrow_store_apply n
+					JOIN t_busi_cust n1 ON n.lastStore = n1.customerId
+				WHERE
+					n.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+				AND n.orderType = 1
+				AND n.applyTime < n.allotTime
+				AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				AND n.allotTime >= CURDATE()
+				AND n.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				GROUP BY n.`applyId`
+			) tab
+		 GROUP BY tab.orgId) tab10
+		 ON t.`orgId` = tab10.orgId
+		LEFT JOIN
+			(SELECT 
+		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
+		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+		      n1.`orgId` 
+		    FROM
+		      t_store_cost_record n1 
+		    WHERE n1.createTime >= CURDATE()
+		 GROUP BY n1.orgId) AS tab11
+		 ON t.`orgId` = tab11.orgId
+		 LEFT JOIN 
+		    (SELECT 
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 0 
+		          THEN applyId 
+		        END
+		      ) AS custLabel0,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 1 
+		          THEN applyId 
+		        END
+		      ) AS custLabel1,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 2 
+		          THEN applyId 
+		        END
+		      ) AS custLabel2,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 3 
+		          THEN applyId 
+		        END
+		      ) AS custLabel3,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 4 
+		          THEN applyId 
+		        END
+		      ) AS custLabel4,
+		      COUNT(
+		        CASE
+		          WHEN n.`custLabel` = 5 
+		          THEN applyId 
+		        END
+		      ) AS custLabel5,
+		      n.`orgId` 
+		    FROM
+		      t_borrow_store_apply n 
+		    WHERE n.custLabelUpTime >= CURDATE() 
+		    AND n.custLabelUpTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+		   	GROUP BY n.`orgId`) tab12 
+		 ON t.orgId = tab12.orgId
+		WHERE t.orgType = 1]]>
+		 <include refid="sqlQueryByStore"/>
+		 GROUP BY t.orgId
+		 <if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+		 </if>
+	 	  <if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		  </if>
+	</select>
+	
+	<!-- 门店今日统计 -->
+	<select id="queryOrgToDayCount" resultType="int" parameterType="map">
+		SELECT 
+		  COUNT(1) 
+		FROM
+		  (SELECT 
+		    COUNT(*) 
+		  FROM
+		    t_org t 
+		  WHERE t.orgType = 1 
+		    <include refid="sqlQueryByStore"/>
+		  GROUP BY t.orgId) tab1 
+	</select>
+	
+	<sql id="sqlQueryByStore">
+  		<if test="isNet != null and isNet != ''">
+		  and t.isNet = #{isNet}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and t.orgId = #{orgId}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t.orgId in (${userOrgs})
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t.cityName like CONCAT('%',#{cityName},'%')
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t.teamName = #{teamName}
+		</if>
+		<if test="teamNameType != null and teamNameType != ''">
+			AND t.teamName is NOT NULL AND t.teamName != ''
+		</if>
+		<if test="groupNameType != null and groupNameType != ''">
+			AND t.groupName is NOT NULL AND t.groupName != ''
+		</if>
+	</sql>
+	
+	<!-- 总的今日统计 -->
+	<select id="queryTotalToDay" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  CURDATE() AS 'recordDate',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_borrow_apply n 
+		  WHERE n.applyTime >= CURDATE() 
+		    AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'applyCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_borrow_apply n 
+		  WHERE n.`applyType` IN (1, 6) 
+		    AND n.applyTime >= CURDATE() 
+		    AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'seniorCount',
+		   0 AS 'notFillCount',
+		   0 AS 'costAmount',
+		  IFNULL(
+		    ROUND(
+		      0 / 
+		      (SELECT 
+		        COUNT(DISTINCT n.applyId) 
+		      FROM
+		        t_borrow_apply n 
+		      WHERE n.applyTime >= CURDATE() 
+		        AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)),
+		      2
+		    ),
+		    0
+		  ) AS 'costMoney',
+		  0 AS 'browseCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    ${tableName} n 
+		  WHERE n.handleType = 0 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'storeCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    ${tableName} n 
+		  WHERE n.handleType = 5 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'storeBackCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    ${tableName} n 
+		  WHERE n.isFeedback = 1 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'feedBackCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    ${tableName} n
+		  WHERE n.handleType = 0 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		    AND n.orderType = 1
+		    ) AS 'kfReceivedCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_book n 
+		  WHERE n.`status` = 3 
+		    AND n.updateTime >= CURDATE() 
+		    AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucBookCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_book n 
+		  WHERE n.`status` = 1 
+		    AND n.updateTime >= CURDATE() 
+		    AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'preBookCount',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_book n 
+		  WHERE n.`status` = 2 
+		    AND n.updateTime >= CURDATE() 
+		    AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failBookCount',
+		  (SELECT 
+		    COUNT(DISTINCT t.applyId) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'saleCount',
+		  (SELECT 
+		    IFNULL(SUM(t.costPrice) / 100, 0) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'saleAmount',
+		  (SELECT 
+		    IFNULL(SUM(t.costScore), 0) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'saleScore',
+		  (SELECT 
+		    COUNT(
+		      CASE
+		        WHEN t.handleType = 4 
+		        THEN t.selId 
+		      END
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failSaleCount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.handleType = 4 
+		          THEN ROUND(IFNULL(t.costPrice*t.discount,0)/ 100 ,2)
+		        END
+		      ),
+		      0
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failSaleAmount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.handleType = 4 
+		          THEN t.costScore 
+		        END
+		      ),
+		      0
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failSaleScore',
+		  (SELECT 
+		    COUNT(
+		      CASE
+		        WHEN t.handleType = 2 
+		        THEN t.selId 
+		      END
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucSaleCount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.handleType = 2 
+		          THEN ROUND(IFNULL(t.costPrice*t.discount,0)/ 100 ,2)
+		        END
+		      ),
+		      0
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucSaleAmount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.handleType = 2 
+		          THEN t.costScore 
+		        END
+		      ),
+		      0
+		    ) 
+		  FROM
+		    t_borrow_sel_record t 
+		  WHERE t.createTime >= CURDATE() 
+		    AND t.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucSaleScore',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.`status` = 2 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'signingCount',
+		  (SELECT 
+		    IFNULL(SUM(n.signAmount), 0) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.`status` = 2 
+		    AND n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'signingAmt',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.`status` = 2 AND (n.failureCause != null OR n.failureCause != '')
+		    AND n.updateTime >= CURDATE() 
+		    AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failSignCount',
+		  (SELECT 
+		    IFNULL(SUM(n.signAmount), 0) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.`status` = 2 AND (n.failureCause != null OR n.failureCause != '') 
+		    AND n.updateTime >= CURDATE() 
+		    AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failSignAmt',
+		  (SELECT 
+		    COUNT(DISTINCT n.applyId) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'totalSignCount',
+		  (SELECT 
+		    IFNULL(SUM(n.signAmount), 0) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'totalSignAmt',
+		  (SELECT 
+		    IFNULL(SUM(n.treatyWill), 0) 
+		  FROM
+		    t_treat_info n 
+		  WHERE n.createTime >= CURDATE() 
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'treatyWill',
+		  (SELECT 
+		    COUNT(DISTINCT t.applyId) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE() 
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'retCount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.queryStatus = 2 
+		          THEN t.feeAmount 
+		        END
+		      ),
+		      IFNULL(
+		        SUM(
+		          CASE
+		            WHEN t.queryStatus = 1 
+		            THEN t.feeAmount 
+		          END
+		        ),
+		        0
+		      )
+		    ) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE() 
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'retAmount',
+		  (SELECT 
+		    IF(
+		      COUNT(
+		        IF(
+		          t.queryStatus = 2 
+		          AND t.`status` = 1,
+		          1,
+		          NULL
+		        )
+		      ) = 0,
+		      COUNT(
+		        IF(
+		          t.queryStatus = 1 
+		          AND t.`status` = 1,
+		          1,
+		          NULL
+		        )
+		      ),
+		      COUNT(
+		        IF(
+		          t.queryStatus = 2 
+		          AND t.`status` = 1,
+		          1,
+		          NULL
+		        )
+		      )
+		    ) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE() 
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'chkRetCount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.queryStatus = 2 
+		          AND t.`status` = 1 
+		          THEN t.feeAmount 
+		        END
+		      ),
+		      IFNULL(
+		        SUM(
+		          CASE
+		            WHEN t.queryStatus = 1 
+		            AND t.`status` = 1 
+		            THEN t.feeAmount 
+		          END
+		        ),
+		        0
+		      )
+		    ) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE() 
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'chkRetAmount',
+		  (SELECT 
+		    IF(
+		      COUNT(
+		        IF(
+		          t.queryStatus = 2 
+		          AND t.`status` = 2,
+		          1,
+		          NULL
+		        )
+		      ) = 0,
+		      COUNT(
+		        IF(
+		          t.queryStatus = 1 
+		          AND t.`status` = 2,
+		          1,
+		          NULL
+		        )
+		      ),
+		      COUNT(
+		        IF(
+		          t.queryStatus = 2 
+		          AND t.`status` = 2,
+		          1,
+		          NULL
+		        )
+		      )
+		    ) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE() 
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucRetCount',
+		  (SELECT 
+		    IFNULL(
+		      SUM(
+		        CASE
+		          WHEN t.queryStatus = 2 
+		          AND t.`status` = 2 
+		          THEN t.feeAmount 
+		        END
+		      ),
+		      IFNULL(
+		        SUM(
+		          CASE
+		            WHEN t.queryStatus = 1 
+		            AND t.`status` = 2 
+		            THEN t.feeAmount 
+		          END
+		        ),
+		        0
+		      )
+		    ) 
+		  FROM
+		    t_treat_success t 
+		  WHERE t.feeAmountDate >= CURDATE()
+		    AND t.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'sucRetAmount'
+		FROM
+		  DUAL]]>
+	</select>
+	
+	<select id="queryTotalToDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM DUAL
+	</select>
+	
+	<select id="queryOrgOnline" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			CURDATE() AS 'recordDate',
+			t1.orgId AS 'orgId',
+			t1.orgName AS 'orgName',
+			t1.cityName AS 'cityName',
+			t1.isNet AS 'isNet',
+			count(t1.customerId) as onlineCount
+		FROM t_busi_cust t
+		JOIN t_org t1 ON t1.orgId = t.orgId
+		WHERE t.orgId !=60 and t.loginStatus =1
+		AND t1.isCount = 1]]>
+	</select>
+	
+	<select id="queryOrgGroupRank" resultType="map" parameterType="map">
+		<![CDATA[SELECT tab1.*,
+				CONCAT(tab1.todayDuration,'/',tab1.monthDuration) as todayMonthDur,
+				IFNULL(TRUNCATE((tab1.todayDuration-tab1.yesDuration) * 100 / tab1.yesDuration, 2),0) as growthDurRate,
+				TRUNCATE(tab1.retAmountSum / tab1.groupCount,2) as avgAmountSum,
+				CONCAT(tab1.todayVisitCount,'/',tab1.monthVisitCount) as todayMonthVisit,
+				CONCAT(tab1.todaySignCount,'/',tab1.monthSignCount) as todayMonthSign
+			FROM(
+				SELECT
+				t.orgId AS 'orgId',
+				t1.orgName AS 'orgName',
+				t.groupName,
+				t1.cityName AS 'cityName',
+				count(*) AS groupCount,
+				(
+					SELECT
+						n1.realName
+					FROM t_busi_cust n1
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND n1.roleType = 8
+					limit 1
+				) AS 'groupLeader',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n1 ON n1.customerId = n.customerId
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND n1.roleType IN (3, 8, 9)
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+				) AS 'retAmountSum',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n1 ON n1.customerId = n.customerId
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND n1.roleType IN (3, 8, 9)
+					AND n.feeAmountDate >= CURDATE()
+					AND n.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayAmountSum',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.recentTime >= CURDATE()
+					AND n.recentTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayDuration',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.recentTime >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+					AND n.recentTime < CURDATE()
+				) AS 'yesDuration',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND DATE_FORMAT(n.recentTime, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+				) AS 'monthDuration',
+				(
+					SELECT
+						count(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+					JOIN t_busi_cust n2 ON n2.customerId = n1.recCustId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n1.visitTime >= CURDATE()
+					AND n2.roleType IN (3, 8, 9)
+					AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayVisitCount',
+				(
+					SELECT
+						COUNT(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+					JOIN t_busi_cust n2 ON n2.customerId = n1.recCustId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n1.visitTime  >= DATE_ADD(curdate(),interval -day(curdate())+1 day)
+					AND n1.visitTime  <= last_day(curdate())
+				) AS 'monthVisitCount',
+				(
+					SELECT
+						count(DISTINCT n.applyId)
+					FROM
+						t_treat_info n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.createTime >= CURDATE()
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todaySignCount',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_info n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND DATE_FORMAT(n.createTime, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+				) AS 'monthSignCount',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+				) AS 'retAmountCount',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.`status` = 2
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+				) AS 'sucRetAmount'
+			FROM
+				t_busi_cust t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			WHERE
+				t.roleType IN (3, 8, 9)
+			AND t1.isNet = 1]]>
+			<include refid="sqlQueryByStore"/>
+			GROUP BY
+				t.groupName,
+				t1.orgId
+			ORDER BY
+				retAmountSum DESC
+			) tab1 
+			
+	</select>
+	<select id="queryOrgGroupRankCount" resultType="int" parameterType="map">
+	<![CDATA[select count(*) from (
+			SELECT tab1.*
+			FROM(
+				SELECT
+				count(*) AS groupCount
+			FROM
+				t_busi_cust t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			WHERE
+				t.roleType IN (3, 8, 9)
+			AND t1.isNet = 1]]>
+			<include refid="sqlQueryByStore"/>
+			GROUP BY
+				t.groupName,
+				t1.orgId
+			) tab1) tab2
+	</select>
+	
+	<select id="queryOrgTeamRank" resultType="map" parameterType="map">
+		<![CDATA[
+			SELECT
+				tab1.*,
+				CONCAT(tab1.todayDuration,'/',tab1.monthDuration) as todayMonthDur,
+				IFNULL(TRUNCATE((tab1.todayDuration-tab1.yesDuration) * 100 / tab1.yesDuration, 2),0) as growthDurRate,
+				TRUNCATE(tab1.retAmountSum / tab1.teamCount,2) as avgAmountSum,
+				CONCAT(tab1.todayVisitCount,'/',tab1.monthVisitCount) as todayMonthVisit,
+				CONCAT(tab1.todaySignCount,'/',tab1.monthSignCount) as todayMonthSign
+			FROM
+			(
+				SELECT
+					t.orgId AS 'orgId',
+					t1.orgName AS 'orgName',
+					t.groupName,
+					t.teamName,
+					t1.cityName AS 'cityName',
+				count(*) AS teamCount,
+				(
+					SELECT
+						n1.realName
+					FROM
+						t_busi_cust n1
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND t.teamName = n1.teamName
+					AND n1.roleType = 9
+					LIMIT 1
+				) AS 'teamLeader',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n1 ON n1.customerId = n.customerId
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND t.teamName = n1.teamName
+					AND n1.roleType IN (3, 9)
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+				) AS 'retAmountSum',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n1 ON n1.customerId = n.customerId
+					WHERE
+						t.orgId = n1.orgId
+					AND t.groupName = n1.groupName
+					AND t.teamName = n1.teamName
+					AND n1.roleType IN (3, 9)
+					AND n.feeAmountDate >= CURDATE()
+					AND n.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayAmountSum',
+				(
+					SELECT
+						TRUNCATE (
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n.recentTime >= CURDATE()
+					AND n.recentTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayDuration',
+				(
+					SELECT
+						TRUNCATE (
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n.recentTime >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+					AND n.recentTime < CURDATE()
+				) AS 'yesDuration',
+				(
+					SELECT
+						TRUNCATE (
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND DATE_FORMAT(n.recentTime, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+				) AS 'monthDuration',
+				(
+					SELECT
+						count(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+					JOIN t_busi_cust n2 ON n2.customerId = n1.recCustId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n1.visitTime >= CURDATE()
+					AND n2.roleType IN (3, 9)
+					AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayVisitCount',
+				(
+					SELECT
+						COUNT(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+					JOIN t_busi_cust n2 ON n2.customerId = n1.recCustId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n1.visitTime  >= DATE_ADD(curdate(),interval -day(curdate())+1 day)
+					AND n1.visitTime  <= last_day(curdate())
+				) AS 'monthVisitCount',
+				(
+					SELECT
+						count(DISTINCT n.applyId)
+					FROM
+						t_treat_info n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n.createTime >= CURDATE()
+					AND n2.roleType IN (3, 9)
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todaySignCount',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_info n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND DATE_FORMAT(n.createTime, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+				) AS 'monthSignCount',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+				) AS 'retAmountCount',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+					JOIN t_busi_cust n2 ON n2.customerId = n.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n.`status` = 2
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')
+				) AS 'sucRetAmount'
+				FROM
+					t_busi_cust t
+				JOIN t_org t1 ON t.orgId = t1.orgId
+				WHERE
+					t.roleType IN (3, 9)
+				AND t1.isNet = 1]]>
+				<include refid="sqlQueryByStore"/>
+				GROUP BY
+					t.teamName,
+					t.groupName,
+					t1.orgId
+				ORDER BY
+					retAmountSum DESC
+		) tab1
+	</select>
+	
+	<select id="queryOrgTeamRankCount" resultType="int" parameterType="map">
+	<![CDATA[select count(*) from(
+			SELECT
+				tab1.*
+			FROM
+			(
+				SELECT
+					count(*) AS teamCount
+				FROM
+					t_busi_cust t
+				JOIN t_org t1 ON t.orgId = t1.orgId
+				WHERE
+					t.roleType IN (3, 9)
+				AND t1.isNet = 1]]>
+				<include refid="sqlQueryByStore"/>
+				GROUP BY
+					t.teamName,
+					t.groupName,
+					t1.orgId
+			) tab1) tab2
+	</select>
+	
+	<select id="queryOrgSumRank" resultType="map" parameterType="map">
+		SELECT 
+			tab1.*,
+			CONCAT(tab1.todayDurationTotal,'/',tab1.monthDurationTotal) as todayMonthDurTotal,
+			TRUNCATE(tab1.retAmountSumTotal / tab1.totalCount,2) as avgAmountSumTotal,
+			CONCAT(tab1.todayVisitCountTotal,'/',tab1.monthVisitCountTotal) as todayMonthVisitTotal,
+			CONCAT(tab1.todaySignCountTotal,'/',tab1.monthSignCountTotal) as todayMonthSignTotal
+		from (
+				SELECT
+				(	SELECT 
+						count(t.customerId) 
+					from t_busi_cust t
+					JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					<include refid="sqlQueryByStore"/>
+				) AS totalCount,
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n 
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+					<include refid="sqlQueryByStore"/>
+				) AS 'retAmountSumTotal',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n.feeAmountDate &gt;= CURDATE()
+					<include refid="sqlQueryByStore"/>
+				) AS 'todayAmountSumTotal',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					join t_busi_cust t on n1.lastStore = t.customerId
+					JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+					t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n.recentTime &gt;= CURDATE()
+					<include refid="sqlQueryByStore"/>
+				) AS 'todayDurationTotal',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					join t_busi_cust t on n1.lastStore = t.customerId
+					JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND DATE_FORMAT(n.recentTime, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+					<include refid="sqlQueryByStore"/>
+				) AS 'monthDurationTotal',
+				(
+					SELECT
+						count(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+						join t_busi_cust t on n1.recCustId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+					t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n1.visitTime &gt;= CURDATE()
+					<include refid="sqlQueryByStore"/>
+				) AS 'todayVisitCountTotal',
+				(
+					SELECT
+						COUNT(n1.detailId)
+					FROM
+						t_treat_visit_detail n1
+						join t_busi_cust t on n1.recCustId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n1.visitTime  &gt;= DATE_ADD(curdate(),interval -day(curdate())+1 day)
+					AND n1.visitTime  &lt;= last_day(curdate())
+					<include refid="sqlQueryByStore"/>
+				) AS 'monthVisitCountTotal',
+				(
+					SELECT
+						count(DISTINCT n.applyId)
+					FROM
+						t_treat_info n
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+					t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n.createTime &gt;= CURDATE()
+					<include refid="sqlQueryByStore"/>
+				) AS 'todaySignCountTotal',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_info n
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND DATE_FORMAT(n.createTime, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+					<include refid="sqlQueryByStore"/>
+				) AS 'monthSignCountTotal',
+				(
+					SELECT
+						count(n.applyId)
+					FROM
+						t_treat_success n
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+					<include refid="sqlQueryByStore"/>
+				) AS 'retAmountCountTotal',
+				(
+					SELECT
+						IFNULL(sum(n.feeAmount), 0)
+					FROM
+						t_treat_success n
+						join t_busi_cust t on n.customerId = t.customerId
+						JOIN t_org t1 ON t.orgId = t1.orgId
+					WHERE
+						t.roleType IN (${roleTypeIn})
+					AND t1.isNet = 1
+					AND n.`status` = 2
+					AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = DATE_FORMAT(CURDATE(),'%Y-%m')
+					<include refid="sqlQueryByStore"/>
+				) AS 'sucRetAmountTotal'
+				FROM
+					DUAL
+		) tab1
+	</select>
+	
+	<select id="queryOrgGroupDuration" resultType="map" parameterType="map">
+		<![CDATA[
+			SELECT
+				IFNULL(TRUNCATE(avg((tab1.todayDuration-tab1.yesDuration) * 100 / tab1.yesDuration), 2),0) as growthDurRate
+			FROM(
+				SELECT
+				count(*) AS groupCount,
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.recentTime >= CURDATE()
+					AND n.recentTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayDuration',
+				(
+					SELECT
+						truncate(
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND n2.roleType IN (3, 8, 9)
+					AND n.recentTime >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+					AND n.recentTime < CURDATE()
+				) AS 'yesDuration'
+			FROM
+				t_busi_cust t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			WHERE
+				t.roleType IN (3, 8, 9)
+			AND t1.isNet = 1]]>
+			<include refid="sqlQueryByStore"/>
+			GROUP BY
+				t.groupName,
+				t1.orgId
+			) tab1 
+	</select>
+	
+	<select id="queryOrgTeamDuration" resultType="map" parameterType="map">
+		<![CDATA[
+			SELECT
+				IFNULL(TRUNCATE(avg((tab1.todayDuration-tab1.yesDuration) * 100 / tab1.yesDuration), 2),0) as growthDurRate
+			FROM
+			(
+				SELECT
+				count(*) AS teamCount,
+				(
+					SELECT
+						TRUNCATE (
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n.recentTime >= CURDATE()
+					AND n.recentTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				) AS 'todayDuration',
+				(
+					SELECT
+						TRUNCATE (
+							IFNULL(sum(totalDuration), 0) / 60,
+							2
+						)
+					FROM
+						t_store_call_recent n
+					JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+					JOIN t_busi_cust n2 ON n1.lastStore = n2.customerId
+					WHERE
+						t.orgId = n2.orgId
+					AND t.groupName = n2.groupName
+					AND t.teamName = n2.teamName
+					AND n2.roleType IN (3, 9)
+					AND n.recentTime >= DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+					AND n.recentTime < CURDATE()
+				) AS 'yesDuration'
+				FROM
+					t_busi_cust t
+				JOIN t_org t1 ON t.orgId = t1.orgId
+				WHERE
+					t.roleType IN (3, 9)
+				AND t1.isNet = 1]]>
+				<include refid="sqlQueryByStore"/>
+				GROUP BY
+					t.teamName,
+					t.groupName,
+					t1.orgId
+		) tab1
+	</select>
+	
+	<!-- 城市今日分单情况 -->
+	<select id="queryCityAllotDay" resultType="map" parameterType="map">
+	<![CDATA[
+		SELECT 
+		  CURDATE() AS 'recordDate',
+		  n1.cityName,
+		  COUNT(DISTINCT n.applyId) AS allotCount,
+		  COUNT(DISTINCT n.storeBy) AS recPersonCount,
+		  ROUND((
+		    COUNT(DISTINCT n.applyId) / COUNT(DISTINCT n.storeBy)
+		  )) AS avgCount 
+		FROM
+		  ${tableName} n
+		  LEFT JOIN t_org n1
+		    ON n1.orgId = n.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= CURDATE() 
+		  AND n.orderType = 1]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName 
+		ORDER BY CONVERT(n1.cityName USING GBK)
+	</select>
+	
+	<!-- 城市今日分单情况 -->
+	<select id="queryCityAllotDayCount" resultType="int" parameterType="map">
+	<![CDATA[
+		SELECT COUNT(1) FROM (SELECT 
+		  n1.cityName
+		FROM
+		  ${tableName} n
+		  LEFT JOIN t_org n1
+		    ON n1.orgId = n.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= CURDATE() 
+		  AND n.orderType = 1]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName) tab
+	</select>
+	
+	<!-- 城市本周分单情况 -->
+	<select id="queryCityAllotWeek" resultType="map" parameterType="map">
+	<![CDATA[
+		SELECT 
+		  CURDATE() AS 'recordDate',
+		  n1.cityName,
+		  COUNT(DISTINCT n.applyId) AS allotCount,
+		  COUNT(DISTINCT n.storeBy) AS recPersonCount,
+		  ROUND((
+		    COUNT(DISTINCT n.applyId) / COUNT(DISTINCT n.storeBy)
+		  )) AS avgCount 
+		FROM
+		  ${tableName} n
+		  LEFT JOIN t_org n1 
+		    ON n1.orgId = n.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= DATE_ADD(
+		    CURDATE(),
+		    INTERVAL - WEEKDAY(CURDATE()) DAY
+		  ) 
+		  AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		  AND n.orderType = 1 ]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName 
+		ORDER BY CONVERT(n1.cityName USING GBK)
+	</select>
+	
+	<!-- 城市本周分单情况 -->
+	<select id="queryCityAllotWeekCount" resultType="int" parameterType="map">
+	<![CDATA[
+		SELECT COUNT(1) FROM (SELECT 
+		  n1.cityName
+		FROM
+		  ${tableName} n
+		  LEFT JOIN t_org n1
+		    ON n1.orgId = n.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= DATE_ADD(
+		    CURDATE(),
+		    INTERVAL - WEEKDAY(CURDATE()) DAY
+		  ) 
+		  AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+		  AND n.orderType = 1 ]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName) tab
+	</select>
+	
+	<!-- 城市本月分单情况 -->
+	<select id="queryCityAllotMonth" resultType="map" parameterType="map">
+	<![CDATA[
+		SELECT 
+		  DATE_FORMAT(CURDATE(), '%Y-%m') AS 'recordDate',
+		  n1.cityName,
+		  COUNT(DISTINCT n.applyId) AS allotCount,
+		  COUNT(DISTINCT n.storeBy) AS recPersonCount,
+		  ROUND((
+		    COUNT(DISTINCT n.applyId) / COUNT(DISTINCT n.storeBy)
+		  )) AS avgCount 
+		FROM
+		  ${tableName} n 
+		  LEFT JOIN t_org n1 
+		    ON n1.orgId = n.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= CONCAT_WS('-',DATE_FORMAT(CURDATE(),'%Y-%m'),'01') 
+		  AND n.createTime <= CONCAT_WS('-',DATE_FORMAT(CURDATE(),'%Y-%m'),'31') 
+		  AND n.orderType = 1 ]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName 
+		ORDER BY CONVERT(n1.cityName USING GBK)
+	</select>
+	
+	<!-- 城市本月分单情况 -->
+	<select id="queryCityAllotMonthCount" resultType="int" parameterType="map">
+	<![CDATA[
+		SELECT COUNT(1) FROM (SELECT 
+		  n1.cityName
+		FROM
+		  ${tableName} n
+		  LEFT JOIN t_org n1 
+		    ON n1.orgId = n1.orgId 
+		WHERE n.handleType = 0 
+		  AND n.createTime >= CONCAT_WS('-',DATE_FORMAT(CURDATE(),'%Y-%m'),'01') 
+		  AND n.createTime <= CONCAT_WS('-',DATE_FORMAT(CURDATE(),'%Y-%m'),'31')
+		  AND n.orderType = 1 ]]>
+		  <include refid="cityAllotSqlQuery"/>
+		GROUP BY n1.cityName) tab
+	</select>
+	
+	<sql id="cityAllotSqlQuery">
+		<if test="cityName != null and cityName !=''">
+		    and n1.cityName = #{cityName}
+		</if>
+    </sql>
+    
+    
+   <select id="queryNowRefundDate" resultType="map" parameterType="map">
+      <![CDATA[	
+	SELECT
+		DATE_FORMAT(createTime,'%Y-%m-%d') as 'recordDate'
+	FROM
+		t_borrow_sel_record 
+	WHERE
+		handleType = 4
+		AND updateTime >= DATE_SUB(CURDATE(),INTERVAL 1 DAY)
+		AND updateTime <= CURDATE()
+   	    AND DATE_FORMAT(createTime,'%Y-%m-%d') < DATE_SUB(CURDATE(),INTERVAL 1 DAY)
+		GROUP BY DATE_FORMAT(createTime,'%Y-%m-%d')
+      ]]>
+    </select>
+    
+    <select id="queryChannelRefund" resultType="map" parameterType="map">
+   	SELECT 
+		DATE_FORMAT(t.createTime,'%Y-%m-%d') AS 'recordDate',
+		t1.channelCode as 'channelCode',
+		COUNT(DISTINCT t.applyId) AS 'failSaleCount',
+		ROUND(SUM(t.costPrice*t.discount) / 100,2) AS 'failSaleAmount',
+		SUM(t.costScore) AS 'failSaleScore'
+	FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
+	WHERE 
+	t.handleType=4 
+	AND DATE_FORMAT(t.createTime,'%Y-%m-%d') IN (
+	<foreach collection="recordDates" separator="," item="item">
+	#{item.recordDate}
+	</foreach>
+	)
+	GROUP BY t1.channelCode,DATE_FORMAT(t.createTime,'%Y-%m-%d')
+    </select>
+    
+    <select id="queryBaseRefund" resultType="map" parameterType="map">
+   	SELECT 
+		DATE_FORMAT(t.createTime,'%Y-%m-%d') AS 'recordDate',
+		COUNT(DISTINCT t.applyId) AS 'failSaleCount',
+		ROUND(SUM(t.costPrice*t.discount) / 100,2) AS 'failSaleAmount',
+		SUM(t.costScore) AS 'failSaleScore'
+	FROM t_borrow_sel_record t 
+	WHERE 
+	t.handleType=4 
+	AND DATE_FORMAT(t.createTime,'%Y-%m-%d')IN (
+	<foreach collection="recordDates" separator="," item="item">
+	#{item.recordDate}
+	</foreach>
+	)
+	GROUP BY DATE_FORMAT(t.createTime,'%Y-%m-%d')
+    </select>
+    
+    <select id="totalApplyTimeSum" resultType="map" parameterType="map">
+		SELECT 
+			  t.recordDate,
+			  t.applyCount,
+			  t.seniorCount,
+			  IFNULL(t1.amount,0) as 'amount',
+			  ROUND(t1.amount/t.applyCount,2) as 'costCB',
+			  IFNULL(t2.saleCount,0) as 'saleCount',
+			  IFNULL(t3.sucSaleCount,0) as 'sucSaleCount',
+			  IFNULL(t4.failSaleCount,0) as 'failSaleCount',
+			  ROUND(IFNULL(t3.sucSaleAmt,0),2) as 'sucSaleAmt',
+			  ROUND(IFNULL(t4.failSaleAmt,0),2) as 'failSaleAmt',
+			 (ROUND(IFNULL(t3.sucSaleAmt,0),2)- ROUND(IFNULL(t4.failSaleAmt,0),2)) as 'realSaleAmt',
+			 IFNULL(t5.sucRetCount,0) as 'sucRetCount' ,
+			 IFNULL(t5.sucRetAmount,0) as 'sucRetAmount',
+			 IFNULL(t6.sucBookCount,0) as 'sucBookCount' ,
+			 IFNULL(t7.totalSignCount,0) as 'totalSignCount',
+			 IFNULL(t7.totalSignAmt,0) as 'totalSignAmt',
+			 IFNULL(t8.netStoreCount,0) as 'netStoreCount' ,
+			 IFNULL(t8.dealStoreCount,0) as 'dealStoreCount',
+			 IFNULL(t8.useCount,0) as 'useCount' ,
+			 CONCAT(ROUND((IFNULL(IFNULL(t8.useCount, 0) / IFNULL(t8.netStoreCount, 1),0) * 100),2),'%') AS 'useUv',
+			 IFNULL(t9.sucRetCount,0) as 'sucRetCount',
+			 IFNULL(t9.sucRetAmount,0) as 'sucRetAmount'
+		 FROM 
+		(
+			SELECT
+			  	DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.applyId) as 'applyCount',
+				COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount'
+			FROM
+			t_borrow_apply n LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			WHERE
+			  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+			  <if test="teamNo != null and teamNo != ''">
+			  	AND t.teamNo = #{teamNo}
+			  </if>
+			  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t
+		LEFT JOIN
+		(
+			SELECT 
+				DATE_FORMAT(n.recordDate,#{datePattern}) as 'recordDate',
+				SUM(n.amount) as 'amount'
+			FROM t_borrow_channel_cost n JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+		    WHERE
+		          <![CDATA[n.recordDate>= #{startRecordDate}  AND n.recordDate<= #{endRecordDate}]]>
+		          <if test="teamNo != null and teamNo != ''">
+				  	AND t.teamNo = #{teamNo}
+				  </if>
+			GROUP BY DATE_FORMAT(n.recordDate,#{datePattern})
+		) as t1 ON  t.recordDate= t1.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+				   DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				   COUNT(DISTINCT n.applyId) as 'saleCount'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=1
+			 	  <if test="teamNo != null and teamNo != ''">
+			 	  	AND t1.teamNo =#{teamNo}
+			 	  </if>
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t2 ON  t.recordDate= t2.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+				    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+					COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+					SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=2
+				<if test="teamNo != null and teamNo != ''">
+			 	  	AND t1.teamNo =#{teamNo}
+			 	</if>
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t3 ON  t.recordDate= t3.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+			    DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=4
+		    	<if test="teamNo != null and teamNo != ''">
+			 	  	AND t1.teamNo =#{teamNo}
+			 	</if>
+		    GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) as t4 ON  t.recordDate= t4.recordDate
+		LEFT JOIN
+		(
+			SELECT 
+				DATE_FORMAT(m.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(m.recordId) as 'sucRetCount' ,
+				IFNULL(SUM(m.feeAmount),0)  AS 'sucRetAmount'
+			FROM t_treat_success_history m JOIN t_borrow_apply t ON m.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+			WHERE   <![CDATA[m.applyTime>= #{startRecordDate} AND m.applyTime<= #{endRecordDate}]]> AND m.`status`=2		
+					<if test="teamNo != null and teamNo != ''">
+				 	  	AND t1.teamNo =#{teamNo}
+				 	</if>
+			GROUP BY DATE_FORMAT(m.applyTime,#{datePattern})
+		) as t5 ON  t.recordDate= t5.recordDate
+		LEFT JOIN 
+		(
+			SELECT 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'sucBookCount' 
+			FROM t_treat_visit_detail m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode 
+			WHERE  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+					<if test="teamNo != null and teamNo != ''">
+				 	  	AND t.teamNo =#{teamNo}
+				 	</if>
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) t6 ON t6.recordDate = t.recordDate
+		LEFT JOIN
+		 (
+			SELECT 
+				DATE_FORMAT(m.applyTime,#{datePattern}) as 'recordDate',
+		        SUM(m.signAmount) as 'totalSignAmt',
+				COUNT(DISTINCT m.applyId) as 'totalSignCount' 
+			FROM t_treat_info_history m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode 
+			WHERE   <![CDATA[m.applyTime>= #{startRecordDate} AND m.applyTime<= #{endRecordDate}]]> AND m.`status` in(1,2)
+					<if test="teamNo != null and teamNo != ''">
+				 	  	AND t.teamNo =#{teamNo}
+				 	</if>
+			GROUP BY DATE_FORMAT(m.applyTime,#{datePattern})
+		) t7 ON t7.recordDate = t.recordDate
+		LEFT JOIN (<![CDATA[
+			SELECT 
+				DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
+				COUNT(n.applyId) as 'netStoreCount',
+				COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+				COUNT(CASE WHEN n.custLabel>=3 THEN 1 END) as 'useCount'
+			FROM t_borrow_store_apply n LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode 
+			]]>
+			WHERE  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> 
+					<if test="teamNo != null and teamNo != ''">
+				 	  	AND t.teamNo =#{teamNo}
+				 	</if>
+			GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+		) t8 ON t8.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT
+			   DATE_FORMAT(t.applyTime,#{datePattern}) as 'recordDate',
+			   COUNT(t.applyId) AS 'sucRetCount',
+			   SUM(t.feeAmount) AS 'sucRetAmount'
+		   FROM
+		   	t_treat_success_history t JOIN t_borrow_apply n ON t.applyId = n.applyId
+			LEFT JOIN t_borrow_channel t1 ON n.channelCode = t1.channelCode 
+		   WHERE
+		   	<![CDATA[t.applyTime>= #{startRecordDate} AND t.applyTime<= #{endRecordDate}]]>
+		   	AND t.`status`=2
+		   	<if test="teamNo != null and teamNo != ''">
+		 	  	AND t1.teamNo =#{teamNo}
+		 	</if>
+		   	GROUP BY DATE_FORMAT(t.applyTime,#{datePattern})
+		) t9 ON t9.recordDate = t.recordDate
+		ORDER BY t.recordDate DESC
+    </select>
+    
+    <select id="totalApplyTimeCount" resultType="int" parameterType="map">
+     SELECT COUNT(1) FROM (
+    	SELECT
+				COUNT(n.applyId) as 'applyCount'
+			FROM
+			t_borrow_apply n LEFT JOIN t_borrow_channel t
+			ON n.channelCode = t.channelCode
+			WHERE
+			   <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+			  	<if test="teamNo != null and teamNo != ''">
+			  		AND	t.teamNo = #{teamNo}
+			  	</if>
+			  GROUP BY DATE_FORMAT(n.applyTime,#{datePattern})
+			 ) as tab1
+    </select>
+    
+     <select id="totalApplyTimeSumRange" resultType="map" parameterType="map">
+		SELECT 
+			  t.recordDate,
+			  t.applyCount,
+			  t.seniorCount,
+			  IFNULL(t1.amount,0) as 'amount',
+			  ROUND(t1.amount/t.applyCount,2) as 'costCB',
+			  IFNULL(t2.saleCount,0) as 'saleCount',
+			  IFNULL(t3.sucSaleCount,0) as 'sucSaleCount',
+			  IFNULL(t4.failSaleCount,0) as 'failSaleCount',
+			  ROUND(IFNULL(t3.sucSaleAmt,0),2) as 'sucSaleAmt',
+			  ROUND(IFNULL(t4.failSaleAmt,0),2) as 'failSaleAmt',
+			 (ROUND(IFNULL(t3.sucSaleAmt,0),2)- ROUND(IFNULL(t4.failSaleAmt,0),2)) as 'realSaleAmt',
+			 IFNULL(t5.sucRetCount,0) as 'sucRetCount' ,
+			 IFNULL(t5.sucRetAmount,0) as 'sucRetAmount',
+			 IFNULL(t6.sucBookCount,0) as 'sucBookCount' ,
+			 IFNULL(t7.totalSignCount,0) as 'totalSignCount',
+			 IFNULL(t7.totalSignAmt,0) as 'totalSignAmt',
+			 IFNULL(t8.netStoreCount,0) as 'netStoreCount' ,
+			 IFNULL(t8.dealStoreCount,0) as 'dealStoreCount',
+			 IFNULL(t8.useCount,0) as 'useCount' ,
+			 CONCAT(ROUND((IFNULL(IFNULL(t8.useCount, 0) / IFNULL(t8.netStoreCount, 1),0) * 100),2),'%') AS 'useUv',
+			 IFNULL(t9.sucRetCount,0) as 'sucRetCount',
+			 IFNULL(t9.sucRetAmount,0) as 'sucRetAmount'
+		 FROM 
+		(
+			SELECT
+			  	CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				COUNT(n.applyId) as 'applyCount',
+				COUNT(CASE WHEN n.applyType=1 OR n.applyType =6 THEN 1 END) as 'seniorCount'
+			FROM
+			t_borrow_apply n LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+			WHERE
+			  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+			  <if test="teamNo != null and teamNo != ''">
+			  	AND t.teamNo = #{teamNo}
+			  </if>
+		) as t
+		LEFT JOIN
+		(
+			SELECT 
+				CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				SUM(n.amount) as 'amount'
+			FROM t_borrow_channel_cost n JOIN t_borrow_channel t ON n.channelCode = t.channelCode
+		    WHERE
+		          <![CDATA[n.recordDate>= #{startRecordDate}  AND n.recordDate<= #{endRecordDate}]]>
+					<if test="teamNo != null and teamNo != ''">
+						AND t.teamNo = #{teamNo}
+					</if>
+		) as t1 ON  t.recordDate= t1.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+				   CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				   COUNT(DISTINCT n.applyId) as 'saleCount'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=1
+				<if test="teamNo != null and teamNo != ''">
+					AND t1.teamNo = #{teamNo}
+				</if>
+		) as t2 ON  t.recordDate= t2.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+				    CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+					COUNT(DISTINCT n.applyId) as 'sucSaleCount',
+					SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=2
+			 	  <if test="teamNo != null and teamNo != ''">
+					AND t1.teamNo = #{teamNo}
+				</if>
+		) as t3 ON  t.recordDate= t3.recordDate
+		LEFT JOIN
+		(
+			SELECT  
+			    CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				COUNT(DISTINCT n.applyId) as 'failSaleCount',
+				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
+			FROM t_borrow_sel_count n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE 
+			 	  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.handleType=4
+					<if test="teamNo != null and teamNo != ''">
+						AND t1.teamNo = #{teamNo}
+					</if>
+		) as t4 ON  t.recordDate= t4.recordDate
+		LEFT JOIN
+		(
+			SELECT 
+				CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				COUNT(n.recordId) as 'sucRetCount' ,
+				IFNULL(SUM(n.feeAmount),0)  AS 'sucRetAmount'
+			FROM t_treat_success_history n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE   <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.`status`=2	
+					<if test="teamNo != null and teamNo != ''">
+						AND t1.teamNo = #{teamNo}
+					</if>
+		) as t5 ON  t.recordDate= t5.recordDate
+		LEFT JOIN 
+		(
+			SELECT 
+				CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+				COUNT(DISTINCT m.applyId) as 'sucBookCount' 
+			FROM t_treat_visit_detail m JOIN t_borrow_apply n ON n.applyId = m.applyId 
+			LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode 
+			WHERE  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> 
+					<if test="teamNo != null and teamNo != ''">
+						AND t.teamNo = #{teamNo}
+					</if>
+		) t6 ON t6.recordDate = t.recordDate
+		LEFT JOIN
+		 (
+			SELECT 
+				CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+		        SUM(n.signAmount) as 'totalSignAmt',
+				COUNT(DISTINCT n.applyId) as 'totalSignCount' 
+			FROM t_treat_info_history n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode
+			WHERE   <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> AND n.`status` in(1,2)
+					<if test="teamNo != null and teamNo != ''">
+						AND t1.teamNo = #{teamNo}
+					</if>
+		) t7 ON t7.recordDate = t.recordDate
+		LEFT JOIN (<![CDATA[
+		SELECT 
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+			COUNT(n.applyId) as 'netStoreCount',
+			COUNT(CASE WHEN n.orderStatus !=-1 OR n.orderType =2 THEN 1 END) as 'dealStoreCount',
+			COUNT(CASE WHEN n.custLabel>=3 THEN 1 END) as 'useCount'
+		FROM t_borrow_store_apply n  LEFT JOIN t_borrow_channel t ON n.channelCode = t.channelCode 
+		]]>
+		WHERE  <![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]> 
+				<if test="teamNo != null and teamNo != ''">
+			 	  	AND t.teamNo =#{teamNo}
+			 	</if>
+		) t8 ON t8.recordDate = t.recordDate
+		LEFT JOIN (
+			SELECT
+			   CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+			   COUNT(n.applyId) AS 'sucRetCount',
+			   SUM(n.feeAmount) AS 'sucRetAmount'
+		   FROM
+		   	t_treat_success_history n JOIN t_borrow_apply t ON n.applyId = t.applyId
+			LEFT JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+		   WHERE
+		   	<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<= #{endRecordDate}]]>
+		   	AND n.`status`=2
+		   	<if test="teamNo != null and teamNo != ''">
+		 	  	AND t1.teamNo =#{teamNo}
+		 	</if>
+		) t9 ON t9.recordDate = t.recordDate
+		order by t.recordDate DESC
+    </select>
+    
+    <!--汇总基本数据统计 -->
+	<select id="totalBase" resultType="map" parameterType="map">
+		<![CDATA[SELECT
+			#{today} as 'recordDate',
+			(SELECT COUNT(1) FROM t_borrow_apply n WHERE 
+				n.applyTime >= #{today}
+	 			AND n.applyTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'applyCount',
+			(SELECT COUNT(1) FROM t_borrow_apply n WHERE n.`applyType` in(1,6) 
+				AND n.applyTime >= #{today}
+	 			AND n.applyTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'seniorCount',
+			(SELECT COUNT(1) FROM t_borrow_apply n WHERE n.grade='F'
+			  	AND n.applyTime >= #{today}
+	 			AND n.applyTime < DATE_ADD(#{today},INTERVAL 1 day)
+			  	) as 'notFillCount',
+			0 as 'costAmount',
+	 		0 as 'browseCount',
+			(SELECT COUNT(DISTINCT n.applyId) from ${tableName} n WHERE n.handleType=0
+			 	AND n.createTime >= #{today}
+	 			AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+			 ) as 'storeCount',
+			(SELECT COUNT(DISTINCT n.applyId) from ${tableName} n WHERE n.handleType=5
+				 AND n.createTime >= #{today}
+	 		     AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+			 ) as 'storeBackCount',
+			(SELECT COUNT(1) FROM ${tableName} n WHERE n.isFeedback=1 
+				AND n.createTime >= #{today}
+	 			AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+			) as 'feedBackCount',
+			(	
+			SELECT COUNT(DISTINCT n.applyId) from ${tableName} n  
+				WHERE n.handleType = 0
+				AND n.createTime >= #{today}
+	 			AND n.createTime < DATE_ADD(#{today},INTERVAL 1 day)
+				AND n.orderType = 1
+			) as 'kfReceivedCount'
+	     FROM DUAL ]]>
+	</select>
+	
+	<!-- 风控今日统计 -->
+	<select id="queryRiskToDay" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  CURDATE() AS 'recordDate',
+		  (SELECT 
+		    COUNT(1) as notHitCount
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 2
+		  	AND n1.createTime >= CURDATE() 
+		    AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'notHitCount',
+		  (SELECT 
+		    COUNT(1) as hitLeTimesCount3
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 3
+		  	AND n1.createTime >= CURDATE() 
+		    AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'hitLeTimesCount3',
+		  (SELECT 
+		    COUNT(1) as hitMoTimesCount3
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 4
+		  	AND n1.createTime >= CURDATE() 
+		    AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'hitMoTimesCount3',
+		  (SELECT 
+		    COUNT(1) as failCount
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 5
+		  	AND n1.createTime >= CURDATE() 
+		    AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'failCount',
+		  (SELECT 
+		    COUNT(1) as totalCount
+		  FROM
+		  	t_borrow_risk_record n
+		  WHERE
+		  	n.createTime >= CURDATE()
+		    AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)) AS 'totalCount'
+		FROM
+		  DUAL]]>
+	</select>
+		<select id="queryRiskToDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM DUAL
+	</select>
+	<!-- 风控基本数据统计 -->
+	<select id="riskBase" resultType="map" parameterType="map">
+		<![CDATA[SELECT 
+		  #{today} AS 'recordDate',
+		  (SELECT 
+		    COUNT(1) as notHitCount
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 2
+		  	AND n1.createTime >= #{today} 
+		    AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)) AS 'notHitCount',
+		  (SELECT 
+		    COUNT(1) as hitLeTimesCount3
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 3
+		  	AND n1.createTime >= #{today}
+		    AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)) AS 'hitLeTimesCount3',
+		  (SELECT 
+		    COUNT(1) as hitMoTimesCount3
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 4
+		  	AND n1.createTime >= #{today}
+		    AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)) AS 'hitMoTimesCount3',
+		  (SELECT 
+		    COUNT(1) as failCount
+		  FROM
+		    t_borrow_store_apply n
+		    join t_borrow_risk_record n1
+		    ON n.applyId = n1.applyId
+		  WHERE n.muLoanStatus = 5
+		  	AND n1.createTime >= #{today} 
+		    AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)) AS 'failCount',
+		  (SELECT 
+		    COUNT(1) as totalCount
+		  FROM
+		  	t_borrow_risk_record n
+		  WHERE
+		  	n.createTime >= #{today}
+		    AND n.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)) AS 'totalCount'
+		FROM
+		  DUAL]]>
+	</select>
+	
+		<!-- 按申请时间简单实时统计（按时间和渠道） -->
+	<select id="channelSimpleByToday" resultType="map" parameterType="map">
+		SELECT
+			#{recordDate} as recordDate, 
+			tab1.channelCode as 'channelCode', 
+			tab1.channelDetail as 'channelDetail', 
+			f_get_discount_num(tab1.applyCount,tab5.percent,tab5.minTotalNum)  as applyCount,
+   			f_get_discount_num(tab2.cityApplyCount,tab5.percent,tab5.minTotalNum)  as cityApplyCount,
+			f_get_discount_num(tab1.applyCount,tab5.percent,tab5.minTotalNum) - f_get_discount_num(tab2.cityApplyCount,tab5.percent,tab5.minTotalNum) as otherApplyCount,
+            f_get_discount_num(tab3.kfReceivedCount,tab5.percent,tab5.minTotalNum)  as kfReceivedCount
+			FROM
+			(SELECT #{recordDate} as recordDate, n.channelDetail, MAX(n.channelCode) as 'channelCode', COUNT(1) as 'applyCount' 
+				FROM t_borrow_apply n JOIN t_borrow_channel_cfg n1 ON n.channelCode=n1.channelCode  
+				WHERE
+					<![CDATA[n.applyTime>=#{recordDate}  AND n.applyTime<DATE_ADD(#{recordDate}, INTERVAL 1 DAY) ]]>
+					  AND n.channelDetail !=''  GROUP BY n.channelDetail
+			  ) as tab1	
+			LEFT JOIN
+			(SELECT n.channelDetail, MAX(n.channelCode) as 'channelCode',COUNT(1) AS 'cityApplyCount' 
+				FROM
+				t_borrow_apply n LEFT JOIN t_borrow_base n1 ON n.applyId = n1.applyId 
+				JOIN t_borrow_channel_cfg n2 ON n.channelCode=n2.channelCode
+				WHERE 
+				<![CDATA[n.applyTime>=#{recordDate}  AND n.applyTime<DATE_ADD(#{recordDate}, INTERVAL 1 DAY) ]]>
+				AND FIND_IN_SET(IFNULL(n1.cityName,n.cityName),(SELECT allotCitys FROM t_base_cfg ))
+				AND IFNULL(n1.cityName,n.cityName) is NOT NULL
+				GROUP BY n.channelDetail
+			) AS tab2  
+			ON  tab1.channelDetail =tab2.channelDetail
+			LEFT JOIN
+			(SELECT n.channelDetail, MAX(n.channelCode) as 'channelCode',COUNT(1) as 'kfReceivedCount' 
+			FROM t_borrow_store_apply n JOIN t_borrow_channel_cfg n1 ON n.channelCode=n1.channelCode
+			WHERE 
+			<![CDATA[n.applyTime>=#{recordDate}  AND n.applyTime<DATE_ADD(#{recordDate}, INTERVAL 1 DAY) ]]>
+			 GROUP BY n.channelDetail) as tab3
+			ON tab1.channelDetail =tab3.channelDetail
+			JOIN t_borrow_channel_cfg tab5 ON tab1.channelCode = tab5.channelCode 
+			<where>
+		      <if test="channelCode != null and channelCode != ''">
+		  		 and tab1.channelDetail like CONCAT(#{channelCode},'%')
+		      </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[tab1.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[tab1.recordDate <= #{endRecordDate}]]>
+			 </if>
+			  <if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(tab1.channelCode,#{fixChannels})
+			 </if>
+			</where>
+		   ORDER by tab1.applyCount DESC
+	</select>
+</mapper>

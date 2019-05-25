@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SYSNOTIFY">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			notifyId,
+			status, 
+			(CASE status
+			 WHEN 1 THEN '有效'
+			 WHEN 2 THEN '无效'
+			END) as 'statusText',
+			notifyText, 
+			notifyDate,
+			isScroll,
+			(CASE isScroll
+			 WHEN 1 THEN '是'
+			 WHEN 2 THEN '否'
+			END) as 'isScrollText',
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			customerId,
+			orgId,
+			messNotifyType
+		FROM t_sys_notify
+		<where>
+			<if test="notifyId != null and notifyId != ''">
+			  	and notifyId = #{notifyId}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="notifyText != null and notifyText != ''">
+				and notifyText = #{notifyText}
+			</if>
+			<if test="notifyDate != null and notifyDate != ''">
+				and notifyDate = #{notifyDate}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="customerIds != null and customerIds != ''">
+				and (customerId = #{customerIds} or customerId = 0)
+			</if>
+			<if test="isScroll != null and isScroll != ''">
+				and isScroll = #{isScroll}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="messNotifyType != null and messNotifyType != ''">
+				and messNotifyType = #{messNotifyType}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_notify 
+		<where>
+		<if test="notifyId != null and notifyId != ''">
+		    and notifyId = #{notifyId}
+		 </if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="notifyText != null and notifyText != ''">
+			and notifyText = #{notifyText}
+		</if>
+		<if test="notifyDate != null and notifyDate != ''">
+			and notifyDate = #{notifyDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="customerIds != null and customerIds != ''">
+			and (customerId = #{customerIds} or customerId = 0)
+		</if>
+		<if test="isScroll != null and isScroll != ''">
+			and isScroll = #{isScroll}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="messNotifyType != null and messNotifyType != ''">
+			and messNotifyType = #{messNotifyType}
+		</if>
+		</where>
+	</select>
+	
+	<select id="queryShow" resultType="map" parameterType="map">
+		SELECT
+			t.notifyId,
+			t.status, 
+			(CASE t.status
+			 WHEN 1 THEN '有效'
+			 WHEN 2 THEN '无效'
+			END) as 'statusText',
+			t.isScroll,
+			(CASE t.isScroll
+			 WHEN 1 THEN '是'
+			 WHEN 2 THEN '否'
+			END) as 'isScrollText',
+			t.notifyText, 
+			t.notifyDate,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			t.customerId,
+			t.orgId,
+			t.messNotifyType,
+			IFNULL((SELECT t1.`realName` FROM t_busi_cust t1 WHERE t1.`customerId` = t.customerId),'未指定') AS 'realName',
+  			IFNULL((SELECT t2.orgName FROM t_org t2 WHERE t2.`orgId` = t.orgId),'未指定') AS 'orgName'
+		FROM t_sys_notify t
+		<where>
+		<if test="notifyId != null and notifyId != ''">
+		  	and t.notifyId = #{notifyId}
+		 </if>
+		<if test="status != null and status != ''">
+			and t.status = #{status}
+		</if>
+		<if test="isScroll != null and isScroll != ''">
+			and t.isScroll = #{isScroll}
+		</if>
+		<if test="notifyText != null and notifyText != ''">
+			and t.notifyText = #{notifyText}
+		</if>
+		<if test="notifyDate != null and notifyDate != ''">
+			and t.notifyDate = #{notifyDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			 <![CDATA[and t.notifyDate >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.notifyDate < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+		</if>
+		<if test="customerIds != null and customerIds != ''">
+			and (t.customerId = #{customerIds} or t.customerId = 0)
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="messNotifyType != null and messNotifyType != ''">
+			and t.messNotifyType = #{messNotifyType}
+		</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="queryShowCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sys_notify t
+		<where>
+		<if test="notifyId != null and notifyId != ''">
+		    and t.notifyId = #{notifyId}
+		 </if>
+		<if test="status != null and status != ''">
+			and t.status = #{status}
+		</if>
+		<if test="isScroll != null and isScroll != ''">
+			and t.isScroll = #{isScroll}
+		</if>
+		<if test="notifyText != null and notifyText != ''">
+			and t.notifyText = #{notifyText}
+		</if>
+		<if test="notifyDate != null and notifyDate != ''">
+			and t.notifyDate = #{notifyDate}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and t.createTime = #{createTime}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			 <![CDATA[and t.notifyDate >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[and t.notifyDate < DATE_ADD(#{endDate},INTERVAL 1 day)]]>
+		</if>
+		<if test="customerIds != null and customerIds != ''">
+			and (t.customerId = #{customerIds} or t.customerId = 0)
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="messNotifyType != null and messNotifyType != ''">
+			and t.messNotifyType = #{messNotifyType}
+		</if>
+		 </where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="notifyId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_sys_notify (
+			status,
+			isScroll,
+			notifyText,
+			notifyDate,
+			createTime,
+			customerId,
+			orgId,
+			messNotifyType
+		)
+		VALUES ( 
+			<if test="status !=null ">
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="status ==null ">
+			1 ,
+			</if>
+			<if test="isScroll !=null ">
+			#{isScroll, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isScroll ==null ">
+			1 ,
+			</if>
+			#{notifyText, jdbcType=VARCHAR}, 
+			#{notifyDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			<if test="customerId !=null and customerId != ''">
+			#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="customerId ==null or customerId == ''">
+			0,
+			</if>
+			<if test="orgId !=null and orgId != ''">
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="orgId ==null or orgId == ''">
+			0,
+			</if>
+			<if test="messNotifyType !=null">
+			#{messNotifyType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="messNotifyType ==null">
+			1
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sys_notify 
+		<where> 
+			notifyId = #{notifyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sys_notify  
+		<set>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isScroll != null">
+				isScroll = #{isScroll, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notifyText != null">
+				notifyText = #{notifyText, jdbcType=VARCHAR},  
+			</if>
+			<if test="notifyDate != null">
+				notifyDate = #{notifyDate, jdbcType=DATE,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			</if>
+			<if test="customerId !=null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="orgId !=null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+			</if>
+			<if test="messNotifyType !=null">
+				messNotifyType = #{messNotifyType, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  notifyId = #{notifyId}
+		</where>
+	</update>
+	
+	<delete id="deleteMoreNotify" parameterType="map">
+		DELETE FROM t_sys_notify 
+		<where>
+			<if test="messNotifyType != null and messNotifyType != ''">
+			    and messNotifyType = #{messNotifyType}
+			 </if>
+			<if test="createTime != null and createTime != ''">
+				 <![CDATA[and createTime <= DATE_SUB(#{createTime},INTERVAL #{subDay} day)]]>
+			</if>
+		</where>
+	</delete>
+</mapper>

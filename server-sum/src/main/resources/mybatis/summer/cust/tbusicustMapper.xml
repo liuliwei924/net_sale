@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMBUSICUST">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			headImgUrl,
+			qrcodeImgUrl,
+			telephone,
+			orgCode,
+			realName,
+			province,
+			cityName,
+			company,
+			vipGrade,
+			status,
+			orgId,
+			roleType,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime",
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime",
+			employeeNo,
+			queryStatus
+		FROM t_busi_cust
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  	and customerId = #{customerId}
+			 </if>
+			<if test="roleType != null and roleType != ''">
+				and roleType = #{roleType}
+			</if>
+			<if test="roleTypeIn != null and roleTypeIn != ''">
+				and roleType in (${roleTypeIn})
+			</if>
+			<if test="headImgUrl != null and headImgUrl != ''">
+				and headImgUrl = #{headImgUrl}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="realName != null and realName != ''">
+				and realName = #{realName}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="employeeNo != null and employeeNo != ''">
+				and employeeNo = #{employeeNo}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and queryStatus = #{queryStatus}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_busi_cust 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+	 	<if test="roleType != null and roleType != ''">
+			and roleType = #{roleType}
+		</if>
+		<if test="headImgUrl != null and headImgUrl != ''">
+			and headImgUrl = #{headImgUrl}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="realName != null and realName != ''">
+			and realName = #{realName}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="employeeNo != null and employeeNo != ''">
+			and employeeNo = #{employeeNo}
+		</if>
+		<if test="queryStatus != null and queryStatus != ''">
+			and queryStatus = #{queryStatus}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_busi_cust (
+			customerId,
+			headImgUrl,
+			qrcodeImgUrl,
+			telephone,
+			orgCode,
+			realName,
+			province,
+			cityName,
+			company,
+			vipGrade,
+			status,
+			roleType,
+			orgId,
+			createTime,
+			updateTime,
+			employeeNo,
+			queryStatus
+		)
+		VALUES ( 
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{headImgUrl, jdbcType=VARCHAR}, 
+			#{qrcodeImgUrl, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			#{orgCode, jdbcType=VARCHAR}, 
+			#{realName, jdbcType=VARCHAR}, 
+			#{province, jdbcType=VARCHAR},
+			#{cityName, jdbcType=VARCHAR}, 
+			#{company, jdbcType=VARCHAR}, 
+			#{vipGrade, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="roleType !=null ">
+			#{roleType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="roleType ==null ">
+			0 ,
+			</if>
+			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{employeeNo, jdbcType=VARCHAR}, 
+			<if test="queryStatus !=null ">
+			#{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler} 
+			</if>
+			<if test="queryStatus ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_busi_cust 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_busi_cust  
+		<set>
+			<if test="vipGrade != null">
+				vipGrade = #{vipGrade, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="headImgUrl != null">
+				headImgUrl = #{headImgUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="qrcodeImgUrl != null">
+				qrcodeImgUrl = #{qrcodeImgUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="roleType != null">
+				roleType = #{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="telephone != null and telephone !=''">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgId != null and orgId !=''">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="realName != null and realName !=''">
+				realName = #{realName, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null and cityName !=''">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="company != null">
+				company = #{company, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			</if>
+			<if test="groupName != null">
+				groupName = #{groupName, jdbcType=VARCHAR},  
+			</if>
+			<if test="teamName != null">
+				teamName = #{teamName, jdbcType=VARCHAR},  
+			</if>
+			<if test="userImage !=null">
+		        headImgUrl = #{userImage, jdbcType=VARCHAR},
+			</if>
+			<if test="employeeNo !=null">
+		        employeeNo = #{employeeNo, jdbcType=VARCHAR},
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	<update id="updateByCustId" parameterType="map">
+		UPDATE t_busi_cust  
+		<set>			
+			<if test="roleType != null">
+				roleType = #{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+</mapper>

@@ -1,0 +1,216 @@
+package org.xxjr.cust.annual;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.DateUtil;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+@Lazy
+@Service
+public class MeetingWinnerService extends BaseService {
+	private static final String NAMESPACE = "MEETINGWINNER";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryDtl(AppParam params) {
+		return super.query(params, NAMESPACE, "queryDtl");
+	}
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryShow(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryShow", "queryShowCount");
+	}
+
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryWinList(AppParam params) {
+		return super.query(params, NAMESPACE, "queryShow");
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * 批量修改
+	 * @param params
+	 * @return
+	 */
+	public AppResult batchUpdate(AppParam params) {
+		if(StringUtils.isEmpty(params.getAttr("userIds"))){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		String[] userId = params.getAttr("userIds").toString().split(",");
+		for (int i = 0; i < userId.length; i++) {
+			params.addAttr("userId", userId[i]);
+			this.update(params);
+		}
+		return new AppResult();
+	}
+
+	
+	/**
+	 * 摇奖抽奖
+	 * @param params
+	 * @return
+	 */
+	public AppResult joinShake(AppParam params) {
+		Object roundId = params.getAttr("roundId");
+		Object userId = params.getAttr("userId");
+		if(StringUtils.isEmpty(roundId) ||
+				StringUtils.isEmpty(userId)){
+			throw new SysException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		// 剩余奖项减1
+		AppParam sumarySub = new AppParam();
+		sumarySub.setService("meetingYaoSummaryService");
+		sumarySub.setMethod("subtractLeftCount");
+		sumarySub.addAttr("roundId", roundId);
+		sumarySub.addAttr("recordDate", DateUtil.toStringByParttern(new Date(), DateUtil.DATE_PATTERN_YYYY_MM_DD));
+		AppResult subResult = SoaManager.getInstance().invoke(sumarySub);
+		AppResult result =  new AppResult();
+		if((int)subResult.getAttr(DuoduoConstant.DAO_Update_SIZE) <= 0){
+			result.setSuccess(Boolean.FALSE);
+			result.putAttr("windClose", "windClose");
+			return result;
+		}
+		//保存中奖纪录
+		AppParam winParam = new AppParam();
+		winParam.addAttr("roundId", roundId);
+		winParam.addAttr("userId", userId);
+		winParam.addAttr("status", "0");
+		this.insert(winParam);
+		//修改用户中奖状态
+		AppParam custParam = new AppParam("meetingUserService","update");
+		custParam.addAttr("userId", userId);
+		custParam.addAttr("status", "2");
+		SoaManager.getInstance().invoke(custParam);
+		
+		result.setSuccess(Boolean.TRUE);
+		return result;
+	}
+	
+	/**
+	 * delete
+	 * @param params
+	 * @return
+	 */
+	public AppResult delete(AppParam params) {
+		String ids = (String) params.getAttr("ids");
+		AppResult  result = null;
+		if (!StringUtils.isEmpty(ids)) {
+			for (String id : ids.split(",")) {
+				AppParam param = new AppParam();
+				param.addAttr("userId", id);
+				
+				result = super.delete(param, NAMESPACE);
+			}
+		} else if (!StringUtils.isEmpty(params.getAttr("userId"))) {
+			result = super.delete(params, NAMESPACE);
+		} else {
+			throw new AppException(DuoduoError.DELETE_NO_ID);
+		}
+		return result;
+	}
+	
+	/**
+	 * 插入第几轮的中奖人数
+	 * @param params
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public AppResult batchInsertMeetinWinner(AppParam params) {
+		AppResult result = new AppResult();
+		List<Map<String,Object>> list = (List<Map<String, Object>>) params.getAttr("list");
+		int size = super.getDao().batchInsert(NAMESPACE, "batchInsertMeetinWinner", list, params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 查询每轮中奖用户
+	 */
+	public AppResult queryWinUser(AppParam params) {
+		return super.query(params, NAMESPACE, "queryWinUser");
+	}
+	/**
+	 * 查询每轮中奖用户数
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryUserWinCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryUserWinCount", params.getAttr(), params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+}

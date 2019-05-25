@@ -1,0 +1,29 @@
+package org.xxjr.sys.util;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.RemoteInvoke;
+
+public class CreditBrowseRecordUtil {
+	
+	
+	/***
+	 * 添加贷款机构操作记录
+	 * @param params
+	 * @return
+	 */
+	public static AppResult addCardBorRecord(AppParam params){
+		AppResult result = new AppResult();
+		
+		params.setService("creditBrowseRecordService");
+		params.setMethod("insert");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_sys));
+		RemoteInvoke.getInstance().call(params);
+		return result;
+	}
+	
+}

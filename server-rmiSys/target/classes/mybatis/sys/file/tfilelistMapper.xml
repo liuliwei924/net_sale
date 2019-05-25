@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="FILELIST">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			id ,
+			groupCode ,  
+			fileId ,  
+			imageUrl ,  
+			oldName ,  
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime"
+		FROM t_file_list
+		<where>
+			<if test="id != null and id != ''">
+			  and id = #{id}
+			 </if>
+			<if test="groupCode != null and groupCode != ''">
+				and groupCode = #{groupCode}
+			</if>
+			<if test="fileId != null and fileId != ''">
+				and fileId = #{fileId}
+			</if>
+			<if test="imageUrl != null and imageUrl != ''">
+				and imageUrl = #{imageUrl}
+			</if>
+			<if test="oldName != null and oldName != ''">
+				and oldName = #{oldName}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_file_list 
+		<where>
+		<if test="id != null and id != ''">
+		    and id = #{id}
+		 </if>
+		<if test="groupCode != null and groupCode != ''">
+			and groupCode = #{groupCode}
+		</if>
+		<if test="fileId != null and fileId != ''">
+			and fileId = #{fileId}
+		</if>
+		<if test="imageUrl != null and imageUrl != ''">
+			and imageUrl = #{imageUrl}
+		</if>
+		<if test="oldName != null and oldName != ''">
+			and oldName = #{oldName}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="id">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_file_list (
+			groupCode,
+			fileId,
+			imageUrl,
+			oldName,
+			createTime
+		)
+		VALUES ( 
+			#{groupCode, jdbcType=VARCHAR}, 
+			#{fileId, jdbcType=VARCHAR}, 
+			#{imageUrl, jdbcType=VARCHAR}, 
+			#{oldName, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_file_list 
+		<where> 
+			id = #{id}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_file_list  
+		<set>
+			<if test="groupCode != null">
+				groupCode = #{groupCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="fileId != null">
+				fileId = #{fileId, jdbcType=VARCHAR},  
+			</if>
+			<if test="imageUrl != null">
+				imageUrl = #{imageUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="oldName != null">
+				oldName = #{oldName, jdbcType=VARCHAR},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  id = #{id}
+		</where>
+	</update>
+</mapper>

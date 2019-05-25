@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BORROWHOUSE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId,
+			houseVal, 
+			houseYears, 
+			housePlace, 
+			houseMortgage, 
+			houseLoans, 
+			houseCard,
+			houseMonthPay,
+			myLoanHouse,
+			houseMonth
+		FROM T_BORROW_HOUSE
+		<where>
+			<if test="applyId != null and applyId != ''">
+			  and applyId = #{applyId}
+			 </if>
+			<if test="houseVal != null and houseVal != ''">
+				and houseVal = #{houseVal}
+			</if>
+			<if test="houseYears != null and houseYears != ''">
+				and houseYears = #{houseYears}
+			</if>
+			<if test="housePlace != null and housePlace != ''">
+				and housePlace = #{housePlace}
+			</if>
+			<if test="houseMortgage != null and houseMortgage != ''">
+				and houseMortgage = #{houseMortgage}
+			</if>
+			<if test="houseLoans != null and houseLoans != ''">
+				and houseLoans = #{houseLoans}
+			</if>
+			<if test="houseCard != null and houseCard != ''">
+				and houseCard = #{houseCard}
+			</if>
+			<if test="houseMonthPay != null and houseMonthPay != ''">
+				and houseMonthPay = #{houseMonthPay}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryText" resultType="map" parameterType="map">
+		SELECT
+			houseVal,
+			houseMonthPay, 
+			(CASE
+				WHEN houseYears =1 THEN '10年以内'
+				WHEN houseYears =2 THEN '10~20年 '
+				WHEN houseYears =3 THEN '20年以上  '
+				ELSE '未知'
+			END) as 'houseYearsText',
+			(CASE
+				WHEN housePlace =1 THEN '本地房'
+				WHEN housePlace =2 THEN '外地房 '
+				ELSE '未知'
+			END) as 'housePlaceText',
+			(CASE
+				WHEN houseMortgage =1 THEN '是,已被抵押/按揭中'
+				WHEN houseMortgage =2 THEN '否,未被抵押'
+				ELSE '未知'
+			END) as 'mortgageText',
+			(CASE
+				WHEN houseLoans =1 THEN '没申请过贷款'
+				WHEN houseLoans =2 THEN '少于3次'
+				WHEN houseLoans =3 THEN '3~5次'
+				WHEN houseLoans =4 THEN '6~11次'
+				WHEN houseLoans =5 THEN '12次以上'
+				ELSE '未知'
+			END) as 'houseLoansText',
+			(CASE
+				WHEN houseCard =1 THEN '无房产证'
+				WHEN houseCard =2 THEN '是商品房,暂未拿到房产证'
+				WHEN houseCard =3 THEN '是,能提供房产证'
+				ELSE '未知'
+			END) as 'houseCardText' 
+		FROM T_BORROW_HOUSE
+		WHERE applyId=#{applyId}
+	</select>
+	
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM T_BORROW_HOUSE 
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and applyId = #{applyId}
+		 </if>
+		<if test="houseVal != null and houseVal != ''">
+			and houseVal = #{houseVal}
+		</if>
+		<if test="houseYears != null and houseYears != ''">
+			and houseYears = #{houseYears}
+		</if>
+		<if test="housePlace != null and housePlace != ''">
+			and housePlace = #{housePlace}
+		</if>
+		<if test="houseMortgage != null and houseMortgage != ''">
+			and houseMortgage = #{houseMortgage}
+		</if>
+		<if test="houseLoans != null and houseLoans != ''">
+			and houseLoans = #{houseLoans}
+		</if>
+		<if test="houseCard != null and houseCard != ''">
+			and houseCard = #{houseCard}
+		</if>
+		<if test="houseMonthPay != null and houseMonthPay != ''">
+				and houseMonthPay = #{houseMonthPay}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO T_BORROW_HOUSE (
+			applyId,
+			houseVal,
+			houseYears,
+			housePlace,
+			houseMortgage,
+			houseLoans,
+			houseCard,
+			houseMonthPay,
+			myLoanHouse,
+			houseMonth
+		)
+		VALUES ( 
+		  #{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			<if test="houseVal !=null ">
+			#{houseVal, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseVal ==null ">
+			0.00 ,
+			</if>
+			<if test="houseYears !=null ">
+			#{houseYears, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseYears ==null ">
+			0 ,
+			</if>
+			<if test="housePlace !=null ">
+			#{housePlace, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="housePlace ==null ">
+			1 ,
+			</if>
+			<if test="houseMortgage !=null ">
+			#{houseMortgage, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseMortgage ==null ">
+			0 ,
+			</if>
+			<if test="houseLoans !=null ">
+			#{houseLoans, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="houseLoans ==null ">
+			0 ,
+			</if>
+			<if test="houseCard !=null ">
+			#{houseCard, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="houseCard ==null ">
+			0, 
+			</if>
+			<if test="houseMonthPay !=null ">
+			#{houseMonthPay, jdbcType=NUMERIC,typeHandler=NumberHandler},
+			</if>
+			<if test="houseMonthPay ==null ">
+			0.00,
+			</if>
+			<if test="myLoanHouse !=null ">
+			#{myLoanHouse, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="myLoanHouse ==null ">
+			0 ,
+			</if>
+			<if test="houseMonth !=null ">
+			#{houseMonth, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="houseMonth ==null ">
+			0
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM T_BORROW_HOUSE 
+		<where> 
+			applyId = #{applyId}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE T_BORROW_HOUSE  
+		<set>
+			<if test="houseVal != null">
+				houseVal = #{houseVal, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseYears != null">
+				houseYears = #{houseYears, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="housePlace != null">
+				housePlace = #{housePlace, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseMortgage != null">
+				houseMortgage = #{houseMortgage, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseLoans != null">
+				houseLoans = #{houseLoans, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseCard != null">
+				houseCard = #{houseCard, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="myLoanHouse != null">
+				myLoanHouse = #{myLoanHouse, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseMonth != null">
+				houseMonth = #{houseMonth, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="houseMonthPay !=null ">
+				houseMonthPay = #{houseMonthPay, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  applyId = #{applyId}
+		</where>
+	</update>
+</mapper>

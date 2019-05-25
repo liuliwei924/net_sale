@@ -1,0 +1,46 @@
+package org.xxjr.job.listener.busi;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.util.LogerUtil;
+import org.ddq.job.core.BaseExecteJob;
+import org.ddq.job.util.JobConstant;
+import org.ddq.job.util.JobUtil;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Component;
+import org.xxjr.sys.util.ServiceKey;
+
+/**
+ * 自动解锁锁定五分钟以上的单
+ * 
+ */
+@Lazy
+@Component
+public class AutoUnlockDaiBrorrowJob implements BaseExecteJob {
+	private static Logger log = LogManager.getLogger(AutoGetKaniuJob.class);
+	
+	public AppResult executeJob(AppParam param){
+		LogerUtil.log("AutoUpdataDaiBroLock>>>>>>>>>>>>>>>>>>>>>>>start");
+		AppResult result = new AppResult();
+		
+		try{
+			Object processId = param.getAttr(JobConstant.KEY_processId);
+			AppParam unlockParam = new AppParam("daiBorrowExtService","clearLock");
+			unlockParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi));
+			unlockParam.addAttr("status", "0" );
+			result = RemoteInvoke.getInstance().call(unlockParam);
+			JobUtil.addProcessExecute(processId, "AutoUpdataDaiBroLock 成功解锁了"+ result.getAttr(DuoduoConstant.DAO_Update_SIZE) + "条记录");
+			LogerUtil.log("AutoUpdataDaiBroLock>>>>>>>>>>>>>>>>>>>>end");
+		}catch(Exception e){
+			log.error("AutoUpdataDaiBroLock:",e);
+			result.setSuccess(false);
+			result.setMessage(e.getMessage());
+		}
+		return result;
+	}
+}

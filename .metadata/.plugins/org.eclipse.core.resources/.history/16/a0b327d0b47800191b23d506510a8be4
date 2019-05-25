@@ -1,0 +1,98 @@
+package org.xxjr.sys.util;
+
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.StringUtil;
+import org.ddq.zk.service.RemoteInvoke;
+
+
+
+/***
+ * 系统服务 关健字
+ * @author qinxcb
+ *
+ */
+public class ServiceKey {
+
+	/**业务服务相关*/
+	public static final String Key_busi="busi";
+	/**系统服务相关*/
+	public static final String Key_sys="sys";
+	/**客户信息相关*/
+	public static final String Key_cust="cust";
+	/**资讯，微站，问答相关*/
+	public static final String Key_zx="zx";
+	/**工具，评估相关*/
+	public static final String Key_tools="tools";
+	/**微信相关服务*/
+	public static final String Key_wx="wx";
+	/**商店相关*/
+	public static final String Key_sho="shop";
+	/**财务系统相关*/
+	public static final String Key_col="col";
+	/**房地产系统相关*/
+	public static final String Key_fang="fang";
+	/**客户关系系统相关*/
+	public static final String Key_crmsys="crmsys";
+	/**扩展业务服务相关*/
+	public static final String Key_busi_in="busiIn";
+	/**统计服务服务相关*/
+	public static final String Key_sum="summer";
+	/**开发平台服务相关*/
+	public static final String Key_open="open";
+	/**小小星舰服务*/
+	public static final String Key_XJ="xj";
+	/**日志服务*/
+	public static final String Key_log="log";
+	/**马甲包服务*/
+	public static final String Key_mjb="mjb";
+	
+	
+	/**
+	 * 用事务调用
+	 * @param params
+	 * @param rimKey
+	 */
+	public static AppResult doCall(AppParam params, String rimKey){
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + rimKey));
+		
+		String service = StringUtil.getString(params.getService());
+		AppResult result = null;
+		
+		if (SpringAppContext.getBean(service) == null) {
+			result = RemoteInvoke.getInstance().call(params);
+		}else{
+			result = SoaManager.getInstance().invoke(params);
+		}
+		
+		return result ;
+		
+	}
+	
+	/**无事务调用
+	 * 
+	 * @param params
+	 * @param rimKey
+	 */
+	public static AppResult doCallNoTx(AppParam params, String rimKey){
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + rimKey));
+		
+		String service = StringUtil.getString(params.getService());
+		AppResult result = null;
+		
+		if (SpringAppContext.getBean(service) == null) {
+			result = RemoteInvoke.getInstance().callNoTx(params);
+		}else{
+			result = SoaManager.getInstance().callNoTx(params);
+		}
+		
+		return result ;
+		
+	}
+}

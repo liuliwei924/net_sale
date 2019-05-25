@@ -1,0 +1,499 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="BUSICUST">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			customerId,
+			headImgUrl,
+			roleType,
+			qrcodeImgUrl,
+			telephone, 
+			province, 
+			cityName, 
+			company, 
+			realName, 
+			vipGrade, 
+			orgId, 
+			orgCode, 
+			status, 
+			robNum, 
+			borrowNum, 
+			zixunNum, 
+			refererNum, 
+			dayRobNum, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as "createTime",
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime",
+			cardStatus, 
+			identifyStatus,
+			groupName, 
+			teamName, 
+			loginStatus,
+			employeeNo,
+			queryStatus
+		FROM t_busi_cust
+		<where>
+			<if test="customerId != null and customerId != ''">
+			  and customerId = #{customerId}
+			 </if>
+			<if test="headImgUrl != null and headImgUrl != ''">
+				and headImgUrl = #{headImgUrl}
+			</if>
+			<if test="roleType != null and roleType != ''">
+				and roleType = #{roleType}
+			</if>
+			<if test="qrcodeImgUrl != null and qrcodeImgUrl != ''">
+				and qrcodeImgUrl = #{qrcodeImgUrl}
+			</if>
+			<if test="telephone != null and telephone != ''">
+				and telephone = #{telephone}
+			</if>
+			<if test="province != null and province != ''">
+				and province = #{province}
+			</if>
+			<if test="cityName != null and cityName != ''">
+				and cityName = #{cityName}
+			</if>
+			<if test="company != null and company != ''">
+				and company = #{company}
+			</if>
+			<if test="realName != null and realName != ''">
+				and realName = #{realName}
+			</if>
+			<if test="vipGrade != null and vipGrade != ''">
+				and vipGrade = #{vipGrade}
+			</if>
+			<if test="orgId != null and orgId != ''">
+				and orgId = #{orgId}
+			</if>
+			<if test="orgCode != null and orgCode != ''">
+				and orgCode = #{orgCode}
+			</if>
+			<if test="status != null and status != ''">
+				and status = #{status}
+			</if>
+			<if test="robNum != null and robNum != ''">
+				and robNum = #{robNum}
+			</if>
+			<if test="borrowNum != null and borrowNum != ''">
+				and borrowNum = #{borrowNum}
+			</if>
+			<if test="zixunNum != null and zixunNum != ''">
+				and zixunNum = #{zixunNum}
+			</if>
+			<if test="refererNum != null and refererNum != ''">
+				and refererNum = #{refererNum}
+			</if>
+			<if test="dayRobNum != null and dayRobNum != ''">
+				and dayRobNum = #{dayRobNum}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+			<if test="createTime != null and createTime != ''">
+				and createTime = #{createTime}
+			</if>
+			<if test="cardStatus != null and cardStatus != ''">
+				and cardStatus = #{cardStatus}
+			</if>
+			<if test="identifyStatus != null and identifyStatus != ''">
+				and identifyStatus = #{identifyStatus}
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and teamName = #{teamName}
+			</if>
+			<if test="loginStatus != null and loginStatus != ''">
+				and loginStatus = #{loginStatus}
+			</if>
+			<if test="roleTypeIn != null and roleTypeIn != ''">
+				and roleType in(${roleTypeIn})
+			</if>
+			<if test="employeeNo != null and employeeNo != ''">
+				and employeeNo = #{employeeNo}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and queryStatus = #{queryStatus}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_busi_cust 
+		<where>
+		<if test="customerId != null and customerId != ''">
+		    and customerId = #{customerId}
+		 </if>
+		<if test="headImgUrl != null and headImgUrl != ''">
+			and headImgUrl = #{headImgUrl}
+		</if>
+		<if test="roleType != null and roleType != ''">
+			and roleType = #{roleType}
+		</if>
+		<if test="qrcodeImgUrl != null and qrcodeImgUrl != ''">
+			and qrcodeImgUrl = #{qrcodeImgUrl}
+		</if>
+		<if test="telephone != null and telephone != ''">
+			and telephone = #{telephone}
+		</if>
+		<if test="province != null and province != ''">
+			and province = #{province}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="company != null and company != ''">
+			and company = #{company}
+		</if>
+		<if test="realName != null and realName != ''">
+			and realName = #{realName}
+		</if>
+		<if test="vipGrade != null and vipGrade != ''">
+			and vipGrade = #{vipGrade}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+		<if test="orgCode != null and orgCode != ''">
+			and orgCode = #{orgCode}
+		</if>
+		<if test="status != null and status != ''">
+			and status = #{status}
+		</if>
+		<if test="robNum != null and robNum != ''">
+			and robNum = #{robNum}
+		</if>
+		<if test="borrowNum != null and borrowNum != ''">
+			and borrowNum = #{borrowNum}
+		</if>
+		<if test="zixunNum != null and zixunNum != ''">
+			and zixunNum = #{zixunNum}
+		</if>
+		<if test="refererNum != null and refererNum != ''">
+			and refererNum = #{refererNum}
+		</if>
+		<if test="dayRobNum != null and dayRobNum != ''">
+			and dayRobNum = #{dayRobNum}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		<if test="createTime != null and createTime != ''">
+			and createTime = #{createTime}
+		</if>
+		<if test="cardStatus != null and cardStatus != ''">
+			and cardStatus = #{cardStatus}
+		</if>
+		<if test="identifyStatus != null and identifyStatus != ''">
+			and identifyStatus = #{identifyStatus}
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and teamName = #{teamName}
+		</if>
+		<if test="loginStatus != null and loginStatus != ''">
+			and loginStatus = #{loginStatus}
+		</if>
+		<if test="roleTypeIn != null and roleTypeIn != ''">
+			and roleType in(${roleTypeIn})
+		</if>
+		<if test="employeeNo != null and employeeNo != ''">
+			and employeeNo = #{employeeNo}
+		</if>
+		<if test="queryStatus != null and queryStatus != ''">
+			and queryStatus = #{queryStatus}
+		</if>
+		</where>
+	</select>
+	
+	
+	<select id="queryCust" resultType="map" parameterType="map">
+		SELECT 
+		  customerId,
+		  headImgUrl,
+		  qrcodeImgUrl,
+		  telephone,
+		  orgCode,
+		  realName,
+		  province,
+		  cityName,
+		  company,
+		  vipGrade,
+		  STATUS,
+		  orgId,
+		  roleType,
+		  DATE_FORMAT(createTime, '%Y-%m-%d %H:%i:%s') AS "createTime",
+		  DATE_FORMAT(updateTime, '%Y-%m-%d %H:%i:%s') AS "updateTime",
+		  loginStatus 
+		FROM
+		  t_busi_cust t
+		  WHERE t.`roleType` IN (1,3,6,7,8,9)
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	
+	<select id="queryCustBaseInfo" resultType="map" parameterType="map">
+		SELECT 
+		  t.customerId,
+		  t.telephone,
+		  t.orgCode,
+		  t.realName,
+		  t.loginStatus,
+		  t1.isAllotOrder
+		FROM
+		  t_busi_cust t
+		  join t_cust_level t1 ON t.customerId = t1.customerId
+		  <where>
+		  	<if test="loginStatus != null and loginStatus != ''">
+				and t.loginStatus = #{loginStatus}
+		  	</if>
+		  	<if test="customerId != null and customerId != ''">
+		    	and t.customerId = #{customerId}
+		 	</if>
+		  </where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_busi_cust (
+			customerId,
+			headImgUrl,
+			qrcodeImgUrl,
+			telephone,
+			orgCode,
+			realName,
+			province,
+			cityName,
+			company,
+			vipGrade,
+			status,
+			roleType,
+			orgId,
+			groupName,
+			teamName,
+			createTime,
+			updateTime,
+			employeeNo,
+			queryStatus
+		)
+		VALUES ( 
+			#{customerId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{headImgUrl, jdbcType=VARCHAR}, 
+			#{qrcodeImgUrl, jdbcType=VARCHAR}, 
+			#{telephone, jdbcType=VARCHAR}, 
+			#{orgCode, jdbcType=VARCHAR}, 
+			#{realName, jdbcType=VARCHAR}, 
+			#{province, jdbcType=VARCHAR},
+			#{cityName, jdbcType=VARCHAR}, 
+			#{company, jdbcType=VARCHAR}, 
+			#{vipGrade, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{status, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			<if test="roleType !=null ">
+			#{roleType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="roleType ==null ">
+			0 ,
+			</if>
+			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{groupName, jdbcType=VARCHAR}, 
+			#{teamName, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
+			#{employeeNo, jdbcType=VARCHAR}, 
+			<if test="queryStatus !=null ">
+			#{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler} 
+			</if>
+			<if test="queryStatus ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_busi_cust 
+		<where> 
+			customerId = #{customerId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_busi_cust  
+		<set>
+			<if test="headImgUrl != null">
+				headImgUrl = #{headImgUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="roleType != null">
+				roleType = #{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="qrcodeImgUrl != null">
+				qrcodeImgUrl = #{qrcodeImgUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="telephone != null">
+				telephone = #{telephone, jdbcType=VARCHAR},  
+			</if>
+			<if test="province != null">
+				province = #{province, jdbcType=VARCHAR},  
+			</if>
+			<if test="cityName != null">
+				cityName = #{cityName, jdbcType=VARCHAR},  
+			</if>
+			<if test="company != null">
+				company = #{company, jdbcType=VARCHAR},  
+			</if>
+			<if test="realName != null">
+				realName = #{realName, jdbcType=VARCHAR},  
+			</if>
+			<if test="vipGrade != null">
+				vipGrade = #{vipGrade, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgCode != null">
+				orgCode = #{orgCode, jdbcType=VARCHAR},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="robNum != null">
+				robNum = #{robNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="borrowNum != null">
+				borrowNum = #{borrowNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="zixunNum != null">
+				zixunNum = #{zixunNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="refererNum != null">
+				refererNum = #{refererNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="dayRobNum != null">
+				dayRobNum = #{dayRobNum, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="createTime != null">
+				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},  
+			</if>
+			<if test="cardStatus != null">
+				cardStatus = #{cardStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="identifyStatus != null">
+				identifyStatus = #{identifyStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="groupName != null">
+				groupName = #{groupName, jdbcType=VARCHAR},  
+			</if>
+			<if test="teamName != null">
+				teamName = #{teamName, jdbcType=VARCHAR},  
+			</if>
+			<if test="userImage !=null">
+		        headImgUrl = #{userImage, jdbcType=VARCHAR},
+			</if>
+			<if test="loginStatus != null">
+				loginStatus = #{loginStatus, jdbcType=INTEGER,typeHandler=NumberHandler},
+			</if>
+			<if test="employeeNo != null">
+		        employeeNo = #{employeeNo, jdbcType=VARCHAR},
+			</if>
+			<if test="queryStatus != null">
+				queryStatus = #{queryStatus, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<update id="updateByCustId" parameterType="map">
+		UPDATE t_busi_cust  
+		<set>			
+			<if test="roleType != null">
+				roleType = #{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="groupName != null">
+				groupName = #{groupName, jdbcType=VARCHAR},
+			</if>
+			<if test="teamName != null">
+				teamName = #{teamName, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  customerId = #{customerId}
+		</where>
+	</update>
+	
+	<!-- 查询门店所有组 -->
+	<select id="queryOrgGroupList" parameterType="map" resultType="map">
+		select 
+			groupName 
+		from t_busi_cust t 
+		WHERE t.orgId = #{orgId} 
+			and groupName != '' 
+			<if test="roleTypFlag == null">
+				and t.roleType != 0
+			</if>
+		GROUP BY groupName
+	</select>
+	<!-- 查询门店组下所有队 -->
+	<select id="queryOrgTeamList" parameterType="map" resultType="map">
+		select 
+			teamName 
+		from t_busi_cust t 
+		WHERE t.orgId = #{orgId} 
+			and t.groupName = #{groupName} 
+			and teamName != '' 
+		GROUP BY teamName
+	</select>
+	<!-- 查询门店人员信息 -->
+	<select id="queryStoreCustList" parameterType="map" resultType="map">
+		SELECT 
+			t.realName,
+			t.customerId,
+			t1.orgNo 
+		FROM t_busi_cust t 
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		<include refid="queryWhereSql"/>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<select id="queryStoreCustCount" resultType="int" parameterType="map">
+		SELECT 
+			count(*) 
+		FROM t_busi_cust t 
+		JOIN t_org t1 ON t.orgId = t1.orgId
+		<include refid="queryWhereSql"/>
+	</select>
+	<sql id="queryWhereSql">
+		<where>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="queryStatus != null and queryStatus != ''">
+				and t.queryStatus = #{queryStatus}
+			</if>
+			<if test="roleTypeIn != null and roleTypeIn != ''">
+				and t.roleType IN (${roleTypeIn})
+			</if>
+		</where>
+	</sql>
+</mapper>

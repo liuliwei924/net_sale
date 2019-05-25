@@ -1,0 +1,1647 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMUTILEXTTOTAL">
+	<sql id="sqlQueryByStore">
+  		<if test="isNet != null and isNet != ''">
+		  and t.isNet = #{isNet}
+		 </if>
+		<if test="orgId != null and orgId != ''">
+			and t.orgId = #{orgId}
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+			and t.orgId in (${userOrgs})
+		</if>
+		<if test="cityName != null and cityName != ''">
+			and t.cityName like CONCAT('%',#{cityName},'%')
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t.teamName = #{teamName}
+		</if>
+		<if test="teamNameType != null and teamNameType != ''">
+			AND t.teamName is NOT NULL AND t.teamName != ''
+		</if>
+		<if test="groupNameType != null and groupNameType != ''">
+			AND t.groupName is NOT NULL AND t.groupName != ''
+		</if>
+	</sql>
+	<sql id="sqlQuery">
+		<if test="isNet != null and isNet != ''">
+		    and t1.isNet = #{isNet}
+		</if>
+		<if test="orgId != null and orgId != ''">
+		    and t1.orgId = #{orgId}
+		</if>
+		<if test="orgIdIn != null and orgIdIn != ''">
+		    and t1.orgId in (${orgIdIn})
+		</if>
+		<if test="userOrgs != null and userOrgs != ''">
+		    and t1.orgId in (${userOrgs})
+		</if>
+		<if test="realName != null and realName != ''">
+		    and t.realName LIKE CONCAT(#{realName},'%') 
+		</if>
+		<if test="groupName != null and groupName != ''">
+			and t.groupName = #{groupName}
+		</if>
+		<if test="teamName != null and teamName != ''">
+			and t.teamName = #{teamName}
+		</if>
+		<if test="cityName != null and cityName !=''">
+		    and t1.cityName = #{cityName}
+		</if>
+    </sql>
+	<!-- 门店今日统计总计 -->
+	<select id="queryOrgToDayTotal" resultType="map" parameterType="map">
+		SELECT
+			SUM(tabSum.feedBackCount) as feedBackCountSum,
+			SUM(tabSum.recPersonCount) AS 'recPersonCountSum',
+			SUM(tabSum.dealCount) AS 'dealCountSum',
+			SUM(tabSum.receiveCount) AS 'receiveCountSum',
+			SUM(tabSum.againAllto) AS 'againAlltoSum',
+			SUM(tabSum.failSignCount) AS 'failSignCountSum',
+			SUM(tabSum.failSignAmt) AS 'failSignAmtSum',
+			SUM(tabSum.chkRetAmount) AS 'chkRetAmountSum',
+			SUM(tabSum.sucRetCount) AS 'sucRetCountSum',
+			SUM(tabSum.sucRetAmount) AS 'sucRetAmountSum',
+			SUM(tabSum.treatyWill) AS 'treatyWillSum',
+		    SUM(tabSum.totalSignCount) AS 'totalSignCountSum',
+			SUM(tabSum.totalSignAmt) AS 'totalSignAmtSum',
+			SUM(tabSum.sucBookCount) AS 'sucBookCountSum',
+			SUM(tabSum.noHandlCount) AS 'noHandlCountSum',
+			SUM(tabSum.costCount) AS 'costCountSum',
+			SUM(tabSum.backCostCount) AS 'backCostCountSum',
+			SUM(tabSum.newApplyCount) AS 'newApplyCountSum',
+			SUM(tabSum.custLabel0) AS 'custLabel0Sum',
+		  	SUM(tabSum.custLabel1) AS 'custLabel1Sum',
+		  	SUM(tabSum.custLabel2) AS 'custLabel2Sum',
+		  	SUM(tabSum.custLabel3) AS 'custLabel3Sum',
+		  	SUM(tabSum.custLabel4) AS 'custLabel4Sum',
+		  	SUM(tabSum.custLabel5) AS 'custLabel5Sum',
+			IFNULL((
+				SELECT
+					TRUNCATE (AVG(tab.handel_time), 2) AS handelTime
+				FROM
+				(
+					SELECT
+						IFNULL(
+							TIMESTAMPDIFF(
+								MINUTE,
+								MAX(n1.createTime),
+								MIN(n.`createTime`)
+							),
+							0
+						) handel_time
+					FROM
+						${tableName} n
+					JOIN ${tableName} n1 ON n.applyId = n1.applyId
+					AND n.orderType = 1
+					AND n.handleType != 0
+					AND n.handleType != 29
+					AND n.handleType != 30
+					AND n1.handleType = 0
+					AND n1.orderType = 1
+					<![CDATA[AND n1.createTime < n.createTime
+					WHERE
+						n.createTime >= CURDATE()
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n1.createTime >= CURDATE() 
+				    ]]>
+				    <if test="orgId !=null and orgId !=''">
+				    	AND n.orgId = #{orgId}
+				    </if>
+					GROUP BY n.`applyId`
+				) tab
+			 ),0) AS 'handelTimeSum',
+			 IFNULL((
+			 	SELECT
+					truncate(AVG(tab.applyHandelTime),2) AS applyHandelTime
+				FROM
+			 	(
+			 		SELECT
+						IFNULL(
+							TIMESTAMPDIFF(
+								MINUTE,
+								n1.applyTime,
+								MIN(n.`createTime`)
+							),
+							0
+						) applyHandelTime
+					FROM
+						${tableName} n
+					JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+					AND n.orderType = 1
+					AND n.handleType != 0
+					AND n.handleType != 29
+					AND n.handleType != 30
+					AND n1.orderType = 1
+					<![CDATA[AND n1.applyTime < n.createTime
+					WHERE
+						n1.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+					AND n1.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					]]>
+					<if test="orgId !=null and orgId !=''">
+				    	AND n.orgId = #{orgId}
+				    </if>
+					GROUP BY n.`applyId`
+					HAVING MIN(n.createTime) >= CURDATE()
+				) tab
+			  ),0) as 'applyHandelTimeSum',
+			  IFNULL((
+			  	SELECT
+					truncate(AVG(tab.applyAllotTime),2) AS applyAllotTime
+				FROM
+				(
+					SELECT
+						IFNULL(
+							TIMESTAMPDIFF(
+								MINUTE,
+								n.applyTime,
+								n.allotTime
+							),
+							0
+						) applyAllotTime
+					FROM
+						t_borrow_store_apply n
+					WHERE
+					<![CDATA[n.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+					AND n.orderType = 1
+					AND n.applyTime < n.allotTime
+					AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n.allotTime >= CURDATE()
+					AND n.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					]]>
+					<if test="orgId !=null and orgId !=''">
+				    	AND n.orgId = #{orgId}
+				    </if>
+					GROUP BY n.`applyId`
+				) tab
+			  ),0) as 'applyAllotTimeSum'
+		FROM (
+			<![CDATA[
+			SELECT
+			  IFNULL(tab1.feedBackCount, 0) AS 'feedBackCount',
+			  IFNULL(tab2.recPersonCount, 0) AS 'recPersonCount',
+			  IFNULL(tab3.dealCount, 0) AS 'dealCount',
+			  IFNULL(tab3.noHandlCount, 0) AS 'noHandlCount',
+			  IFNULL(tab3.receiveCount, 0) AS 'receiveCount',
+			  IFNULL(tab3.againAllto, 0) AS 'againAllto',
+			  IFNULL(tab4.failSignCount, 0) AS 'failSignCount',
+			  IFNULL(tab4.failSignAmt, 0) AS 'failSignAmt',
+			  IFNULL(tab5.treatyWill, 0) AS 'treatyWill',
+			  IFNULL(tab5.totalSignCount, 0) AS 'totalSignCount',
+			  IFNULL(tab5.totalSignAmt, 0) AS 'totalSignAmt',
+			  IFNULL(tab6.chkRetAmount, 0) AS 'chkRetAmount',
+			  IFNULL(tab6.sucRetCount, 0) AS 'sucRetCount',
+			  IFNULL(tab6.sucRetAmount, 0) AS 'sucRetAmount',
+			  IFNULL(tab7.sucBookCount, 0) AS 'sucBookCount',
+			  IFNULL(tab8.costCount,0) AS 'costCount',
+			  IFNULL(tab8.backCostCount,0) AS 'backCostCount',
+			  IFNULL(tab9.newApplyCount,0) AS 'newApplyCount',
+			  IFNULL(tab10.custLabel0, 0) AS 'custLabel0',
+			  IFNULL(tab10.custLabel1, 0) AS 'custLabel1',
+			  IFNULL(tab10.custLabel2, 0) AS 'custLabel2',
+			  IFNULL(tab10.custLabel3, 0) AS 'custLabel3',
+			  IFNULL(tab10.custLabel4, 0) AS 'custLabel4',
+			  IFNULL(tab10.custLabel5, 0) AS 'custLabel5'
+			FROM
+			  t_org t 
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(DISTINCT n1.applyId) AS feedBackCount,
+			      n1.orgId 
+			    FROM
+			      ${tableName} n1
+			    WHERE n1.isFeedback = 1 
+			      AND n1.createTime >= CURDATE() 
+			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.orgId) AS tab1 
+			    ON t.orgId = tab1.orgId 
+			  LEFT JOIN 
+			    (SELECT
+					COUNT(
+						DISTINCT CASE
+						WHEN n1.handleType = 0 
+						THEN n1.storeBy
+						END
+					) AS recPersonCount,
+					n1.orgId
+				FROM
+					${tableName} n1
+				WHERE
+					n1.createTime >= CURDATE()
+				AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				GROUP BY n1.orgId) AS tab2 
+			    ON t.orgId = tab2.orgId 
+			  LEFT JOIN 
+			    (SELECT 
+			      	COUNT(
+						DISTINCT CASE
+						WHEN n1.orderStatus = - 1
+						AND n1.orderType = 1 THEN
+							n1.applyId
+						END
+					) AS dealCount,
+					COUNT(
+						DISTINCT CASE
+						WHEN n1.orderStatus = - 1
+						AND n1.orderType = 2 THEN
+							n1.applyId
+						END
+					) AS noHandlCount,
+					COUNT(
+						DISTINCT CASE
+						WHEN n1.orderType = 1 THEN
+							n1.applyId
+						END
+					) AS receiveCount,
+					COUNT(
+						DISTINCT CASE
+						WHEN n1.orderType = 2 THEN
+							n1.applyId
+						END
+					) AS againAllto,
+			      	n1.orgId 
+			    FROM
+			      t_borrow_store_apply n1 
+			      JOIN t_busi_cust n2 
+			        ON n2.customerId = n1.lastStore 
+			    WHERE 
+			      n1.`status` = 2 
+			      AND n2.roleType IN (3, 6, 7, 8, 9) 
+			      AND n1.allotTime >= CURDATE() 
+			      AND n1.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n2.orgId) AS tab3 
+			    ON t.`orgId` = tab3.orgId
+			  LEFT JOIN
+			   (SELECT 
+			    	tab1.orgId,
+			    	count(tab1.applyId) AS failSignCount,
+			   		SUM(tab1.signAmount) AS failSignAmt
+			 	FROM (
+					SELECT
+						n1.orgId,n1.applyId,n1.signAmount
+					FROM
+						t_treat_info n1
+					WHERE
+						n1.updateTime >= CURDATE() AND n1.`status` = 2  
+						AND (n1.failureCause != null OR n1.failureCause != '')
+					GROUP BY n1.applyId)AS tab1 
+				GROUP BY tab1.orgId) tab4 ON t.`orgId` = tab4.orgId
+			   LEFT JOIN 
+			    (SELECT 
+			      IFNULL(SUM(CASE WHEN n1.`status` = 1 THEN n1.treatyWill END), 0) AS treatyWill,
+			      COUNT(DISTINCT n1.applyId) AS totalSignCount,
+			      IFNULL(SUM(n1.signAmount), 0) AS totalSignAmt,
+			      n1.`orgId` 
+			    FROM
+			      t_treat_info n1 
+			    WHERE 
+			      n1.createTime >= CURDATE() 
+			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.orgId) tab5 
+			    ON t.`orgId` = tab5.orgId
+			  LEFT JOIN 
+			    (SELECT 
+			        IFNULL(SUM(CASE WHEN n1.`status` = 1 THEN n1.feeAmount END),0) AS chkRetAmount,
+			        COUNT(CASE WHEN n1.`status` = 2 THEN 1 END) AS sucRetCount,
+			        IFNULL(SUM(CASE WHEN n1.`status` = 2 THEN n1.feeAmount END),0) AS sucRetAmount,
+			      	n1.`orgId` 
+			    FROM
+			      t_treat_success n1 
+			    WHERE 
+			      n1.feeAmountDate >= CURDATE() 
+			      AND n1.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.orgId) tab6 
+			    ON t.`orgId` = tab6.orgId
+			   LEFT JOIN 
+			    (SELECT 
+					SUM(tab1.sucBookCount) as sucBookCount,
+					tab1.orgId
+					FROM
+					(SELECT
+						COUNT(DISTINCT n1.applyId) sucBookCount,
+						n2.`orgId`
+					FROM
+						t_treat_visit_detail n1
+					JOIN t_busi_cust n2 ON n1.recCustId = n2.customerId
+					WHERE
+						n1.visitTime >= CURDATE()
+					AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					GROUP BY
+						n2.orgId
+					UNION ALL
+					SELECT
+						COUNT(n1.customerId) sucBookCount,
+						n2.`orgId`
+					FROM
+						t_cust_visit n1
+					JOIN t_busi_cust n2 ON n1.customerId = n2.customerId
+					WHERE
+						n1.createTime >= CURDATE()
+					AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n1.applyId IS NULL
+					GROUP BY n2.orgId)as tab1 
+					GROUP BY tab1.orgId
+				) tab7 ON t.`orgId` = tab7.orgId
+			LEFT JOIN
+				(SELECT 
+			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
+			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+			      n2.`orgId` 
+			    FROM
+			      t_store_cost_record n1 
+			      JOIN t_busi_cust n2
+			      	ON n1.customerId = n2.customerId
+			    WHERE n1.createTime >= CURDATE()
+			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n2.orgId) AS tab8
+				 ON t.`orgId` = tab8.orgId
+			LEFT JOIN
+				(SELECT 
+			      COUNT(DISTINCT n1.applyId) AS newApplyCount,
+			      n1.`orgId` 
+			    FROM
+			      ${tableName} n1
+			    WHERE n1.handleType = 0
+				  AND n1.orderType = 1
+				  AND n1.createTime >= CURDATE()
+			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.orgId) AS tab9
+			  ON t.`orgId` = tab9.orgId
+			LEFT JOIN 
+			    (SELECT 
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 0 
+			          THEN applyId 
+			        END
+			      ) AS custLabel0,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 1 
+			          THEN applyId 
+			        END
+			      ) AS custLabel1,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 2 
+			          THEN applyId 
+			        END
+			      ) AS custLabel2,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 3 
+			          THEN applyId 
+			        END
+			      ) AS custLabel3,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 4 
+			          THEN applyId 
+			        END
+			      ) AS custLabel4,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 5 
+			          THEN applyId 
+			        END
+			      ) AS custLabel5,
+			      n.`orgId` 
+			    FROM
+			      t_borrow_store_apply n 
+			    WHERE n.custLabelUpTime >= CURDATE() 
+			    AND n.custLabelUpTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			    GROUP BY n.`orgId`) tab10 
+		    ON t.orgId = tab10.orgId
+			WHERE t.orgType = 1]]>
+			 <include refid="sqlQueryByStore"/>
+			 GROUP BY t.orgId
+		 	 <if test="orderSql != null and orderSql!='' ">
+				ORDER by ${orderSql}
+			 </if>
+		) tabSum
+	</select>
+	<!-- 门店人员今日统计总计 -->
+	<select id="queryStoreToDayTotal" resultType="map" parameterType="map">
+		SELECT
+			SUM(tabSum.feedBackCount) AS 'feedBackCountSum',
+			SUM(tabSum.receiveCount) AS 'receiveCountSum',
+			SUM(tabSum.dealCount) AS 'dealCountSum',
+			SUM(tabSum.manualCount) AS 'manualCountSum',
+			SUM(tabSum.visitorCount) AS 'visitorCountSum',
+			SUM(tabSum.againAllto) AS 'againAlltoSum',
+			SUM(tabSum.costCount) AS 'costCountSum',
+			SUM(tabSum.backCostCount) AS 'backCostCountSum',
+			SUM(tabSum.leaveCount) AS 'leaveCountSum',
+			SUM(tabSum.sucBookCount) AS 'sucBookCountSum',
+			SUM(tabSum.signingCount) AS 'signingCountSum',
+			SUM(tabSum.failSignCount) AS 'failSignCountSum',
+			SUM(tabSum.failSignAmt) AS 'failSignAmtSum',
+			SUM(tabSum.sucRetCount) AS 'sucRetCountSum',
+			SUM(tabSum.sucRetAmount) AS 'sucRetAmountSum',
+			SUM(tabSum.treatyWill) AS 'treatyWillSum',
+			SUM(tabSum.totalSignCount) AS 'totalSignCountSum',
+			SUM(tabSum.totalSignAmt) AS 'totalSignAmtSum',
+			SUM(tabSum.noHandlCount) AS 'noHandlCountSum',
+			SUM(tabSum.custLabel0) AS 'sumCustLabel0',
+			SUM(tabSum.custLabel1) AS 'sumCustLabel1',
+			SUM(tabSum.custLabel2) AS 'sumCustLabel2',
+			SUM(tabSum.custLabel3) AS 'sumCustLabel3',
+			SUM(tabSum.custLabel4) AS 'sumCustLabel4',
+			SUM(tabSum.custLabel5) AS 'sumCustLabel5',
+			SUM(tabSum.newApplyCount) AS 'newApplyCountSum',
+			IFNULL((
+				SELECT 
+		      		truncate(AVG(handel_time),2) AS handelTime
+			    FROM
+			      (SELECT 
+			        IFNULL(
+			          TIMESTAMPDIFF(
+			            MINUTE,
+			            MAX(n1.createTime),
+			            MIN(n.`createTime`)
+			          ),
+			          0
+			        ) handel_time
+			      FROM
+			        ${tableName} n 
+			      JOIN ${tableName} n1 
+			          ON n.applyId = n1.applyId 
+			          AND n.orderType = 1 
+			          AND n.handleType != 0
+			          AND n.handleType != 29
+			          AND n.handleType != 30
+			          AND n1.handleType = 0 
+			          AND n1.orderType = 1 
+			       <![CDATA[ AND n1.createTime < n.createTime
+			       JOIN t_busi_cust t ON t.customerId = n.storeBy
+			       JOIN t_org t1 ON t.orgId = t1.orgId 
+			       WHERE n.createTime >= CURDATE() 
+			        AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			        AND n1.createTime >= CURDATE() 
+			        AND t.roleType IN (3, 6, 7, 8, 9) 
+		  			AND t1.isCount = 1]]>
+			        <include refid="sqlQuery"/>
+			        GROUP BY n.`applyId`
+			     ) tab
+			),0) as 'handelTimeSum',
+			IFNULL((
+				SELECT
+					truncate(AVG(applyHandelTime),2) AS applyHandelTime
+				FROM
+				(SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n1.applyTime,
+							MIN(n.`createTime`)
+						),
+						0
+					) applyHandelTime
+				FROM
+					${tableName} n
+				JOIN t_borrow_store_apply n1 ON n.applyId = n1.applyId
+					AND n.orderType = 1
+					AND n.handleType != 0
+					AND n.handleType != 29
+					AND n.handleType != 30
+					AND n1.orderType = 1
+					<![CDATA[AND n1.applyTime < n.createTime
+				JOIN t_busi_cust t ON t.customerId = n.storeBy
+				JOIN t_org t1 ON t.orgId = t1.orgId
+				WHERE
+					n1.applyTime >= DATE_ADD(CURDATE(), INTERVAL -1 DAY)
+					AND n1.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+					AND t.roleType IN (3, 6, 7, 8, 9) 
+		  			AND t1.isCount = 1]]>
+					<include refid="sqlQuery"/>
+				GROUP BY n.`applyId`
+				having MIN(n.createTime) >= CURDATE()
+				) tab
+			),0) as 'applyHandelTimeSum',
+			IFNULL((
+				SELECT
+					truncate(AVG(applyAllotTime),2) AS applyAllotTime
+			    FROM
+			    (SELECT
+					IFNULL(
+						TIMESTAMPDIFF(
+							MINUTE,
+							n.applyTime,
+							n.allotTime
+						),
+						0
+					) applyAllotTime
+				FROM
+					t_borrow_store_apply n
+				JOIN t_busi_cust t ON t.customerId = n.lastStore
+				JOIN t_org t1 ON t.orgId = t1.orgId
+				WHERE
+					<![CDATA[n.applyTime >= DATE_ADD(CURDATE(), INTERVAL - 1 DAY)
+				AND n.orderType = 1
+				AND n.applyTime < n.allotTime
+				AND n.applyTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				AND n.allotTime >= CURDATE()
+				AND n.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+				AND t.roleType IN (3, 6, 7, 8, 9) 
+		  		AND t1.isCount = 1]]>
+				<include refid="sqlQuery"/>
+				GROUP BY n.`applyId`
+			 ) tab
+		  ),0) as 'applyAllotTimeSum'
+		FROM(
+			<![CDATA[
+			SELECT
+			  IFNULL(tab1.feedBackCount, 0) AS 'feedBackCount',
+			  IFNULL(tab2.receiveCount, 0) AS 'receiveCount',
+			  IFNULL(tab2.dealCount, 0) AS 'dealCount',
+			  IFNULL(tab2.noHandlCount, 0) AS 'noHandlCount',
+			  IFNULL(tab2.againAllto, 0) AS 'againAllto',
+			  IFNULL(tab3.manualCount, 0) AS 'manualCount',
+			  IFNULL(tab3.visitorCount, 0) AS 'visitorCount',
+			  IFNULL(tab4.costCount, 0) AS 'costCount',
+			  IFNULL(tab4.backCostCount, 0) AS 'backCostCount',
+			  IFNULL(tab5.leaveCount, 0) AS 'leaveCount',
+			  IFNULL(tab6.sucBookCount, 0) AS 'sucBookCount',
+			  IFNULL(tab7.signingCount, 0) AS 'signingCount',
+			  IFNULL(tab7.treatyWill, 0) AS 'treatyWill',
+			  IFNULL(tab7.totalSignCount, 0) AS 'totalSignCount',
+			  IFNULL(tab7.totalSignAmt, 0) AS 'totalSignAmt',
+			  IFNULL(tab8.failSignCount, 0) AS 'failSignCount',
+			  IFNULL(tab8.failSignAmt, 0) AS 'failSignAmt',
+			  IFNULL(tab9.sucRetCount, 0) AS 'sucRetCount',
+			  IFNULL(tab9.sucRetAmount, 0) AS 'sucRetAmount',
+			  IFNULL(tab10.custLabel0, 0) AS 'custLabel0',
+			  IFNULL(tab10.custLabel1, 0) AS 'custLabel1',
+			  IFNULL(tab10.custLabel2, 0) AS 'custLabel2',
+			  IFNULL(tab10.custLabel3, 0) AS 'custLabel3',
+			  IFNULL(tab10.custLabel4, 0) AS 'custLabel4',
+			  IFNULL(tab10.custLabel5, 0) AS 'custLabel5',
+			  IFNULL(tab11.newApplyCount, 0) AS 'newApplyCount'
+			FROM
+			  t_busi_cust t 
+			  LEFT JOIN t_org t1 
+			    ON t.orgId = t1.orgId 
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(DISTINCT n.applyId) AS feedBackCount,
+			      n.storeBy AS storeBy 
+			    FROM
+			      ${tableName} n 
+			    WHERE n.isFeedback = 1 
+			      AND n.createTime >= CURDATE() 
+			      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n.storeBy) tab1 
+			    ON t.customerId = tab1.storeBy 
+			  LEFT JOIN 
+			    (SELECT 
+			       COUNT(
+			      		DISTINCT CASE
+						WHEN n1.orderType = 1
+						THEN n1.applyId 
+						END
+				   ) AS receiveCount,
+				   COUNT(
+				  		DISTINCT CASE
+						WHEN n1.orderType = 2
+						THEN n1.applyId
+						END
+				   ) AS againAllto,
+			       COUNT(
+						DISTINCT CASE
+						WHEN n1.orderStatus = - 1
+						AND n1.orderType = 1 THEN
+							n1.applyId
+						END
+					) AS dealCount,
+					COUNT(
+						DISTINCT CASE
+						WHEN n1.orderStatus = - 1
+						AND n1.orderType = 2 THEN
+							n1.applyId
+						END
+					) AS noHandlCount,
+			      n1.`lastStore` 
+			    FROM
+			      t_borrow_store_apply n1 
+			    WHERE n1.`status` = 2 
+			      AND n1.allotTime >= CURDATE() 
+			      AND n1.allotTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.lastStore) tab2 
+			    ON t.customerId = tab2.lastStore 
+			  LEFT JOIN 
+			    (SELECT 
+			      	COUNT(
+			      		DISTINCT CASE 
+			      		WHEN n1.visitType = 1 THEN 
+			      			n1.applyId 
+			      		END
+			      	) AS manualCount,
+			      	COUNT(
+			      		DISTINCT CASE 
+			      		WHEN n1.visitType = 2 THEN 
+			      			n1.applyId 
+			      		END
+			      	) AS visitorCount,
+			      	n1.`recCustId` 
+			    FROM
+			      t_treat_visit_detail n1 
+			    WHERE 
+			      n1.visitTime >= CURDATE() 
+			      AND n1.visitTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.recCustId) AS tab3 
+			    ON t.customerId = tab3.recCustId
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
+			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+			      n1.`customerId` 
+			    FROM
+			      t_store_cost_record n1 
+			    WHERE n1.createTime >= CURDATE()
+			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n1.customerId) tab4
+			    ON t.customerId = tab4.customerId
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(1) AS leaveCount,
+			      n.customerId 
+			    FROM
+			      t_store_online_record n 
+			    WHERE n.`loginStatus` = 3 
+			      AND n.createTime >= CURDATE() 
+			      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n.customerId) tab5
+			    ON t.customerId = tab5.customerId 
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(DISTINCT n.applyId) sucBookCount,
+			      n.`customerId` 
+			    FROM
+			      t_treat_book n 
+			    WHERE n.`status` = 3 
+			      AND n.updateTime >= CURDATE() 
+			      AND n.updateTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n.customerId) tab6
+			    ON t.customerId = tab6.customerId 
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(DISTINCT CASE WHEN n.`status` = 1 THEN n.applyId END) signingCount,
+			      IFNULL(SUM(CASE WHEN n.`status` = 1 THEN n.treatyWill END), 0) treatyWill,
+			      COUNT(DISTINCT n.applyId) totalSignCount,
+			      IFNULL(SUM(n.signAmount),0) totalSignAmt,
+			      n.`customerId` 
+			    FROM
+			      t_treat_info n 
+			    WHERE n.createTime >= CURDATE() 
+			      AND n.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n.customerId) tab7 
+			    ON t.customerId = tab7.customerId 
+			  LEFT JOIN
+			    (SELECT 
+			    	tab1.customerId,
+			    	COUNT(tab1.applyId) AS failSignCount,
+			   		SUM(tab1.signAmount) AS failSignAmt
+			 	FROM (
+					SELECT
+						n1.customerId,n1.applyId,n1.signAmount
+					FROM
+						t_treat_info n1
+					WHERE
+						n1.updateTime >= CURDATE() AND n1.`status` = 2
+						AND (n1.failureCause != null OR n1.failureCause != '')
+					GROUP BY n1.applyId)AS tab1 
+				GROUP BY tab1.customerId) tab8 
+		    	ON t.customerId = tab8.customerId
+			  LEFT JOIN 
+			    (SELECT 
+			        IFNULL(SUM(CASE WHEN n.`status` = 2 THEN n.feeAmount END),0) sucRetAmount,
+			        COUNT(CASE WHEN n.`status` = 2 THEN n.feeAmount END) sucRetCount,
+			      	n.`customerId` 
+			    FROM
+			      t_treat_success n 
+			    WHERE 
+			      n.feeAmountDate >= CURDATE() 
+			      AND n.feeAmountDate < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
+			    GROUP BY n.customerId) tab9 
+			    ON t.`customerId` = tab9.customerId
+			  LEFT JOIN 
+			    (SELECT 
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 0 
+			          THEN applyId 
+			        END
+			      ) AS custLabel0,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 1 
+			          THEN applyId 
+			        END
+			      ) AS custLabel1,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 2 
+			          THEN applyId 
+			        END
+			      ) AS custLabel2,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 3 
+			          THEN applyId 
+			        END
+			      ) AS custLabel3,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 4 
+			          THEN applyId 
+			        END
+			      ) AS custLabel4,
+			      COUNT(
+			        CASE
+			          WHEN n.`custLabel` = 5 
+			          THEN applyId 
+			        END
+			      ) AS custLabel5,
+			      n.`lastStore` 
+			    FROM
+			      t_borrow_store_apply n 
+			    WHERE n.custLabelUpTime >= CURDATE() 
+			    AND n.custLabelUpTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+			    GROUP BY n.`lastStore`) tab10 
+			    ON t.customerId = tab10.lastStore
+			  LEFT JOIN (
+				  SELECT 
+				    COUNT(DISTINCT n1.applyId) AS newApplyCount,
+					n1.storeBy
+				  FROM
+				    ${tableName} n1
+				  WHERE  n1.handleType = 0 
+				    AND n1.orderType = 1 
+				    AND n1.createTime >= CURDATE()
+		            AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+		            GROUP BY n1.storeBy) tab11 
+		        	ON tab11.storeBy = t.customerId
+			WHERE t.roleType IN (3, 6, 7, 8, 9) 
+			  AND t1.isCount = 1 ]]>
+			  <include refid="sqlQuery"/>
+		) tabSum
+	</select>
+	<!-- 按城市维度本周查询相关统计 -->
+	<select id="queryThisWeekByCity" parameterType="map" resultType="map">
+		<![CDATA[SELECT
+			t.cityName AS cityName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			AND n.lastUpdateTime >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.lastUpdateTime < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3
+			AND	n.createTime >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.createTime < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND n.feeAmountDate >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.feeAmountDate < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId]]>
+		WHERE
+			t.isNet = 1
+			<if test="cityName != null and cityName != ''">
+				AND t.cityName = #{cityName}
+			</if>
+		GROUP BY
+			t.cityName
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK)
+	 	</if>
+	 	<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!-- 按城市维度本月查询相关统计 -->
+	<select id="queryThisMonthByCity" parameterType="map" resultType="map">
+		SELECT
+			t.cityName AS cityName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.lastUpdateTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.lastUpdateTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3 
+				<if test="startDate != null and startDate != ''">
+					<![CDATA[AND n.createTime >= #{startDate}]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+					<![CDATA[AND n.createTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+				</if>
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.feeAmountDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.feeAmountDate < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		WHERE
+			t.isNet = 1
+			<if test="cityName != null and cityName != ''">
+				AND t.cityName = #{cityName}
+			</if>
+		GROUP BY t.cityName
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK)
+	 	</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+    <!-- 按城市维度月度查询相关统计 -->
+    <select id="queryMonthlyByCity" parameterType="map" resultType="map">
+		SELECT
+			t.cityName AS cityName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.lastUpdateTime, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.lastUpdateTime, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3 
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.createTime, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.createTime, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		WHERE
+			t.isNet = 1
+			<if test="cityName != null and cityName != ''">
+				AND t.cityName = #{cityName}
+			</if>
+		GROUP BY t.cityName
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK)
+	 	</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!-- 按门店维度本周查询相关统计 -->
+	<select id="queryThisWeekByOrg" parameterType="map" resultType="map">
+		<![CDATA[SELECT
+			t.cityName AS cityName,
+			t.orgName AS orgName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			AND n.lastUpdateTime >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.lastUpdateTime < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3
+			AND	n.createTime >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.createTime < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND n.feeAmountDate >= DATE_SUB(CURDATE(),INTERVAL WEEKDAY(CURDATE()) DAY)
+			AND n.feeAmountDate < DATE_ADD(CURDATE(),INTERVAL 1 day)
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId]]>
+		WHERE
+			t.isNet = 1
+		<if test="orgId != null and orgId != ''">
+			AND t.orgId = #{orgId}
+		</if>
+		GROUP BY
+			t.orgId
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+	 	</if>
+	 	<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!-- 按门店维度本月查询相关统计 -->
+	<select id="queryThisMonthByOrg" parameterType="map" resultType="map">
+		SELECT
+			t.cityName AS cityName,
+			t.orgName AS orgName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.lastUpdateTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.lastUpdateTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3
+				<if test="startDate != null and startDate != ''">
+					<![CDATA[AND n.createTime >= #{startDate}]]>
+				</if>
+				<if test="endDate != null and endDate != ''">
+					<![CDATA[AND n.createTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+				</if>
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.feeAmountDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.feeAmountDate < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		WHERE
+			t.isNet = 1
+			<if test="orgId != null and orgId != ''">
+				AND t.orgId = #{orgId}
+			</if>
+		GROUP BY t.orgId
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+	 	</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+    <!-- 按门店维度月度查询相关统计 -->
+    <select id="queryMonthlyByOrg" parameterType="map" resultType="map">
+		SELECT
+			t.cityName AS cityName,
+			t.orgName AS orgName,
+			IFNULL(sum(tab1.invalidOrderCount),0) AS invalidOrderCount,
+			IFNULL(sum(tab1.nullOrderCount), 0) AS nullOrderCount,
+			IFNULL(sum(tab1.followOrderCount),0) AS followOrderCount,
+			IFNULL(sum(tab2.signOrderCount), 0) AS signOrderCount,
+			IFNULL(sum(tab3.sucRetCount), 0) AS sucRetCount
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				n.orgId,
+				count(
+					CASE
+					WHEN n.orderStatus = 7 THEN
+						1
+					END
+				) AS invalidOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus = 8 THEN
+						1
+					END
+				) AS nullOrderCount,
+				count(
+					CASE
+					WHEN n.orderStatus IN (0, 1, 2) THEN
+						1
+					END
+				) AS followOrderCount
+			FROM
+				t_borrow_store_apply n
+			WHERE
+				n.`status` = 2
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.lastUpdateTime, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.lastUpdateTime, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				n.orgId
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.createTime, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.createTime, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			<if test="startMonth != null and startMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') >= #{startMonth}]]>
+			</if>
+			<if test="endMonth != null and endMonth != ''">
+				<![CDATA[AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') <= #{endMonth}]]>
+			</if>
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		WHERE
+			t.isNet = 1
+			<if test="orgId != null and orgId != ''">
+				AND t.orgId = #{orgId}
+			</if>
+		GROUP BY t.orgId
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+	 	</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!-- 按日期维度查询相关统计 -->
+	<select id="queryDataAnalyByDate" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d') AS recordDate,
+			count(
+				CASE
+				WHEN t.orderStatus = 7 THEN
+					1
+				END
+			) AS invalidOrderCount,
+			count(
+				CASE
+				WHEN t.orderStatus = 8 THEN
+					1
+				END
+			) AS nullOrderCount,
+			count(
+				CASE
+				WHEN t.orderStatus IN (0, 1, 2) THEN
+					1
+				END
+			) AS followOrderCount,
+			IFNULL(tab1.signOrderCount, 0) AS signOrderCount,
+			IFNULL(tab2.sucRetCount, 0) AS sucRetCount
+		FROM
+			t_borrow_store_apply t
+		LEFT JOIN t_org t1 ON t.orgId = t1.orgId
+		LEFT JOIN (
+			SELECT
+				count(1) AS signOrderCount,
+				DATE_FORMAT(n.createTime, '%Y-%m-%d') AS recordDate
+			FROM
+				t_treat_info n
+			WHERE
+				n.`status` != 3
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.createTime >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.createTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY recordDate
+		) tab1 ON tab1.recordDate = DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d')
+		LEFT JOIN (
+			SELECT
+				COUNT(1) sucRetCount,
+				DATE_FORMAT(n.feeAmountDate, '%Y-%m-%d') AS recordDate
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			<if test="startDate != null and startDate != ''">
+				<![CDATA[AND n.feeAmountDate >= #{startDate}]]>
+			</if>
+			<if test="endDate != null and endDate != ''">
+				<![CDATA[AND n.feeAmountDate < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+			</if>
+			GROUP BY recordDate
+		) tab2 ON tab2.recordDate = DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d')
+		WHERE
+			t.`status` = 2
+		AND t1.isNet = 1
+		<if test="startDate != null and startDate != ''">
+			<![CDATA[AND t.lastUpdateTime >= #{startDate}]]>
+		</if>
+		<if test="endDate != null and endDate != ''">
+			<![CDATA[AND t.lastUpdateTime < DATE_ADD(#{endDate}, INTERVAL 1 DAY)]]>
+		</if>
+		GROUP BY recordDate
+		<if test="orderSql == null">
+		 	ORDER BY recordDate
+	 	</if>
+		<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!--门店回款相关统计 -->
+	<select id="queryOrgRepaymentByDate" parameterType="map" resultType="map">
+		<![CDATA[SELECT
+			t.cityName AS cityName,
+			concat(t.orgNo,'-',t.orgName) AS orgName,
+			t.orgId,
+			IFNULL(tab1.curSucRetCount, 0) AS curSucRetCount,
+			IFNULL(tab1.curSucRetAmout, 0) AS curSucRetAmout,
+			IFNULL(tab2.lastSucRetCount, 0) AS lastSucRetCount,
+			IFNULL(tab2.lastSucRetAmout, 0) AS lastSucRetAmout,
+			IFNULL(tab3.twoMonthSucRetCount, 0) AS twoMonthSucRetCount,
+			IFNULL(tab3.twoMonthSucRetAmout, 0) AS twoMonthSucRetAmout,
+			IFNULL(tab4.smallSucRetCount, 0) AS smallSucRetCount,
+			IFNULL(tab4.smallSucRetAmout, 0) AS smallSucRetAmout,
+			IFNULL(tab5.creditSucRetCount, 0) AS creditSucRetCount,
+			IFNULL(tab5.creditSucRetAmout, 0) AS creditSucRetAmout,
+			IFNULL(tab6.morSucRetCount, 0) AS morSucRetCount,
+			IFNULL(tab6.morSucRetAmout, 0) AS morSucRetAmout
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				COUNT(1) curSucRetCount,
+				sum(n.feeAmount) curSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') = #{curentMonth}
+			GROUP BY
+				n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) lastSucRetCount,
+				sum(n.feeAmount) lastSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') = #{lastMonth}
+			GROUP BY
+				n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) twoMonthSucRetCount,
+				sum(n.feeAmount) twoMonthSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') < #{lastMonth}
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) smallSucRetCount,
+				sum(n.feeAmount) smallSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND n.loanOrg like CONCAT('%','(小)','%') 
+			GROUP BY n.orgId
+		) tab4 ON tab4.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) creditSucRetCount,
+				sum(n.feeAmount) creditSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND n.loanOrg like CONCAT('%','(信)','%') 
+			GROUP BY n.orgId
+		) tab5 ON tab5.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) morSucRetCount,
+				sum(n.feeAmount) morSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND (n.loanOrg like CONCAT('%','(抵)','%') 
+					or n.loanOrg like CONCAT('%','(车)','%'))
+			GROUP BY n.orgId
+		) tab6 ON tab6.orgId = t.orgId]]>
+		where t.isNet = 1
+		<if test="orgId != null and orgId != ''">
+			AND t.orgId = #{orgId}
+		</if>
+		group by t.orgId
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+	 	</if>
+	 	<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<!--城市回款相关统计 -->
+	<select id="queryCityRepaymentByDate" parameterType="map" resultType="map">
+	<![CDATA[
+		SELECT
+			tab.cityName,
+			sum(tab.curSucRetCount) curSucRetCount,
+			sum(tab.curSucRetAmout) curSucRetAmout,
+			sum(tab.lastSucRetCount) lastSucRetCount,
+			sum(tab.lastSucRetAmout) lastSucRetAmout,
+			sum(tab.twoMonthSucRetCount) twoMonthSucRetCount,
+			sum(tab.twoMonthSucRetAmout) twoMonthSucRetAmout,
+			sum(tab.smallSucRetCount) smallSucRetCount,
+			sum(tab.smallSucRetAmout) smallSucRetAmout,
+			sum(tab.creditSucRetCount) creditSucRetCount,
+			sum(tab.creditSucRetAmout) creditSucRetAmout,
+			sum(tab.morSucRetCount) morSucRetCount,
+			sum(tab.morSucRetAmout) morSucRetAmout
+		FROM
+		(
+		SELECT
+			t.cityName AS cityName,
+			IFNULL(tab1.curSucRetCount, 0) AS curSucRetCount,
+			IFNULL(tab1.curSucRetAmout, 0) AS curSucRetAmout,
+			IFNULL(tab2.lastSucRetCount, 0) AS lastSucRetCount,
+			IFNULL(tab2.lastSucRetAmout, 0) AS lastSucRetAmout,
+			IFNULL(tab3.twoMonthSucRetCount, 0) AS twoMonthSucRetCount,
+			IFNULL(tab3.twoMonthSucRetAmout, 0) AS twoMonthSucRetAmout,
+			IFNULL(tab4.smallSucRetCount, 0) AS smallSucRetCount,
+			IFNULL(tab4.smallSucRetAmout, 0) AS smallSucRetAmout,
+			IFNULL(tab5.creditSucRetCount, 0) AS creditSucRetCount,
+			IFNULL(tab5.creditSucRetAmout, 0) AS creditSucRetAmout,
+			IFNULL(tab6.morSucRetCount, 0) AS morSucRetCount,
+			IFNULL(tab6.morSucRetAmout, 0) AS morSucRetAmout
+		FROM
+			t_org t
+		LEFT JOIN (
+			SELECT
+				COUNT(1) curSucRetCount,
+				sum(n.feeAmount) curSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') = #{curentMonth}
+			GROUP BY
+				n.orgId
+		) tab1 ON tab1.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) lastSucRetCount,
+				sum(n.feeAmount) lastSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') = #{lastMonth}
+			GROUP BY
+				n.orgId
+		) tab2 ON tab2.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) twoMonthSucRetCount,
+				sum(n.feeAmount) twoMonthSucRetAmout,
+				n.orgId
+			FROM
+				t_treat_success n
+				JOIN t_borrow_store_apply n1 ON n1.applyId = n.applyId
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND DATE_FORMAT(n1.applyTime, '%Y-%m') < #{lastMonth}
+			GROUP BY n.orgId
+		) tab3 ON tab3.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) smallSucRetCount,
+				sum(n.feeAmount) smallSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND n.loanOrg like CONCAT('%','(小)','%') 
+			GROUP BY
+				n.orgId
+		) tab4 ON tab4.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) creditSucRetCount,
+				sum(n.feeAmount) creditSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND n.loanOrg like CONCAT('%','(信)','%') 
+			GROUP BY
+				n.orgId
+		) tab5 ON tab5.orgId = t.orgId
+		LEFT JOIN (
+			SELECT
+				COUNT(1) morSucRetCount,
+				sum(n.feeAmount) morSucRetAmout,
+				n.loanOrg,
+				n.orgId
+			FROM
+				t_treat_success n
+			WHERE
+				n.`status` = 2
+			AND DATE_FORMAT(n.feeAmountDate, '%Y-%m') = #{curentMonth}
+			AND (n.loanOrg like CONCAT('%','(抵)','%') 
+					or n.loanOrg like CONCAT('%','(车)','%'))
+			GROUP BY
+				n.orgId
+		) tab6 ON tab6.orgId = t.orgId]]>
+		where t.isNet = 1
+		group by t.orgId
+		<if test="orderSql == null">
+		 	ORDER BY CONVERT(t.cityName USING GBK),CONVERT(t.orgName USING GBK)
+	 	</if>
+	 	<if test="orderSql != null and orderSql!='' ">
+			ORDER by ${orderSql}
+		</if>) tab
+		<where>
+			<if test="cityName != null and cityName != ''">
+				tab.cityName = #{cityName}
+			</if>
+		</where>
+		GROUP BY tab.cityName
+	</select>
+</mapper>

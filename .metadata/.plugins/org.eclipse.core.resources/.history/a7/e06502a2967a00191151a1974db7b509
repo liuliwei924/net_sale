@@ -1,0 +1,657 @@
+package org.xxjr.cust.fund;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
+
+import org.ddq.active.mq.MQNames;
+import org.ddq.active.mq.XxjrMqSendUtil;
+import org.ddq.active.mq.message.RmiServiceSend;
+import org.ddq.common.constant.DuoduoConstant;
+import org.ddq.common.context.AppParam;
+import org.ddq.common.context.AppProperties;
+import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.BaseService;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.AppException;
+import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.util.StringUtil;
+import org.ddq.common.web.session.DuoduoSession;
+import org.ddq.model.cache.RedisUtils;
+import org.ddq.zk.service.RemoteInvoke;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.ApplyUnionUtil;
+import org.xxjr.cust.util.FundConstant;
+import org.xxjr.cust.util.fund.CustAmountUtil;
+import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.ServiceKey;
+
+
+@Lazy
+@Service
+@Slf4j
+public class CustAmountService extends BaseService {
+	private static final String NAMESPACE = "CUSTAMOUNT";
+
+	/**
+	 * querys
+	 * @param params
+	 * @return
+	 */
+	public AppResult query(AppParam params) {
+		return super.query(params, NAMESPACE);
+	}
+	
+	/**查询已赠送金额
+	 * querySeniorAmount
+	 * @param params
+	 * @return
+	 */
+	public AppResult querySeniorAmount(AppParam params) {
+		return super.query(params, NAMESPACE,"querySeniorAmount");
+	}
+	
+	/**
+	 * queryByPage
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryByPage(AppParam params) {
+		return super.queryByPage(params, NAMESPACE);
+	}
+	
+	/**
+	 * queryCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, super.COUNT,params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * queryView
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryView(AppParam params) {
+		return super.queryByPage(params, NAMESPACE, "queryView", "queryViewCount");
+	}
+	
+	/**
+	 * queryViewCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryViewCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryViewCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
+	
+	
+	/**
+	 * updateStatus
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateStatus(AppParam params) {
+		int size = getDao().update(NAMESPACE, "updateStatus",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 更新折扣信息
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateDiscount(AppParam params) {
+		AppResult result = new AppResult();
+		String ticketId = StringUtil.getString(params.getAttr("ticketId"));
+		double discount = NumberUtil.getDouble(params.getAttr("discount"), 0);
+		RmiServiceSend messageSend = SpringAppContext.getBean(RmiServiceSend.class);
+		if(StringUtils.hasText(ticketId)){
+			String customerId = params.getAttr("customerId").toString();
+			Map<String, Object> amtMap = CustAmountUtil.getCustAmount(customerId);
+			double unusedAmount = CustAmountUtil.getUnusedAmount(customerId, amtMap.get("usableAmount"));
+			if(unusedAmount <= 0){
+				AppParam updateParam = new AppParam();
+				updateParam.addAttr("customerId", customerId);
+				updateParam.addAttr("discount", "1");
+				result = this.update(updateParam);
+				discount = 1;
+				// 修改当前抢单记录折扣
+				if(!StringUtils.isEmpty(params.getAttr("receiveId"))){
+					Map<String, Object> borrowReMap = new HashMap<String, Object>();
+					borrowReMap.put("customerId", customerId);
+					borrowReMap.put("receiveId", params.getAttr("receiveId"));
+					borrowReMap.put("discount", "1");
+					borrowReMap.put("service", "daiBorrowReService");
+					borrowReMap.put("method", "update");
+					borrowReMap.put("rmiServiceName", AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+					try {
+						messageSend.sendExecuteMessage(borrowReMap);
+					} catch (Exception e) {
+						log.error("updateDiscount error", e);
+					}
+				}
+			}
+		}
+		
+		Map<String, Object> execMap = new HashMap<String, Object>();
+		
+		if (!StringUtils.isEmpty(params.getAttr("borrowId")) ) {
+			Map<String, Object> recordMap = new HashMap<String, Object>();
+			recordMap.put("borrowId", params.getAttr("borrowId"));    
+			recordMap.put("appType", "1");  //区分马甲包的挂卖记录
+			recordMap.put("receiveId", params.getAttr("receiveId")); 
+			recordMap.put("customerId", params.getAttr("customerId"));
+			recordMap.put("robWay", params.getAttr("robWay"));  
+			recordMap.put("robPrice", params.getAttr("costPrice"));
+			recordMap.put("discount", discount);
+			recordMap.put("successTime", new Date());
+			recordMap.put("status", 1);
+			execMap.put("recordMap", recordMap);
+		}
+
+		// 同步busiIn里面的挂卖信息
+		if(!StringUtils.isEmpty(params.getAttr("applyId"))){
+			
+			int sourceType = 5;
+			AppParam borrowParam = new AppParam("daiBorrowService", "query");
+			borrowParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+			borrowParam.addAttr("borrowId", params.getAttr("borrowId"));
+			AppResult borrowResult = RemoteInvoke.getInstance().callNoTx(borrowParam);
+			if (borrowResult.getRows().size() > 0) {
+				sourceType = NumberUtil.getInt(borrowResult.getRow(0).get("sourceType"), 5);
+			}
+			
+			
+			Map<String, Object> selParams = new HashMap<String, Object>();
+			selParams.put("channelDetail", params.getAttr("channelDetail"));    
+			selParams.put("sellType", 1);  
+			selParams.put("handleType", 2); 
+			selParams.put("applyId", params.getAttr("applyId"));
+			selParams.put("robWay", params.getAttr("robWay"));  
+			selParams.put("costScore", params.getAttr("costScore"));    
+			selParams.put("costPrice", params.getAttr("costPrice")); 
+			selParams.put("createTime", params.getAttr("robTime"));
+			selParams.put("borrowId", params.getAttr("borrowId"));
+			selParams.put("receiveId", params.getAttr("receiveId"));
+			selParams.put("discount", discount);
+			selParams.put("service", "borrowSelRecordService");
+			selParams.put("method", "saveRobInfo");
+			try {
+				if (sourceType == 8) {//去调用数据中心系统的回调
+					XxjrMqSendUtil.sendMessage(selParams, MQNames.datasysInvoke);
+				} else {
+					selParams.put("rmiServiceName", AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+					messageSend.sendExecuteMessage(selParams);
+				}
+			} catch (Exception e) {
+				log.error("updateDiscount error", e);
+			}
+			
+			//修改union表状态
+			if (sourceType != 8) {
+				Map<String, Object> updateMap = new HashMap<String, Object>();
+				if (!StringUtils.isEmpty(params.getAttr("customerId"))) {
+					String customerId  = params.getAttr("customerId").toString();
+					Map<String, Object> queryCustInfo = CustomerIdentify.getCustIdentify(customerId);
+					updateMap.put("dealCustId", customerId);
+					updateMap.put("dealName", queryCustInfo.get("userName"));
+					updateMap.put("dealTelephone", queryCustInfo.get("telephone"));
+				}else {
+					updateMap.put("clearDealCustInfo", 1);
+				}
+				Map<String, Object> queryApplyInfo = ApplyUnionUtil.queryApplyInfo(params.getAttr("applyId"), null);
+				updateMap.put("unionId", queryApplyInfo.get("unionId"));
+				updateMap.put("statusType", 3);
+				updateMap.put("applyId", params.getAttr("applyId"));
+				updateMap.put("status", "10");
+				execMap.put("updateMap", updateMap);
+			}
+		}
+		if (!execMap.isEmpty()) {
+			try{
+				execMap.put("service", "daiBorrowExtService");
+				execMap.put("method", "execOther");
+				execMap.put("rmiServiceName", AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi));
+				RmiServiceSend rmiSend = SpringAppContext.getBean(RmiServiceSend.class);
+				rmiSend.sendExecuteMessage(execMap);
+			}catch(Exception e){
+				log.error("执行其他处理失败!", e);
+			}
+		}
+		return result;
+	}
+	
+	/**
+	 * 修改用户折扣
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateUserDiscount(AppParam params) {
+		int size = getDao().update(NAMESPACE, "updateUserDiscount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * insert
+	 * @param params
+	 * @return
+	 */
+	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
+		return super.insert(params, NAMESPACE);
+	}
+	
+	/**
+	 * update
+	 * @param params
+	 * @return
+	 */
+	public AppResult update(AppParam params) {
+		params.addAttr("updateTime", new Date());
+		AppResult result = super.update(params, NAMESPACE);
+		if (params.getAttr("customerId") != null) {
+			CustAmountUtil.removeByCustId(params.getAttr("customerId").toString());
+		}
+		return result;
+	}
+	
+	
+	/***
+	 * 提现申请
+	 * @param params
+	 * @return
+	 */
+	public AppResult withdrawApply(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "withdrawApply", params.getAttr(), 
+				params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/***
+	 * 提现取消
+	 * @param params
+	 * @return
+	 */
+	public AppResult withdrawCancel(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "withdrawCancel", params.getAttr(), 
+				params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/***
+	 * 提现成功
+	 * @param params
+	 * @return
+	 */
+	public AppResult withdrawCheck(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "withdrawCheck", params.getAttr(), 
+				params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/***
+	 * 提成处理
+	 * @param params
+	 * @return
+	 */
+	public AppResult rewardOrder(AppParam params) {
+		params.addAttr(FundConstant.key_fundType, FundConstant.FundType_rewardOrder);
+		int size = super.getDao().update(NAMESPACE, "rewardOrder", params.getAttr(), 
+				params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 修改用户积分
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateNewScore(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "updateNewScore", params.getAttr(), params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		if(params.getAttr("customerId")!=null){
+			CustAmountUtil.refershAmount(params.getAttr("customerId").toString());
+		}
+		return result;
+	}
+	/**
+	 * 修改积分
+	 * updateScore
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateScore(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "updateScore", params.getAttr(), params.getDataBase());
+		if(size==0){
+			return  this.insert(params);
+		}
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		if(params.getAttr("customerId")!=null){
+			CustAmountUtil.refershAmount(params.getAttr("customerId").toString());
+		}
+		return result;
+	}
+	
+	/***
+	 * 用户资金批量修改
+	 * @param context
+	 * @return
+	 */
+	public AppResult uploadExcel(AppParam context) {
+		AppResult result = new AppResult();
+//		List<Map<String, Object>> list = (List<Map<String, Object>>) context.getAttr("list");
+//		int j = 0;
+//		int row =0;
+//		if (!StringUtils.isEmpty(context.getAttr("list"))) {
+//			AppParam rechargeParam = new AppParam();
+//			rechargeParam.setService("custAmountService");
+//			rechargeParam.setMethod("manUpdateCustAmount");
+//			for (Map<String, Object> rechargMap:list) {
+//				Object userName = rechargMap.get("userName");
+//				Object amount = rechargMap.get("amount");
+//				Object fundType = rechargMap.get("fundType");
+//				Object recordDesc = rechargMap.get("recordDesc");
+//				row ++;
+//				if (!StringUtils.isEmpty(userName) && !StringUtils.isEmpty(amount)) {
+//					Object customerId = null;
+//					//TODO
+//					if( !StringUtils.isEmpty(amount)){
+//						customerId ="";
+//					}
+//					if (customerId == null) {
+//						throw new SysException("缺少参数，用户名：" + userName +" 在系统中不存在！第" + row +"行" );
+//					}
+//					if(StringUtils.isEmpty(recordDesc)){
+//						throw new SysException("缺少参数，描述信息不允许为空,第" + row +"行" );
+//					}
+//					if(StringUtils.isEmpty(fundType)){
+//						throw new SysException("缺少参数，资金类型不允许为空,第" + row +"行" );
+//					}
+//					if(new BigDecimal(amount.toString()).doubleValue()==0.0){
+//						throw new SysException("相关的第" + row +  "行调整金额为0，无法处理!" );
+//					}
+//					amount = new BigDecimal(amount.toString()).setScale(2, RoundingMode.HALF_UP);
+//					
+//					rechargMap.put("amount", amount);
+//					rechargMap.put("customerId", customerId);
+//					this.updateCustAmount(context);
+//					j++;
+//				}
+//			}
+//		}
+//		result.setMessage("成功处理了"+ j + "条记录!");
+		return result;
+	}
+	
+	/**
+	 * 充值及赠送
+	 * @param context
+	 * @return
+	 */
+	public AppResult updateRechargeAmount(AppParam context){
+		AppParam amountParam = new AppParam();
+		amountParam.setService("custAmountService");
+		amountParam.setMethod("updateCustAmount");
+		amountParam.addAttr("orderId", context.getAttr("orderId"));
+		amountParam.addAttr("recordDesc", "会员充值");
+		amountParam.addAttr("customerId", context.getAttr("customerId"));
+		amountParam.addAttr("amount", context.getAttr("amount"));
+		amountParam.addAttr("fundType", FundConstant.FundType_RECHARGE);
+		this.updateCustAmount(amountParam);
+		
+		Double rechargeReward = NumberUtil.getDouble(context.getAttr("rechargeReward"), 0);
+		if(rechargeReward > 0){
+			AppParam rewardAmountParam = new AppParam();
+			rewardAmountParam.setService("custAmountService");
+			rewardAmountParam.setMethod("updateCustAmount");
+			rewardAmountParam.addAttr("orderId", context.getAttr("orderId"));
+			rewardAmountParam.addAttr("recordDesc", "充值赠送");
+			rewardAmountParam.addAttr("customerId", context.getAttr("customerId"));
+			rewardAmountParam.addAttr("amount", context.getAttr("rechargeReward"));
+			rewardAmountParam.addAttr("fundType", FundConstant.FundType_RECHARGE_Reward);
+			this.updateCustAmount(rewardAmountParam);
+		}
+		
+		Double couponAmount = NumberUtil.getDouble(context.getAttr("couponAmount"), 0);
+				
+		if(couponAmount > 0){// 充值券赠送
+			AppParam couponAmountParam = new AppParam();
+			couponAmountParam.setService("custAmountService");
+			couponAmountParam.setMethod("updateCustAmount");
+			couponAmountParam.addAttr("orderId", context.getAttr("orderId"));
+			couponAmountParam.addAttr("recordDesc", "充值券赠送");
+			couponAmountParam.addAttr("customerId", context.getAttr("customerId"));
+			couponAmountParam.addAttr("amount", couponAmount);
+			couponAmountParam.addAttr("fundType", FundConstant.COUPON_RECHARGE);
+			this.updateCustAmount(couponAmountParam);
+		}
+		return new AppResult();
+	}
+	
+	
+	/**
+	 * 退款处理
+	 * @param context
+	 * @return
+	 */
+	public AppResult returnAmount(AppParam context){
+		AppParam amountParam = new AppParam();
+		amountParam.setService("custAmountService");
+		amountParam.setMethod("updateCustAmount");
+		amountParam.addAttr("orderId", context.getAttr("orderId"));
+		amountParam.addAttr("recordDesc", "充值退款");
+		amountParam.addAttr("customerId", context.getAttr("customerId"));
+		amountParam.addAttr("amount", -Double.valueOf(context.getAttr("amount").toString()));
+		amountParam.addAttr("fundType", FundConstant.FundType_VIP_BACK);
+		this.updateCustAmount(amountParam);
+			
+		if(!StringUtils.isEmpty(context.getAttr("rechargeReward"))&&
+				Double.valueOf(context.getAttr("rechargeReward").toString())>1){
+			AppParam rewardAmountParam = new AppParam();
+			rewardAmountParam.setService("custAmountService");
+			rewardAmountParam.setMethod("updateCustAmount");
+			rewardAmountParam.addAttr("orderId", context.getAttr("orderId"));
+			rewardAmountParam.addAttr("recordDesc", "赠送退还");
+			rewardAmountParam.addAttr("customerId", context.getAttr("customerId"));
+			rewardAmountParam.addAttr("amount", -Double.valueOf(context.getAttr("rechargeReward").toString()));
+			rewardAmountParam.addAttr("fundType", FundConstant.FundType_RECHARGE_Reward);
+			this.updateCustAmount(rewardAmountParam);
+		}
+		if(!StringUtils.isEmpty(context.getAttr("orderId"))){
+			
+			AppParam  fund = new AppParam();
+			fund.addAttr("rechargeId", context.getAttr("orderId"));
+			fund.addAttr("status", "4");
+			fund.addAttr("errCodeDesc", "已经退款处理");
+			fund.setService("rechargeService");
+			fund.setMethod("update");
+			SoaManager.getInstance().invoke(fund);
+		}
+		return new AppResult();
+	}
+	
+	/**
+	 * 修改用户金额以及记录
+	 * @param context
+	 * @return
+	 */
+	public AppResult updateCustAmount(AppParam context){
+		Object customerId = context.getAttr("customerId");
+		if(StringUtils.isEmpty(customerId)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		int size = super.getDao().update(NAMESPACE, "updateCustAmount", context.getAttr(), context.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		
+		AppParam queryCust = new AppParam();
+		queryCust.addAttr("customerId", customerId);
+		AppResult queryResult = this.query(queryCust);
+		Double usableAmount = Double.parseDouble(queryResult.getRow(0).get("usableAmount").toString());
+		
+		AppParam  fund = new AppParam();
+		fund.setAttr(context.getAttr());
+		fund.addAttr("usableAmount", usableAmount);
+		fund.setService("fundRecordService");
+		fund.setMethod("insert");
+		result = SoaManager.getInstance().invoke(fund);
+		
+		if(result.isSuccess()){
+			CustAmountUtil.refershAmount(customerId.toString());
+		}
+		
+		result.putAttr("usableAmount", usableAmount);
+		return result;
+	}
+	
+	/**
+	 * 修改用户可抢优质单金额以及资金记录
+	 * @param context
+	 * @return
+	 */
+	public AppResult updateSeniorAmount(AppParam context){
+		Object customerId = context.getAttr("customerId");
+		if(StringUtils.isEmpty(customerId)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		int size = super.getDao().update(NAMESPACE, "updateSeniorAmount", context.getAttr(), context.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		
+		AppParam queryCust = new AppParam();
+		queryCust.addAttr("customerId", customerId);
+		AppResult queryResult = this.query(queryCust);
+		Double seniorAmount = Double.parseDouble(queryResult.getRow(0).get("seniorAmount").toString());
+		
+		AppParam  fund = new AppParam();
+		fund.setAttr(context.getAttr());
+		fund.addAttr("seniorAmount", seniorAmount);
+		fund.setService("fundRecordSeniorService");
+		fund.setMethod("insert");
+		result = SoaManager.getInstance().invoke(fund);
+		
+		if(result.isSuccess()){
+			RedisUtils.getRedisService().del(CustAmountUtil.CacheKey_PASS + customerId);
+		}
+		
+		result.putAttr("seniorAmount", seniorAmount);
+		return result;
+	}
+	
+	/**
+	 * 清空用户金额以及记录
+	 * @param context
+	 * @return
+	 */
+	public AppResult clearUsableAmount(AppParam context){
+		Object customerId = context.getAttr("customerId");
+		if(StringUtils.isEmpty(customerId)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		AppParam queryCust = new AppParam();
+		queryCust.addAttr("customerId", customerId);
+		AppResult queryResult = this.query(queryCust);
+		Double usableAmount = Double.parseDouble(queryResult.getRow(0).get("usableAmount").toString());
+		
+		AppResult result = new AppResult();
+		AppParam updateParam = new AppParam();
+		updateParam.addAttr("customerId", customerId);
+		updateParam.addAttr("usableAmount", 0);
+		this.update(updateParam);
+		
+		AppParam  fund = new AppParam();
+		fund.setAttr(context.getAttr());
+		fund.addAttr("usableAmount", 0);
+		fund.addAttr("amount", -usableAmount);
+		fund.setService("fundRecordService");
+		fund.setMethod("insert");
+		SoaManager.getInstance().invoke(fund);
+		
+		result.putAttr("usableAmount", 0);
+		return result;
+	}
+	
+	/***
+	 * 金融管家抽奖
+	 * @param params
+	 * @return
+	 */
+	public AppResult stewardDraw(AppParam params) {
+		int size = super.getDao().update(NAMESPACE, "stewardDraw", params.getAttr(), params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return result;
+	}
+	
+	/**
+	 * 活动奖励添加 推荐好友赠送
+	 * @param context
+	 * @return
+	 */
+	public AppResult insertActivity(AppParam context){
+		AppParam amountParam = new AppParam();
+		amountParam.addAttr("customerId", context.getAttr("customerId"));
+		amountParam.addAttr("amount", context.getAttr("rewardValue"));
+		amountParam.addAttr("fundType", context.getAttr("fundType"));
+		amountParam.addAttr("recordDesc", context.getAttr("recordDesc"));
+		this.updateCustAmount(amountParam);
+		
+		return new AppResult();
+	}
+	
+	
+	/**
+	 * 修改用户佣金
+	 * @param params
+	 * @return
+	 */
+	public AppResult updateRewardAmount(AppParam params) {
+		AppResult result = new AppResult();
+		Object customerId = params.getAttr("customerId");
+		Object method = params.getAttr("methodName");
+		if(StringUtils.isEmpty(customerId) || StringUtils.isEmpty(method)){
+			throw new AppException(DuoduoError.UPDATE_NO_PARAMS);
+		}
+		// 更新用户资金
+		int size = super.getDao().update(NAMESPACE, method.toString(), params.getAttr(), params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		
+		// 刷新资金缓存
+		if(result.isSuccess()){
+			CustAmountUtil.refershAmount(customerId.toString());
+		}
+		return result;
+	}
+}
