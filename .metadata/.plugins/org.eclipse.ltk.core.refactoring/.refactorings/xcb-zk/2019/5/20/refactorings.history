@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Copy element &apos;RemoteInvoke.java&apos; to &apos;llw-common/src/main/java/org.ddq.common.core.service&apos;&#x0A;- Original project: &apos;xcb-zk&apos;&#x0A;- Destination element: &apos;llw-common/src/main/java/org.ddq.common.core.service&apos;&#x0A;- Original element: &apos;org.ddq.zk.service.RemoteInvoke.java&apos;" description="Copy compilation unit" destination="=llw-common/src\/main\/java&lt;org.ddq.common.core.service" element1="/src\/main\/java&lt;org.ddq.zk.service{RemoteInvoke.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1558099280624" units="1" version="1.0"/>
-</session>
