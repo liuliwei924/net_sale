@@ -306,25 +306,25 @@ public class ApplyInfoAction {
 			//查询主要信息
 			Map<String, Object> mainInfo = StoreApplyUtils.getApplyMainInfo(applyId);
 			
-			String hideFlag = request.getParameter("hideFlag"); // 退单列表详情手机号隐藏标识
+//			String hideFlag = request.getParameter("hideFlag"); // 退单列表详情手机号隐藏标识
 
 			// 查询申请信息
 			Map<String, Object> applyMap = StoreApplyUtils.getStoreApplyInfo(applyId);
 			
 			String custId = StringUtil.getString(applyMap.get("lastStore"));
-			if (custInfo != null && mainInfo != null) {
-				String authType = StringUtil.getString(custInfo.get("roleType"));
+//			if (custInfo != null && mainInfo != null) {详情页直接显示号码
+//				String authType = StringUtil.getString(custInfo.get("roleType"));
 				// 管理员默认隐藏手机号码 以及管理员退单列表设置可显示的手机号码
-				if(CustConstant.CUST_ROLETYPE_1.equals(authType)){
-					mainInfo.put("telephone", StringUtil.getHideTelphone(
-							StringUtil.getString(mainInfo.get("telephone"))));
-				}
-				if(CustConstant.CUST_ROLETYPE_1.equals(authType)  && StringUtils.isEmpty(hideFlag) ){
-					mainInfo.remove("noHideMobile");
-				}else if(!CustConstant.CUST_ROLETYPE_1.equals(authType) && !StringUtils.isEmpty(hideFlag)){
-					mainInfo.remove("noHideMobile");
-				}
-			}
+//				if(CustConstant.CUST_ROLETYPE_1.equals(authType)){
+//					mainInfo.put("telephone", StringUtil.getHideTelphone(
+//							StringUtil.getString(mainInfo.get("telephone"))));
+//				}
+//				if(CustConstant.CUST_ROLETYPE_1.equals(authType)  && StringUtils.isEmpty(hideFlag) ){
+//					mainInfo.remove("noHideMobile");
+//				}else if(!CustConstant.CUST_ROLETYPE_1.equals(authType) && !StringUtils.isEmpty(hideFlag)){
+//					mainInfo.remove("noHideMobile");
+//				}
+//			}
 
 			// 设置主要信息
 			result.putAttr("mainInfo", mainInfo);
