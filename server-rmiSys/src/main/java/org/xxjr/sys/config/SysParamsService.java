@@ -7,8 +7,10 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.web.session.DuoduoSession;
 import org.llw.common.core.service.BaseService;
+import org.llw.model.cache.RedisUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.SysParamsUtil;
 
 @Lazy
@@ -44,6 +46,15 @@ public class SysParamsService extends BaseService {
 		context.addAttr("updateBy", DuoduoSession.getUserName());
 		AppResult result =  super.update(context, NAMESPACE);
 		SysParamsUtil.refreshValue(context.getAttr("paramCode").toString(),context.getAttr("paramValue").toString());
+		return result;
+	}
+	public AppResult delete(AppParam params) {
+		String paramCode = (String) params.getAttr("paramCode");
+		AppResult result = super.delete(params, NAMESPACE);
+		int deleteSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Delete_SIZE),0);
+		if (deleteSize > 0) {
+			RedisUtils.getRedisService().del(paramCode);
+		}
 		return result;
 	}
 }

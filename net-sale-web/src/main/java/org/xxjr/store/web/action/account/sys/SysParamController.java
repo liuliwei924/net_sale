@@ -34,7 +34,7 @@ public class SysParamController extends BaseController{
 			param.setOrderBy("createTime");
 			param.setOrderValue("DESC");
 			param.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sys));
 			result = RemoteInvoke.getInstance().callNoTx(param);
 		} catch (Exception e) {
 			LogerUtil.error(UserInfoAction.class,e, "查询系统参数列表错误");
@@ -52,16 +52,16 @@ public class SysParamController extends BaseController{
 	public AppResult delete(){
 		AppResult result = new AppResult();
 		try {	
-			String paramKey = request.getParameter("paramKey");
-			if (StringUtils.isEmpty(paramKey)) {
+			String paramCode = request.getParameter("paramCode");
+			if (StringUtils.isEmpty(paramCode)) {
 				result.setSuccess(false);
-				result.setMessage("paramKey不能为空");
+				result.setMessage("paramCode不能为空");
 				return result;
 			}
 			AppParam param = new AppParam("sysParamsService","delete");
-			param.addAttr("paramKey", paramKey);
+			param.addAttr("paramCode", paramCode);
 			param.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sys));
 			result = RemoteInvoke.getInstance().call(param);
 		} catch (Exception e) {
 			LogerUtil.error(UserInfoAction.class,e, "删除系统参数错误");
@@ -79,8 +79,8 @@ public class SysParamController extends BaseController{
 	public AppResult update(){
 		AppResult result = new AppResult();
 		try {	
-			String paramKey = request.getParameter("paramKey");
-			if (StringUtils.isEmpty(paramKey)) {
+			String paramCode = request.getParameter("paramCode");
+			if (StringUtils.isEmpty(paramCode)) {
 				result.setSuccess(false);
 				result.setMessage("请至少选择一项进行修改");
 				return result;
@@ -89,7 +89,7 @@ public class SysParamController extends BaseController{
 			RequestUtil.setAttr(param, request);
 			param.addAttr("updateBy", "admin");
 			param.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sys));
 			result = RemoteInvoke.getInstance().call(param);
 		} catch (Exception e) {
 			LogerUtil.error(UserInfoAction.class,e, "修改系统参数错误");
@@ -107,9 +107,9 @@ public class SysParamController extends BaseController{
 	public AppResult insert(){
 		AppResult result = new AppResult();
 		try {	
-			String paramKey = request.getParameter("paramKey");
+			String paramCode = request.getParameter("paramCode");
 			String paramValue = request.getParameter("paramValue");
-			if (StringUtils.isEmpty(paramValue) || StringUtils.isEmpty(paramKey)) {
+			if (StringUtils.isEmpty(paramValue) || StringUtils.isEmpty(paramCode)) {
 				result.setSuccess(false);
 				result.setMessage("缺少必要参数");
 				return result;
@@ -117,7 +117,7 @@ public class SysParamController extends BaseController{
 			AppParam param = new AppParam("sysParamsService","insert");
 			RequestUtil.setAttr(param, request);
 			param.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sys));
 			result = RemoteInvoke.getInstance().call(param);
 		} catch (Exception e) {
 			LogerUtil.error(UserInfoAction.class,e, "增加系统参数错误");

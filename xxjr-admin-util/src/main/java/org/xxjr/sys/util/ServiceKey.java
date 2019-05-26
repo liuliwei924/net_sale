@@ -21,7 +21,7 @@ public class ServiceKey {
 	/**业务服务相关*/
 //	public static final String Key_busi="busi";
 	/**系统服务相关*/
-//	public static final String Key_sys="sys";
+	public static final String Key_sys="sys";
 	/**客户信息相关*/
 	public static final String Key_cust="cust";
 	/**扩展业务服务相关*/
