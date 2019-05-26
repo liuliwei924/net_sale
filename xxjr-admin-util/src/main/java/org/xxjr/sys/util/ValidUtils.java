@@ -26,6 +26,10 @@ public class ValidUtils {
 	public static final String Valide_double2 = "double";
 	/**数字类型校验 **/
 	public static final String Valide_integer = "integer";
+	
+	/**密码复杂度校验 **/
+	public static final String Valide_pwd = "pwd";
+	
 	static{
 		defaultPartens.put("notNull", ".+");
 		defaultPartens.put("email","^\\w+([-+.']\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$");
@@ -37,6 +41,7 @@ public class ValidUtils {
 		defaultPartens.put("color","^[0-9a-fA-F]{3,6}$");
 		defaultPartens.put("double","\\d+(?:\\.\\d{0,2}|)");
 		defaultPartens.put("integer","\\d+");
+		defaultPartens.put("pwd","^(?![a-zA-z]+$)(?!\\d+$)(?![!@#$%^&*]+$)[a-zA-Z\\d!@#$%^&*]+$");
 	}
 	
 
@@ -208,6 +213,16 @@ public class ValidUtils {
 			return false;
 		}
 		return true;
+	}
+	
+	/***
+	 * 密码复杂度校验
+	 * 
+	 * @param telephone
+	 * @return
+	 */
+	public static Boolean checkPwd(String password) {
+		return validValue(Valide_pwd, password);
 	}
 	
 	public static void main(String[] args){
