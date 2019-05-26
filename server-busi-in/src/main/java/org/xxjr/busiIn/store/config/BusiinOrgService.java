@@ -1,4 +1,4 @@
-package org.xxjr.cust.store;
+package org.xxjr.busiIn.store.config;
 
 import java.util.Date;
 
@@ -14,39 +14,8 @@ import org.xxjr.sys.util.DBConst;
 
 @Lazy
 @Service
-public class OrgService extends BaseService {
-
-
-	private static final String NAMESPACE = "ORG";
-	
-	/**
-	 * 查询所有门店
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryOrgList(AppParam params) {
-		return super.query(params, NAMESPACE,"queryOrgList");
-	}
-	
-	/**
-	 * 分页所有门店
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryOrgPage(AppParam params) {
-		return super.queryByPage(params, NAMESPACE,"queryOrgList","queryOrgCount");
-	}
-	
-
-
-	/**
-	 * 查询用户管理门店
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryUserOrgs(AppParam params) {
-		return super.query(params, NAMESPACE,"queryUserOrgs");
-	}
+public class BusiinOrgService extends BaseService {
+	private static final String NAMESPACE = "BUSIINORG";
 
 	/**
 	 * 查寻数据
@@ -73,9 +42,7 @@ public class OrgService extends BaseService {
 	 */
 	public AppResult insert(AppParam params) {
 		params.addAttr("createTime", new Date());
-		AppResult result =  super.insert(params, NAMESPACE);
-		result.putAttr("orgId", params.getAttr("orgId"));
-		return result;
+		return super.insert(params, NAMESPACE);
 	}
 	
 	/**
@@ -111,6 +78,4 @@ public class OrgService extends BaseService {
 		return result;
 	}
 	
-
-
 }

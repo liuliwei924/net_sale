@@ -2,86 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
 "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="ORG">
+<mapper namespace="BUSIINORG">
     
-	<select id="queryOrgList" resultType="map" parameterType="map">
-		SELECT 
-			t.orgId,
-			t.orgName,
-			t.orgNo,
-			t.province,
-			t.cityName,
-			t.address,
-			t.isNet,
-			t.isCount,
-			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
-			t.orgFlag
-		FROM
-		t_org t
-		<where>
-			<if test="orgId !=null and orgId !=''">
-				t.orgId = #{orgId}
-			</if>
-			<if test="orgNo !=null and orgNo !=''">
-				t.orgNo = #{orgNo}
-			</if>
-			<if test="orgName !=null and orgName !=''">
-				and t.orgName =#{orgName} 
-			</if>
-			<if test="cityName !=null and cityName !=''">
-				and t.cityName =#{cityName} 
-			</if>
-			<if test="orgFlag !=null and orgFlag !=''">
-				and t.orgFlag =#{orgFlag} 
-			</if>
-		</where>
-		<if test="orderSql != null and orderSql!='' "> 
-			ORDER by ${orderSql}
-		</if>
-	</select>
-	
-	
-	<select id="queryOrgCount" resultType="int" parameterType="map">
-		SELECT COUNT(*) FROM t_org t 
-		<where>
-			<if test="orgId !=null and orgId !=''">
-				t.orgId = #{orgId}
-			</if>
-			<if test="orgName !=null and orgName !=''">
-				and t.orgName =#{orgName} 
-			</if>
-			<if test="cityName !=null and cityName !=''">
-				and t.cityName =#{cityName} 
-			</if>
-			<if test="orgFlag !=null and orgFlag !=''">
-				and t.orgFlag =#{orgFlag} 
-			</if>
-		</where>
-	
-	</select>
-	
-	
-		<select id="queryUserOrgs" resultType="map" parameterType="map">
-		SELECT t.orgId,t.orgName,t.orgNo,t.province,t.cityName,t.address
-		FROM
-		t_org t
-		<where>
-			<if test="orgId !=null and orgId !=''">
-				t.orgId = #{orgId}
-			</if>
-			<if test="userOrgs !=null and userOrgs !=''">
-				and t.orgId in (${userOrgs})
-			</if>
-			
-			<if test="orgName !=null and orgName !=''">
-				and t.orgName = #{orgName} 
-			</if>
-		</where>
-		
-	</select>
-
-
-<select id="query" resultType="map" parameterType="map">
+	<select id="query" resultType="map" parameterType="map">
 		SELECT
 			orgId,
 			orgName,
@@ -130,10 +53,8 @@
 	</select>
 
 	<insert id="insert" parameterType="map">
-	<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="orgId">
-	   SELECT LAST_INSERT_ID()
-	</selectKey>
 		INSERT INTO t_org (
+			orgId,
 			orgName,
 			orgNo,
 			province,
@@ -148,6 +69,7 @@
 		  	orgFlag
 		)
 		VALUES ( 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
 			#{orgName, jdbcType=VARCHAR}, 
 			#{orgNo, jdbcType=VARCHAR}, 
 			#{province, jdbcType=VARCHAR}, 
@@ -239,5 +161,4 @@
 			  orgId = #{orgId}
 		</where>
 	</update>
-
 </mapper>
