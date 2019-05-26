@@ -10,6 +10,7 @@ import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.security.MD5Util;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.web.session.DuoduoSession;
 import org.ddq.common.web.session.RequestUtil;
@@ -18,10 +19,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.StoreSeparateUtils;
+import org.xxjr.busi.util.store.ApplyInfoUtil;
 import org.xxjr.busi.util.store.BusiCustUtil;
 import org.xxjr.busi.util.store.StoreRoleUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
@@ -432,6 +435,50 @@ public class StoreOperatorAction {
 			LogerUtil.error(StoreRoleAction.class, e, "queryGradeList error");
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}	
+		return result;
+	}
+	
+	
+	
+	/**
+	 * 重置密码
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("resetPwd")
+	@ResponseBody
+	public AppResult resetPwd(HttpServletRequest request){
+		AppResult result = new AppResult();
+		String curCustomerId = request.getParameter("curCustomerId");
+		String password = request.getParameter("password");
+		if(StringUtils.isEmpty(curCustomerId) || StringUtils.isEmpty(password)){
+			result.setSuccess(false);
+			result.setMessage("缺少参数");
+			return result;
+		}
+		if (password.length() < 6 || password.length() > 12) {
+			return CustomerUtil.retErrorMsg("密码长度需要在6~12之间");
+		}
+		if (!ValidUtils.checkPwd(password)) {
+			return CustomerUtil.retErrorMsg("密码需要包含字符和数字喔~");
+		}
+		String loginCustId = StoreUserUtil.getCustomerId(request);//登陆用户ID
+		if (!ApplyInfoUtil.isAdminAuth(loginCustId)) {
+			return CustomerUtil.retErrorMsg("您没有此权限");
+		}
+		try {
+			AppParam params = new AppParam("customerService", "update");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_cust));
+			RequestUtil.setAttr(params, request);
+			params.addAttr("customerId", curCustomerId);
+			params.addAttr("password",  MD5Util.getEncryptPassword(password));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch(Exception e){
+			LogerUtil.error(StoreRoleAction.class, e, "resetPwd error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
 		return result;
 	}
 }
