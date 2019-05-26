@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMORG">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			orgId,
+			orgName,
+			orgNo,
+			province,
+			cityName,
+			address,
+			managerName,
+			managerTel,
+			orgType,
+			isNet,
+			isCount,
+			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+		   orgFlag
+		  FROM
+		t_org 
+		<where>
+			<if test="orgId != null and orgId != ''">
+			  	and orgId = #{orgId}
+			 </if>
+			<if test="orgName != null and orgName != ''">
+				and orgName = #{orgName}
+			</if>
+			<if test="orgCode != null and orgCode != ''">
+				and orgCode = #{orgCode}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_org 
+		<where>
+		<if test="orgId != null and orgId != ''">
+		  	and orgId = #{orgId}
+		 </if>
+		<if test="orgName != null and orgName != ''">
+			and orgName = #{orgName}
+		</if>
+		<if test="orgCode != null and orgCode != ''">
+			and orgCode = #{orgCode}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_org (
+			orgId,
+			orgName,
+			orgNo,
+			province,
+			cityName,
+			address,
+			managerName,
+			managerTel,
+			orgType,
+			isNet,
+			isCount,
+			createTime,
+		  	orgFlag
+		)
+		VALUES ( 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{orgName, jdbcType=VARCHAR}, 
+			#{orgNo, jdbcType=VARCHAR}, 
+			#{province, jdbcType=VARCHAR}, 
+			#{cityName, jdbcType=VARCHAR}, 
+			#{address, jdbcType=VARCHAR},  
+			#{managerName, jdbcType=VARCHAR}, 
+			#{managerTel, jdbcType=VARCHAR},
+			<if test="orgType !=null ">
+			#{orgType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="orgType ==null ">
+			1 ,
+			</if>
+			<if test="isNet !=null ">
+			#{isNet, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isNet ==null ">
+			1 ,
+			</if>
+			<if test="isCount !=null ">
+			#{isCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isCount ==null ">
+			0 ,
+			</if>
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 
+			<if test="orgFlag !=null ">
+			#{orgFlag, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="orgFlag ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	
+	
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_org 
+		<where> 
+			orgId = #{orgId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_org  
+		<set>
+			<if test="orgNo != null and orgNo !=''">
+				orgNo = #{orgNo, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgName != null and orgName !=''">
+				orgName = #{orgName, jdbcType=VARCHAR},  
+			</if>
+			<if test="province != null">
+				province = #{province, jdbcType=VARCHAR},   
+			</if>
+			<if test="cityName != null and cityName !=''">
+				cityName = #{cityName, jdbcType=VARCHAR}, 
+			</if>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR}, 
+			</if>
+			<if test="address != null">
+				address = #{address, jdbcType=VARCHAR}, 
+			</if>
+			<if test="managerName != null">
+				managerName = #{managerName, jdbcType=VARCHAR}, 
+			</if>
+			<if test="managerTel != null and managerTel !=''">
+				managerTel = #{managerTel, jdbcType=VARCHAR},  
+			</if>
+			<if test="orgType != null and orgType !=''">
+				orgType = #{orgType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isNet != null and isNet !=''">
+				isNet = #{isNet, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="isCount != null and isCount !=''">
+				isCount = #{isCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgFlag != null and orgFlag !=''">
+				orgFlag = #{orgFlag, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  orgId = #{orgId}
+		</where>
+	</update>
+</mapper>
