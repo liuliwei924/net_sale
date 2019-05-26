@@ -351,6 +351,30 @@ public class MyOrderAction {
 		return result;
 	}
 	
+	/***
+	 * 回款核算批量确认
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("/backDeal/batchCheck")
+	@ResponseBody
+	public AppResult batchCheck(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			params.setService("treatSuccessService");
+			params.setMethod("batchCheck");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "batckCheck error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
 	/**
 	 * 查询专属订单列表
 	 * 
