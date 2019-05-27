@@ -335,6 +335,7 @@
 		registerTime,
 		referer,
 		userType,
+		roleType,
 		gzhId,
 		lastLoginTime,
 		lastLoginIp,
@@ -362,6 +363,12 @@
 		</if>
 		<if test="userType ==null ">
 		2, 
+		</if>
+		<if test="roleType !=null ">
+		#{roleType, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="roleType ==null ">
+		0, 
 		</if>
 		#{gzhId, jdbcType=INTEGER,typeHandler=NumberHandler},
 		#{lastLoginTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}, 

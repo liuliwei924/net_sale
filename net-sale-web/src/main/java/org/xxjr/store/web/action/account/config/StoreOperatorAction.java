@@ -514,6 +514,7 @@ public class StoreOperatorAction {
 			AppParam regParams = new AppParam();
 			regParams.addAttr("telephone", telephone);
 			regParams.addAttr("userName", userName);
+			regParams.addAttr("roleType", 2);
 			regParams.addAttr("userType", CustInfoUtil.UserType_2);
 			regParams.addAttr("sourceType", channelDetail);
 			customerId = CustomerUtil.custAutoRegister(regParams);
