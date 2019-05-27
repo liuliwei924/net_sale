@@ -13,6 +13,7 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.exception.SysException;
+import org.ddq.common.security.MD5Util;
 import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.LogerUtil;
@@ -30,6 +31,7 @@ import org.xxjr.cust.util.ShowErrorCode;
 import org.xxjr.cust.util.info.CustInfoUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.store.web.action.account.config.StoreRoleAction;
 import org.xxjr.sys.util.AreaUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
@@ -502,5 +504,43 @@ public class UserInfoAction {
 		}
 		return result;
 		
+	}
+	
+	/**
+	 * 重置密码
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("resetPwd")
+	@ResponseBody
+	public AppResult resetPwd(HttpServletRequest request){
+		AppResult result = new AppResult();
+		String password = request.getParameter("password");
+		if(StringUtils.isEmpty(password)){
+			result.setSuccess(false);
+			result.setMessage("缺少参数");
+			return result;
+		}
+		if (password.length() < 6 || password.length() > 12) {
+			return CustomerUtil.retErrorMsg("密码长度需要在6~12之间");
+		}
+		if (!ValidUtils.checkPwd(password)) {
+			return CustomerUtil.retErrorMsg("密码需要包含字符和数字喔~");
+		}
+		String loginCustId = StoreUserUtil.getCustomerId(request);//登陆用户ID
+		try {
+			AppParam params = new AppParam("customerService", "update");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_cust));
+			RequestUtil.setAttr(params, request);
+			params.addAttr("customerId", loginCustId);
+			params.addAttr("password",  MD5Util.getEncryptPassword(password));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch(Exception e){
+			LogerUtil.error(StoreRoleAction.class, e, "resetPwd error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
 	}
 }
