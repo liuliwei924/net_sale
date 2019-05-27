@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMCHANNELBASE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			channelCode,
+			channelType, 
+			channelName, 
+			costAmount, 
+			browseCount, 
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			storeCount, 
+			kfReceivedCount
+		FROM t_sum_channel_base
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+			  and channelCode = #{channelCode}
+			 </if>
+			<if test="channelType != null and channelType != ''">
+				and channelType = #{channelType}
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and channelName = #{channelName}
+			</if>
+			<if test="costAmount != null and costAmount != ''">
+				and costAmount = #{costAmount}
+			</if>
+			<if test="browseCount != null and browseCount != ''">
+				and browseCount = #{browseCount}
+			</if>
+			<if test="applyCount != null and applyCount != ''">
+				and applyCount = #{applyCount}
+			</if>
+			<if test="seniorCount != null and seniorCount != ''">
+				and seniorCount = #{seniorCount}
+			</if>
+			<if test="notFillCount != null and notFillCount != ''">
+				and notFillCount = #{notFillCount}
+			</if>
+			<if test="storeCount != null and storeCount != ''">
+				and storeCount = #{storeCount}
+			</if>
+			<if test="kfReceivedCount != null and kfReceivedCount != ''">
+				and kfReceivedCount = #{kfReceivedCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_channel_base 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+		    and channelCode = #{channelCode}
+		 </if>
+		<if test="channelType != null and channelType != ''">
+			and channelType = #{channelType}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			and channelName = #{channelName}
+		</if>
+		<if test="costAmount != null and costAmount != ''">
+			and costAmount = #{costAmount}
+		</if>
+		<if test="browseCount != null and browseCount != ''">
+			and browseCount = #{browseCount}
+		</if>
+		<if test="applyCount != null and applyCount != ''">
+			and applyCount = #{applyCount}
+		</if>
+		<if test="seniorCount != null and seniorCount != ''">
+			and seniorCount = #{seniorCount}
+		</if>
+		<if test="notFillCount != null and notFillCount != ''">
+			and notFillCount = #{notFillCount}
+		</if>
+		<if test="storeCount != null and storeCount != ''">
+			and storeCount = #{storeCount}
+		</if>
+		<if test="kfReceivedCount != null and kfReceivedCount != ''">
+			and kfReceivedCount = #{kfReceivedCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_channel_base (
+			recordDate,
+			channelCode,
+			channelType,
+			channelName,
+			costAmount,
+			browseCount,
+			applyCount,
+			seniorCount,
+			notFillCount,
+			storeCount,
+			kfReceivedCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="channelCode !=null ">
+			#{channelCode, jdbcType=VARCHAR}, 
+			</if> 
+			#{channelType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{channelName, jdbcType=VARCHAR}, 
+			<if test="costAmount !=null ">
+			#{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="costAmount ==null ">
+			0.00 ,
+			</if>
+			<if test="browseCount !=null ">
+			#{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="browseCount ==null ">
+			0 ,
+			</if>
+			<if test="applyCount !=null ">
+			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="applyCount ==null ">
+			0 ,
+			</if>
+			<if test="seniorCount !=null ">
+			#{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="seniorCount ==null ">
+			0 ,
+			</if>
+			<if test="notFillCount !=null ">
+			#{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="notFillCount ==null ">
+			0 ,
+			</if>
+			<if test="storeCount !=null ">
+			#{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="storeCount ==null ">
+			0 ,
+			</if>
+			<if test="kfReceivedCount !=null ">
+			#{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="kfReceivedCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_channel_base 
+		<where> 
+			recordDate = #{recordDate} AND 
+			channelCode = #{channelCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_channel_base  
+		<set>
+			<if test="channelType != null">
+				channelType = #{channelType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="applyCount != null">
+				applyCount = #{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="seniorCount != null">
+				seniorCount = #{seniorCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="notFillCount != null">
+				notFillCount = #{notFillCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="storeCount != null">
+				storeCount = #{storeCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="kfReceivedCount != null">
+				kfReceivedCount = #{kfReceivedCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  channelCode = #{channelCode}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_channel_base 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_channel_base  (
+			recordDate,
+			channelCode,
+			channelType, 
+			channelName, 
+			costAmount, 
+			browseCount, 
+			applyCount, 
+			seniorCount, 
+			notFillCount, 
+			storeCount, 
+			kfReceivedCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.channelCode}, 
+		  #{item.channelType}, 
+		  #{item.channelName}, 
+		  #{item.costAmount}, 
+		  #{item.browseCount}, 
+		  #{item.applyCount},
+		  #{item.seniorCount}, 
+		  #{item.notFillCount}, 
+		  #{item.storeCount}, 
+		  #{item.kfReceivedCount}
+		  )
+		</foreach>
+  </insert>
+  
+   <sql id="queryShowSql">
+   		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  	and t1.recordDate = #{recordDate}
+			 </if>
+			 <if test="channelCode != null and channelCode != ''">
+			  	and t1.channelCode = #{channelCode}
+			 </if>
+			 <if test="fixChannels != null and fixChannels != ''">
+				and FIND_IN_SET(t1.channelCode,#{fixChannels})
+			 </if>
+			 <if test="channelName != null and channelName != ''">
+			  	and t1.channelName like CONCAT('%',#{channelName},'%')
+			 </if>
+			 <if test="type != null and type != ''">
+			  	and t1.channelType = #{type}
+			 </if>
+			 <if test="startRecordDate != null and startRecordDate != ''">
+			  	and <![CDATA[t1.recordDate >= #{startRecordDate}]]>
+			 </if>
+			  <if test="endRecordDate != null and endRecordDate != ''">
+			 	and <![CDATA[t1.recordDate <= #{endRecordDate}]]>
+			 </if>
+		     <if test="startRecordMonth != null and startRecordDate != ''">
+			  	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m')>= #{startRecordMonth}]]>
+			 </if>
+			 <if test="endRecordMonth != null and endRecordDate != ''">
+			 	and <![CDATA[ DATE_FORMAT(t1.recordDate,'%Y-%m') <= #{endRecordMonth}]]>
+			 </if>
+		</where>
+    </sql>
+  
+  <!-- 渠道数据统计 -->
+  <select id="channelSum" resultType="map" parameterType="map">
+  	SELECT
+		t1.recordDate,
+		t1.channelCode,
+		t1.channelType,
+		t1.channelName,
+		IFNULL(t1.costAmount,0) as costAmount,
+		IFNULL(ROUND(t1.costAmount/t1.applyCount,2),0) as 'costMoney' ,
+		IFNULL(t1.browseCount,0) as browseCount,
+		IFNULL(t1.applyCount,0) as applyCount,
+		IFNULL(t1.seniorCount,0) as seniorCount,
+		IFNULL(t1.notFillCount,0) as notFillCount,
+		IFNULL(t1.storeCount,0) as storeCount,
+		IFNULL(t1.kfReceivedCount,0) as kfReceivedCount,
+		IFNULL(t2.sucBookCount,0) as sucBookCount,
+		IFNULL(t2.preBookCount,0) as preBookCount,
+		IFNULL(t2.failBookCount,0) as failBookCount,
+		IFNULL(t3.saleCount,0) as saleCount,
+		IFNULL(t3.saleAmount,0) as saleAmount,
+		IFNULL(t3.saleScore,0) as saleScore,
+		IFNULL(t3.failSaleCount,0) as failSaleCount,
+		IFNULL(t3.failSaleAmount,0) as failSaleAmount,
+		IFNULL(t3.failSaleScore,0) as failSaleScore,
+		IFNULL(t3.sucSaleCount,0) as sucSaleCount,
+		IFNULL(t3.sucSaleAmount,0) as sucSaleAmount,
+		IFNULL(t3.sucSaleScore,0) as sucSaleScore,
+		IFNULL(t4.sucSignCount,0) as sucSignCount,
+		IFNULL(t4.sucSignAmt,0) as sucSignAmt,
+		IFNULL(t4.signingCount,0) as signingCount,
+		IFNULL(t4.signingAmt,0) as signingAmt,
+		IFNULL(t4.failSignCount,0) as failSignCount,
+		IFNULL(t4.failSignAmt,0) as failSignAmt,
+		IFNULL(t5.retCount,0) as retCount,
+		IFNULL(t5.retAmount,0) as retAmount,
+		IFNULL(t5.sucRetCount,0) as sucRetCount,
+		IFNULL(t5.sucRetAmount,0) as sucRetAmount
+	FROM
+		t_sum_channel_base t1
+	LEFT JOIN t_sum_book_channel t2 ON t1.recordDate = t2.recordDate
+	AND t1.channelCode = t2.channelCode
+	LEFT JOIN t_sum_sale_channel t3 ON t1.recordDate = t3.recordDate
+	AND t1.channelCode = t3.channelCode
+	LEFT JOIN t_sum_sign_channel t4 ON t1.recordDate = t4.recordDate
+	AND t1.channelCode = t4.channelCode
+	LEFT JOIN t_sum_ret_channel t5 ON t1.recordDate = t5.recordDate
+	AND t1.channelCode = t5.channelCode
+	<include refid="queryShowSql"/>
+	ORDER BY t1.recordDate DESC,t1.costAmount DESC,t1.channelCode ASC
+	</select>
+
+	<select id="channelSumCount" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM
+		t_sum_channel_base t1
+		<include refid="queryShowSql"/>
+	</select>
+	
+   <!-- 渠道月数据统计 -->
+  <select id="channelMonthSum" resultType="map" parameterType="map">
+  	SELECT
+		DATE_FORMAT(t1.recordDate,'%Y-%m') 'recordDate',
+		t1.channelCode,
+		t1.channelType,
+		t1.channelName,
+		IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoney' ,
+		IFNULL(sum(t1.costAmount),0) as costAmount,
+		IFNULL(sum(t1.browseCount),0) as browseCount,
+		IFNULL(sum(t1.applyCount),0) as applyCount,
+		IFNULL(sum(t1.seniorCount),0) as seniorCount,
+		IFNULL(sum(t1.notFillCount),0) as notFillCount,
+		IFNULL(sum(t1.storeCount),0) as storeCount,
+		IFNULL(sum(t1.kfReceivedCount),0) as kfReceivedCount,
+		IFNULL(sum(t2.sucBookCount),0) as sucBookCount,
+		IFNULL(sum(t2.preBookCount),0) as preBookCount,
+		IFNULL(sum(t2.failBookCount),0) as failBookCount,
+		IFNULL(sum(t3.saleCount),0) as saleCount,
+		IFNULL(sum(t3.saleAmount),0) as saleAmount,
+		IFNULL(sum(t3.saleScore),0) as saleScore,
+		IFNULL(sum(t3.failSaleCount),0) as failSaleCount,
+		IFNULL(sum(t3.failSaleAmount),0) as failSaleAmount,
+		IFNULL(sum(t3.failSaleScore),0) as failSaleScore,
+		IFNULL(sum(t3.sucSaleCount),0) as sucSaleCount,
+		IFNULL(sum(t3.sucSaleAmount),0) as sucSaleAmount,
+		IFNULL(sum(t3.sucSaleScore),0) as sucSaleScore,
+		IFNULL(sum(t4.sucSignCount),0) as sucSignCount,
+		IFNULL(sum(t4.sucSignAmt),0) as sucSignAmt,
+		IFNULL(sum(t4.signingCount),0) as signingCount,
+		IFNULL(sum(t4.signingAmt),0) as signingAmt,
+		IFNULL(sum(t4.failSignCount),0) as failSignCount,
+		IFNULL(sum(t4.failSignAmt),0) as failSignAmt,
+		IFNULL(sum(t5.retCount),0) as retCount,
+		IFNULL(sum(t5.retAmount),0) as retAmount,
+		IFNULL(sum(t5.sucRetCount),0) as sucRetCount,
+		IFNULL(sum(t5.sucRetAmount),0) as sucRetAmount
+	FROM
+		t_sum_channel_base t1
+	LEFT JOIN t_sum_book_channel t2 ON t1.recordDate = t2.recordDate
+	AND t1.channelCode = t2.channelCode
+	LEFT JOIN t_sum_sale_channel t3 ON t1.recordDate = t3.recordDate
+	AND t1.channelCode = t3.channelCode
+	LEFT JOIN t_sum_sign_channel t4 ON t1.recordDate = t4.recordDate
+	AND t1.channelCode = t4.channelCode
+	LEFT JOIN t_sum_ret_channel t5 ON t1.recordDate = t5.recordDate
+	AND t1.channelCode = t5.channelCode
+	<include refid="queryShowSql"/>
+	GROUP BY t1.channelCode, DATE_FORMAT(t1.recordDate,'%Y-%m')
+	ORDER by t1.recordDate DESC,t1.costAmount DESC,t1.channelCode ASC
+  </select>
+  
+  <select id="channelMonthSumCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM 
+			(SELECT COUNT(1) FROM t_sum_channel_base t1
+		<include refid="queryShowSql"/>
+		GROUP BY t1.channelCode, DATE_FORMAT(t1.recordDate,'%Y-%m')) tab1
+	</select>
+	
+	<!-- 推广按日查询统计 -->
+	<select id="tgChannelDay" resultType="map" parameterType="map">
+		SELECT
+		   (CASE t1.channelType
+		   WHEN 1 THEN '自有平台'
+		   WHEN 2 THEN '推广渠道'
+		   WHEN 3 THEN 'API接口'
+		   WHEN 4 THEN '历史数据'
+		   ELSE '未知'  END)  AS typeText,
+		  t1.recordDate,
+		IFNULL(sum(t1.costAmount),0) as costAmount,
+		IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoney' ,
+		IFNULL(sum(t1.browseCount),0) as browseCount,
+		IFNULL(sum(t1.applyCount),0) as applyCount,
+		IFNULL(sum(t1.seniorCount),0) as seniorCount,
+		IFNULL(sum(t1.notFillCount),0) as notFillCount,
+		IFNULL(sum(t1.storeCount),0) as storeCount,
+		IFNULL(sum(t1.kfReceivedCount),0) as kfReceivedCount,
+		IFNULL(sum(t2.sucBookCount),0) as sucBookCount,
+		IFNULL(sum(t2.preBookCount),0) as preBookCount,
+		IFNULL(sum(t2.failBookCount),0) as failBookCount,
+	    IFNULL(sum(t3.saleCount),0) as saleCount,
+		IFNULL(sum(t3.saleAmount),0) as saleAmount,
+		IFNULL(sum(t3.saleScore),0) as saleScore,
+		IFNULL(sum(t3.failSaleCount),0) as failSaleCount,
+		IFNULL(sum(t3.failSaleAmount),0) as failSaleAmount,
+		IFNULL(sum(t3.failSaleScore),0) as failSaleScore,
+		IFNULL(sum(t3.sucSaleCount),0) as sucSaleCount,
+		IFNULL(sum(t3.sucSaleAmount),0) as sucSaleAmount,
+		IFNULL(sum(t3.sucSaleScore),0) as sucSaleScore,
+		IFNULL(sum(t4.sucSignCount),0) as sucSignCount,
+		IFNULL(sum(t4.sucSignAmt),0) as sucSignAmt,
+		IFNULL(sum(t4.signingCount),0) as signingCount,
+		IFNULL(sum(t4.signingAmt),0) as signingAmt,
+		IFNULL(sum(t4.failSignCount),0) as failSignCount,
+		IFNULL(sum(t4.failSignAmt),0) as failSignAmt,
+		IFNULL(sum(t5.retCount),0) as retCount,
+		IFNULL(sum(t5.retAmount),0) as retAmount,
+		IFNULL(sum(t5.sucRetCount),0) as sucRetCount,
+		IFNULL(sum(t5.sucRetAmount),0) as sucRetAmount
+		FROM
+			t_sum_channel_base t1
+		LEFT JOIN t_sum_book_channel t2 ON t1.recordDate = t2.recordDate
+		AND t1.channelCode = t2.channelCode
+		LEFT JOIN t_sum_sale_channel t3 ON t1.recordDate = t3.recordDate
+		AND t1.channelCode = t3.channelCode
+		LEFT JOIN t_sum_sign_channel t4 ON t1.recordDate = t4.recordDate
+		AND t1.channelCode = t4.channelCode
+		LEFT JOIN t_sum_ret_channel t5 ON t1.recordDate = t5.recordDate
+		AND t1.channelCode = t5.channelCode
+		<include refid="queryShowSql"/>
+		GROUP BY t1.channelType, t1.recordDate
+		ORDER BY t1.recordDate DESC,t1.costAmount DESC	
+	</select>
+	
+	<select id="tgChannelDayCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM 
+			(SELECT COUNT(1) FROM t_sum_channel_base t1
+		<include refid="queryShowSql"/>
+		GROUP BY t1.channelType, t1.recordDate ) tab1
+	</select>
+	
+	<!-- 推广按月查询统计 -->
+	<select id="tgChannelMonth" resultType="map" parameterType="map">
+		  SELECT
+			  (CASE t1.channelType
+		   WHEN 1 THEN '自有平台'
+		   WHEN 2 THEN '推广渠道'
+		   WHEN 3 THEN 'API接口'
+		   WHEN 4 THEN '历史数据'
+		   ELSE '未知'  END) AS typeText,
+			    DATE_FORMAT(t1.recordDate,'%Y-%m') as recordDate,
+		IFNULL(sum(t1.costAmount),0) as costAmount,
+		IFNULL(sum(t1.browseCount),0) as browseCount,
+		IFNULL(sum(t1.applyCount),0) as applyCount,
+		IFNULL(sum(t1.seniorCount),0) as seniorCount,
+		IFNULL(ROUND(SUM(t1.costAmount)/SUM(t1.applyCount),2),0) as 'costMoney' ,
+		IFNULL(sum(t1.notFillCount),0) as notFillCount,
+		IFNULL(sum(t1.storeCount),0) as storeCount,
+		IFNULL(sum(t1.kfReceivedCount),0) as kfReceivedCount,
+		IFNULL(sum(t2.sucBookCount),0) as sucBookCount,
+		IFNULL(sum(t2.preBookCount),0) as preBookCount,
+		IFNULL(sum(t2.failBookCount),0) as failBookCount,
+		IFNULL(sum(t3.saleCount),0) as saleCount,
+		IFNULL(sum(t3.saleAmount),0) as saleAmount,
+		IFNULL(sum(t3.saleScore),0) as saleScore,
+		IFNULL(sum(t3.failSaleCount),0) as failSaleCount,
+		IFNULL(sum(t3.failSaleAmount),0) as failSaleAmount,
+		IFNULL(sum(t3.failSaleScore),0) as failSaleScore,
+		IFNULL(sum(t3.sucSaleCount),0) as sucSaleCount,
+		IFNULL(sum(t3.sucSaleAmount),0) as sucSaleAmount,
+		IFNULL(sum(t3.sucSaleScore),0) as sucSaleScore,
+		IFNULL(sum(t4.sucSignCount),0) as sucSignCount,
+		IFNULL(sum(t4.sucSignAmt),0) as sucSignAmt,
+		IFNULL(sum(t4.signingCount),0) as signingCount,
+		IFNULL(sum(t4.signingAmt),0) as signingAmt,
+		IFNULL(sum(t4.failSignCount),0) as failSignCount,
+		IFNULL(sum(t4.failSignAmt),0) as failSignAmt,
+		IFNULL(sum(t5.retCount),0) as retCount,
+		IFNULL(sum(t5.retAmount),0) as retAmount,
+		IFNULL(sum(t5.sucRetCount),0) as sucRetCount,
+		IFNULL(sum(t5.sucRetAmount),0) as sucRetAmount
+		FROM
+			t_sum_channel_base t1
+		LEFT JOIN t_sum_book_channel t2 ON t1.recordDate = t2.recordDate
+		AND t1.channelCode = t2.channelCode
+		LEFT JOIN t_sum_sale_channel t3 ON t1.recordDate = t3.recordDate
+		AND t1.channelCode = t3.channelCode
+		LEFT JOIN t_sum_sign_channel t4 ON t1.recordDate = t4.recordDate
+		AND t1.channelCode = t4.channelCode
+		LEFT JOIN t_sum_ret_channel t5 ON t1.recordDate = t5.recordDate
+		AND t1.channelCode = t5.channelCode
+		<include refid="queryShowSql"/>
+		GROUP BY t1.channelType, DATE_FORMAT(t1.recordDate,'%Y-%m')
+		ORDER BY t1.recordDate DESC,t1.costAmount DESC
+	</select>
+	
+	<select id="tgChannelMonthCount" resultType="int" parameterType="map">
+		SELECT COUNT(1) FROM 
+			(SELECT COUNT(1) FROM t_sum_channel_base t1
+		<include refid="queryShowSql"/>
+		GROUP BY t1.channelType, DATE_FORMAT(t1.recordDate,'%Y-%m')) tab1
+	</select>
+	
+	<!-- 更新渠道花费  -->
+	<update id="updateChannelCost" parameterType="map">
+		UPDATE t_sum_channel_base  
+		<set>
+			<if test="costAmount != null">
+				costAmount = #{costAmount, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="browseCount != null">
+				browseCount = #{browseCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate}
+			  AND channelCode = #{channelCode}
+		</where>
+	</update>
+</mapper>

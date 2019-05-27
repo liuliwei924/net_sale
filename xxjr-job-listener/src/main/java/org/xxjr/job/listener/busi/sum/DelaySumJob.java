@@ -18,8 +18,6 @@ import org.xxjr.job.listener.busi.sum.util.BaseSumUtil;
 import org.xxjr.job.listener.busi.sum.util.BookSumUtil;
 import org.xxjr.job.listener.busi.sum.util.RetSumUtil;
 import org.xxjr.job.listener.busi.sum.util.SignSumUtil;
-import org.xxjr.job.listener.busi.sum.util.SumTeamUtil;
-import org.xxjr.job.listener.busi.sum.util.SumaryChannelUtil;
 import org.xxjr.sys.util.ServiceKey;
 
 /**
@@ -72,11 +70,8 @@ public class DelaySumJob implements BaseExecteJob {
 		StoreNotifyUtils.exclusiveNotDeal(processId);
 		
 		//简单实时统计
-		SumaryChannelUtil.simpleSummary(processId,today);
+	//	SumaryChannelUtil.simpleSummary(processId,today);
 
-		
-		SumTeamUtil.sumBaseTeamData(processId, today);
-		SumTeamUtil.updateFailSale(processId);
 		return result;
 	}
 

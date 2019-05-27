@@ -13,8 +13,6 @@ import org.xxjr.job.listener.busi.sum.util.BaseSumUtil;
 import org.xxjr.job.listener.busi.sum.util.BookSumUtil;
 import org.xxjr.job.listener.busi.sum.util.RetSumUtil;
 import org.xxjr.job.listener.busi.sum.util.SignSumUtil;
-import org.xxjr.job.listener.busi.sum.util.SumTeamUtil;
-import org.xxjr.job.listener.busi.sum.util.SumaryChannelUtil;
 
 
 /**
@@ -59,11 +57,7 @@ public class RealTimeSumJob implements BaseExecteJob {
 		RetSumUtil.storeRetMonth(processId, toMonth);
 	
 		//简单实时统计
-		SumaryChannelUtil.simpleSummary(processId,today);
-		
-	
-		SumTeamUtil.sumBaseTeamData(processId, today);
-		SumTeamUtil.updateFailSale(processId);
+		//SumaryChannelUtil.simpleSummary(processId,today);
 		
 		//门店人员暂停分单统计
 		BaseSumUtil.querystorePauseAddPool(processId);
