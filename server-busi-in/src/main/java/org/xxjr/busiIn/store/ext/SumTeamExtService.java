@@ -26,33 +26,6 @@ public class SumTeamExtService extends BaseService{
 		return super.query(params, NAMESPACE, "totalBase");
 	}
 	
-	/**
-	 * 挂卖基本统计
-	 * @param params
-	 * @return
-	 */
-	public AppResult saleByBase(AppParam params) {
-		return super.query(params, NAMESPACE, "saleByBase");
-	}
-	
-	
-	/**
-	 * 查询有过退款的日期
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryNowRefundDate(AppParam params) {
-		return super.query(params, NAMESPACE, "queryNowRefundDate");
-	}
-	
-	/**
-	 * 按团队挂卖统计(查询有过退款的)
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryTeamRefund(AppParam params) {
-		return super.query(params, NAMESPACE, "queryTeamRefund");
-	}
 	
 	/**
 	 * 总的签单统计(按处理时间) 
