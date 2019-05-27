@@ -17,12 +17,12 @@ import org.ddq.common.util.StringUtil;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.ApplyAllotUtil;
 import org.xxjr.busi.util.BorrowChannelUtil;
+import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
-import org.xxjr.sys.util.active.ActiveUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -151,16 +151,10 @@ public class AllotCostUtil {
 			}
 			
 			ApplyAllotUtil.conversionType(now);
-			
-			AppParam gradeParam = new AppParam();
-			gradeParam.addAttrs(now);
-			AppResult gradeResult = ActiveUtil.getGrade(gradeParam);//获取等级
-			
-			String grade = StringUtil.getString(gradeResult.getAttr("rewardValue")) ;
-			if (StringUtils.isEmpty(grade)) {
-				grade = "F";
-			}
-			
+
+			String grade = CountGradeUtil.getGrade(now);
+			now.put("grade", grade);
+
 			int insure = NumberUtil.getInt(now.get("insure"),0);//是否勾选保险协议
 			String cityName = StringUtil.getString(now.get("cityName"));
 			

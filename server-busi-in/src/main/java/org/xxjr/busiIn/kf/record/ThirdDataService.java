@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.ApplyAllotUtil;
 import org.xxjr.busi.util.BorrowConstant;
+import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ValidUtils;
@@ -96,14 +97,7 @@ public class ThirdDataService extends BaseService {
 		}
 		params.addAttr("havePinan", params.getAttr("haveWeiLi"));
 		
-		AppResult result2 = ActiveUtil.getGrade(params);//获取等级
-		String grade = null ;
-		
-		if (StringUtils.isEmpty(result2.getAttr("rewardValue"))) {
-			grade = "F";
-		}else {
-			grade = StringUtil.getString(result2.getAttr("rewardValue"));
-		}
+		String grade = CountGradeUtil.getGrade(params.getAttr());//获取等级
 		
 		params.addAttr("cityName", cityName);
 		params.addAttr("grade", grade);

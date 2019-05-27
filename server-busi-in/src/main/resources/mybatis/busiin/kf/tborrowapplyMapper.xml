@@ -1001,10 +1001,17 @@
 			</if>
 		</set>
 		<where>
-			  applyId = #{applyId}
-			  <if test="fromStatus != null">
-			  	AND status = #{fromStatus}
-			  </if>
+			<choose>
+				<when test="applyIdIn != null and applyIdIn != '' ">
+					AND applyId IN (${applyIdIn})
+				</when>
+				<otherwise>
+					  applyId = #{applyId}
+					  <if test="fromStatus != null">
+					  	AND status = #{fromStatus}
+					  </if>
+				</otherwise>
+			</choose>
 		</where>
 	</update>
 	

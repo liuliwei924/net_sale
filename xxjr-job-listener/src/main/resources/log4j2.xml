@@ -3,7 +3,7 @@
 <configuration status="warn">
     <properties>
         <Property name="app_name">jobListener</Property>
-        <Property name="log_path">/mnt/logs/${app_name}</Property>
+        <Property name="log_path">/mnt/project/logs/${app_name}</Property>
         <Property name="log_file_name">jobListener</Property>
         <Property name="base_level">info</Property>
         <property name="log_pattern">%d %-5p [%t] (%F:%L) - %m%n</property>

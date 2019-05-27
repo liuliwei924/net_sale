@@ -843,12 +843,17 @@
 			</if>
 		</set>
 		<where>
-			  <if test="applyId != null">
-			  	applyId = #{applyId}
-			  </if>
-			  <if test="oldLastStore != null">
-			  	AND lastStore = #{oldLastStore}
-			  </if>
+			<choose>
+				<when test="applyIdIn != null and applyIdIn != '' ">
+					AND applyId IN (${applyIdIn})
+				</when>
+				<otherwise>
+					applyId = #{applyId}
+					<if test="oldLastStore != null">
+					  	AND lastStore = #{oldLastStore}
+					</if>
+				</otherwise>
+			</choose>
 		</where>
 	</update>
 	

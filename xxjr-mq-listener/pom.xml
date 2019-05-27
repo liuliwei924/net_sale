@@ -87,6 +87,44 @@
 					<fork>true</fork>
 				</configuration>
 			</plugin>
+			
+			<plugin>
+		      <groupId>org.apache.maven.plugins</groupId>
+		      <artifactId>maven-jar-plugin</artifactId>
+		      <configuration>
+		         <archive>
+		            <manifest>
+		               <addClasspath>true</addClasspath>
+		               <classpathPrefix>lib/</classpathPrefix>
+		               <mainClass>org.xxjr.mq.listener.MqListenerApplication</mainClass>
+		            </manifest>
+		         </archive>
+		        <!--  <excludes>
+					<exclude>application.properties</exclude>
+					<exclude>application-dev.properties</exclude>
+					<exclude>application-test.properties</exclude>
+				</excludes> -->
+		      </configuration>
+		   </plugin>
+		   <plugin>
+		      <groupId>org.apache.maven.plugins</groupId>
+		      <artifactId>maven-dependency-plugin</artifactId>
+		      <executions>
+		         <execution>
+		            <id>copy-lib</id>
+		            <phase>package</phase>
+		            <goals>
+		               <goal>copy-dependencies</goal>
+		            </goals>
+		            <configuration>
+		               <outputDirectory>target/lib</outputDirectory>
+		               <excludeTransitive>false</excludeTransitive>
+		               <stripVersion>false</stripVersion>
+		               <includeScope>runtime</includeScope>
+		            </configuration>
+		         </execution>
+		      </executions>
+   			</plugin>
 		</plugins>
 	</build>	
 </project>

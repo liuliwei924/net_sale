@@ -39,6 +39,9 @@
 			<if test="orgId != null and orgId != ''">
 				and orgId = #{orgId}
 			</if>
+			<if test="orgNull != null and orgNull != ''">
+				and orgId IS NULL
+			</if>
 			<if test="lastStore != null and lastStore != ''">
 				and lastStore = #{lastStore}
 			</if>
@@ -51,6 +54,9 @@
 		</where>
 		<if test="orderSql != null and orderSql!='' "> 
 			ORDER by ${orderSql}
+		</if>
+		<if test="limitSize != null and limitSize !='' "> 
+			limit #{limitSize}
 		</if>
 	</select>
 
@@ -482,4 +488,57 @@
 			</if>
 		</where>
 	</update>
+	
+	<select id="queryNetOrgAllotOrderCfg" resultType="map" parameterType="map">
+		SELECT 
+			t.cityName,
+			t.orgId,
+			t.orgNo,
+			t1.startAllotTime,
+			t1.endAllotTime,
+			IFNULL(t1.orgMaxCount,99999999) as 'orgMaxCount',
+			IFNULL(t2.applyCount,0) as 'allotedCount'
+		FROM t_org t
+		LEFT JOIN t_worktime_cfg  t1 ON t.orgId = t1.orgId
+		LEFT JOIN t_org_allot_record t2 ON t.orgId = t2.orgId AND t2.recordDate = #{todayDate}
+		WHERE t.isNet=1
+		<if test="orgId != null and orgId != ''">
+			AND t.orgId = #{orgId}
+		</if>
+		<if test="orgNo != null and orgNo != ''">
+			AND t.orgNo = #{orgNo}
+		</if>
+		<if test="cityName != null and cityName != ''">
+			AND t.cityName = #{cityName}
+		</if>
+	</select>
+	
+	<select id="queryOrgAllotOrder" resultType="map" parameterType="map">
+		SELECT 
+			GROUP_CONCAT(applyId) as applyIds
+		FROM t_net_store_pool
+		WHERE cityName = #{cityName}
+		AND (orgId is NULL or orgId = '') 
+		<if test="orderType != null and orderType != ''">
+			AND orderType = #{orderType}
+		</if>
+		ORDER BY applyTime DESC limit #{limitSize}
+	</select>
+	
+	<select id="queryGroupByOrgId" resultType="map" parameterType="map">
+		SELECT count(1) as 'totalCount',t.orgId,t1.orgNo,t1.orgName
+		FROM t_net_store_pool t 
+		JOIN t_org ON t1 t.orgId = t1.orgId
+		WHERE t.orgId !=''
+		<if test="orderType != null and orderType != ''">
+			and t.orderType = #{orderType}
+		</if>
+		<if test="orgFlag != null and orgFlag != ''">
+			and t1.orgFlag = #{orgFlag}
+		</if>
+		<if test="againFlag != null and againFlag != ''">
+			<![CDATA[AND t.nextRecordDate <= CURDATE() ]]>
+		</if>
+	    group by orgId
+	</select>
 </mapper>
