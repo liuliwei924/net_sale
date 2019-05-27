@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
@@ -29,7 +30,8 @@ import org.xxjr.sys.util.ValidUtils;
 @Controller()
 @RequestMapping("/account/config/orgCfg/")
 public class OrgCfgAction {
-
+	
+	
 	/**
 	 * 查询门店配置
 	 * @param request
@@ -48,6 +50,34 @@ public class OrgCfgAction {
 			params.setRmiServiceName(AppProperties
 					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 			result = RemoteInvoke.getInstance().call(params);
+			
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "queryList error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 根据orgId查询单个门店所有信息
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("findByOne")
+	@ResponseBody
+	public AppResult findByOne(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			String orgId = request.getParameter("orgId");
+			if (StringUtils.isEmpty(orgId)) {
+				return CustomerUtil.retErrorMsg("缺少必传参数!");
+			}
+	
+			AppParam params = new AppParam("orgService","query");
+			params.addAttr("orgId", orgId);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
+			result = RemoteInvoke.getInstance().callNoTx(params);
 			
 		} catch (Exception e) {
 			LogerUtil.error(this.getClass(), e, "queryList error");
