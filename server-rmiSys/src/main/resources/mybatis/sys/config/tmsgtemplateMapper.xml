@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="MSGTEMPLATE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			messageType ,
+			title ,  
+			isUser ,  
+			flagMessage ,  
+			flagWx ,
+			flagWxTemplate, 
+			flagSms , 
+			flagJpush, 
+			flagEmail ,
+			jpushContent,
+			userContent,  
+			content , 
+			smsContent, 
+			emailContent ,  
+			templateId ,  
+			params ,  
+			updateBy ,  
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as "updateTime"
+		FROM t_msg_template
+		<include refid="sqlWhere" />
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+	<sql id="sqlWhere">
+		<where>
+			<if test="messageType != null and messageType != ''">
+			    and messageType = #{messageType}
+			 </if>
+			<if test="title != null and title != ''">
+				and title like '%${title}%'
+			</if>
+			<if test="isUser != null and isUser != ''">
+				and isUser = #{isUser}
+			</if>
+			<if test="flagWx != null and flagWx != ''">
+				and flagWx = #{flagWx}
+			</if>
+			<if test="flagSms != null and flagSms != ''">
+				and flagSms = #{flagSms}
+			</if>
+			<if test="flagJpush != null and flagJpush != ''">
+				and flagJpush = #{flagJpush}
+			</if>
+			<if test="flagMessage != null and flagMessage != ''">
+				and flagMessage = #{flagMessage}
+			</if>
+		</where>
+	</sql>
+	
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_msg_template 
+		<include refid="sqlWhere" />
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_msg_template (
+			messageType,
+			title,
+			isUser,
+			flagMessage,
+			flagWx,
+			flagWxTemplate,
+			flagSms,
+			flagJpush,
+			flagEmail,
+			jpushContent,
+			userContent,
+			content,
+			smsContent,
+			emailContent,
+			templateId,
+			params,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{messageType, jdbcType=VARCHAR}, 
+			#{title, jdbcType=VARCHAR}, 
+			<if test="isUser !=null ">
+			#{isUser, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="isUser ==null ">
+			0 ,
+			</if>
+			#{flagMessage, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{flagWx, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{flagWxTemplate, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{flagSms, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{flagJpush, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{flagEmail, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{jpushContent, jdbcType=VARCHAR}, 
+			#{userContent, jdbcType=VARCHAR}, 
+			#{content, jdbcType=VARCHAR}, 
+			#{smsContent, jdbcType=VARCHAR}, 
+			#{emailContent, jdbcType=NVARCHAR}, 
+			#{templateId, jdbcType=VARCHAR}, 
+			#{params, jdbcType=VARCHAR}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_msg_template 
+		<where> 
+			messageType = #{messageType}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_msg_template  
+		<set>
+			<if test="title != null">
+				title = #{title, jdbcType=VARCHAR},  
+			</if>
+			<if test="isUser != null">
+				isUser = #{isUser, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="flagMessage != null">
+				flagMessage = #{flagMessage, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="flagWx != null">
+				flagWx = #{flagWx, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="flagWxTemplate != null">
+				flagWxTemplate = #{flagWxTemplate, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="flagSms != null">
+				flagSms = #{flagSms, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="flagJpush != null">
+				flagJpush = #{flagJpush, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			
+			<if test="flagEmail != null">
+				flagEmail = #{flagEmail, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			
+			<if test="smsContent != null">
+				smsContent = #{smsContent, jdbcType=VARCHAR},  
+			</if>
+			<if test="jpushContent != null">
+				jpushContent = #{jpushContent, jdbcType=VARCHAR},  
+			</if>
+			<if test="userContent != null">
+				userContent = #{userContent, jdbcType=VARCHAR},  
+			</if>
+			<if test="content != null">
+				content = #{content, jdbcType=VARCHAR},  
+			</if>
+			<if test="emailContent != null">
+				emailContent = #{emailContent, jdbcType=NVARCHAR},  
+			</if>
+			<if test="templateId != null">
+				templateId = #{templateId, jdbcType=VARCHAR},  
+			</if>
+			<if test="params != null">
+				params = #{params, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  messageType = #{messageType}
+		</where>
+	</update>
+</mapper>
