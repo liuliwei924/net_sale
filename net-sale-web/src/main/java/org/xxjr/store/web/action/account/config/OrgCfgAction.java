@@ -43,7 +43,7 @@ public class OrgCfgAction {
 	
 			AppParam params = new AppParam("orgService","queryByPage");
 			RequestUtil.setAttr(params, request);
-			params.setOrderBy("t.createTime");
+			params.setOrderBy("createTime");
 			params.setOrderValue("DESC");
 			params.setRmiServiceName(AppProperties
 					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));

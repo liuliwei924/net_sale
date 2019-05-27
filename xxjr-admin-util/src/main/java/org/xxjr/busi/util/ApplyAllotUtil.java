@@ -15,8 +15,8 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.DateTimeUtil;
 import org.ddq.common.util.DateUtil;
-import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
 import org.llw.model.cache.RedisUtils;
 import org.springframework.util.StringUtils;
@@ -26,7 +26,6 @@ import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
-import org.xxjr.sys.util.SysParamsUtil;
 
 
 
@@ -619,11 +618,9 @@ public class ApplyAllotUtil {
 			AppParam applyParam = new AppParam();
 			applyParam.addAttr("applyId", applyId);
 			applyParam.setService("borrowStoreApplyService");
-			//更新或插入标识
-			boolean updateOrInsert = false;
+			
 			String lastStore = "";
 			String orderStatus = "";
-			String currentOrgId = "";
 			if (queryResult.getRows().size() > 0) {
 				//离职人的订单清除当前处理人
 				lastStore = StringUtil.getString(queryResult.getRow(0).get("lastStore"));
@@ -632,7 +629,6 @@ public class ApplyAllotUtil {
 				String roleType = "";
 				if (custInfo != null && custInfo.size() > 0) {
 					roleType = StringUtil.getString(custInfo.get("roleType"));
-					currentOrgId = StringUtil.getString(custInfo.get("orgId"));
 					if(CustConstant.CUST_ROLETYPE_0.equals(roleType)){
 						AppParam updateParam = new AppParam("borrowStoreApplyService", "update");
 						updateParam.addAttr("lastStore","");
@@ -647,109 +643,39 @@ public class ApplyAllotUtil {
 				}
 				applyParam.setMethod("updateByBorrowApply");
 			}else{
-				updateOrInsert = true;
 				applyParam.setMethod("insertByBorrowApply");
 			}
 			AppResult storeResult = ServiceKey.doCall(applyParam, ServiceKey.Key_busi_in);
-			int applySize = 0;
-			if(updateOrInsert) {
-				applySize = NumberUtil.getInt(storeResult.getAttr(DuoduoConstant.DAO_Insert_SIZE),0);
-			}else{
-				applySize = NumberUtil.getInt(storeResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+			
+			if(!storeResult.isSuccess()) {
+				return storeResult;
 			}
+
 			//加入无效池标识
 			boolean invalidFlag = invalidOrderAddPool(lastStore,orderStatus,queryResult.getRows());
 			if(invalidFlag){
 				return newResult;
 			}
-			//是否加入网销池标识
-			boolean netFlag = false; 
-			//是否插入网销池
-			boolean isInsertNet = false;
-			//立即分单标识
-			String nowOrderAllotFlag = StringUtil.getString(param.getAttr("nowOrderAllotStatus"));
-			int nowOrderAllotStatus = 0;
-			if(StringUtils.isEmpty(nowOrderAllotFlag)){
-				nowOrderAllotStatus = SysParamsUtil.getIntParamByKey("nowOrderAllotStatus", 0);
-			}else{
-				nowOrderAllotStatus = NumberUtil.getInt(nowOrderAllotFlag,0);
-			}
-			String cityName = StringUtil.getString(param.getAttr("cityName"));
-			//是否是分单时间
-			boolean isAllotFlag = isAllotTime(cityName);
-			if(applySize > 0 && nowOrderAllotStatus == 1 && isAllotFlag && StringUtils.isEmpty(lastStore)){
-				try{
-					AppParam storeParam = new AppParam("netStorePoolService", "newOrderNowAllot");
-					storeParam.addAttrs(param.getAttr());
-					newResult = ServiceKey.doCall(storeParam, ServiceKey.Key_busi_in); //满足条件新订单立即分配
-					if(newResult.isSuccess()){
-						isInsertNet = Boolean.valueOf(StringUtil.getString(newResult.getAttr("isInsertNet")));
-						netFlag = true;
-					}
-				}catch(Exception e){
-					LogerUtil.error(ApplyAllotUtil.class, e, "ApplyAllotUtil allotTransfer 新订单立即分单 error");
+			
+			AppParam applyQueryParam = new AppParam("borrowStoreApplyService", "query");
+			applyQueryParam.addAttr("applyId", applyId);
+			AppResult applyResult = ServiceKey.doCallNoTx(applyQueryParam, ServiceKey.Key_busi_in);
+			if(applyResult.getRows().size() > 0){
+				//判断是否是二次申请，是则隐藏相关记录
+				int applyCount = NumberUtil.getInt(applyResult.getRow(0).get("applyCount"),1);
+				if(applyCount > 1){
+					updateStoreApplyInfo(applyId);
 				}
 			}
-			//获取申请渠道
-			String channelCode = StringUtil.getString(param.getAttr("channelCode"));
-			if(!netFlag || isInsertNet || nowOrderAllotStatus == 0){
-				//判断该笔单是否有处理人，有则为二次申请
-				if(queryResult.getRows().size() > 0 ){
-					// lnde渠道的二次申请不分给当前处理人
-					String notAllotChannel = SysParamsUtil.getStringParamByKey("storeNotAllotChannel", "lnde");
-					if(!StringUtils.isEmpty(lastStore) && !notAllotChannel.equals(channelCode)){
-						String applyName = StringUtil.getString(queryResult.getRow(0).get("applyName"));
-						String orgId = StringUtil.getString(queryResult.getRow(0).get("orgId"));
-						if(!StringUtils.isEmpty(currentOrgId) && !orgId.equals(currentOrgId)){
-							orgId = currentOrgId;
-						}
-						AppParam sendParam = new AppParam("netStorePoolService", "againAllotOrderDeal");
-						StringBuffer buffer = new StringBuffer();
-						buffer.append("您的客户");
-						buffer.append(applyName);
-						buffer.append("进行了二次申请贷款。");
-						sendParam.addAttr("customerId",lastStore);
-						sendParam.addAttr("orgId",orgId);
-						sendParam.addAttr("applyId",applyId);
-						sendParam.addAttr("orderStatus",orderStatus);
-						sendParam.addAttr("message", buffer.toString());
-						ServiceKey.doCall(sendParam, ServiceKey.Key_busi_in);
-						return newResult;
-					}
-				}
-				AppParam applyQueryParam = new AppParam("borrowStoreApplyService", "query");
-				applyQueryParam.addAttr("applyId", applyId);
-				AppResult applyResult = ServiceKey.doCallNoTx(applyQueryParam, ServiceKey.Key_busi_in);
-				if(applyResult.getRows().size() > 0){
-					//判断是否是二次申请，是则隐藏相关记录
-					int applyCount = NumberUtil.getInt(applyResult.getRow(0).get("applyCount"),1);
-					if(applyCount > 1){
-						updateStoreApplyInfo(applyId);
-					}
-				}
-				String orgId = "";
-				// lnde渠道数据特殊处理
-				if("lnde".equals(channelCode)){
-					orgId = getOrgIdByChannel(cityName);
-				}else{
-					orgId = getOrgIdByCityCount(cityName);
-				}
-				if(!StringUtils.isEmpty(orgId)){
-					param.addAttr("orgId", orgId);
-				}
-				String recordDate = DateUtil.toStringByParttern(LocalDateTime.now(),DateUtil.DATE_PATTERN_YYYY_MM_DD);
-				//加入网销池
-				param.addAttr("recordDate", recordDate);
-				param.addAttr("orderType", "1");//一手单
-				param.setService("netStorePoolService");
-				param.setMethod("saveOrUpdate");
-				newResult = ServiceKey.doCall(param, ServiceKey.Key_busi_in);
-				int insertSize = NumberUtil.getInt(newResult.getAttr(DuoduoConstant.DAO_Insert_SIZE),0);
-				if(insertSize >= 1 && !StringUtils.isEmpty(orgId) && !"lnde".equals(channelCode)){
-					//记录门店分配订单数量
-					saveOrgAllotRecord(recordDate,orgId,cityName);
-				}
-			}
+
+			String recordDate = DateTimeUtil.toStringByParttern(LocalDateTime.now(),DateTimeUtil.DATE_PATTERN_YYYY_MM_DD);
+			//加入网销池
+			param.addAttr("recordDate", recordDate);
+			param.addAttr("orderType", "1");//一手单
+			param.setService("netStorePoolService");
+			param.setMethod("saveOrUpdate");
+			newResult = ServiceKey.doCall(param, ServiceKey.Key_busi_in);
+
 		}else{
 			//二次申请更改ordertype为1即新申请单
 			AppParam netParam = new AppParam("netStorePoolService", "update");
@@ -817,7 +743,16 @@ public class ApplyAllotUtil {
 		allotParam.addAttr("recordDate", recordDate);
 		allotParam.addAttr("orgId", orgId);
 		allotParam.addAttr("cityName", cityName);
-		allotParam.addAttr("addApplyCount", "1");
+		allotParam.addAttr("addApplyCount", 1);
+		ServiceKey.doCall(allotParam, ServiceKey.Key_busi_in);
+	}
+	
+	public static void saveOrgAllotRecord(String recordDate,Object orgId,String cityName,int addApplyCount){
+		AppParam allotParam = new AppParam("orgAllotRecordService", "saveOrUpdate");
+		allotParam.addAttr("recordDate", recordDate);
+		allotParam.addAttr("orgId", orgId);
+		allotParam.addAttr("cityName", cityName);
+		allotParam.addAttr("addApplyCount", addApplyCount);
 		ServiceKey.doCall(allotParam, ServiceKey.Key_busi_in);
 	}
 	/***
