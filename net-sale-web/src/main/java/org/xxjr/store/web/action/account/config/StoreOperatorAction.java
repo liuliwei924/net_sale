@@ -9,6 +9,7 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.security.MD5Util;
 import org.ddq.common.util.LogerUtil;
@@ -23,6 +24,8 @@ import org.xxjr.busi.util.store.ApplyInfoUtil;
 import org.xxjr.busi.util.store.BusiCustUtil;
 import org.xxjr.busi.util.store.StoreRoleUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.ShowErrorCode;
+import org.xxjr.cust.util.info.CustInfoUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
@@ -436,5 +439,45 @@ public class StoreOperatorAction {
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}	
 		return result;
+	}
+	
+	/**
+	 * 增加用户
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("addUser")
+	@ResponseBody
+	public AppResult addUser(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		try {
+			String userName = request.getParameter("userName");
+			String telephone = request.getParameter("telephone");
+			String channelDetail = request.getParameter("channelDetail");
+			if (StringUtils.isEmpty(userName) || StringUtils.isEmpty(telephone) || StringUtils.isEmpty(channelDetail)) {
+				return CustomerUtil.retErrorMsg("缺少必传参数!");
+			}
+			
+			// 验证手机号
+			if (!ValidUtils.validateTelephone(telephone)) {
+				throw new AppException(ShowErrorCode.telephone_format);
+			}
+			
+			String customerId = CustomerUtil.queryCustId(telephone, null);
+			if (!StringUtils.isEmpty(customerId)) {
+				return CustomerUtil.retErrorMsg("用户已存在!");
+			}
+			AppParam regParams = new AppParam();
+			regParams.addAttr("telephone", telephone);
+			regParams.addAttr("userName", userName);
+			regParams.addAttr("userType", CustInfoUtil.UserType_2);
+			regParams.addAttr("sourceType", channelDetail);
+			customerId = CustomerUtil.custAutoRegister(regParams);
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "addUser error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+		
 	}
 }
