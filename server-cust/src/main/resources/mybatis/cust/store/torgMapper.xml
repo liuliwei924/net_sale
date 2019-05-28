@@ -81,7 +81,7 @@
 	</select>
 
 
-<select id="query" resultType="map" parameterType="map">
+	<select id="query" resultType="map" parameterType="map">
 		SELECT
 			orgId,
 			orgName,
