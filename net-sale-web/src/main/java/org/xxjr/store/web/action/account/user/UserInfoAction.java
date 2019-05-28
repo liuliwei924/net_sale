@@ -27,11 +27,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.store.web.action.account.config.StoreRoleAction;
 import org.xxjr.sys.util.AreaUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.ValidUtils;
 
 /***
  * 用户信息
