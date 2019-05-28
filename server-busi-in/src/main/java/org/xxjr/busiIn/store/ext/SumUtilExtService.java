@@ -135,37 +135,6 @@ public class SumUtilExtService extends BaseService {
 	public AppResult sumTotalSign(AppParam params) {
 		return super.query(params, NAMESPACE, "sumTotalSign");
 	}
-	
-	/**
-	 * 客服挂卖统计
-	 * 
-	 * @param params
-	 * @return
-	 */
-	public AppResult saleSumaryByKf(AppParam params) {
-		return super.query(params, NAMESPACE, "saleSumaryByKf");
-	}
-	
-	/**
-	 * 挂卖基本统计
-	 * 
-	 * @param params
-	 * @return
-	 */
-	public AppResult saleByBase(AppParam params) {
-		return super.query(params, NAMESPACE, "saleByBase");
-	}
-
-	
-	/**
-	 * 按渠道挂卖统计
-	 * 
-	 * @param params
-	 * @return
-	 */
-	public AppResult saleByChannel(AppParam params) {
-		return super.query(params, NAMESPACE, "saleByChannel");
-	}
 
 	/**
 	 * 按门店人员回款统计
@@ -503,34 +472,6 @@ public class SumUtilExtService extends BaseService {
 		String tableName = StoreOptUtil.getTableName(null);
 		params.addAttr("tableName", tableName);
 		return super.queryByPage(params, NAMESPACE, "queryCityAllotMonth","queryCityAllotMonthCount");
-	}
-	
-	/**
-	 * 查询有过退款的日期
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryNowRefundDate(AppParam params) {
-		return super.query(params, NAMESPACE, "queryNowRefundDate");
-	}
-	
-	
-	/**
-	 * 挂卖基本统计(查询有过退款的)
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryBaseRefund(AppParam params) {
-		return super.query(params, NAMESPACE, "queryBaseRefund");
-	}
-	
-	/**
-	 * 按渠道挂卖统计(查询有过退款的)
-	 * @param params
-	 * @return
-	 */
-	public AppResult queryChannelRefund(AppParam params) {
-		return super.query(params, NAMESPACE, "queryChannelRefund");
 	}
 	
 	/**

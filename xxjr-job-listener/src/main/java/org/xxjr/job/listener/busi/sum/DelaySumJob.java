@@ -13,12 +13,11 @@ import org.llw.job.util.JobConstant;
 import org.llw.model.cache.RedisUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.xxjr.job.listener.busi.store.StoreNotifyUtils;
 import org.xxjr.job.listener.busi.sum.util.BaseSumUtil;
 import org.xxjr.job.listener.busi.sum.util.BookSumUtil;
 import org.xxjr.job.listener.busi.sum.util.RetSumUtil;
 import org.xxjr.job.listener.busi.sum.util.SignSumUtil;
-import org.xxjr.job.listener.busi.sum.util.SumTeamUtil;
-import org.xxjr.job.listener.busi.sum.util.SumaryChannelUtil;
 import org.xxjr.sys.util.ServiceKey;
 
 /**
@@ -67,12 +66,12 @@ public class DelaySumJob implements BaseExecteJob {
 		RetSumUtil.retByBase(processId, today);
 		RetSumUtil.storeRetMonth(processId, toMonth);
 		
-		//简单实时统计
-		SumaryChannelUtil.simpleSummary(processId,today);
-
+		//门店相关通知
+		StoreNotifyUtils.exclusiveNotDeal(processId);
 		
-		SumTeamUtil.sumBaseTeamData(processId, today);
-		SumTeamUtil.updateFailSale(processId);
+		//简单实时统计
+	//	SumaryChannelUtil.simpleSummary(processId,today);
+
 		return result;
 	}
 

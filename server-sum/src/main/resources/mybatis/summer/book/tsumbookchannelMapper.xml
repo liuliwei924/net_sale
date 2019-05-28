@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMBOOKCHANNEL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			channelCode,
+			channelType, 
+			channelName, 
+			sucBookCount, 
+			preBookCount, 
+			failBookCount
+		FROM t_sum_book_channel
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+			  and channelCode = #{channelCode}
+			 </if>
+			<if test="channelType != null and channelType != ''">
+				and channelType = #{channelType}
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and channelName = #{channelName}
+			</if>
+			<if test="sucBookCount != null and sucBookCount != ''">
+				and sucBookCount = #{sucBookCount}
+			</if>
+			<if test="preBookCount != null and preBookCount != ''">
+				and preBookCount = #{preBookCount}
+			</if>
+			<if test="failBookCount != null and failBookCount != ''">
+				and failBookCount = #{failBookCount}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_book_channel 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+		    and channelCode = #{channelCode}
+		 </if>
+		<if test="channelType != null and channelType != ''">
+			and channelType = #{channelType}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			and channelName = #{channelName}
+		</if>
+		<if test="sucBookCount != null and sucBookCount != ''">
+			and sucBookCount = #{sucBookCount}
+		</if>
+		<if test="preBookCount != null and preBookCount != ''">
+			and preBookCount = #{preBookCount}
+		</if>
+		<if test="failBookCount != null and failBookCount != ''">
+			and failBookCount = #{failBookCount}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_book_channel (
+			recordDate,
+			channelCode,
+			channelType,
+			channelName,
+			sucBookCount,
+			preBookCount,
+			failBookCount
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="channelCode !=null ">
+			#{channelCode, jdbcType=VARCHAR}, 
+			</if> 
+			#{channelType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{channelName, jdbcType=VARCHAR}, 
+			<if test="sucBookCount !=null ">
+			#{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucBookCount ==null ">
+			0 ,
+			</if>
+			<if test="preBookCount !=null ">
+			#{preBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="preBookCount ==null ">
+			0 ,
+			</if>
+			<if test="failBookCount !=null ">
+			#{failBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="failBookCount ==null ">
+			0 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_book_channel 
+		<where> 
+			recordDate = #{recordDate} AND 
+			channelCode = #{channelCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_book_channel  
+		<set>
+			<if test="channelType != null">
+				channelType = #{channelType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="sucBookCount != null">
+				sucBookCount = #{sucBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="preBookCount != null">
+				preBookCount = #{preBookCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failBookCount != null">
+				failBookCount = #{failBookCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  channelCode = #{channelCode}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_book_channel 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_book_channel  (
+			recordDate,
+			channelCode,
+			channelType,
+			channelName,
+			sucBookCount,
+			preBookCount,
+			failBookCount
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.channelCode}, 
+		  #{item.channelType}, 
+		  #{item.channelName}, 
+		  #{item.sucBookCount}, 
+		  #{item.preBookCount}, 
+		  #{item.failBookCount}
+		  )
+		</foreach>
+  </insert>
+</mapper>

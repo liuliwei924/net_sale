@@ -1,24 +1,27 @@
-package org.xxjr.summary.base;
+package org.xxjr.sys.config;
+
+import java.util.Date;
 
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.web.session.DuoduoSession;
 import org.llw.common.core.service.BaseService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xxjr.sys.util.DBConst;
-import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.message.MessageTemplateUtil;
 
 @Lazy
 @Service
-public class StoreCostMonthRecordService extends BaseService {
-	private static final String NAMESPACE = "STORECOSTMONTHRECORD";
+public class MsgTemplateService extends BaseService {
+	private static final String NAMESPACE = "MSGTEMPLATE";
 
 	/**
-	 * querys
+	 * 查寻数据
 	 * @param params
 	 * @return
 	 */
@@ -27,7 +30,7 @@ public class StoreCostMonthRecordService extends BaseService {
 	}
 	
 	/**
-	 * queryByPage
+	 * 分页查寻数据
 	 * @param params
 	 * @return
 	 */
@@ -36,7 +39,7 @@ public class StoreCostMonthRecordService extends BaseService {
 	}
 	
 	/**
-	 * queryCount
+	 * 查寻分页统计数据
 	 * @param params
 	 * @return
 	 */
@@ -49,72 +52,49 @@ public class StoreCostMonthRecordService extends BaseService {
 	
 	
 	/**
-	 * insert
+	 * 添加数据处理
 	 * @param params
 	 * @return
 	 */
 	public AppResult insert(AppParam params) {
-		return super.insert(params, NAMESPACE);
+		params.addAttr("updateTime", new Date());
+		params.addAttr("updateBy", DuoduoSession.getUserName());
+		AppResult result = super.insert(params, NAMESPACE);
+		
+		MessageTemplateUtil.refreshList();
+		return result;
 	}
 	
 	/**
-	 * update
+	 * 修改数据处理
 	 * @param params
 	 * @return
 	 */
 	public AppResult update(AppParam params) {
-		return super.update(params, NAMESPACE);
+		params.addAttr("updateTime", new Date());
+		params.addAttr("updateBy", DuoduoSession.getUserName());
+		AppResult result = super.update(params, NAMESPACE);
+		
+		MessageTemplateUtil.refreshList();
+		return result;
 	}
 	
-	/**
-	 * delete
-	 * @param params
-	 * @return
-	 */
 	public AppResult delete(AppParam params) {
 		String ids = (String) params.getAttr("ids");
 		AppResult  result = null;
 		if (!StringUtils.isEmpty(ids)) {
 			for (String id : ids.split(",")) {
 				AppParam param = new AppParam();
-				param.setDataBase(DBConst.Key_sum_DB);
-				param.addAttr("recordDate", id);
-				
+				param.addAttr("messageType", id);
+				param.setDataBase(DBConst.Key_sys_DB);
 				result = super.delete(param, NAMESPACE);
 			}
-		} else if (!StringUtils.isEmpty(params.getAttr("recordDate"))) {
+		} else if (!StringUtils.isEmpty(params.getAttr("messageType"))) {
 			result = super.delete(params, NAMESPACE);
 		} else {
 			throw new AppException(DuoduoError.DELETE_NO_ID);
 		}
-		if (!StringUtils.isEmpty(ids)) {
-			for (String id : ids.split(",")) {
-				AppParam param = new AppParam();
-				param.setDataBase(DBConst.Key_sum_DB);
-				param.addAttr("customerId", id);
-				
-				result = super.delete(param, NAMESPACE);
-			}
-		} else if (!StringUtils.isEmpty(params.getAttr("customerId"))) {
-			result = super.delete(params, NAMESPACE);
-		} else {
-			throw new AppException(DuoduoError.DELETE_NO_ID);
-		}
-		return result;
-	}
-	
-	/**
-	 * 保存成本维护记录
-	 * @param params
-	 * @return
-	 */
-	public AppResult save(AppParam params) {
-		AppResult result = new AppResult(); 
-		result = this.update(params);
-		int updateSize = NumberUtil.getInt(DuoduoConstant.DAO_Update_SIZE,0);
-		if(updateSize == 0){
-			result = this.insert(params);
-		}
+		MessageTemplateUtil.refreshList();
 		return result;
 	}
 }

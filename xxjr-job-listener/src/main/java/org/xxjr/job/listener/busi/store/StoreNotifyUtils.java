@@ -1,6 +1,8 @@
 package org.xxjr.job.listener.busi.store;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.ddq.common.constant.DuoduoConstant;
@@ -10,12 +12,9 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.LogerUtil;
-import org.ddq.common.util.StringUtil;
 import org.llw.job.util.JobUtil;
-import org.xxjr.busi.util.store.CFSUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
-import org.xxjr.sys.util.SysParamsUtil;
 
 /***
  * 门店通知相关工具类
@@ -54,127 +53,65 @@ public class StoreNotifyUtils {
 	
 	}
 	
-	/***
-	 * 批量添加访客记录上传到CFS
+	/**
+	 * 7天未处理的专属单 提醒门店人员处理
 	 * @param processId
 	 * @return
 	 */
-	public static AppResult batchVisitUpLoadToCFS(Object processId){
+	public static AppResult exclusiveNotDeal(Object processId) {
 		AppResult result = new AppResult();
-		int autoAddVisitToCFSFlag = SysParamsUtil.getIntParamByKey("autoAddVisitToCFSFlag", 1);
-		if(autoAddVisitToCFSFlag == 0){
-			result.setMessage("自动添加访客记录上传到CFS暂未开启!");
-			result.setSuccess(false);
-			return result;
+		int totalSucSize = 0;
+		int totalFailSize = 0;
+		try{
+			// 查询7天未处理的专属单
+			AppParam queryParam = new AppParam("exclusiveOrderService","queryNotDeal");
+			queryParam.addAttr("orgId", 236);
+			queryParam.setEveryPage(50);
+			queryParam.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			result = RemoteInvoke.getInstance().callNoTx(queryParam);
+			
+			List<Map<String,Object>> orderList = new ArrayList<>();
+			AppParam updateParam = new AppParam("storeExcluesiveNotifyService","save");
+			updateParam.setRmiServiceName(AppProperties.getProperties(
+					DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			
+			// 只处理500笔
+			if(result.isSuccess() && result.getRows().size() > 0){
+				int totalPage = result.getPage().getTotalPage();
+				if(totalPage > 10){
+					totalPage = 10;
+				}
+				for(int i = 1; i<=totalPage; i++){
+					// 查询7天未处理的专属单
+					queryParam.setCurrentPage(i);
+					queryParam.setRmiServiceName(AppProperties.getProperties(
+							DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+					result = RemoteInvoke.getInstance().callNoTx(queryParam);
+					if(result.isSuccess() && result.getRows().size() >0){
+						orderList.addAll(result.getRows());
+					}
+					try{
+						updateParam.addAttr("orderList", orderList);
+						result  = RemoteInvoke.getInstance().call(updateParam);
+						if(result.isSuccess()){
+							totalSucSize = totalSucSize + NumberUtil.getInt(result.getAttr("sucSize"),0);
+							totalFailSize = totalFailSize + NumberUtil.getInt(result.getAttr("failSize"),0);
+						}
+					}catch(Exception e){
+						LogerUtil.error(StoreNotifyUtils.class,e, "exclusiveNotDeal error");
+						JobUtil.addProcessExecute(processId, " excluNotDeal 报错：" + e.getMessage() );
+					}
+					orderList.clear();
+				}
+			}
+
+		}catch(Exception e){
+			LogerUtil.error(StoreNotifyUtils.class,e, "exclusiveNotDeal error");
+			JobUtil.addProcessExecute(processId, " exclusiveNotDeal 报错：" + e.getMessage() );
 		}
-		// 批量添加访客登记上传到CFS
-		batchAddVisitToCFS(processId);
-		// 批量添加手动添加上门记录上传到CFS
-		batchHandleVisitToCFS(processId);
+		LogerUtil.log("专属单加入通知成功总笔数:"  + totalSucSize + "失败总笔数:" + totalFailSize);
+		JobUtil.addProcessExecute(processId, "专属单加入通知成功总笔数:" + totalSucSize + "失败总笔数:" + totalFailSize);
 		return result;
-	}
-	
-	/***
-	 * 批量添加访客登记上传到CFS
-	 * @param processId
-	 * @return
-	 */
-	public static void batchAddVisitToCFS(Object processId){
-		try{
-			AppParam queryParam = new AppParam("custVisitService","queryVisitByPage");
-			//查询未上传
-			queryParam.addAttr("upStatus", "1"); 
-			queryParam.setOrderValue("desc");
-			queryParam.setOrderBy("t.createTime");
-			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
-					+ ServiceKey.Key_busi_in));
-			queryParam.setEveryPage(50);
-			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			int currentPage = 1;
-			int successCount = 0;
-			int failCount = 0;
-			while(queryResult.getRows().size() > 0 ){
-				for(Map<String, Object> queryMap : queryResult.getRows()){
-					AppParam addparams = new AppParam();
-					addparams.addAttr("orgNo", StringUtil.getString(queryMap.get("orgNo")));
-					addparams.addAttr("custName", StringUtil.getString(queryMap.get("custName")));
-					addparams.addAttr("custTel", StringUtil.getString(queryMap.get("custTel")));
-					addparams.addAttr("receiverTel", StringUtil.getString(queryMap.get("receiverTel")));
-					addparams.addAttr("realName", StringUtil.getString(queryMap.get("realName")));
-					addparams.addAttr("loanType", "0");
-					addparams.addAttr("visitTime", StringUtil.getString(queryMap.get("createTime")));
-					addparams.addAttr("recordId", StringUtil.getString(queryMap.get("recordId")));
-					addparams.addAttr("employeeNo", StringUtil.getString(queryMap.get("employeeNo")));
-					Map<String, Object> resultMap = CFSUtil.addVisitToCFS(addparams);
-					String messageCode = StringUtil.getString(resultMap.get("MessageCode"));
-					if ("200".equals(messageCode)) {
-						successCount ++;
-					}else{
-						failCount ++;
-					}
-				}
-				currentPage ++;
-				queryParam.setCurrentPage(currentPage);
-				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			}
-			JobUtil.addProcessExecute(processId, " 批量添加访客记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
-			LogerUtil.log("批量添加访客记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
-		}catch(Exception e){
-			LogerUtil.error(StoreNotifyUtils.class, e, "batchAddVisitToCFS >>>>>>>>>>>>>>>>>> error");
-			JobUtil.addProcessExecute(processId, "批量添加访客记录上传到CFS报错：" + e.getMessage() );
-		}
-	}
-	
-	/***
-	 * 批量添加手动添加上门记录上传到CFS
-	 * @param processId
-	 * @return
-	 */
-	public static void batchHandleVisitToCFS(Object processId){
-		try{
-			AppParam queryParam = new AppParam("treatVisitDetailService","queryHandleVisitByPage");
-			// 1-未上传
-			queryParam.addAttr("upStatus", "1");
-			// 1-手动添加
-			queryParam.addAttr("visitType", "1");
-			queryParam.setOrderValue("desc");
-			queryParam.setOrderBy("t.createTime");
-			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
-					+ ServiceKey.Key_busi_in));
-			queryParam.setEveryPage(50);
-			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			int currentPage = 1;
-			int successCount = 0;
-			int failCount = 0;
-			while(queryResult.getRows().size() > 0 ){
-				for(Map<String, Object> queryMap : queryResult.getRows()){
-					AppParam addparams = new AppParam();
-					addparams.addAttr("orgNo", StringUtil.getString(queryMap.get("orgNo")));
-					addparams.addAttr("custName", StringUtil.getString(queryMap.get("applyName")));
-					addparams.addAttr("custTel", StringUtil.getString(queryMap.get("telephone")));
-					addparams.addAttr("receiverTel", StringUtil.getString(queryMap.get("receiverTel")));
-					addparams.addAttr("realName", StringUtil.getString(queryMap.get("realName")));
-					addparams.addAttr("loanType", "0");
-					addparams.addAttr("visitTime", StringUtil.getString(queryMap.get("visitTime")));
-					addparams.addAttr("detailId", StringUtil.getString(queryMap.get("detailId")));
-					addparams.addAttr("employeeNo", StringUtil.getString(queryMap.get("employeeNo")));
-					Map<String, Object> resultMap = CFSUtil.addVisitToCFS(addparams);
-					String messageCode = StringUtil.getString(resultMap.get("MessageCode"));
-					if ("200".equals(messageCode)) {
-						successCount ++;
-					}else{
-						failCount ++;
-					}
-				}
-				currentPage ++;
-				queryParam.setCurrentPage(currentPage);
-				queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			}
-			JobUtil.addProcessExecute(processId, " 批量添加手动添加上门记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
-			LogerUtil.log("批量添加手动添加上门记录上传到CFS msg：成功笔数:"+ successCount +"，失败笔数：" + failCount);
-		}catch(Exception e){
-			LogerUtil.error(StoreNotifyUtils.class, e, "batchHandleVisitToCFS >>>>>>>>>>>>>>>>>> error");
-			JobUtil.addProcessExecute(processId, "批量添加手动添加上门记录上传到CFS报错：" + e.getMessage() );
-		}
 	}
 }

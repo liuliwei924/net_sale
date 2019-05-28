@@ -1,21 +1,25 @@
-package org.xxjr.summary.base;
+package org.xxjr.summary.book;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.DuoduoError;
+import org.ddq.common.web.session.DuoduoSession;
 import org.llw.common.core.service.BaseService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xxjr.sys.util.DBConst;
-import org.xxjr.sys.util.NumberUtil;
 
 @Lazy
 @Service
-public class StoreCostMonthRecordService extends BaseService {
-	private static final String NAMESPACE = "STORECOSTMONTHRECORD";
+public class SumBookChannelService extends BaseService {
+	private static final String NAMESPACE = "SUMBOOKCHANNEL";
 
 	/**
 	 * querys
@@ -54,6 +58,8 @@ public class StoreCostMonthRecordService extends BaseService {
 	 * @return
 	 */
 	public AppResult insert(AppParam params) {
+		params.addAttr("createTime", new Date());
+		params.addAttr("createBy", DuoduoSession.getUserName());
 		return super.insert(params, NAMESPACE);
 	}
 	
@@ -91,11 +97,11 @@ public class StoreCostMonthRecordService extends BaseService {
 			for (String id : ids.split(",")) {
 				AppParam param = new AppParam();
 				param.setDataBase(DBConst.Key_sum_DB);
-				param.addAttr("customerId", id);
+				param.addAttr("channelCode", id);
 				
 				result = super.delete(param, NAMESPACE);
 			}
-		} else if (!StringUtils.isEmpty(params.getAttr("customerId"))) {
+		} else if (!StringUtils.isEmpty(params.getAttr("channelCode"))) {
 			result = super.delete(params, NAMESPACE);
 		} else {
 			throw new AppException(DuoduoError.DELETE_NO_ID);
@@ -104,17 +110,20 @@ public class StoreCostMonthRecordService extends BaseService {
 	}
 	
 	/**
-	 * 保存成本维护记录
+	 * 保存渠道上门统计数据
 	 * @param params
 	 * @return
 	 */
-	public AppResult save(AppParam params) {
-		AppResult result = new AppResult(); 
-		result = this.update(params);
-		int updateSize = NumberUtil.getInt(DuoduoConstant.DAO_Update_SIZE,0);
-		if(updateSize == 0){
-			result = this.insert(params);
-		}
+	@SuppressWarnings("unchecked")
+	public AppResult save(AppParam params){
+		AppResult result = new AppResult();
+		//删除老的数据
+		super.getDao().delete(NAMESPACE, "deleteByDay", params.getAttr(), params.getDataBase().toString());
+		//插入新的数据
+		List<Map<String, Object>> list = (List<Map<String, Object>>) params.getAttr("list");
+		int size = super.getDao().batchInsert(NAMESPACE, "batchInsert",
+				list, params.getDataBase());
+		result.putAttr(DuoduoConstant.DAO_Insert_SIZE, size);
 		return result;
 	}
 }

@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="SUMSIGNCHANNEL">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordDate,
+			channelCode,
+			channelType, 
+			channelName, 
+			sucSignCount, 
+			sucSignAmt, 
+			failSignCount, 
+			failSignAmt, 
+			signingCount, 
+			signingAmt
+		FROM t_sum_sign_channel
+		<where>
+			<if test="recordDate != null and recordDate != ''">
+			  and recordDate = #{recordDate}
+			 </if>
+			<if test="channelCode != null and channelCode != ''">
+			  and channelCode = #{channelCode}
+			 </if>
+			<if test="channelType != null and channelType != ''">
+				and channelType = #{channelType}
+			</if>
+			<if test="channelName != null and channelName != ''">
+				and channelName = #{channelName}
+			</if>
+			<if test="sucSignCount != null and sucSignCount != ''">
+				and sucSignCount = #{sucSignCount}
+			</if>
+			<if test="sucSignAmt != null and sucSignAmt != ''">
+				and sucSignAmt = #{sucSignAmt}
+			</if>
+			<if test="failSignCount != null and failSignCount != ''">
+				and failSignCount = #{failSignCount}
+			</if>
+			<if test="failSignAmt != null and failSignAmt != ''">
+				and failSignAmt = #{failSignAmt}
+			</if>
+			<if test="signingCount != null and signingCount != ''">
+				and signingCount = #{signingCount}
+			</if>
+			<if test="signingAmt != null and signingAmt != ''">
+				and signingAmt = #{signingAmt}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_sum_sign_channel 
+		<where>
+		<if test="recordDate != null and recordDate != ''">
+		    and recordDate = #{recordDate}
+		 </if>
+		<if test="channelCode != null and channelCode != ''">
+		    and channelCode = #{channelCode}
+		 </if>
+		<if test="channelType != null and channelType != ''">
+			and channelType = #{channelType}
+		</if>
+		<if test="channelName != null and channelName != ''">
+			and channelName = #{channelName}
+		</if>
+		<if test="sucSignCount != null and sucSignCount != ''">
+			and sucSignCount = #{sucSignCount}
+		</if>
+		<if test="sucSignAmt != null and sucSignAmt != ''">
+			and sucSignAmt = #{sucSignAmt}
+		</if>
+		<if test="failSignCount != null and failSignCount != ''">
+			and failSignCount = #{failSignCount}
+		</if>
+		<if test="failSignAmt != null and failSignAmt != ''">
+			and failSignAmt = #{failSignAmt}
+		</if>
+		<if test="signingCount != null and signingCount != ''">
+			and signingCount = #{signingCount}
+		</if>
+		<if test="signingAmt != null and signingAmt != ''">
+			and signingAmt = #{signingAmt}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_sum_sign_channel (
+			recordDate,
+			channelCode,
+			channelType,
+			channelName,
+			sucSignCount,
+			sucSignAmt,
+			failSignCount,
+			failSignAmt,
+			signingCount,
+			signingAmt
+		)
+		VALUES ( 
+			<if test="recordDate !=null ">
+			#{recordDate, jdbcType=DATE,typeHandler=DateHandler}, 
+			</if>
+			<if test="channelCode !=null ">
+			#{channelCode, jdbcType=VARCHAR}, 
+			</if> 
+			#{channelType, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			#{channelName, jdbcType=VARCHAR}, 
+			<if test="sucSignCount !=null ">
+			#{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignCount ==null ">
+			0 ,
+			</if>
+			<if test="sucSignAmt !=null ">
+			#{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="sucSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="failSignCount !=null ">
+			#{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignCount ==null ">
+			0 ,
+			</if>
+			<if test="failSignAmt !=null ">
+			#{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			</if>
+			<if test="failSignAmt ==null ">
+			0.00 ,
+			</if>
+			<if test="signingCount !=null ">
+			#{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="signingCount ==null ">
+			0 ,
+			</if>
+			<if test="signingAmt !=null ">
+			#{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+			<if test="signingAmt ==null ">
+			0.00 
+			</if>
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_sum_sign_channel 
+		<where> 
+			recordDate = #{recordDate} AND 
+			channelCode = #{channelCode}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_sum_sign_channel  
+		<set>
+			<if test="channelType != null">
+				channelType = #{channelType, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="channelName != null">
+				channelName = #{channelName, jdbcType=VARCHAR},  
+			</if>
+			<if test="sucSignCount != null">
+				sucSignCount = #{sucSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="sucSignAmt != null">
+				sucSignAmt = #{sucSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignCount != null">
+				failSignCount = #{failSignCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="failSignAmt != null">
+				failSignAmt = #{failSignAmt, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingCount != null">
+				signingCount = #{signingCount, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="signingAmt != null">
+				signingAmt = #{signingAmt, jdbcType=NUMERIC,typeHandler=NumberHandler}
+			</if>
+		</set>
+		<where>
+			  recordDate = #{recordDate} AND 
+			  channelCode = #{channelCode}
+		</where>
+	</update>
+	
+	<delete id="deleteByDay" parameterType="map">
+		DELETE FROM t_sum_sign_channel 
+		<where> 
+			recordDate = #{today}
+		</where>
+	</delete>
+	
+	<insert id="batchInsert" parameterType="ArrayList">
+		INSERT INTO t_sum_sign_channel  (
+			recordDate,
+			channelCode,
+			channelType, 
+			channelName, 
+			sucSignCount, 
+			sucSignAmt, 
+			failSignCount, 
+			failSignAmt, 
+			signingCount, 
+			signingAmt
+		)
+		VALUES
+		<foreach collection="list" item="item" index="index" separator=",">
+		  ( 
+		  #{item.recordDate}, 
+		  #{item.channelCode}, 
+		  #{item.channelType}, 
+		  #{item.channelName}, 
+		  #{item.sucSignCount}, 
+		  #{item.sucSignAmt}, 
+		  #{item.failSignCount},
+		  #{item.failSignAmt}, 
+		  #{item.signingCount}, 
+		  #{item.signingAmt}
+		  )
+		</foreach>
+  </insert>
+</mapper>

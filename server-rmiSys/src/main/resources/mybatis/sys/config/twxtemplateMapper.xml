@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="WXTEMPLATE">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			messageType,
+			templateId, 
+			tempName,
+			templateUrl, 
+			first, 
+			firstOpt1,
+			firstOpt2,
+			keyword1, 
+			keyword2, 
+			keyword3, 
+			keyword4, 
+			activityFlag,
+			remark, 
+			updateBy, 
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime  
+		FROM t_wx_template
+		<where>
+			<if test="messageType != null and messageType != ''">
+			  and messageType = #{messageType}
+			 </if>
+			<if test="templateId != null and templateId != ''">
+				and templateId = #{templateId}
+			</if>
+			<if test="tempName != null and tempName != ''">
+				and tempName = #{tempName}
+			</if>
+			<if test="templateUrl != null and templateUrl != ''">
+				and templateUrl = #{templateUrl}
+			</if>
+			<if test="first != null and first != ''">
+				and first = #{first}
+			</if>
+			<if test="keyword1 != null and keyword1 != ''">
+				and keyword1 = #{keyword1}
+			</if>
+			<if test="keyword2 != null and keyword2 != ''">
+				and keyword2 = #{keyword2}
+			</if>
+			<if test="keyword3 != null and keyword3 != ''">
+				and keyword3 = #{keyword3}
+			</if>
+			<if test="keyword4 != null and keyword4 != ''">
+				and keyword4 = #{keyword4}
+			</if>
+			<if test="remark != null and remark != ''">
+				and remark = #{remark}
+			</if>
+			<if test="activityFlag != null and activityFlag != ''">
+				and activityFlag = #{activityFlag}
+			</if>
+			<if test="updateBy != null and updateBy != ''">
+				and updateBy = #{updateBy}
+			</if>
+			<if test="updateTime != null and updateTime != ''">
+				and updateTime = #{updateTime}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_wx_template 
+		<where>
+		<if test="messageType != null and messageType != ''">
+		    and messageType = #{messageType}
+		 </if>
+		<if test="templateId != null and templateId != ''">
+			and templateId = #{templateId}
+		</if>
+		<if test="templateUrl != null and templateUrl != ''">
+			and templateUrl = #{templateUrl}
+		</if>
+		<if test="tempName != null and tempName != ''">
+			and tempName = #{tempName}
+		</if>
+		<if test="first != null and first != ''">
+			and first = #{first}
+		</if>
+		<if test="keyword1 != null and keyword1 != ''">
+			and keyword1 = #{keyword1}
+		</if>
+		<if test="keyword2 != null and keyword2 != ''">
+			and keyword2 = #{keyword2}
+		</if>
+		<if test="keyword3 != null and keyword3 != ''">
+			and keyword3 = #{keyword3}
+		</if>
+		<if test="keyword4 != null and keyword4 != ''">
+			and keyword4 = #{keyword4}
+		</if>
+		<if test="activityFlag != null and activityFlag != ''">
+			and activityFlag = #{activityFlag}
+		</if>
+		<if test="remark != null and remark != ''">
+			and remark = #{remark}
+		</if>
+		<if test="updateBy != null and updateBy != ''">
+			and updateBy = #{updateBy}
+		</if>
+		<if test="updateTime != null and updateTime != ''">
+			and updateTime = #{updateTime}
+		</if>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_wx_template (
+			messageType,
+			templateId,
+			tempName,
+			templateUrl,
+			first,
+			firstOpt1,
+			firstOpt2,
+			keyword1,
+			keyword2,
+			keyword3,
+			keyword4,
+			activityFlag,
+			remark,
+			updateBy,
+			updateTime
+		)
+		VALUES ( 
+			#{messageType, jdbcType=VARCHAR}, 
+			#{templateId, jdbcType=VARCHAR}, 
+			#{tempName, jdbcType=VARCHAR}, 
+			#{templateUrl, jdbcType=VARCHAR}, 
+			#{first, jdbcType=VARCHAR},
+			#{firstOpt1, jdbcType=VARCHAR},
+			#{firstOpt2, jdbcType=VARCHAR},
+			#{keyword1, jdbcType=VARCHAR}, 
+			#{keyword2, jdbcType=VARCHAR}, 
+			#{keyword3, jdbcType=VARCHAR}, 
+			#{keyword4, jdbcType=VARCHAR}, 
+			<if test="activityFlag !=null ">
+			#{activityFlag, jdbcType=INTEGER,typeHandler=NumberHandler}, 
+			</if>
+			<if test="activityFlag ==null ">
+			0 ,
+			</if>
+			#{remark, jdbcType=VARCHAR}, 
+			#{updateBy, jdbcType=VARCHAR}, 
+			#{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_wx_template 
+		<where> 
+			messageType = #{messageType}
+		</where>
+	</delete>
+	<update id="update" parameterType="map">
+		UPDATE t_wx_template  
+		<set>
+			<if test="templateId != null">
+				templateId = #{templateId, jdbcType=VARCHAR},  
+			</if>
+			<if test="tempName != null">
+				tempName = #{tempName, jdbcType=VARCHAR},  
+			</if>
+			<if test="templateUrl != null">
+				templateUrl = #{templateUrl, jdbcType=VARCHAR},  
+			</if>
+			<if test="first != null">
+				first = #{first, jdbcType=VARCHAR},  
+			</if>
+			<if test="firstOpt1 != null">
+				firstOpt1 = #{firstOpt1, jdbcType=VARCHAR},  
+			</if>
+			<if test="firstOpt2 != null">
+				firstOpt2 = #{firstOpt2, jdbcType=VARCHAR},  
+			</if>
+
+			<if test="keyword1 != null">
+				keyword1 = #{keyword1, jdbcType=VARCHAR},  
+			</if>
+			<if test="keyword2 != null">
+				keyword2 = #{keyword2, jdbcType=VARCHAR},  
+			</if>
+			<if test="keyword3 != null">
+				keyword3 = #{keyword3, jdbcType=VARCHAR},  
+			</if>
+			<if test="keyword4 != null">
+				keyword4 = #{keyword4, jdbcType=VARCHAR},  
+			</if>
+			<if test="activityFlag != null">
+				activityFlag = #{activityFlag, jdbcType=INTEGER,typeHandler=NumberHandler},  
+			</if>
+			<if test="remark != null">
+				remark = #{remark, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateBy != null">
+				updateBy = #{updateBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  messageType = #{messageType}
+		</where>
+	</update>
+</mapper>
