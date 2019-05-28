@@ -49,7 +49,7 @@ public class DaoMybatisImpl implements Dao{
 	private SqlSessionTemplate getDao(String db){
 		String dbSqlSessionTemplateName = DaoUtil.getDefaultDbPre(db) + SQL_SESSION_TEMPLATE;
 		LogerUtil.log("*************** dbSqlSessionTemplate Name :" + dbSqlSessionTemplateName);
-		return (SqlSessionTemplate)SpringAppContext.getBean(db + SQL_SESSION_TEMPLATE);
+		return (SqlSessionTemplate)SpringAppContext.getBean(dbSqlSessionTemplateName);
 	}
 	
 

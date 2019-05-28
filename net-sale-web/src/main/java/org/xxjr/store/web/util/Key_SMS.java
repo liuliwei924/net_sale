@@ -1,7 +1,5 @@
 package org.xxjr.store.web.util;
 
-import java.util.Date;
-
 import org.ddq.common.security.MD5Util;
 
 public class Key_SMS {

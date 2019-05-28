@@ -10,7 +10,6 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.util.LogerUtil;
 import org.llw.job.util.JobUtil;
-import org.springframework.util.StringUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
@@ -18,7 +17,7 @@ import org.xxjr.sys.util.ServiceKey;
 /**
  * 
  * 上门统计工具类
- * @author hwf
+ * @author liulw
  *
  */
 public class BookSumUtil {
@@ -53,44 +52,6 @@ public class BookSumUtil {
 		} catch (Exception e) {
 			LogerUtil.error(BookSumUtil.class,e, "BookSumUitl channelBook error");
 			JobUtil.addProcessExecute(processId, "统计渠道上门数据 报错：" + e.getMessage() );
-		}
-	}
-	
-	/**
-	 * 客服上门统计
-	 * @param processId
-	 * @param today
-	 */
-	public static void kfBook(Object processId, String today, String isSummaryKf) {
-		AppResult result = new AppResult();
-		try {
-			LogerUtil.log("BookSumUitl kfBook>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> start");
-			if(StringUtils.isEmpty(today) || StringUtils.isEmpty(isSummaryKf)){
-				LogerUtil.log("BookSumUitl kfBook>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 传入的参数有误：today="+today+",isSummaryKf="+isSummaryKf);
-				return;
-			}
-			//获取统计数据
-			AppParam queryParam = new AppParam("sumUtilExtService","kfBook");
-			queryParam.addAttr("isSummaryKf", isSummaryKf);
-			queryParam.addAttr("today", today);
-			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
-			result = RemoteInvoke.getInstance().callNoTx(queryParam);
-			List<Map<String,Object>> dataList = result.getRows();
-			int size = 0;
-			if(dataList.size()>0){
-				//将统计数据插入统计表
-				AppParam insertParam = new AppParam("sumBookKfService","save");
-				insertParam.addAttr("today", today);
-				insertParam.addAttr("list", dataList);
-				insertParam.setRmiServiceName(AppProperties
-						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
-				result = RemoteInvoke.getInstance().call(insertParam);
-				size =NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Insert_SIZE), 0);
-			}
-			LogerUtil.log("BookSumUitl kfBook >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> end insert count=" +size);
-		} catch (Exception e) {
-			LogerUtil.error(BookSumUtil.class,e, "BookSumUitl kfBook error");
-			JobUtil.addProcessExecute(processId, "统计客服上门数据 报错：" + e.getMessage() );
 		}
 	}
 	

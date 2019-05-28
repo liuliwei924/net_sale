@@ -2,7 +2,6 @@ package org.xxjr.job.listener.busi.store;
 
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
-import org.ddq.common.util.StringUtil;
 import org.llw.job.core.BaseExecteJob;
 import org.llw.job.util.JobConstant;
 import org.springframework.context.annotation.Lazy;
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 /***
  * 门店分单
- * @author ZQH
+ * @author LiulwS
  *
  */
 @Lazy
@@ -20,14 +19,13 @@ public class StoreAutoAllotJob  implements BaseExecteJob{
 	public AppResult executeJob(AppParam param) {
 		AppResult result = new AppResult();
 		Object processId = param.getAttr(JobConstant.KEY_processId);
-		Object cityName = param.getAttr("jobParams");
-		String cityNames = StringUtil.getString(cityName);
 		
+		result = OrgAllotUtils.allotOrgNewOrder(processId);
 		//分配新单
-		result = StoreAutoAllotUtils.allotStoreNewOrder(processId , cityNames);
+		result = StoreAutoAllotUtils.allotStoreNewOrder(processId);
 		
 		//分配再分配单
-		result = StoreAutoAllotUtils.allotStoreAgainOrder(processId, cityNames);
+		result = StoreAutoAllotUtils.allotStoreAgainOrder(processId);
 		
 		return result;
 	}

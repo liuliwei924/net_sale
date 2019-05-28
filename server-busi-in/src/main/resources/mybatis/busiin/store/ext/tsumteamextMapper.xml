@@ -67,66 +67,7 @@
 			GROUP BY t1.teamNo
 		) tab3 ON tab2.recordDate = tab3.recordDate AND tab2.teamNo = tab3.teamNo
 	 </select>
-	 
-	 
-	<!--挂卖基本统计  -->
-	<select id="saleByBase" resultType="map" parameterType="map">
-		SELECT 
-			#{today} AS 'recordDate',
-			IFNULL(t2.teamNo, '005') as 'teamNo',
-			IFNULL(t3.teamName,'其他免费渠道') as 'teamName',
-			COUNT(DISTINCT IF(t.handleType=1,t.applyId,NULL)) AS 'saleCount',
-			ROUND(SUM(IF(t.handleType=1,t.costPrice,0)),2) / 100 AS 'saleAmount',
-			SUM(IF(t.handleType=1,t.costScore,0)) AS 'saleScore',
-			COUNT(DISTINCT IF(t.handleType=4,t.applyId,NULL)) AS 'failSaleCount',
-			ROUND(SUM(IF(t.handleType=4,t.costPrice*t.discount,0)) / 100,2) AS 'failSaleAmount',
-			SUM(IF(t.handleType=4,t.costScore,0)) AS 'failSaleScore',
-			COUNT(DISTINCT IF(t.handleType=2,t.applyId,NULL)) AS 'sucSaleCount',
-			ROUND(SUM(IF(t.handleType=2,t.costPrice*t.discount,0)) / 100,2) AS 'sucSaleAmount',
-			SUM(IF(t.handleType=2,t.costScore,0)) AS 'sucSaleScore'
-		FROM t_borrow_sel_record t JOIN t_borrow_apply n ON t.applyId = n.applyId
-			 LEFT JOIN t_borrow_channel t2 ON n.channelCode = t2.channelCode
-			 LEFT JOIN t_borrow_team t3 ON t2.teamNo = t3.teamNo 
-			WHERE t.createTime >= #{today} AND t.createTime <![CDATA[<]]> DATE_ADD(#{today},INTERVAL 1 day)
-		GROUP BY t2.teamNo
-	</select>
-	
-	
-	<!--  查询有过退款的日期 -->	
-	<select id="queryNowRefundDate" resultType="map" parameterType="map">
-      <![CDATA[	
-		SELECT
-			DATE_FORMAT(createTime,'%Y-%m-%d') as 'recordDate'
-		FROM
-			t_borrow_sel_record 
-		WHERE
-			handleType = 4
-			AND updateTime >= DATE_SUB(#{today},INTERVAL 1 DAY)
-			AND updateTime <= CURDATE()
-	   	    AND createTime < DATE_SUB(CURDATE(),INTERVAL 1 DAY)
-			GROUP BY DATE_FORMAT(createTime,'%Y-%m-%d')
-      ]]>
-    </select>
-    
-    <!-- 按团队挂卖统计(查询有过退款的) -->
-    <select id="queryTeamRefund" resultType="map" parameterType="map">
-	SELECT 
-		DATE_FORMAT(t.createTime,'%Y-%m-%d') AS 'recordDate',
-		t2.teamNo,
-		COUNT(DISTINCT t.applyId) AS 'failSaleCount',
-		ROUND(SUM(t.costPrice*t.discount) / 100,2) AS 'failSaleAmount',
-		SUM(t.costScore) AS 'failSaleScore'
-	FROM t_borrow_sel_record t JOIN t_borrow_apply t1 ON t.applyId=t1.applyId 
-	JOIN t_borrow_channel t2 ON t1.channelCode = t2.channelCode
-	WHERE 
-	t.handleType=4 
-	AND DATE_FORMAT(t.createTime,'%Y-%m-%d') IN (
-	<foreach collection="recordDates" separator="," item="item">
-	#{item.recordDate}
-	</foreach>
-	)
-	GROUP BY t2.teamNo,DATE_FORMAT(t.createTime,'%Y-%m-%d')
-    </select>
+
     
     <!--总的签单统计(按处理时间)  -->
 	<select id="sumTotalSign" resultType="map" parameterType="map">

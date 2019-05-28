@@ -28,7 +28,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
-import org.xxjr.store.web.action.account.config.StoreRoleAction;
 import org.xxjr.sys.util.AreaUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
@@ -490,12 +489,11 @@ public class UserInfoAction {
 			params.setRmiServiceName(AppProperties
 					.getProperties(DuoduoConstant.RMI_SERVICE_START
 							+ ServiceKey.Key_cust));
-			RequestUtil.setAttr(params, request);
 			params.addAttr("customerId", loginCustId);
 			params.addAttr("password",  MD5Util.getEncryptPassword(password));
 			result = RemoteInvoke.getInstance().call(params);
 		} catch(Exception e){
-			LogerUtil.error(StoreRoleAction.class, e, "resetPwd error");
+			LogerUtil.error(this.getClass(), e, "resetPwd error");
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}
 		return result;

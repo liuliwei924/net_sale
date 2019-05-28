@@ -7,8 +7,8 @@ import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
-import org.ddq.common.util.LogerUtil;
 import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.util.LogerUtil;
 import org.xxjr.sys.util.ServiceKey;
 
 /**
