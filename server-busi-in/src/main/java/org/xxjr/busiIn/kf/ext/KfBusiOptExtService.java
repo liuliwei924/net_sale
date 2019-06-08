@@ -20,11 +20,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.BorrowConstant;
+import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.busiIn.kf.BorrowApplyService;
 import org.xxjr.busiIn.utils.StoreOptUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
-import org.xxjr.sys.util.active.ActiveUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -342,12 +342,8 @@ public class KfBusiOptExtService extends BaseService {
 		applyParam.addAttr("recorder", recordCustId);
 		applyParam.addAttr("haveDetail", 1);
 		
-		AppResult gradeResult = ActiveUtil.getGrade(params);//获取等级
-		
-		String grade = StringUtil.getString(gradeResult.getAttr("rewardValue")) ;
-		if (StringUtils.isEmpty(grade)) {
-			grade = "F";
-		}
+		String grade = CountGradeUtil.getGrade(params.getAttr()) ;
+
 		applyParam.addAttr("grade", grade);
 		
 		applyParam.setService("borrowApplyService");

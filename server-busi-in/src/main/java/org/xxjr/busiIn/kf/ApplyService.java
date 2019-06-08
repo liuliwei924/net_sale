@@ -20,12 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.ApplyAllotUtil;
 import org.xxjr.busi.util.ApplyUnionUtil;
+import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.busi.util.SeniorCfgUtils;
 import org.xxjr.busiIn.utils.AllotCostUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
-import org.xxjr.sys.util.active.ActiveUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -586,22 +586,16 @@ public class ApplyService extends BaseService {
 			
 			ApplyAllotUtil.conversionType(row);
 			
-			AppParam updateParam = new AppParam();
-			updateParam.addAttrs(row);
-			AppResult gradeResult = ActiveUtil.getGrade(updateParam);//获取等级
-			
-			String grade = StringUtil.getString(gradeResult.getAttr("rewardValue")) ;
-			if (StringUtils.isEmpty(grade)) {
-				grade = "F";
-			}
-			
+			String grade = CountGradeUtil.getGrade(row) ;
+		
 			int insure = NumberUtil.getInt(row.get("insure"),0);//是否勾选保险协议
 			String cityName = StringUtil.getString(row.get("cityName"));
 			
 			double loanAmount = NumberUtil.getDouble(row.get("loanAmount"), 0);
 			int allotFlag = ApplyAllotUtil.allot(grade, cityName,insure,loanAmount);//分单
 			
-			
+			AppParam updateParam = new AppParam();
+			updateParam.addAttrs(row);
 			updateParam.addAttr("applyId", row.get("borrowApplyId"));
 			updateParam.addAttr("grade", grade);
 			updateParam.addAttr("allotFlag", oldAllotFlag == 8 ? oldAllotFlag : allotFlag);
