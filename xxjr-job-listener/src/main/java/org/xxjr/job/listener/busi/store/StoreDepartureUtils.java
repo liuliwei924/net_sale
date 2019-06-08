@@ -1,5 +1,6 @@
 package org.xxjr.job.listener.busi.store;
 
+import java.util.List;
 import java.util.Map;
 
 import org.ddq.common.constant.DuoduoConstant;
@@ -8,7 +9,11 @@ import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
 import org.llw.job.util.JobUtil;
+import org.llw.model.cache.RedisUtils;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 
@@ -246,6 +251,36 @@ public class StoreDepartureUtils {
 		} catch (Exception e) {
 			LogerUtil.error(StoreDepartureUtils.class,e, "storeCostDepartMonth error");
 			JobUtil.addProcessExecute(processId, "统计门店经理离职成本月度基本数据 报错：" + e.getMessage() );
+		}
+	}
+	
+	/**
+	 * 业务员用户登录状态
+	 * @param processId
+	 */
+	public static void dealStoreOffline(Object processId) {
+		AppParam queryParams = new AppParam("busiCustService", "queryCust");
+		queryParams.addAttr("loginStatus", "1");
+		queryParams.addAttr("orgIdNotNull", "1");
+		queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParams);
+		List<Map<String,Object>> crmList = queryResult.getRows();
+		for(Map<String,Object> map : crmList){
+			String customerId = "";
+			try{
+				customerId = StringUtil.getString(map.get("customerId"));
+				String signId = (String)RedisUtils.getRedisService()
+						.get(StoreUserUtil.USER_KEY + customerId);
+				int loginStatus = NumberUtil.getInt(map.get("loginStatus"),0);
+				if(StringUtils.isEmpty(signId) && loginStatus != 0 && loginStatus != 4){
+					//更新用户登陆状态
+					StoreUserUtil.updateUserLoginStatus(customerId, 0);
+					//添加退出记录
+					StoreUserUtil.addStoreOnlineRecord(customerId, 0, "无操作自动退出");
+				}
+			}catch(Exception e){
+				LogerUtil.error(StoreDepartureUtils.class, e, "用户离线判断报错 customerId=" + customerId);
+			}
 		}
 	}
 }

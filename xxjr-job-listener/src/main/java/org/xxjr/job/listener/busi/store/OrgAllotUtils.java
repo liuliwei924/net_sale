@@ -63,6 +63,7 @@ public class OrgAllotUtils {
 				AppParam countParams = new AppParam();
 				countParams.addAttr("orderType", 1);//再分配
 				countParams.addAttr("cityName", cityName);
+				countParams.addAttr("orgNull", "1");
 				int allotCityTotalCount = queryStoreAllotCount(countParams);
 				totalNetPoolCount += allotCityTotalCount;
 
@@ -100,22 +101,22 @@ public class OrgAllotUtils {
 							AppParam allotOrgParam = null;
 							for(Map<String,Object> map2 : canAllotList) {
 								int needCount = NumberUtil.getInt(map2.get("needCount"));
-								long neeedAllotCount = 0;
+								long needAllotCount = 0;
 								if(needCount > avgCount && modCount > 0) {
-									neeedAllotCount = avgCount +1;
+									needAllotCount = avgCount +1;
 									modCount = modCount -1;
 								}else if(needCount < avgCount ) {
-									neeedAllotCount = needCount;
+									needAllotCount = needCount;
 									modCount = modCount + (avgCount - needCount);
 								}else {
-									neeedAllotCount = avgCount;
+									needAllotCount = avgCount;
 								}
 								
-								if(neeedAllotCount > 0) {
+								if(needAllotCount > 0) {
 									allotOrgParam = new AppParam("netStorePoolService","allotOrgOrder");
 									allotOrgParam.addAttr("orgId", map2.get("orgId"));
 									allotOrgParam.addAttr("cityName", cityName);
-									allotOrgParam.addAttr("neeedAllotCount", neeedAllotCount);
+									allotOrgParam.addAttr("needAllotCount", needAllotCount);
 									allotOrgParam.addAttr("orderType", "1");//新单
 									allotOrgParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 									AppResult allotResult = RemoteInvoke.getInstance().call(allotOrgParam);

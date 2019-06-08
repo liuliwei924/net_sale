@@ -664,9 +664,8 @@ public class NetStorePoolService extends BaseService {
 	 */
 	public AppResult allotOrgOrder(AppParam params) {
 		AppResult result = new AppResult();
-		
 		Object orgId = params.getAttr("orgId");
-		long needAllotCount = NumberUtil.getLong(params.getAttr("neeedAllotCount"),0);
+		long needAllotCount = NumberUtil.getLong(params.getAttr("needAllotCount"),0);
 		Object cityName = params.getAttr("cityName");
 		if(!StringUtils.isEmpty(orgId) && !StringUtils.isEmpty(cityName) && needAllotCount > 0) {
 			AppParam applyIdsParam = new AppParam();
@@ -684,6 +683,7 @@ public class NetStorePoolService extends BaseService {
 					
 					AppParam allotParam = new AppParam();
 					allotParam.addAttr("applyIdIn", applyIds);
+					allotParam.addAttr("orgId", orgId);
 					applyIdsParam.setDataBase(params.getDataBase());
 					result = this.updateOrderOrgId(allotParam);
 				}

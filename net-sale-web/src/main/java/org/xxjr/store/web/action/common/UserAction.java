@@ -80,12 +80,12 @@ public class UserAction {
 		try {
 			
 		//	判断是否超过3次密码错误
-//			if(CustomerPwdUtil.getCustLoginErrorCount(telephone)>=3){
-//				result.setMessage("用户名或密码错误超过3次,请用其他方式登录！");
-//				result.setSuccess(false);
-//				result.putAttr("errorMore", "1");
-//				return result;
-//			}
+			if(CustomerPwdUtil.getCustLoginErrorCount(telephone)>=3){
+				result.setMessage("用户名或密码错误超过3次,请用其他方式登录！");
+				result.setSuccess(false);
+				result.putAttr("errorMore", "1");
+				return result;
+			}
 			AppParam custPwdParam = new AppParam();
 			custPwdParam.addAttr("telephone", telephone);
 			custPwdParam.addAttr("password", password);

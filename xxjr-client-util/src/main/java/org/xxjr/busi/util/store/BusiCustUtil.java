@@ -50,7 +50,7 @@ public class BusiCustUtil {
 		}
 		//保存或修改个人信息抢单
 		params.setMethod("saveOrUpdate");
-		params.setService("busiCustService");
+		params.setService("sumBusiCustService");
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
 		AppResult result = new AppResult();

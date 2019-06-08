@@ -40,7 +40,7 @@
 				and orgId = #{orgId}
 			</if>
 			<if test="orgNull != null and orgNull != ''">
-				and orgId IS NULL
+				and (orgId IS NULL or orgId ='')
 			</if>
 			<if test="lastStore != null and lastStore != ''">
 				and lastStore = #{lastStore}
@@ -68,6 +68,9 @@
 		 </if>
 		<if test="cityName != null and cityName != ''">
 			and cityName = #{cityName}
+		</if>
+		<if test="orgNull != null and orgNull != ''">
+			and (orgId IS NULL or orgId ='')
 		</if>
 		<if test="cityNames != null and cityNames != ''">
 			AND cityName in (${cityNames})
@@ -516,19 +519,19 @@
 	<select id="queryOrgAllotOrder" resultType="map" parameterType="map">
 		SELECT 
 			GROUP_CONCAT(applyId) as applyIds
-		FROM t_net_store_pool
+		FROM (SELECT applyId FROM t_net_store_pool
 		WHERE cityName = #{cityName}
 		AND (orgId is NULL or orgId = '') 
 		<if test="orderType != null and orderType != ''">
 			AND orderType = #{orderType}
 		</if>
-		ORDER BY applyTime DESC limit #{limitSize}
+		ORDER BY applyTime DESC limit #{limitSize}) t
 	</select>
 	
 	<select id="queryGroupByOrgId" resultType="map" parameterType="map">
 		SELECT count(1) as 'totalCount',t.orgId,t1.orgNo,t1.orgName
 		FROM t_net_store_pool t 
-		JOIN t_org ON t1 t.orgId = t1.orgId
+		JOIN t_org t1 ON t.orgId = t1.orgId
 		WHERE t.orgId !=''
 		<if test="orderType != null and orderType != ''">
 			and t.orderType = #{orderType}
@@ -539,6 +542,6 @@
 		<if test="againFlag != null and againFlag != ''">
 			<![CDATA[AND t.nextRecordDate <= CURDATE() ]]>
 		</if>
-	    group by orgId
+	    group by t.orgId
 	</select>
 </mapper>

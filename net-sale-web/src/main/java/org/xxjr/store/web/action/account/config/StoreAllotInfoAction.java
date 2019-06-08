@@ -15,7 +15,6 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.SpringAppContext;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
-import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.NumberUtil;
 import org.ddq.common.util.StringUtil;
@@ -28,11 +27,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.busi.util.store.ApplyInfoUtil;
 import org.xxjr.busi.util.store.BusiCustUtil;
-import org.xxjr.busi.util.store.CFSDealUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
-import org.xxjr.store.web.action.account.work.CFSSignDealAction;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
 
@@ -241,60 +238,6 @@ public class StoreAllotInfoAction {
 			LogerUtil.error(this.getClass(), e, "updateStoreEmployee error");
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}	
-		return result;
-	}
-	
-	/**
-	 * 批量获取员工编号
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@SuppressWarnings("unchecked")
-	@RequestMapping("batchGetEmployeeNo")
-	@ResponseBody
-	public AppResult batchGetEmployeeNo(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		try {
-			Map<String, Object> custInfo = JsonUtil.getInstance().json2Object(
-					request.getParameter("str"), Map.class);
-			if (StringUtils.isEmpty(custInfo)) {
-				return CustomerUtil.retErrorMsg("门店人员的基本信息不能为空");
-			}
-			List<Map<String, Object>> custList = (List<Map<String, Object>>) custInfo
-					.get("custInfo");
-			if (StringUtils.isEmpty(custList)) {
-				return CustomerUtil.retErrorMsg("请传入门店人员的基本信息");
-			}
-			for (Map<String, Object> custMap : custList) {
-				String queryStatus = StringUtil.getString(custMap.get("queryStatus"));
-				//1是查询成功
-				if("1".equals(queryStatus)){
-					continue;
-				}
-				String customerId = StringUtil.getString(custMap.get("customerId"));
-				if(StringUtils.isEmpty(customerId)){
-					continue;
-				}
-				String orgNo = StringUtil.getString(custMap.get("orgNo"));
-				if(StringUtils.isEmpty(orgNo)){
-					continue;
-				}
-				String realName = StringUtil.getString(custMap.get("realName"));
-				if(StringUtils.isEmpty(realName)){
-					continue;
-				}
-				AppParam params = new AppParam();
-				params.addAttr("customerId", customerId);
-				params.addAttr("orgNo", orgNo);
-				params.addAttr("realName", realName);
-				CFSDealUtil.batchGetEmployee(params);
-			}
-		} catch (Exception e) {
-			LogerUtil.error(CFSSignDealAction.class, e, "batchGetEmployeeNo error");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
 		return result;
 	}
 }

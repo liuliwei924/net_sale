@@ -237,6 +237,12 @@
 		FROM
 		  t_busi_cust t
 		  WHERE t.`roleType` IN (1,3,6,7,8,9)
+		 <if test="loginStatus != null and loginStatus != ''">
+			and loginStatus = #{loginStatus}
+		</if>
+		<if test="orgIdNotNull != null and orgIdNotNull != ''">
+			and orgId !=''
+		</if>
 		<if test="orderSql != null and orderSql!='' "> 
 			ORDER by ${orderSql}
 		</if>

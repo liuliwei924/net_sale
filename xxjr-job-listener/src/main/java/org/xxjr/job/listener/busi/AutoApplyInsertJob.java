@@ -16,6 +16,7 @@ import org.llw.job.util.JobConstant;
 import org.llw.job.util.JobUtil;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.xxjr.job.listener.busi.store.StoreDepartureUtils;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
 /***
@@ -51,6 +52,13 @@ public class AutoApplyInsertJob implements BaseExecteJob {
 			JobUtil.addProcessExecute(processId, "申请数据批量插入 报错：" + e.getMessage() );
 		}
 		
+	   // 判断业务员下线
+		try {
+			StoreDepartureUtils.dealStoreOffline(processId);
+		}catch (Exception e) {
+			LogerUtil.error(AutoApplyInsertJob.class, e, "StoreDepartureUtils dealStoreOffline >>>>>>>>>>>>>>>>>>error");
+			JobUtil.addProcessExecute(processId, "执行业务员下线判断报错：" + e.getMessage() );
+		}
 		return result;
 	}
 	
