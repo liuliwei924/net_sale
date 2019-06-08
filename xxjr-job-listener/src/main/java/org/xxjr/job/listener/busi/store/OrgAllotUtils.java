@@ -107,6 +107,8 @@ public class OrgAllotUtils {
 								}else if(needCount < avgCount ) {
 									neeedAllotCount = needCount;
 									modCount = modCount + (avgCount - needCount);
+								}else {
+									neeedAllotCount = avgCount;
 								}
 								
 								if(neeedAllotCount > 0) {
