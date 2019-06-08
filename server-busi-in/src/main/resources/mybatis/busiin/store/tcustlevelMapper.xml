@@ -165,7 +165,7 @@
 	</select>
 	
 	
-	<!-- 获取城市及等级下可分配未满足基本分单的门店人员 -->
+	<!-- 获取门店及等级下可分配未满足基本分单的门店人员 -->
 	<select id="queryLessBaseCust" parameterType="map" resultType="map">
 		SELECT
 			t.customerId,
@@ -182,7 +182,6 @@
 		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
 		WHERE 
 		  t.isAllotOrder in(1,4) 
-		   AND t2.cityName = #{cityName}
 		   <if test="orgId != null and orgId !=''">
 		   		AND t2.orgId = #{orgId}
 		   </if>
@@ -209,7 +208,6 @@
 		JOIN t_borrow_rank_cfg t4 ON t.gradeCode = t4.gradeCode
 		WHERE 
 		  t.isAllotOrder in(1,4)
-		   AND t2.cityName = #{cityName}
 		   <if test="orgId != null and orgId !=''">
 		    	AND t2.orgId = #{orgId}
 		   </if>

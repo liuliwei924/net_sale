@@ -17,7 +17,7 @@
 			orgType,
 			isNet,
 			isCount,
-			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 		   orgFlag
 		  FROM
 		t_org 

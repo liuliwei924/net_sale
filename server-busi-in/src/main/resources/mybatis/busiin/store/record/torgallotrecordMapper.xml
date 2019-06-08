@@ -81,7 +81,7 @@
 				cityName = #{cityName, jdbcType=VARCHAR},
 			</if>
 			<if test="addApplyCount != null">
-				applyCount = applyCount + 1
+				applyCount = applyCount + #{addApplyCount}
 			</if>
 		</set>
 		<where>
