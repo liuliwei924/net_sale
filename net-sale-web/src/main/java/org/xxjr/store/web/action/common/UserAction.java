@@ -19,6 +19,7 @@ import org.ddq.common.core.SpringAppContext;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.exception.SysException;
+import org.ddq.common.security.MD5Util;
 import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
@@ -574,5 +575,8 @@ public class UserAction {
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}
 		return result;
+	}
+	public static void main(String[] args) {
+		System.out.println(MD5Util.getEncryptPassword("123456"));
 	}
 }

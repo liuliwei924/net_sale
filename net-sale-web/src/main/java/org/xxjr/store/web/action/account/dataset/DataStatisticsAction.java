@@ -21,10 +21,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.BorrowConstant;
+import org.xxjr.busi.util.kefu.AfterMethodUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
+import org.xxjr.store.web.util.ExportParamUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
@@ -1847,4 +1849,100 @@ public class DataStatisticsAction {
 		return result;
 	}
 	
+	/**
+	 * 大渠道基本情况统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("channelBase/query")
+	@ResponseBody
+	public AppResult channelBase(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().channelBase(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+				result = AfterMethodUtil.getInstance().addRecordCount(result, params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "查询基本情况统计数据出错！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	/**
+	 * 金额资质详细情况统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("channelDtl/query")
+	@ResponseBody
+	public AppResult channelDtl(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().channelDtl(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+				result = AfterMethodUtil.getInstance().analyzedAssetCountToPage(result, params);
+				result = AfterMethodUtil.getInstance().addRecordCount(result, params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, " 金额资质详细情况统计！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 网销门店情况统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("channelNet/query")
+	@ResponseBody
+	public AppResult channelNet(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam("channelModifySumService", "channelNet");
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().channelNet(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+				result = AfterMethodUtil.getInstance().addRecordCount(result, params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "网销门店情况统计！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 渠道城市统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("channelCity/query")
+	@ResponseBody
+	public AppResult channelCity(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().channelCity(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "渠道城市统计！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
 }

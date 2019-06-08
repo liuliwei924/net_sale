@@ -4,6 +4,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -12,9 +13,11 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.NumberUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.RequestUtil;
 import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.kf.KfUserUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
@@ -32,6 +35,11 @@ public class ExportParamUtil {
 		return exportParamUtil;
 	}
 
+	public static final String P_DAY = "day";
+	public static final String P_MONTH = "month";
+	public static final String P_RANGE = "range";
+	public static final String P_DAY_PATTERN = "%Y-%m-%d";
+	public static final String P_MONTH_PATTERN = "%Y-%m";
 	public static final String P_COUNT_METHOD = "countMethod";
 	
 	/**
@@ -1003,6 +1011,209 @@ public class ExportParamUtil {
 		params.addAttr(P_COUNT_METHOD, "queryOrgPauseAllotCount");
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+	}
+	
+	/**
+	 * 大渠道统计（已跟进）-基本情况统计
+	 * @param params
+	 * @return
+	 */
+	public void channelBase(AppParam params, AppResult result, HttpServletRequest request) {
+		params.setService("channelModifySumService");
+		params.setMethod("channelBase");
+		params.addAttr(P_COUNT_METHOD, "channelBaseCount");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(P_DAY.equals(dateType)){
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+			}
+			params.addAttr("datePattern", P_DAY_PATTERN);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+		}else if (P_RANGE.equals(dateType)) {
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+			}
+			params.setService("channelMsSectionSumService");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+		}else {//按月
+			String startRecordMonth = StringUtil.getString(params.getAttr("startRecordMonth"));
+			String endRecordMonth = StringUtil.getString(params.getAttr("endRecordMonth"));
+			params.addAttr("datePattern", P_MONTH_PATTERN);
+			params.addAttr("startRecordDate", startRecordMonth+"-01");
+			params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordMonth+"-01")+" 23:59:59");
+		}
+	}
+	
+	/**
+	 * 
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void channelDtl(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		params.setService("channelModifySumService");
+		params.setMethod("channelDtl");
+		params.addAttr(P_COUNT_METHOD, "channelBaseCount");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+				return ;
+			}
+		}else if ("range".equals(dateType)) {
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+				return ;
+			}
+			params.setService("channelMsSectionSumService");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+		}else {//按月
+			    String startRecordMonth = StringUtil.getString(params.getAttr("startRecordMonth"));
+			    String endRecordMonth = StringUtil.getString(params.getAttr("endRecordMonth"));
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordMonth+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordMonth+"-01")+" 23:59:59");
+		}
+	}
+	
+	/**
+	 * 网销门店情况统计
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void channelNet(AppParam params, AppResult result, HttpServletRequest request){
+		params.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+		params.setService("channelModifySumService");
+		params.setMethod("channelNet");
+		params.addAttr(P_COUNT_METHOD, "channelBaseCount");
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+				return ;
+			}
+		}else if ("range".equals(dateType)) {
+			if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+				result.setSuccess(false);
+				result.setMessage("缺少必传参数!");
+				return ;
+			}
+			params.setService("channelMsSectionSumService");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+		}else{//按月
+			    String startRecordMonth = StringUtil.getString(params.getAttr("startRecordMonth"));
+			    String endRecordMonth = StringUtil.getString(params.getAttr("endRecordMonth"));
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordMonth+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordMonth+"-01")+" 23:59:59");
+		}
+	}
+	
+	/**
+	 * 渠道城市情况统计
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void channelCity(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+			result.setSuccess(false);
+			result.setMessage("缺少必传参数!");
+			return ;
+		}
+		String configCitys = StringUtil.getString(params.getAttr("configCitys"));
+		if (!StringUtils.isEmpty(configCitys)) {
+			params.addAttr("configCitys", configCitys.split(","));
+		}
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		
+		params.setService("channelModifySumService");
+		params.setMethod("channelCityDate");
+		params.addAttr(P_COUNT_METHOD, "channelCityDateCount");
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+
+		}else if ("range".equals(dateType)) {
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			params.addAttr("endDate", endRecordDate);
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.setMethod("channelCity");
+			params.addAttr(P_COUNT_METHOD, "channelCityCount");
+		}else {//按月
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordDate+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate+"-01")+" 23:59:59");
+		}
+		
+		if (1 == NumberUtil.getInt(request.getParameter("isReal"), 0)) {
+			params.setService("channelMsSectionSumService");
+			if("day".equals(dateType) || "month".equals(dateType)){
+				params.setMethod("realChannelCityDate");
+				params.addAttr(P_COUNT_METHOD, "realChannelCityDateCount");
+			}else {
+				params.setMethod("realChannelCitySec");
+				params.addAttr(P_COUNT_METHOD, "realChannelCitySecCount");
+			}
+		}
+		
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 	}
 	
 }
