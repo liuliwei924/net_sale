@@ -1247,9 +1247,7 @@
 			IFNULL(	t5.totalSignCount,0) as 'totalSignCount',
 			ROUND(IFNULL(t5.totalSignAmount,0),2) as 'totalSignAmount',
 			IFNULL(	t6.retCount,0) as 'retCount',
-			ROUND(IFNULL(t6.retAmount,0),2) as 'retAmount',
-			IFNULL(	t7.sucSaleCount-IFNULL(t8.failSaleCount,0),0) as 'sucSaleCount',
-			ROUND(IFNULL(t7.sucSaleAmt-IFNULL(t8.failSaleAmt,0),0),2) as 'sucSaleAmt'
+			ROUND(IFNULL(t6.retAmount,0),2) as 'retAmount'
 		FROM (
 			  SELECT 
 			  		DATE_FORMAT(n.applyTime,#{datePattern}) as 'recordDate',
@@ -1319,35 +1317,6 @@
 			<include refid="channelCitySql2"/>  AND n.`status` in(1,2) AND m.cityName IS NOT NULL
 			GROUP BY DATE_FORMAT(n.feeAmountDate,#{datePattern}),n.channelCode,m.cityName
 		) t6 ON t6.channelCode = t.channelCode AND t6.cityName = t.cityName AND t6.recordDate = t.recordDate
-	   LEFT JOIN(
-		SELECT  
-				DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
-				m.channelCode,
-				m.cityName,
-				COUNT(DISTINCT n.applyId) as 'sucSaleCount',
-				SUM(n.costPrice*n.discount)/100 as 'sucSaleAmt'
-		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
-		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
-		WHERE 
-		<![CDATA[n.createTime >= #{startRecordDate} AND n.createTime <= #{endRecordDate}]]>
-		<include refid="channelCitySql2"/> AND n.handleType=2
-		  GROUP BY DATE_FORMAT(n.createTime,#{datePattern}),m.channelCode,m.cityName
-		) as t7 ON t7.channelCode = t.channelCode AND t7.cityName = t.cityName AND t7.recordDate = t.recordDate
-		
-	  LEFT JOIN(
-		SELECT  
-				DATE_FORMAT(n.createTime,#{datePattern}) as 'recordDate',
-				m.channelCode,
-				m.cityName,
-				COUNT(DISTINCT n.applyId) as 'failSaleCount',
-				SUM(n.costPrice*n.discount)/100 as 'failSaleAmt'
-		FROM t_borrow_sel_count n JOIN t_borrow_apply m ON n.applyId=m.applyId
-		LEFT JOIN t_borrow_channel ch ON ch.channelCode = m.channelCode 
-		WHERE 
-		<![CDATA[n.createTime >= #{startRecordDate} AND n.createTime <= #{endRecordDate}]]>
-		<include refid="channelCitySql2"/> AND n.handleType=4
-		  GROUP BY DATE_FORMAT(n.createTime,#{datePattern}),m.channelCode,m.cityName
-		) as t8 ON t8.channelCode = t.channelCode AND t8.cityName = t.cityName AND t8.recordDate = t.recordDate
 		LEFT JOIN (
 			SELECT 
 				n.channelCode,

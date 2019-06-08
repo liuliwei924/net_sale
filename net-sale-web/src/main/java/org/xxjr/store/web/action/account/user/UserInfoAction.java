@@ -25,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
@@ -139,7 +140,8 @@ public class UserInfoAction {
 				result.putAttr("orderCount", orderResult.getRow(0));
 			}
 			
-			
+			Map<String, Object> baseConfig = StoreSeparateUtils.getBaseConfig();
+			result.putAttr("configCitys", baseConfig.get("allotCitys"));
 		} catch (Exception e) {
 			LogerUtil.error(this.getClass(), e, "getUserInfo error");
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());

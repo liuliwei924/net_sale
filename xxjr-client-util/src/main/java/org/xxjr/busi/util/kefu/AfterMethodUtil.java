@@ -44,8 +44,8 @@ public class AfterMethodUtil {
 	public  AppResult addRecordCount(AppResult result,AppParam appParam) {
 		AppParam params = new AppParam();
 		String dateType = StringUtil.getString(appParam.getAttr("dateType"));
-		String startRecordDate = StringUtil.getString(appParam.getAttr("startRecordDate"));
-		String endRecordDate = StringUtil.getString(appParam.getAttr("endDateStr"));
+//		String startRecordDate = StringUtil.getString(appParam.getAttr("startRecordDate"));
+//		String endRecordDate = StringUtil.getString(appParam.getAttr("endDateStr"));
 		DecimalFormat df = new DecimalFormat("######0.00");
 		List<Map<String, Object>> list = result.getRows();
 		if ("day".equals(dateType)) {
@@ -70,29 +70,29 @@ public class AfterMethodUtil {
 				double repRate = (repCount*100.0)/((applyCount + repCount)== 0 ? 1:(applyCount + repCount));//重复数量/总申请数量
 				map.put("repRate", df.format(repRate) + "%");
 				
-				params.addAttr("channelCode", map.get("channelCode"));
-				params.addAttr("countDate", map.get("recordDate"));
-				params.addAttr("datePattern", "%Y-%m-%d");
-				params.setService("pageCountService");
-				params.setMethod("queryUVCount");
-				params.setRmiServiceName(AppProperties
-						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
-				AppResult result2 = RemoteInvoke.getInstance().callNoTx(params);
-				if(result2.getRows().size()>0){
-					if (result2.getRow(0)!=null) {
-						int recordCount = NumberUtil.getInt(result2.getRow(0).get("recordCount"), 0);
-						int regCount = NumberUtil.getInt(result2.getRow(0).get("regCount"), 0);
-						double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
-						map.put("updateRate", df.format(updateRate) + "%");
-						map.put("recordCount", recordCount);
-						double result1 = (applyCount*100.0)/((recordCount == 0 ? 1 : recordCount));
-						map.put("recordCount1", df.format(result1) + "%");
-					}else {
-						map.put("recordCount", 0);
-					}
-				}else {
-					map.put("recordCount", 0);
-				}
+//				params.addAttr("channelCode", map.get("channelCode"));
+//				params.addAttr("countDate", map.get("recordDate"));
+//				params.addAttr("datePattern", "%Y-%m-%d");
+//				params.setService("pageCountService");
+//				params.setMethod("queryUVCount");
+//				params.setRmiServiceName(AppProperties
+//						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+//				AppResult result2 = RemoteInvoke.getInstance().callNoTx(params);
+//				if(result2.getRows().size()>0){
+//					if (result2.getRow(0)!=null) {
+//						int recordCount = NumberUtil.getInt(result2.getRow(0).get("recordCount"), 0);
+//						int regCount = NumberUtil.getInt(result2.getRow(0).get("regCount"), 0);
+//						double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
+//						map.put("updateRate", df.format(updateRate) + "%");
+//						map.put("recordCount", recordCount);
+//						double result1 = (applyCount*100.0)/((recordCount == 0 ? 1 : recordCount));
+//						map.put("recordCount1", df.format(result1) + "%");
+//					}else {
+//						map.put("recordCount", 0);
+//					}
+//				}else {
+//					map.put("recordCount", 0);
+//				}
 			}
 		}
 		
@@ -117,22 +117,22 @@ public class AfterMethodUtil {
 				row.put("repRate", df.format(repRate) + "%");
 				
 				
-				AppParam param = new AppParam("pageCountService", "queryRangeUVCount");
-				param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
-				param.addAttr("channelCode", row.get("channelCode"));
-				param.addAttr("startRecordDate", startRecordDate);
-				param.addAttr("endRecordDate", endRecordDate);
-				AppResult queryResult = RemoteInvoke.getInstance().callNoTx(param);
-				double uv = NumberUtil.getDouble(queryResult.getRow(0).get("recordCount"), 0.0);
-				double regCount = NumberUtil.getDouble(queryResult.getRow(0).get("regCount"), 0.0);
-				row.put("recordCount", uv);
-				double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
-				row.put("updateRate", df.format(updateRate) + "%");
-				double cvr = 0.0;
-				if (uv > 0) {
-					cvr = (applyCount / uv) * 100.0;
-				}
-				row.put("recordCount1", df.format(cvr) + "%");
+//				AppParam param = new AppParam("pageCountService", "queryRangeUVCount");
+//				param.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+//				param.addAttr("channelCode", row.get("channelCode"));
+//				param.addAttr("startRecordDate", startRecordDate);
+//				param.addAttr("endRecordDate", endRecordDate);
+//				AppResult queryResult = RemoteInvoke.getInstance().callNoTx(param);
+//				double uv = NumberUtil.getDouble(queryResult.getRow(0).get("recordCount"), 0.0);
+//				double regCount = NumberUtil.getDouble(queryResult.getRow(0).get("regCount"), 0.0);
+//				row.put("recordCount", uv);
+//				double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
+//				row.put("updateRate", df.format(updateRate) + "%");
+//				double cvr = 0.0;
+//				if (uv > 0) {
+//					cvr = (applyCount / uv) * 100.0;
+//				}
+//				row.put("recordCount1", df.format(cvr) + "%");
 			}
 		}
 		
@@ -157,24 +157,24 @@ public class AfterMethodUtil {
 				double repRate = (repCount*100.0)/((applyCount + repCount)== 0 ? 1:(applyCount + repCount));//重复数量/总申请数量
 				map.put("repRate", df.format(repRate) + "%");
 				
-				params.addAttr("channelCode", map.get("channelCode"));
-				params.addAttr("countDate", map.get("recordDate"));
-				params.addAttr("datePattern", "%Y-%m");
-				params.setService("pageCountService");
-				params.setMethod("queryUVCount");
-				params.setRmiServiceName(AppProperties
-						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
-				AppResult result2 = RemoteInvoke.getInstance().callNoTx(params);
-				if(result2.getRow(0)!=null){
-					double regCount = NumberUtil.getDouble(result2.getRow(0).get("regCount"), 0.0);
-					double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
-					map.put("updateRate", df.format(updateRate) + "%");
-					int recordCount = NumberUtil.getInt(result2.getRow(0).get("recordCount"), 0);
-					map.put("recordCount", recordCount);
-					map.put("recordCount1", df.format((applyCount*100.0)/((recordCount == 0 ? 1 : recordCount)))+"%");
-				}else {
-					map.put("recordCount", 0);
-				}
+//				params.addAttr("channelCode", map.get("channelCode"));
+//				params.addAttr("countDate", map.get("recordDate"));
+//				params.addAttr("datePattern", "%Y-%m");
+//				params.setService("pageCountService");
+//				params.setMethod("queryUVCount");
+//				params.setRmiServiceName(AppProperties
+//						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_sum));
+//				AppResult result2 = RemoteInvoke.getInstance().callNoTx(params);
+//				if(result2.getRow(0)!=null){
+//					double regCount = NumberUtil.getDouble(result2.getRow(0).get("regCount"), 0.0);
+//					double updateRate = ((applyCount-regCount)*100.0)/(applyCount== 0 ? 1:applyCount );
+//					map.put("updateRate", df.format(updateRate) + "%");
+//					int recordCount = NumberUtil.getInt(result2.getRow(0).get("recordCount"), 0);
+//					map.put("recordCount", recordCount);
+//					map.put("recordCount1", df.format((applyCount*100.0)/((recordCount == 0 ? 1 : recordCount)))+"%");
+//				}else {
+//					map.put("recordCount", 0);
+//				}
 			}
 		}
 		return result;
