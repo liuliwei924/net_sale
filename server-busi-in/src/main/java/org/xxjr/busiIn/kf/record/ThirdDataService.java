@@ -22,7 +22,6 @@ import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ValidUtils;
-import org.xxjr.sys.util.active.ActiveUtil;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,7 +96,7 @@ public class ThirdDataService extends BaseService {
 		}
 		params.addAttr("havePinan", params.getAttr("haveWeiLi"));
 		
-		String grade = CountGradeUtil.getGrade(params.getAttr());//获取等级
+		String grade = CountGradeUtil.getGrade(params.getAttr()) ;
 		
 		params.addAttr("cityName", cityName);
 		params.addAttr("grade", grade);
@@ -209,22 +208,16 @@ public class ThirdDataService extends BaseService {
 		row.put("applyId", applyId);
 		
 		ApplyAllotUtil.conversionType(row);
-		
-		AppParam updateParam = new AppParam();
-		updateParam.addAttrs(row);
-		AppResult gradeResult = ActiveUtil.getGrade(updateParam);//获取等级
-		
-		String grade = StringUtil.getString(gradeResult.getAttr("rewardValue")) ;
-		if (StringUtils.isEmpty(grade)) {
-			grade = "F";
-		}
+	
+		String grade = CountGradeUtil.getGrade(row) ;
 		
 		String cityName = StringUtil.getString(row.get("cityName"));
 		
 		double loanAmount = NumberUtil.getDouble(row.get("loanAmount"), 0);
 		int allotFlag = ApplyAllotUtil.allot(grade, cityName, 0, loanAmount);//分单
 		
-		
+		AppParam updateParam = new AppParam();
+		updateParam.addAttrs(row);
 		updateParam.addAttr("applyId", row.get("applyId"));
 		updateParam.addAttr("grade", grade);
 		updateParam.addAttr("allotFlag", allotFlag);
@@ -304,15 +297,9 @@ public class ThirdDataService extends BaseService {
 					errCount++;
 					isRepeat = true;
 				}
-				
-				AppParam param = new AppParam();
-				param.addAttrs(dswDataMap);
-				AppResult result2 = new AppResult();
-				result2 = ActiveUtil.getGrade(param);//获取等级
-				String grade = StringUtil.getString(result2.getAttr("rewardValue")) ;
-				if (StringUtils.isEmpty(grade)) {
-					grade = "F";
-				}
+	
+				String grade = CountGradeUtil.getGrade(dswDataMap);
+			
 				// 保存第三方数据
 				dswDataMap.put("grade", grade);//客户等级
 				dswDataMap.put("cityName", cityName);

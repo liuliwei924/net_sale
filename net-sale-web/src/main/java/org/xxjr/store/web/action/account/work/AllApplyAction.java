@@ -75,17 +75,8 @@ public class AllApplyAction {
 			
 			String roleType = CustomerUtil.getRoleType(customerId);
 			Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-			int isZSenior = NumberUtil.getInt(custRight.get("isZSenior"),0);
-			int isSenior = NumberUtil.getInt(custRight.get("isSenior"),0);
 			Object fixChannels = custRight.get("channels");
 			params.addAttr("fixChannels", fixChannels);//固定渠道
-			params.addAttr("isZSenior", isZSenior);//查询准优质单
-			params.addAttr("isSenior", isSenior);//查询优质单
-
-			//关闭未处理单的查询，系统分单后，不能让客服在所有的里面查到待处理的单子(0-忽略 1-开启)
-			if(CustConstant.CUST_ROLETYPE_2.equals(roleType)){
-				params.addAttr("autoAllotStatus", SysParamsUtil.getIntParamByKey("autoAllotStatus", 0));
-			}
 			
 			String applyName = request.getParameter("applyName");
 			if(ValidUtils.validateTelephone(applyName)){//加快查询效率

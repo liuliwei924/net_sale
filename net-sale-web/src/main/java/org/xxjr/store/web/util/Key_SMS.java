@@ -1,7 +1,5 @@
 package org.xxjr.store.web.util;
 
-import java.util.Date;
-
 import org.ddq.common.security.MD5Util;
 
 public class Key_SMS {
@@ -18,7 +16,7 @@ public class Key_SMS {
 	
 	public static void main(String[] args) {
 		String time = "20190521153000789";
-		String telephone = "13684962402";
+		String telephone = "13684962400";
 		String merchId = "test001";
 		
 		String sign = MD5Util.getEncryptByKey(telephone + "&" + time, merchId);

@@ -151,10 +151,10 @@ public class AllotCostUtil {
 			}
 			
 			ApplyAllotUtil.conversionType(now);
-
-			String grade = CountGradeUtil.getGrade(now);
+			String grade = CountGradeUtil.getGrade(now) ;
+			
 			now.put("grade", grade);
-
+			
 			int insure = NumberUtil.getInt(now.get("insure"),0);//是否勾选保险协议
 			String cityName = StringUtil.getString(now.get("cityName"));
 			
