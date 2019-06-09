@@ -1169,8 +1169,9 @@ public class StoreTaskReceiver extends RabbitMqConsumer{
 		Map<String,Object> dealMap = (Map<String,Object>)messageMap.get("dealParams");
 		String recordDate = StringUtil.getString(dealMap.get("recordDate"));
 		String customerId = StringUtil.getString(dealMap.get("customerId"));
-		AppParam recordParams = new AppParam("storeCostRecordService","queryCostCount");
+		AppParam recordParams = new AppParam("orgCostRecordService","queryCostCount");
 		recordParams.addAttr("recordDate", recordDate);
+		recordParams.addAttr("endRecordDate", recordDate);
 		recordParams.addAttr("customerId", customerId);
 		recordParams.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START
