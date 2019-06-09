@@ -35,7 +35,7 @@
 		</if>
 	</select>
 
-	<select id="count" resultType="int" parameterType="map">
+	<!-- <select id="count" resultType="int" parameterType="map">
 		SELECT COUNT(*) FROM t_org_cost_record 
 		<where>
 			<if test="orgId != null and orgId != ''">
@@ -54,7 +54,7 @@
 		<if test="orderSql != null and orderSql!='' "> 
 			ORDER by ${orderSql}
 		</if>
-	</select>
+	</select> -->
 
 	<select id="count" resultType="int" parameterType="map">
 		SELECT COUNT(*) FROM t_org_cost_record 
