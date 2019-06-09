@@ -18,7 +18,7 @@
 		FROM t_org_cost_record
 		<where>
 			<if test="orgId != null and orgId != ''">
-			  and recordId = #{recordId}
+			  and orgId = #{orgId}
 			 </if>
 			<if test="applyId != null and applyId != ''">
 				and applyId = #{applyId}
@@ -39,7 +39,7 @@
 		SELECT COUNT(*) FROM t_org_cost_record 
 		<where>
 			<if test="orgId != null and orgId != ''">
-			  and recordId = #{recordId}
+			  and orgId = #{orgId}
 			 </if>
 			<if test="applyId != null and applyId != ''">
 				and applyId = #{applyId}
