@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.AreaUtils;
@@ -176,6 +177,28 @@ public class UserInfoAction {
 				result.putAttr("ToDayWork", list.get(0));
 				result.putAttr("queryTime", list.get(1).get("queryTime"));
 			}
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+			String authType =   StringUtil.getString(custInfo.get("roleType"));
+			double orgBalanceAmt = 0;
+			if(CustConstant.CUST_ROLETYPE_6.equals(authType)
+					||CustConstant.CUST_ROLETYPE_7.equals(authType)){
+				Object orgId  = custInfo.get("orgId");
+				if(!StringUtils.isEmpty(orgId)) {
+					AppParam workQueryParam = new AppParam("worktimeCfgService","query");
+					workQueryParam.addAttr("orgId", orgId);
+					workQueryParam.setRmiServiceName(AppProperties
+							.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+					AppResult workResult = RemoteInvoke.getInstance().callNoTx(workQueryParam);
+					
+					if(workResult.getRows().size() > 0) {
+						orgBalanceAmt = NumberUtil.getDouble(workResult.getRow(0).get("balanceAmt"), 0);
+					}
+				
+				}
+			
+			}
+			result.putAttr("orgBalanceAmt",String.format("%.2f", orgBalanceAmt));
+			
 		} catch (Exception e) {
 			LogerUtil.error(this.getClass(), e, "getToDayCase error");
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());

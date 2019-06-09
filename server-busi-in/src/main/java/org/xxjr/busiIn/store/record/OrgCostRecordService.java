@@ -5,9 +5,14 @@ import java.util.Date;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.exception.SysException;
+import org.ddq.common.util.StringUtil;
 import org.llw.common.core.service.BaseService;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.NumberUtil;
 
 
 @Lazy
@@ -75,6 +80,35 @@ public class OrgCostRecordService extends BaseService {
 	public AppResult update(AppParam params) {
 		params.addAttr("updateTime", new Date());
 		return super.update(params, NAMESPACE);
+	}
+	
+	/**
+	 * 计算门店成本
+	 * @param params
+	 * @return
+	 */
+	public AppResult jsOrgCost(AppParam params) {
+		
+		AppResult result = new AppResult();
+		String orgId = StringUtil.getString(params.getAttr("orgId"));
+		double price = NumberUtil.getDouble(params.getAttr("price"),0);
+		if(StringUtils.isEmpty(orgId) || price <=0) 
+			throw new SysException("更新门店成本缺少必要参数");
+		
+		AppParam workCfgParam = new AppParam("worktimeCfgService","subBalanceAmt");
+		workCfgParam.addAttr("orgId", orgId);
+		workCfgParam.addAttr("subBalanceAmt", price);
+		
+		AppResult qResult = SoaManager.getInstance().invoke(workCfgParam);
+		int updateSize = NumberUtil.getInt(qResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+		
+		if(updateSize == 1) {
+			this.insert(params);
+		}else {
+			result.setSuccess(false);
+			result.setMessage("扣除门店余额失败！");
+		}
+		return result;
 	}
 
 	

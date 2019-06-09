@@ -4,6 +4,15 @@
 
 <mapper namespace="WORKTIMECFG">
     
+    <sql id="queryWhereSql">
+		<if test="cityName != null and cityName != ''">
+			and cityName = #{cityName}
+		</if>
+		<if test="orgId != null and orgId != ''">
+			and orgId = #{orgId}
+		</if>
+    </sql>
+    
 	<select id="query" resultType="map" parameterType="map">
 		SELECT
 			recordId,
@@ -19,45 +28,11 @@
 			endAllotTime,
 			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 			orgMaxCount,
+			balanceAmt,
 			monthMaxCost
 		FROM t_worktime_cfg
 		<where>
-			<if test="recordId != null and recordId != ''">
-			  and recordId = #{recordId}
-			 </if>
-			<if test="cityName != null and cityName != ''">
-				and cityName = #{cityName}
-			</if>
-			<if test="orgId != null and orgId != ''">
-				and orgId = #{orgId}
-			</if>
-			<if test="amBeginWorkTime != null and amBeginWorkTime != ''">
-				and amBeginWorkTime = #{amBeginWorkTime}
-			</if>
-			<if test="amEndWordTime != null and amEndWordTime != ''">
-				and amEndWordTime = #{amEndWordTime}
-			</if>
-			<if test="pmBeginWorkTime != null and pmBeginWorkTime != ''">
-				and pmBeginWorkTime = #{pmBeginWorkTime}
-			</if>
-			<if test="pmEndWordTime != null and pmEndWordTime != ''">
-				and pmEndWordTime = #{pmEndWordTime}
-			</if>
-			<if test="evesBeginWorkTime != null and evesBeginWorkTime != ''">
-				and evesBeginWorkTime = #{evesBeginWorkTime}
-			</if>
-			<if test="evesEndWordTime != null and evesEndWordTime != ''">
-				and evesEndWordTime = #{evesEndWordTime}
-			</if>
-			<if test="createTime != null and createTime != ''">
-				and createTime = #{createTime}
-			</if>
-			<if test="orgMaxCount != null and orgMaxCount != ''">
-				and orgMaxCount = #{orgMaxCount}
-			</if>
-			<if test="monthMaxCost != null and monthMaxCost != ''">
-				and monthMaxCost = #{monthMaxCost}
-			</if>
+			<include refid="queryWhereSql"/>
 		</where>
 		<if test="orderSql != null and orderSql!='' "> 
 			ORDER by ${orderSql}
@@ -67,39 +42,7 @@
 	<select id="count" resultType="int" parameterType="map">
 		SELECT COUNT(*) FROM t_worktime_cfg 
 		<where>
-		<if test="recordId != null and recordId != ''">
-		    and recordId = #{recordId}
-		 </if>
-		<if test="cityName != null and cityName != ''">
-			and cityName = #{cityName}
-		</if>
-		<if test="orgId != null and orgId != ''">
-			and orgId = #{orgId}
-		</if>
-		<if test="amBeginWorkTime != null and amBeginWorkTime != ''">
-			and amBeginWorkTime = #{amBeginWorkTime}
-		</if>
-		<if test="amEndWordTime != null and amEndWordTime != ''">
-			and amEndWordTime = #{amEndWordTime}
-		</if>
-		<if test="pmBeginWorkTime != null and pmBeginWorkTime != ''">
-			and pmBeginWorkTime = #{pmBeginWorkTime}
-		</if>
-		<if test="pmEndWordTime != null and pmEndWordTime != ''">
-			and pmEndWordTime = #{pmEndWordTime}
-		</if>
-		<if test="evesBeginWorkTime != null and evesBeginWorkTime != ''">
-			and evesBeginWorkTime = #{evesBeginWorkTime}
-		</if>
-		<if test="evesEndWordTime != null and evesEndWordTime != ''">
-			and evesEndWordTime = #{evesEndWordTime}
-		</if>
-		<if test="createTime != null and createTime != ''">
-			and createTime = #{createTime}
-		</if>
-		<if test="orgMaxCount != null and orgMaxCount != ''">
-			and orgMaxCount = #{orgMaxCount}
-		</if>
+		<include refid="queryWhereSql"/>
 		</where>
 	</select>
 
@@ -197,6 +140,7 @@
 			t.recordId,
 			t.cityName, 
 			t.orgId, 
+			t.balanceAmt,
 			t.amBeginWorkTime, 
 			t.amEndWordTime, 
 			t.pmBeginWorkTime, 
@@ -265,4 +209,16 @@
 		</if>
 		</where>
 	</sql>
+	
+	<update id="subBalanceAmt" parameterType="map">
+		UPDATE t_worktime_cfg  
+		SET balanceAmt=balanceAmt-#{subBalanceAmt,jdbcType=NUMERIC,typeHandler=NumberHandler}
+		WHERE orgId=#{orgId} AND balanceAmt-#{subBalanceAmt,jdbcType=NUMERIC,typeHandler=NumberHandler}>=0
+	</update>
+	
+	<update id="addBalanceAmt" parameterType="map">
+		UPDATE t_worktime_cfg  
+		SET balanceAmt=balanceAmt+#{addBalanceAmt,jdbcType=NUMERIC,typeHandler=NumberHandler}
+		WHERE orgId=#{orgId}
+	</update>
 </mapper>

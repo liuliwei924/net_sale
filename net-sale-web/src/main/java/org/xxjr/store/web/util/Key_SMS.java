@@ -21,6 +21,9 @@ public class Key_SMS {
 		
 		String sign = MD5Util.getEncryptByKey(telephone + "&" + time, merchId);
 		System.out.println(sign);
+		
+		String ss = String.format("%.2f", 345.5677655);
+		System.out.println(ss);
 	}
 		
 }
