@@ -147,18 +147,18 @@ public class BackOrderAction {
 			if (StringUtils.isEmpty(orders)) {
 				return CustomerUtil.retErrorMsg("请传入订单的基本信息");
 			}
+			
+	        String backDesc = request.getParameter("backDesc");
+			if(StoreConstant.STORE_BACK_STATUS_4.equals(backStatus)
+					&& StringUtils.isEmpty(backDesc)){
+				return CustomerUtil.retErrorMsg("退单失败原因不能为空");
+			}
+			
 			AppParam param = new AppParam("storeHandleExtService","batchCheckBackOrder");
 			param.addAttr("orders", orders);
 			param.addAttr("backStatus", backStatus);
 			param.addAttr("customerId", customerId);
-			if(StoreConstant.STORE_BACK_STATUS_4.equals(backStatus)){
-				String backDesc = request.getParameter("backDesc");
-				if (StringUtils.isEmpty(backDesc)) {
-					return CustomerUtil.retErrorMsg("退单失败原因不能为空");
-				}else{
-					param.addAttr("backDesc", backDesc);
-				}
-			}
+			param.addAttr("backDesc", backDesc);
 			param.setRmiServiceName(AppProperties
 					.getProperties(DuoduoConstant.RMI_SERVICE_START
 							+ ServiceKey.Key_busi_in));

@@ -15,6 +15,7 @@
 			t.dataCost,
 			t.isNet,
 			t.isCount,
+			t.dataCost,
 			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 			t.orgFlag
 		FROM
@@ -96,6 +97,7 @@
 			orgType,
 			isNet,
 			isCount,
+			dataCost,
 			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 		   orgFlag
 		  FROM
