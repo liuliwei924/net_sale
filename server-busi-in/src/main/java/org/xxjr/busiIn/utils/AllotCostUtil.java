@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.logging.log4j.core.util.NameUtil;
 import org.ddq.active.mq.message.RmiServiceSend;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
@@ -13,6 +14,7 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.SpringAppContext;
 import org.ddq.common.core.service.SoaManager;
 import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.StringUtil;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.ApplyAllotUtil;
@@ -21,6 +23,7 @@ import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
 
@@ -209,29 +212,87 @@ public class AllotCostUtil {
 	}
 	
 	/**
-	 * 计算分单成本公共方法
-	 * @param param
+	 * 计算门店分单成本公共方法
+	 * @param orgId
+	 * @param applyId 
 	 */
-	public static void computeAllotOrderCost(AppParam param){
-		//String applyTime = StringUtil.getString(param.getAttr("applyTime"));
-		String customerId = StringUtil.getString(param.getAttr("customerId"));
-		String applyId = StringUtil.getString(param.getAttr("applyId"));
-		//是否满足记录分单成本
-//		boolean isCost = AllotCostUtil.isAllotCost(applyTime);
-		boolean isCost = true;
-		//保存记录到门店人员分单成本统计
-		if(isCost){
-			AppParam costParams = new AppParam("storeCostRecordService","insert");
-			costParams.addAttr("customerId", customerId);
-			costParams.addAttr("applyId", applyId);
-			costParams.addAttr("orgId", param.getAttr("orgId"));
-			costParams.addAttr("recordDate", DateUtil.getSimpleFmt(new Date()));
-			Map<String,Object> baseMap = StoreSeparateUtils.getBaseConfig();//获取全局配置
-			if(baseMap != null){
-				costParams.addAttr("price", baseMap.get("allotPrice"));//分单成本
+	public static boolean saveOrgAllotOrderCost(String orgId, Object applyId,Object customerId){
+		AppParam channelParam = new AppParam("netStorePoolService","queryOrgCostInfo");
+		channelParam.addAttr("applyId", applyId);
+		AppResult channelResult = ServiceKey.doCall(channelParam,ServiceKey.Key_busi_in);
+		if(channelResult.isSuccess() && channelResult.getRows().size() > 0){
+			Map<String,Object> costMap = channelResult.getRow(0);
+			int isCost = NumberUtil.getInt(costMap.get("isCost"), 0);
+			int orderType = NumberUtil.getInt(costMap.get("orderType"), 0);
+			int channelType = NumberUtil.getInt(costMap.get("channelType"), 0);
+			Object channelCode = costMap.get("channelCode");
+			
+			if(isCost == 1 && orderType == 1) {
+				return saveOrgAllotOrderCost(orgId,applyId,channelType,channelCode,customerId);
 			}
-			SoaManager.getInstance().invoke(costParams);
+			
 		}
+		return false;
+	}
+	/**
+	 * 计算门店分单成本公共方法
+	 * @param orgId
+	 * @param channelType 
+	 * 渠道类型（1-免费流量 2-信息流 3-API接口 4-历史数据 5-贷超 6-测试数据)
+	 */
+	@SuppressWarnings("unchecked")
+	public static boolean saveOrgAllotOrderCost(String orgId,Object applyId,int channelType,Object channelCode,Object customerId){
+		Map<String,Object> orgMap = OrgUtils.getOrgByOrgId(orgId);
+		boolean sucFlag = false;
+		if(orgMap != null && !orgMap.isEmpty()) {
+			String dataJson = StringUtil.getString(orgMap.get("dataCost"));
+			Map<String,Object> dataCostMap = JsonUtil.getInstance().json2Object(dataJson, Map.class);
+		    // {"APICost":"5","flowCost":"10","historyCost":"2","otherCost":"3"}
+			if(dataCostMap != null && !dataCostMap.isEmpty()) {
+				
+				String costStr = "otherCost";
+				//1-API数据 2-流量数据 3-历史数据 4-其他数据
+				int dataType = 4;
+				if(channelType == 2) {
+					 costStr = "flowCost";
+					 dataType = 2;
+				}else if(channelType == 3) {
+					 costStr = "APICost";
+					 dataType = 1;
+				}else if(channelType == 4) {
+					 costStr = "historyCost";
+					 dataType = 3;
+				}
+
+				double priceCost = NumberUtil.getDouble(dataCostMap.get(costStr), 0);
+				
+				if(priceCost > 0) {
+					AppParam queryParam  = new AppParam("orgCostRecordService","queryCount");
+					queryParam.addAttr("applyId", applyId);
+					queryParam.addAttr("orgId", orgId);
+					
+					AppResult queryResult = ServiceKey.doCallNoTx(queryParam, ServiceKey.Key_busi_in);
+					int count = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE),1);
+					
+					if(count  == 0) {
+						AppParam costParams = new AppParam("orgCostRecordService","insert");
+						costParams.addAttr("applyId", applyId);
+						costParams.addAttr("orgId", orgId);
+						costParams.addAttr("customerId", customerId);
+						costParams.addAttr("channelCode", channelCode);
+						costParams.addAttr("dataType", dataType);
+						costParams.addAttr("price", priceCost);
+						costParams.addAttr("status", "1");
+						AppResult costResult = ServiceKey.doCall(costParams, ServiceKey.Key_busi_in);
+						
+						if(costResult.isSuccess()) sucFlag = true;
+					}
+				}
+			}
+		
+		}
+		
+		return sucFlag;
 	}
 	
 	/**
