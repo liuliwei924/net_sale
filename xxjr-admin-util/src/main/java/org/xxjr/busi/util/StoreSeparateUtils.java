@@ -310,46 +310,7 @@ public class StoreSeparateUtils {
 		}
 		return orgMap;
 	}
-	
-	/***
-	 * 查询门店人员分配新单总数(成本单)
-	 * @param orgId
-	 * @return
-	 */
-	public static int queryAllotNewOrderCount(String customerId){
-		//查询时间从2019年1月1日开始
-		String startRecordDate = (String) RedisUtils.getRedisService().get(STORE_START_ALLOT_RECORDDATE_KEY + customerId);
-		String storeAllotRecordDate = SysParamsUtil.getStringParamByKey("storeStartAllotRecordDate", "2019-01-01");
-		if(StringUtils.isEmpty(startRecordDate)){
-			AppParam custParam  = new AppParam("custLevelService","query");
-			custParam.addAttr("customerId", customerId);
-			custParam.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
-			AppResult custResult = RemoteInvoke.getInstance().callNoTx(custParam);
-			if(custResult.getRows().size() > 0){
-				String stopAllotDate = StringUtil.getString(custResult.getRow(0).get("stopAllotDate"));
-				if(!StringUtils.isEmpty(stopAllotDate)){
-					startRecordDate = stopAllotDate;
-				}
-			}
-			String date = StringUtils.isEmpty(startRecordDate) ? storeAllotRecordDate : startRecordDate;
-			RedisUtils.getRedisService().set(STORE_START_ALLOT_RECORDDATE_KEY + customerId,(Serializable) date);
-		}
-		int dateCompare = storeAllotRecordDate.compareTo(startRecordDate);
-		if(dateCompare > 0){
-			RedisUtils.getRedisService().set(STORE_START_ALLOT_RECORDDATE_KEY + customerId,(Serializable) storeAllotRecordDate);
-			return 0;
-		}
-		AppParam queryParam  = new AppParam("storeCostRecordService","queryCostCountByCustId");
-		queryParam.addAttr("customerId", customerId);
-		queryParam.addAttr("recordDate", startRecordDate);
-		queryParam.addAttr("endRecordDate", DateUtil.getSimpleFmt(new Date()));
-		queryParam.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
-		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-		int allotNewOrderCount = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE),0);
-		return allotNewOrderCount;
-	}
+
 	/***
 	 * 查询门店人员是否有回款
 	 * @param orgId
@@ -418,5 +379,45 @@ public class StoreSeparateUtils {
 			}
 		}
 		return true;
+	}
+	
+	/***
+	 * 查询门店人员分配新单总数(成本单)
+	 * @param orgId
+	 * @return
+	 */
+	public static int queryAllotNewOrderCount(String customerId){
+		//查询时间从2019年1月1日开始
+		String startRecordDate = (String) RedisUtils.getRedisService().get(STORE_START_ALLOT_RECORDDATE_KEY + customerId);
+		String storeAllotRecordDate = SysParamsUtil.getStringParamByKey("storeStartAllotRecordDate", "2019-01-01");
+		if(StringUtils.isEmpty(startRecordDate)){
+			AppParam custParam  = new AppParam("custLevelService","query");
+			custParam.addAttr("customerId", customerId);
+			custParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			AppResult custResult = RemoteInvoke.getInstance().callNoTx(custParam);
+			if(custResult.getRows().size() > 0){
+				String stopAllotDate = StringUtil.getString(custResult.getRow(0).get("stopAllotDate"));
+				if(!StringUtils.isEmpty(stopAllotDate)){
+					startRecordDate = stopAllotDate;
+				}
+			}
+			String date = StringUtils.isEmpty(startRecordDate) ? storeAllotRecordDate : startRecordDate;
+			RedisUtils.getRedisService().set(STORE_START_ALLOT_RECORDDATE_KEY + customerId,(Serializable) date);
+		}
+		int dateCompare = storeAllotRecordDate.compareTo(startRecordDate);
+		if(dateCompare > 0){
+			RedisUtils.getRedisService().set(STORE_START_ALLOT_RECORDDATE_KEY + customerId,(Serializable) storeAllotRecordDate);
+			return 0;
+		}
+		AppParam queryParam  = new AppParam("orgCostRecordService","queryCostCount");
+		queryParam.addAttr("customerId", customerId);
+		queryParam.addAttr("recordDate", startRecordDate);
+		queryParam.addAttr("endRecordDate", DateUtil.getSimpleFmt(new Date()));
+		queryParam.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		int allotNewOrderCount = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE),0);
+		return allotNewOrderCount;
 	}
 }

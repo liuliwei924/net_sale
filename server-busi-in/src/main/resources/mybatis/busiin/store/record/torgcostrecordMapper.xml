@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ORGCOSTRECORD">
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			applyId, 
+			orgId,
+			channelCode,
+			dataType,
+			`status`,
+			customerId, 
+			price, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime ,
+			DATE_FORMAT(updateTime,'%Y-%m-%d %H:%i:%s') as updateTime   
+		FROM t_org_cost_record
+		<where>
+			<if test="orgId != null and orgId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="status != null and status != ''">
+				and `status` = #{status}
+			</if>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_org_cost_record 
+		<where>
+			<if test="orgId != null and orgId != ''">
+			  and recordId = #{recordId}
+			 </if>
+			<if test="applyId != null and applyId != ''">
+				and applyId = #{applyId}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and customerId = #{customerId}
+			</if>
+			<if test="status != null and status != ''">
+				and `status` = #{status}
+			</if>
+		</where>
+	</select>
+	
+	<insert id="insert" parameterType="map">
+		INSERT INTO t_org_cost_record (
+			applyId,
+			channelCode,
+			dataType,
+			customerId,
+			orgId,
+			price,
+			`status`,
+			createTime
+		)
+		VALUES (
+		#{applyId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+		#{channelCode, jdbcType=VARCHAR}, 
+		<if test="dataType !=null ">
+		#{dataType, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="dataType ==null ">
+		0,
+		</if>
+		#{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},
+		#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},
+		#{price, jdbcType=NUMERIC,typeHandler=NumberHandler},
+		<if test="status !=null ">
+		#{status, jdbcType=INTEGER,typeHandler=NumberHandler},
+		</if>
+		<if test="status ==null ">
+		1,
+		</if>
+		#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_org_cost_record 
+		<where>
+			applyId=#{applyId} and orgId=#{orgId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_org_cost_record  
+		<set>
+			<if test="customerId != null">
+				customerId = #{customerId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="orgId != null">
+				orgId = #{orgId, jdbcType=BIGINT,typeHandler=NumberHandler},  
+			</if>
+			<if test="price != null">
+				price = #{price, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="status != null">
+				status = #{status, jdbcType=NUMERIC,typeHandler=NumberHandler},  
+			</if>
+			<if test="updateTime != null">
+				updateTime = #{updateTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+			</if>
+		</set>
+		<where>
+			  applyId=#{applyId} and orgId=#{orgId}
+			 <if test="customerIdNull != null and customerIdNull != ''">
+				and (customerId IS NULL OR customerId ='')
+			</if>
+		</where>
+	</update>
+	
+	<select id="queryCostCount" resultType="int" parameterType="map">
+		<![CDATA[SELECT
+			COUNT(t.applyId)
+		FROM
+			t_org_cost_record t
+		WHERE
+			t.customerId = #{customerId}
+		AND t.createTime >= #{recordDate}
+		AND t.status = 1
+		AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
+	</select>
+</mapper>

@@ -233,7 +233,7 @@ public class NetStorePoolService extends BaseService {
 		if(1 == orderType) {
 			storeAllotResult = this.getStoreAllotNewOrder(params);
 		}else {
-			storeAllotResult = this.getStoreAllotNewOrder(params);
+			storeAllotResult = this.getStoreAllotAgainOrder(params);
 		}
 
 		int size = storeAllotResult.getRows().size();
@@ -264,12 +264,11 @@ public class NetStorePoolService extends BaseService {
 					custMap.put("agAllotCount", allotCount);
 					custMap.put("orderType", orderType);
 				}
-				//配置的分配新单总数
-				int allotNewCount = 0;
+				
 				if((gradeMap == null || gradeMap.size() <=0) && custMap != null ){
 					gradeMap = StoreSeparateUtils.getRankConfigByGrade(NumberUtil.getInt(custMap.get("gradeCode")));
-					allotNewCount = NumberUtil.getInt(gradeMap.get("allotNewCount"),150);
 				}
+				
 				AppParam storeApplyParam = new AppParam("borrowStoreApplyService","queryCount");
 				storeApplyParam.addAttr("lastStore", customerId);
 				AppResult storeApplyResult = SoaManager.getInstance().invoke(storeApplyParam);
@@ -298,7 +297,7 @@ public class NetStorePoolService extends BaseService {
 				params.addAttr("applyId", applyId);
 				//判断是否是二次申请，是则隐藏相关记录
 				int applyCount = NumberUtil.getInt(storeAllotMap.get("applyCount"),1);
-				if(applyCount > 1 && 1 == orderType && 1 == isCost){
+				if(applyCount > 1 && 1 == orderType){
 					params.addAttr("isHideFlag", "1");
 					params.addAttr("backStatus","1");//1 未退单
 					params.addAttr("backDesc","");
@@ -312,34 +311,28 @@ public class NetStorePoolService extends BaseService {
 					RedisUtils.getRedisService().del(StoreApplyUtils.STORE_APPLY_MAININFO + applyId);
 					
 					// 如果是二次申请 则删除录音缓存
-					if(!StringUtils.isEmpty(params.getAttr("isHideFlag"))){
-						RedisUtils.getRedisService().del(StoreApplyUtils.STORE_CALL_AUDIO_RECORD + applyId + StoreConstant.IS_ADMIN_FALSE);
-					}
+//					if(!StringUtils.isEmpty(params.getAttr("isHideFlag"))){
+//						RedisUtils.getRedisService().del(StoreApplyUtils.STORE_CALL_AUDIO_RECORD + applyId + StoreConstant.IS_ADMIN_FALSE);
+//					}
 					
 					// 保存分配的新单,计算分单成本
-					if(1 == orderType && 1 == isCost){
-						String lastStore = StringUtil.getString(storeAllotMap.get("lastStore"));
-						String applyTime = StringUtil.getString(storeAllotMap.get("applyTime"));
-						if(!StringUtils.isEmpty(applyTime) && StringUtils.isEmpty(lastStore)){
-							AppParam costParam = new AppParam();
-							costParam.addAttr("applyTime", applyTime);
-							costParam.addAttr("customerId", customerId);
-							costParam.addAttr("applyId", applyId);
-							costParam.addAttr("orgId", orgId);
-							//计算订单成本
-							AllotCostUtil.computeAllotOrderCost(costParam);
-							isNew = 1;
-							//二次申请同步custLabel
-							if(applyCount > 1){
-								Map<String,Object> dealMap = new HashMap<String, Object>();
-								dealMap.put("applyId", applyId);
-								dealMap.put("custLabel", "0");
-								StoreOptUtil.dealStoreOrderByMq(null,"custLabelType", dealMap);
-								//加入mq处理跟进记录变更
-								StoreOptUtil.dealStoreOrderByMq(null,"handelRecordType", dealMap);
-							}
+					if(1 == orderType && 1 == isCost && !StringUtils.isEmpty(orgId)){
+						AppParam updateCostParam = new AppParam("orgCostRecordService","update");
+						updateCostParam.addAttr("orgId", orgId);
+						updateCostParam.addAttr("applyId", applyId);
+						updateCostParam.addAttr("customerId", customerId);
+						SoaManager.getInstance().invoke(updateCostParam);
+						
+						if(applyCount > 1){
+							Map<String,Object> dealMap = new HashMap<String, Object>();
+							dealMap.put("applyId", applyId);
+							dealMap.put("custLabel", "0");
+							StoreOptUtil.dealStoreOrderByMq(null,"custLabelType", dealMap);
+							//加入mq处理跟进记录变更
+							StoreOptUtil.dealStoreOrderByMq(null,"handelRecordType", dealMap);
 						}
 					}
+					
 					//插入门店人员操作记录
 					StoreOptUtil.insertStoreRecord(applyId, customerId, BorrowConstant.STORE_OPER_0, 
 							"系统自动分单", 0, orderType, 0, 1);
@@ -370,12 +363,7 @@ public class NetStorePoolService extends BaseService {
 					allotParam.addAttr("applyName", applyName);
 					allotParam.addAttr("orgId", params.getAttr("orgId"));
 					StoreOptUtil.sendAllotMeaasge(allotParam);
-					if(1 == orderType){
-						// 业务员当前成本单分单总数
-						int allotNewOrderCount = StoreSeparateUtils.queryAllotNewOrderCount(customerId);
-						//发送暂停分单提醒
-						StoreOptUtil.sendPauseAllotNotify(customerId, allotNewOrderCount,allotNewCount);
-					}
+					
 					totalSize ++;
 					tmpParam = null;
 					if(1== isCost){
@@ -518,6 +506,14 @@ public class NetStorePoolService extends BaseService {
 		return super.queryByPage(params, NAMESPACE, "queryAllotPondStatics", "queryAllotPondStaticsCount");
 	}
 	
+	/**
+	 * 查询门店成本计算所需信息
+	 * @param param
+	 * @return
+	 */
+	public AppResult queryOrgCostInfo (AppParam param) {
+		return super.query(param, NAMESPACE, "queryOrgCostInfo");
+	}
 	
 	public AppResult queryTransferData (AppParam param) {
 		return super.query(param, NAMESPACE, "queryTransferData");
@@ -664,29 +660,44 @@ public class NetStorePoolService extends BaseService {
 	 */
 	public AppResult allotOrgOrder(AppParam params) {
 		AppResult result = new AppResult();
-		Object orgId = params.getAttr("orgId");
+		String orgId = StringUtil.getString(params.getAttr("orgId"));
+		int orderType = NumberUtil.getInt(params.getAttr("orderType"),2);
 		long needAllotCount = NumberUtil.getLong(params.getAttr("needAllotCount"),0);
 		Object cityName = params.getAttr("cityName");
 		if(!StringUtils.isEmpty(orgId) && !StringUtils.isEmpty(cityName) && needAllotCount > 0) {
 			AppParam applyIdsParam = new AppParam();
 			applyIdsParam.setDataBase(params.getDataBase());
-			applyIdsParam.addAttr("orderType", params.getAttr("orderType"));
+			applyIdsParam.addAttr("orderType", orderType);
 			applyIdsParam.addAttr("limitSize", needAllotCount);
 			applyIdsParam.addAttr("cityName", cityName);
 			
 			AppResult allotApplyIdsR = queryOrgAllotOrder(applyIdsParam);
-			
+			int allotSucSize = 0;
 			if(allotApplyIdsR.getRows().size() > 0) {
-				Map<String,Object> allotApplyIdsMap = allotApplyIdsR.getRow(0);
-				if(allotApplyIdsMap != null && !allotApplyIdsMap.isEmpty()) {
-					String applyIds = StringUtil.getString(allotApplyIdsMap.get("applyIds"));
+				for(Map<String,Object> allotApplyIdsMap : allotApplyIdsR.getRows()) {
+					Object applyId = allotApplyIdsMap.get("applyId");
+					int isCost = NumberUtil.getInt(allotApplyIdsMap.get("isCost"), 0);
 					
 					AppParam allotParam = new AppParam();
-					allotParam.addAttr("applyIdIn", applyIds);
+					allotParam.addAttr("applyId", applyId);
 					allotParam.addAttr("orgId", orgId);
 					applyIdsParam.setDataBase(params.getDataBase());
-					result = this.updateOrderOrgId(allotParam);
+					AppResult updateResult = this.updateOrderOrgId(allotParam);
+					int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+					
+					if(updateSize > 0 && isCost == 1 && orderType ==1) {
+						int channelType = NumberUtil.getInt(allotApplyIdsMap.get("channelType"));
+						Object channelCode = allotApplyIdsMap.get("channelCode");
+						
+						AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId, channelType, channelCode,null);
+						
+						allotSucSize = allotSucSize + updateSize;
+						
+					}
+					
+					
 				}
+
 			}
 			
 		}else {

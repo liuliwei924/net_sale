@@ -1371,27 +1371,13 @@ public class StoreOptExtService extends BaseService {
 					RedisUtils.getRedisService().del(StoreApplyUtils.BORROW_APPLY_INFO + applyId);
 					
 					String applyTime = StringUtil.getString(applyMap.get("applyTime"));
-					//1-渠道算成本 2-渠道不算成本
-					int isCost = 1;
+			
 					int isNew = 0; // 是否为新单
+					boolean costFlag = false;
 					if(!StringUtils.isEmpty(applyTime)){
-						//查询订单渠道成本信息
-						AppParam channelParam = new AppParam("storeListOptExtService","queryOrderChannelInfo");
-						channelParam.addAttr("applyId", applyId);
-						AppResult channelResult = SoaManager.getInstance().invoke(channelParam);
-						if(channelResult.isSuccess() && channelResult.getRows().size() > 0){
-							isCost = NumberUtil.getInt(channelResult.getRow(0).get("isCost"),1);
-						}
-						//计算订单成本
-						if(isCost == 1){
-							AppParam costParam = new AppParam();
-							costParam.addAttr("applyTime", applyTime);
-							costParam.addAttr("customerId", customerId);
-							costParam.addAttr("applyId", applyId);
-							costParam.addAttr("orgId", orgId);
-							AllotCostUtil.computeAllotOrderCost(costParam);
-							isNew = 1;
-						}
+						//计算成本
+						costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId,applyId,customerId);
+				
 						//去掉分配池中数据
 						AppParam tmpParam = new AppParam("netStorePoolService","delete"); 
 						tmpParam.addAttr("applyId", applyId);
@@ -1424,7 +1410,7 @@ public class StoreOptExtService extends BaseService {
 					allotParam.addAttr("orgId", orgId);
 					allotParam.addAttr("applyName", applyName);
 					StoreOptUtil.sendAllotMeaasge(allotParam);
-					if(isCost == 1){
+					if(costFlag){
 						AppParam countParam = new AppParam();
 						countParam.addAttr("customerId", customerId);
 						countParam.addAttr("recordDate", recordDate);
@@ -1470,6 +1456,8 @@ public class StoreOptExtService extends BaseService {
 			AppResult updateResult = SoaManager.getInstance().invoke(updateParam);
 			int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
 			if(updateSize > 0){
+				// 计算成本
+				AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId,null);
 				//插入门店人员操作记录
 				StoreOptUtil.insertStoreRecord(applyId, custId, StoreConstant.STORE_OPER_34, 
 						"新单转门店[CUSTID=]" + custId, 0, 1, 0, 1);

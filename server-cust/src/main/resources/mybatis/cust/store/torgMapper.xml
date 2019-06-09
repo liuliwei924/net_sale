@@ -12,6 +12,7 @@
 			t.province,
 			t.cityName,
 			t.address,
+			t.dataCost,
 			t.isNet,
 			t.isCount,
 			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
@@ -62,7 +63,7 @@
 	
 	
 		<select id="queryUserOrgs" resultType="map" parameterType="map">
-		SELECT t.orgId,t.orgName,t.orgNo,t.province,t.cityName,t.address
+		SELECT t.orgId,t.orgName,t.orgNo,t.province,t.cityName,t.address,t.dataCost
 		FROM
 		t_org t
 		<where>
@@ -86,6 +87,7 @@
 			orgId,
 			orgName,
 			orgNo,
+			dataCost,
 			province,
 			cityName,
 			address,
@@ -139,6 +141,7 @@
 			province,
 			cityName,
 			address,
+			dataCost,
 			managerName,
 			managerTel,
 			orgType,
@@ -152,7 +155,8 @@
 			#{orgNo, jdbcType=VARCHAR}, 
 			#{province, jdbcType=VARCHAR}, 
 			#{cityName, jdbcType=VARCHAR}, 
-			#{address, jdbcType=VARCHAR},  
+			#{address, jdbcType=VARCHAR}, 
+			#{dataCost, jdbcType=VARCHAR}, 
 			#{managerName, jdbcType=VARCHAR}, 
 			#{managerTel, jdbcType=VARCHAR},
 			<if test="orgType !=null ">
@@ -203,6 +207,9 @@
 			</if>
 			<if test="province != null">
 				province = #{province, jdbcType=VARCHAR},   
+			</if>
+			<if test="dataCost != null">
+				dataCost = #{dataCost, jdbcType=VARCHAR},   
 			</if>
 			<if test="cityName != null and cityName !=''">
 				cityName = #{cityName, jdbcType=VARCHAR}, 

@@ -351,11 +351,11 @@
 				) tab7 ON t.`orgId` = tab7.orgId
 			LEFT JOIN
 				(SELECT 
-			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
-			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS costCount,
+			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS backCostCount,
 			      n2.`orgId` 
 			    FROM
-			      t_store_cost_record n1 
+			      t_org_cost_record n1 
 			      JOIN t_busi_cust n2
 			      	ON n1.customerId = n2.customerId
 			    WHERE n1.createTime >= CURDATE()
@@ -660,11 +660,11 @@
 			    ON t.customerId = tab3.recCustId
 			  LEFT JOIN 
 			    (SELECT 
-			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
-			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+			      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS costCount,
+			      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS backCostCount,
 			      n1.`customerId` 
 			    FROM
-			      t_store_cost_record n1 
+			      t_org_cost_record n1 
 			    WHERE n1.createTime >= CURDATE()
 			      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
 			    GROUP BY n1.customerId) tab4

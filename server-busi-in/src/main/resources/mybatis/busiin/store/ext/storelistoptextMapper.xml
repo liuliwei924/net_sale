@@ -1181,7 +1181,7 @@
 			count(t.applyId) as costCount,
 			t3.realName AS 'realName'
 		FROM
-			t_store_cost_record t
+			t_org_cost_record t
 		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
 		JOIN t_org t2 ON t2.orgId = t1.orgId
 		JOIN t_busi_cust t3 on t3.customerId = t.customerId
@@ -1205,7 +1205,7 @@
 			count(t.applyId) as costCount,
 			t3.realName AS 'realName'
 		FROM
-			t_store_cost_record t
+			t_org_cost_record t
 		JOIN t_borrow_store_apply t1 ON t1.applyId = t.applyId
 		JOIN t_org t2 ON t2.orgId = t1.orgId
 		JOIN t_busi_cust t3 on t3.customerId = t.customerId

@@ -407,7 +407,7 @@ public class ApplyAllotUtil {
 		AppResult tranResult = tranPools(borrowApplyId,applyMap,allotFlag);
 		
 		
-		if(!StringUtils.isEmpty(applyId) && result.isSuccess()){
+		if(!StringUtils.isEmpty(applyId) && result.isSuccess() && tranResult.isSuccess()){
 			int applyType = NumberUtil.getInt(applyMap.get("applyType"), 2);
 			AppParam updateParam = new AppParam();//修改状态
 			updateParam.addAttr("applyId", applyId);
@@ -427,14 +427,14 @@ public class ApplyAllotUtil {
 			SoaManager.getInstance().invoke(updateParam);
 		}
 		
-		
-		if(tranResult.isSuccess() && allotFlag > 0 ){
-			String cityName = StringUtil.getString(applyMap.get("cityName"));
-			int insureFlag = NumberUtil.getInt(tranResult.getAttr("insureFlag"), 0);
-			int testNetChannel = NumberUtil.getInt(applyMap.get("testNetChannel"), 0);
-			ApplyAllotUtil.allotCount(cityName, allotFlag,insureFlag,testNetChannel);//分单统计
-			result.putAttr("borrowId", tranResult.getAttr("borrowId"));
-		}
+		//更新分单统计信息
+//		if(tranResult.isSuccess() && allotFlag > 0 ){
+//			String cityName = StringUtil.getString(applyMap.get("cityName"));
+//			int insureFlag = NumberUtil.getInt(tranResult.getAttr("insureFlag"), 0);
+//			int testNetChannel = NumberUtil.getInt(applyMap.get("testNetChannel"), 0);
+//			ApplyAllotUtil.allotCount(cityName, allotFlag,insureFlag,testNetChannel);//分单统计
+//			result.putAttr("borrowId", tranResult.getAttr("borrowId"));
+//		}
 		
 		result.putAttr("applyId", borrowApplyId);
 		

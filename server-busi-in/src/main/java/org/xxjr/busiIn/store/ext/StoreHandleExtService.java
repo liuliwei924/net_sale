@@ -811,7 +811,7 @@ public class StoreHandleExtService extends BaseService{
 			// 先修改审核成功的单子成本状态为失效，成功则修改退单状态为退单成功
 			if(StoreConstant.STORE_BACK_STATUS_3.equals(backStatus)){
 				String lastStore = StringUtil.getString(applyInfo.get("lastStore"));
-				AppParam recordParams = new AppParam("storeCostRecordService","query");
+				AppParam recordParams = new AppParam("orgCostRecordService","query");
 				recordParams.addAttr("customerId", lastStore);
 				recordParams.addAttr("applyId", applyId);
 				recordParams.setOrderBy("createTime");
@@ -819,10 +819,10 @@ public class StoreHandleExtService extends BaseService{
 				AppResult recorResult = SoaManager.getInstance().callNoTx(recordParams);
 				
 				if(recorResult.getRows().size() > 0){
-					AppParam updateCostParams = new AppParam("storeCostRecordService","updateCostByApplyId");
-					updateCostParams.addAttr("customerId", lastStore);
+					AppParam updateCostParams = new AppParam("orgCostRecordService","updateCostByApplyId");
+					updateCostParams.addAttr("orgId", recorResult.getRow(0).get("orgId"));
 					updateCostParams.addAttr("applyId", applyId);
-					updateCostParams.addAttr("status", "1");
+					updateCostParams.addAttr("status", "0");
 					
 					AppResult updateResult = SoaManager.getInstance().invoke(updateCostParams);
 					int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);

@@ -131,11 +131,13 @@ public class SysFeedbackService extends BaseService {
 				result = SoaManager.getInstance().invoke(queryParam);
 				
 				if(result.isSuccess() && result.getRows().size() > 0){
-					String applyId = StringUtil.getString(result.getRow(0).get("applyId"));
+					Map<String,Object> resultMap = result.getRow(0);
+					String applyId = StringUtil.getString(resultMap.get("applyId"));
+					String orgId = StringUtil.getString(resultMap.get("orgId"));
 					AppParam updateparams = new AppParam();
-					updateparams.setService("storeCostRecordService");
-					updateparams.setMethod("delCostByApplyId");
-					updateparams.addAttr("customerId", dealCustomerId);
+					updateparams.setService("orgCostRecordService");
+					updateparams.setMethod("delete");
+					updateparams.addAttr("orgId", orgId);
 					updateparams.addAttr("applyId", applyId);
 					result = SoaManager.getInstance().invoke(updateparams);
 				}

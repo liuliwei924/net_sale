@@ -197,6 +197,21 @@ public class OrgUtils {
 	}
 	
 	/**
+	 * 通过orgId获取门店信息
+	 * @return
+	 */
+	public static Map<String,Object> getOrgByOrgId(String orgId){
+		List<Map<String, Object>> listMap = getOrgList();
+		for(Map<String, Object> map : listMap){
+			String orgTemp = StringUtil.getString(map.get("orgId"));
+			if(orgId.equals(orgTemp)){
+				return map;
+			}
+		}
+		return null;
+	}
+	
+	/**
 	 * 通过orgId获取门店名称
 	 * @return
 	 */

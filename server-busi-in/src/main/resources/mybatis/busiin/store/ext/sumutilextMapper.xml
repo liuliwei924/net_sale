@@ -106,19 +106,19 @@
            (SELECT 
               COUNT(n1.applyId) 
             FROM
-              t_store_cost_record n1 
+              t_org_cost_record n1 
             WHERE n1.customerId = t.customerId 
               AND n1.createTime >= #{today}
-              AND n1.status = 0 
+              AND n1.status = 1 
               AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
            ) AS 'costCount',
            (SELECT 
               COUNT(n1.applyId) 
             FROM
-              t_store_cost_record n1 
+              t_org_cost_record n1 
             WHERE n1.customerId = t.customerId 
               AND n1.createTime >= #{today}
-              AND n1.status = 1 
+              AND n1.status = 0 
               AND n1.createTime < DATE_ADD(#{today}, INTERVAL 1 DAY)
            ) AS 'backCostCount',
            IFNULL(tab20.handelTime, 0) AS 'handelTime',
@@ -1206,16 +1206,16 @@
 			(SELECT 
 			    COUNT(n1.applyId) 
 			  FROM
-			    t_store_cost_record n1 
+			    t_org_cost_record n1 
 			  WHERE n1.customerId = t.customerId
-			   AND n1.status = 0
+			   AND n1.status = 1
 			   AND DATE_FORMAT(n1.createTime, '%Y-%m') = #{toMonth}) AS 'costCount',
 			(SELECT 
 			    COUNT(n1.applyId) 
 			  FROM
-			    t_store_cost_record n1 
+			    t_org_cost_record n1 
 			  WHERE n1.customerId = t.customerId
-			   AND n1.status = 1
+			   AND n1.status = 0
 			   AND DATE_FORMAT(n1.createTime, '%Y-%m') = #{toMonth}) AS 'backCostCount',
 			(SELECT
 			    COUNT(1) 
@@ -1881,11 +1881,11 @@
 		    ON t.customerId = tab3.recCustId
 		  LEFT JOIN 
 		    (SELECT 
-		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
-		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS costCount,
+		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS backCostCount,
 		      n1.`customerId` 
 		    FROM
-		      t_store_cost_record n1 
+		      t_org_cost_record n1 
 		    WHERE n1.createTime >= CURDATE()
 		      AND n1.createTime < DATE_ADD(CURDATE(), INTERVAL 1 DAY) 
 		    GROUP BY n1.customerId) tab4
@@ -2426,11 +2426,11 @@
 		 ON t.`orgId` = tab10.orgId
 		LEFT JOIN
 			(SELECT 
-		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS costCount,
-		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS backCostCount,
+		      COUNT(CASE WHEN n1.`status` = 1 THEN n1.applyId END) AS costCount,
+		      COUNT(CASE WHEN n1.`status` = 0 THEN n1.applyId END) AS backCostCount,
 		      n1.`orgId` 
 		    FROM
-		      t_store_cost_record n1 
+		      t_org_cost_record n1 
 		    WHERE n1.createTime >= CURDATE()
 		 GROUP BY n1.orgId) AS tab11
 		 ON t.`orgId` = tab11.orgId

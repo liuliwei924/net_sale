@@ -517,15 +517,33 @@
 	</select>
 	
 	<select id="queryOrgAllotOrder" resultType="map" parameterType="map">
-		SELECT 
-			GROUP_CONCAT(applyId) as applyIds
-		FROM (SELECT applyId FROM t_net_store_pool
-		WHERE cityName = #{cityName}
-		AND (orgId is NULL or orgId = '') 
+	   	SELECT 
+	   		t.applyId, 
+		   	ch.channelCode,
+		   	ch.`type` as 'channelType',
+		   	ch.isCost
+		FROM t_net_store_pool t 
+		JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId 
+		JOIN t_borrow_channel ch ON t1.channelCode = ch.channelCode
+		WHERE t.cityName = #{cityName} AND (t.orgId is NULL or t.orgId = '') 
 		<if test="orderType != null and orderType != ''">
-			AND orderType = #{orderType}
+			AND t.orderType = #{orderType}
 		</if>
-		ORDER BY applyTime DESC limit #{limitSize}) t
+		  ORDER BY t.applyTime DESC limit  #{limitSize}
+	</select>
+	
+		
+	<select id="queryOrgCostInfo" resultType="map" parameterType="map">
+	   	SELECT 
+	   		t.applyId, 
+	   		t.orderType,
+		   	ch.channelCode,
+		   	ch.`type` as 'channelType',
+		   	ch.isCost
+		FROM t_net_store_pool t 
+		JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId 
+		JOIN t_borrow_channel ch ON t1.channelCode = ch.channelCode
+		WHERE t.applyId = #{applyId}
 	</select>
 	
 	<select id="queryGroupByOrgId" resultType="map" parameterType="map">
