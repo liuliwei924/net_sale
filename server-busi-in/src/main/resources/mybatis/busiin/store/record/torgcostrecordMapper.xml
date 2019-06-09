@@ -51,27 +51,6 @@
 				and `status` = #{status}
 			</if>
 		</where>
-		<if test="orderSql != null and orderSql!='' "> 
-			ORDER by ${orderSql}
-		</if>
-	</select>
-
-	<select id="count" resultType="int" parameterType="map">
-		SELECT COUNT(*) FROM t_org_cost_record 
-		<where>
-			<if test="orgId != null and orgId != ''">
-			  and orgId = #{orgId}
-			 </if>
-			<if test="applyId != null and applyId != ''">
-				and applyId = #{applyId}
-			</if>
-			<if test="customerId != null and customerId != ''">
-				and customerId = #{customerId}
-			</if>
-			<if test="status != null and status != ''">
-				and `status` = #{status}
-			</if>
-		</where>
 	</select>
 	
 	<insert id="insert" parameterType="map">
