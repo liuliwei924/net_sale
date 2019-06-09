@@ -699,11 +699,12 @@ public class NetStorePoolService extends BaseService {
 				}
 
 			}
-			
+			result.putAttr(DuoduoConstant.DAO_Update_SIZE, allotSucSize);
 		}else {
 			result.setSuccess(false);
 			result.setMessage("分单缺少必要参数或者分单数为0");
 		}
+
 		return result;
 	}
 	

@@ -101,6 +101,9 @@ public class StoreAutoAllotUtils {
 		AppParam queryParams = new AppParam("netStorePoolService", "queryGroupByOrgId");
 		queryParams.addAttr("orderType", orderType);
 		queryParams.addAttr("orgFlag", 1);//0-不自动分单 1-自动分单
+		if(orderType == 2) {
+			queryParams.addAttr("againFlag",1);
+		}
 		queryParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 		AppResult result = RemoteInvoke.getInstance().callNoTx(queryParams);
 
