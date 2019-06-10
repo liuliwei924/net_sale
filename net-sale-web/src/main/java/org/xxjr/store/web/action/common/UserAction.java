@@ -41,20 +41,17 @@ import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.store.web.util.Key_SMS;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
+import org.xxjr.sys.util.SysParamsUtil;
 import org.xxjr.sys.util.ValidUtils;
+
+import lombok.extern.slf4j.Slf4j;
 
 
 
 @Controller
 @RequestMapping("/user/")
+@Slf4j
 public class UserAction {
-	@RequestMapping("testRedis")
-	@ResponseBody
-	public AppResult testRedis(HttpServletRequest request, HttpServletResponse response){
-		AppResult result = new AppResult();
-		result.putAttr("value", RedisUtils.getRedisService().get(request.getParameter("key")));
-		return result;
-	}
 
 	/**
 	 * 密码登录，若不存在用户就注册
@@ -501,7 +498,7 @@ public class UserAction {
 	public static void limitCustLogin(Map<String,Object> custInfo){
 		if(custInfo != null){
 			String authType = StringUtil.getString(custInfo.get("roleType"));
-			//String orgId = StringUtil.getString(custInfo.get("orgId"));
+			String orgId = StringUtil.getString(custInfo.get("orgId"));
 			//门店业务员、门店主管、副主管限制登录
 			if(CustConstant.CUST_ROLETYPE_3.equals(authType)
 					||CustConstant.CUST_ROLETYPE_8.equals(authType)
@@ -525,16 +522,21 @@ public class UserAction {
 				if(nowTime < startLoginTime || nowTime > lastLoginTime){
 					throw new SysException("当前时间不允许登录，正常登录时间为7:00-22:00");
 				}
-				/*
+				
 				//客户端IP
 				String clientIp = DuoduoSession.getClientIp();
-				// 北京尚都2店(网销)内网ip
-				String orgIPAddress = SysParamsUtil.getStringParamByKey("bj3OrgIpAddress","124.126.4.214");
-				// 限制北京尚都2店(网销)门店人员（门店负责人除外）外网访问系统
-				if("241".equals(orgId) && !orgIPAddress.equals(clientIp)){
-					throw new SysException("抱歉，您没有权限外网访问系统!");
-				}
-				*/
+				
+				log.info(custInfo.get("userName") + "客户端Ip:" + clientIp);
+				
+				String OrgIdsByIpLimit = SysParamsUtil.getStringParamByKey("OrgIdsByIpLimit","245");
+				String orgIPAddress = SysParamsUtil.getStringParamByKey("orgIpAddresses","124.126.4.214");
+			
+				if(StringUtils.hasText(OrgIdsByIpLimit) 
+						&& StringUtils.hasText(orgIPAddress)) {
+					if(OrgIdsByIpLimit.indexOf(orgId) <0 || orgIPAddress.indexOf(clientIp) <0){
+						throw new SysException("抱歉，您没有权限外网访问系统!");
+					}
+				}	
 			}
 		}
 	}

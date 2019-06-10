@@ -12,6 +12,7 @@ import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.util.LogerUtil;
+import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.DuoduoSession;
 import org.ddq.common.web.session.RequestUtil;
 import org.springframework.stereotype.Controller;
@@ -22,6 +23,7 @@ import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.busi.util.store.BusiCustUtil;
 import org.xxjr.busi.util.store.StoreRoleUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.ShowErrorCode;
 import org.xxjr.cust.util.info.CustInfoUtil;
 import org.xxjr.cust.util.info.CustomerIdentify;
@@ -144,9 +146,22 @@ public class StoreOperatorAction {
 			}
 		}
 		try {
+			String adminCustId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(adminCustId);
+			String adminRole = StringUtil.getString(custInfo.get("roleType"));
+			Object loginOrgId = null;
+			if(CustConstant.CUST_ROLETYPE_6.equals(adminRole)){
+				loginOrgId = custInfo.get("orgId");
+			}else if(!CustConstant.CUST_ROLETYPE_1.equals(adminRole)) {
+				result.setSuccess(false);
+				result.setMessage("抱歉，你没有权限操作！");
+				return result;
+			}
+			
 			AppParam params = new AppParam();
 			RequestUtil.setAttr(params, request);
 			params.addAttr("isAdmin", "isAdmin");
+			params.addAttr("loginOrgId", loginOrgId);
 			params.addAttr("authRole", params.removeAttr("roleId"));
 			params.setService("customerService");
 			params.setMethod("update");
@@ -197,8 +212,21 @@ public class StoreOperatorAction {
 			return result;
 		}
 		try {
+			String adminCustId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(adminCustId);
+			String adminRole = StringUtil.getString(custInfo.get("roleType"));
+			Object loginOrgId = null;
+			if(CustConstant.CUST_ROLETYPE_6.equals(adminRole)){
+				loginOrgId = custInfo.get("orgId");
+			}else if(!CustConstant.CUST_ROLETYPE_1.equals(adminRole)) {
+				result.setSuccess(false);
+				result.setMessage("抱歉，你没有权限操作！");
+				return result;
+			}
+			
 			AppParam params = new AppParam("customerService", "update");
 			params.addAttr("customerId", customerId);
+			params.addAttr("loginOrgId", loginOrgId);
 			params.addAttr("status", 3);
 			params.setRmiServiceName(AppProperties
 					.getProperties(DuoduoConstant.RMI_SERVICE_START
@@ -285,9 +313,23 @@ public class StoreOperatorAction {
 					return result;
 				}
 			}
+			
+			String adminCustId = StoreUserUtil.getCustomerId(request);
+			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(adminCustId);
+			String adminRole = StringUtil.getString(custInfo.get("roleType"));
+			Object loginOrgId = null;
+			if(CustConstant.CUST_ROLETYPE_6.equals(adminRole)){
+				loginOrgId = custInfo.get("orgId");
+			}else if(!CustConstant.CUST_ROLETYPE_1.equals(adminRole)) {
+				result.setSuccess(false);
+				result.setMessage("抱歉，你没有权限操作！");
+				return result;
+			}
+			
 			AppParam params = new AppParam();
 			RequestUtil.setAttr(params, request);
 			params.addAttr("isAdmin", "isAdmin");
+			params.addAttr("loginOrgId", loginOrgId);
 			params.addAttr("authRole", params.removeAttr("roleId"));
 			params.setService("customerService");
 			params.setMethod("update");
@@ -519,3 +561,4 @@ public class StoreOperatorAction {
 		
 	}
 }
+			

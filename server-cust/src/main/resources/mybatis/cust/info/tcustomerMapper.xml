@@ -670,7 +670,10 @@
 			</if>
 		</set>
 		<where>
-			  customerId = #{customerId}
+			  customerId = #{customerId} 
+			  <if test="loginOrgId != null and loginOrgId != ''">
+				and orgId = #{loginOrgId}
+			 </if>
 		</where>
 	</update>
 	
