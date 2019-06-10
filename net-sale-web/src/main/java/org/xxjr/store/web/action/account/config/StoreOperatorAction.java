@@ -184,6 +184,45 @@ public class StoreOperatorAction {
 	}
 
 	/**
+	 * 用户失效处理
+	 */
+	@RequestMapping("userInvalid")
+	@ResponseBody
+	public AppResult userInvalid(HttpServletRequest request) {
+		AppResult result = new AppResult();
+		String customerId = request.getParameter("customerId");
+		if (StringUtils.isEmpty(customerId)) {
+			result.setSuccess(false);
+			result.setMessage("customerId不能为空");
+			return result;
+		}
+		try {
+			AppParam params = new AppParam("customerService", "update");
+			params.addAttr("customerId", customerId);
+			params.addAttr("status", 3);
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_cust));
+			result = RemoteInvoke.getInstance().call(params);
+			if(result.isSuccess()){
+				//清除用户缓存
+				CustomerIdentify.refreshIdentifyById(customerId);
+				//刷新其他地方信息
+				BusiCustUtil.setBusiCustIn(CustomerIdentify.getCustIdentify(customerId), "");
+
+				//刷新其他地方信息
+				BusiCustUtil.setBusiCustSum(CustomerIdentify.getCustIdentify(customerId), "");
+			}
+		} catch (Exception e) {
+			LogerUtil.error(StoreOperatorAction.class, e, "userInvalid error");
+			ExceptionUtil.setExceptionMessage(e, result,
+					DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
 	 * 修改用户信息（管理员）
 	 */
 	@RequestMapping("checkUpdateInfo")

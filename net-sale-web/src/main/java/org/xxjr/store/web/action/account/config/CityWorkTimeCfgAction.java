@@ -179,7 +179,7 @@ public class CityWorkTimeCfgAction {
 			return result;
 		}
 		
-		if (amount > 0) {
+		if (amount <= 0) {
 			result.setSuccess(false);
 			result.setMessage("充值金额必须大于0");
 			return result;
