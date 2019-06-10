@@ -508,6 +508,9 @@
 		<if test="orgId != null and orgId != ''">
 			AND t.orgId = #{orgId}
 		</if>
+		<if test="balanceAmtGt0 != null and balanceAmtGt0 != ''">
+			AND t1.balanceAmt > #{balanceAmtGt0}
+		</if>
 		<if test="orgNo != null and orgNo != ''">
 			AND t.orgNo = #{orgNo}
 		</if>

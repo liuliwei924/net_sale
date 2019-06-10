@@ -833,11 +833,6 @@ public class StoreHandleExtService extends BaseService{
 						dealMap.put("customerId", lastStore);
 						dealMap.put("recordDate", recordDate);
 						StoreOptUtil.dealStoreOrderByMq(lastStore,"storeCostType", dealMap);
-						//成本退单加入财务
-						double price = NumberUtil.getDouble(recorResult.getRow(0).get("price"),40.0);
-						dealMap.put("price", price);
-						dealMap.put("applyId", applyId);
-						StoreOptUtil.dealStoreOrderByMq(lastStore,"backCostAddColType", dealMap);
 						
 						showBackStatus = StoreConstant.STORE_BACK_STATUS_3;
 						backDesc = "";
