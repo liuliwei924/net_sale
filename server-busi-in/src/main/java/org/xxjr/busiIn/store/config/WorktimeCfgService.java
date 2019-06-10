@@ -5,6 +5,7 @@ import java.util.Date;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.SoaManager;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.DuoduoError;
 import org.springframework.context.annotation.Lazy;
@@ -12,6 +13,8 @@ import org.ddq.common.web.session.DuoduoSession;
 import org.llw.common.core.service.BaseService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.xxjr.sys.util.DBConst;
+import org.xxjr.sys.util.NumberUtil;
 
 
 @Lazy
@@ -120,5 +123,51 @@ public class WorktimeCfgService extends BaseService {
 		}else{
 			return this.insert(params);
 		}
+	}
+	
+	/**扣减余额
+	 * subBalanceAmt
+	 * @param params
+	 * @return
+	 */
+	public AppResult subBalanceAmt(AppParam params) {
+		int size = getDao().update(NAMESPACE, "subBalanceAmt", params.getAttr(), params.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return backContext;
+	}
+	
+	/**增加余额
+	 * subBalanceAmt
+	 * @param params
+	 * @return
+	 */
+	public AppResult addBalanceAmt(AppParam params) {
+		int size = getDao().update(NAMESPACE, "addBalanceAmt", params.getAttr(), params.getDataBase());
+		AppResult backContext = new AppResult();
+		backContext.putAttr(DuoduoConstant.DAO_Update_SIZE, size);
+		return backContext;
+	}
+	
+	/**门店充值
+	 * subBalanceAmt
+	 * @param params
+	 * @return
+	 */
+	public AppResult orgCharge(AppParam params) {
+		AppParam updateBaParam = new AppParam();
+		updateBaParam.setDataBase(DBConst.Key_busi_in_DB);
+		updateBaParam.addAttr("orgId", params.getAttr("orgId"));
+		updateBaParam.addAttr("addBalanceAmt", params.getAttr("amount"));
+		AppResult result = this.addBalanceAmt(updateBaParam);
+		
+		int updateSize = NumberUtil.getInt(result.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
+		
+		if(updateSize > 0) {
+			params.setService("orgRechargeRecordService");
+			params.setMethod("insert");
+			SoaManager.getInstance().invoke(params);
+		}
+		return result;
 	}
 }
