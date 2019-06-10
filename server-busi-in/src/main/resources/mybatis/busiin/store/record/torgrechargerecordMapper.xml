@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="ORGRECHARGERECORD">
+    
+    <sql id="querySql">
+   		 <if test="recordId != null and recordId != ''">
+		 	 and recordId = #{recordId}
+		 </if>
+     	<if test="orgId != null and orgId != ''">
+		 	 and orgId = #{orgId}
+		 </if>
+		 <if test="optName != null and optName != ''">
+		 	 and optName = #{optName}
+		 </if>
+    </sql>
+    
+	<select id="query" resultType="map" parameterType="map">
+		SELECT
+			recordId,
+			orgId, 
+			amount, 
+			dtlDesc, 
+			optBy, 
+			optName, 
+			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime 
+		FROM t_org_recharge_record
+		<where>
+			<include refid="querySql"/>
+		</where>
+		<if test="orderSql != null and orderSql!='' "> 
+			ORDER by ${orderSql}
+		</if>
+	</select>
+
+	<select id="count" resultType="int" parameterType="map">
+		SELECT COUNT(*) FROM t_org_recharge_record 
+		<where>
+		<include refid="querySql"/>
+		</where>
+	</select>
+
+	<insert id="insert" parameterType="map">
+		<selectKey resultType="java.lang.Long" order="AFTER" keyProperty="recordId">
+		   SELECT LAST_INSERT_ID()
+		</selectKey>
+		INSERT INTO t_org_recharge_record (
+			orgId,
+			amount,
+			dtlDesc,
+			optBy,
+			optName,
+			createTime
+		)
+		VALUES ( 
+			#{orgId, jdbcType=BIGINT,typeHandler=NumberHandler}, 
+			#{amount, jdbcType=NUMERIC,typeHandler=NumberHandler}, 
+			#{dtlDesc, jdbcType=VARCHAR}, 
+			#{optBy, jdbcType=VARCHAR}, 
+			#{optName, jdbcType=VARCHAR}, 
+			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler}
+		)
+	</insert>
+	
+	<delete id="delete" parameterType="map">
+		DELETE FROM t_org_recharge_record 
+		<where> 
+			recordId = #{recordId}
+		</where>
+	</delete>
+	
+	<update id="update" parameterType="map">
+		UPDATE t_org_recharge_record  
+		<set>
+			<if test="optBy != null">
+				optBy = #{optBy, jdbcType=VARCHAR},  
+			</if>
+			<if test="optName != null">
+				optName = #{optName, jdbcType=VARCHAR}
+			</if>	
+		</set>
+		<where>
+			  recordId = #{recordId}
+		</where>
+	</update>
+</mapper>
