@@ -346,7 +346,7 @@
 			DATE_FORMAT(t.lastUpdateTime,'%Y-%m-%d %H:%i:%s') as  'handleTime',
 			concat('成功',t5.sucCallTimes,'次，总时长',FORMAT(t5.totalDuration/60,1),'分钟') AS callInfo,
 			concat(FORMAT(t5.curDuration/60,1), '分钟') AS curDuration,
-			(case when #{roleType}=1 then concat(t.channelDetail,'-',t6.channelName)  else null end ) as channelText,
+			(case when #{roleType}=1 then concat(t.channelDetail,'-',t6.channelName)  else t6.channelNick end ) as channelText,
 			t1.`desc`,
 			t.allotBy,
 		    DATE_FORMAT(t.allotTime,'%Y-%m-%d %H:%i:%s') as allotTime,
