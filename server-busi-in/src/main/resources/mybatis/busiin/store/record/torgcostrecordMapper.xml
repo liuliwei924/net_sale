@@ -151,4 +151,324 @@
 		AND t.status = 1
 		AND t.createTime < DATE_ADD(#{endRecordDate}, INTERVAL 1 DAY)]]>
 	</select>
+	
+	<sql id="queryOrgCostSql">
+		<where>
+			<![CDATA[t.createTime>= #{startRecordDate} AND t.createTime<=#{endRecordDate}]]>
+			<if test="orgId != null and orgId != ''">
+				and t.orgId = #{orgId}
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and t.channelCode LIKE CONCAT(#{channelCode}, '%')
+			</if>
+			<if test="userOrgs != null and userOrgs != ''">
+				and t.orgId in (${userOrgs})
+			</if>
+			<if test="fixChannels != ull and fixChannels != ''">
+				and FIND_IN_SET(t.channelCode, #{fixChannels})
+			</if>
+			<if test="groupName != null and groupName != ''">
+				and t2.groupName = #{groupName}
+			</if>
+			<if test="teamName != null and teamName != ''">
+				and t2.teamName = #{teamName}
+			</if>
+			<if test="customerId != null and customerId != ''">
+				and t.customerId = #{customerId}
+			</if>
+			<if test="realName != null and realName != ''">
+				and t2.realName LIKE CONCAT(#{realName}, '%')
+			</if>
+		</where>
+	</sql>
+	
+	<!-- 门店相关 -->
+	<select id="queryOrgCost" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT( t.createTime, #{datePattern}) as 'recordDate',
+			t1.orgName,
+			t1.orgNo,
+			t1.cityName,
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId 
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.orgId,DATE_FORMAT( t.createTime, #{datePattern})
+	</select>
+	
+	<select id="queryOrgCostCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.orgId,DATE_FORMAT( t.createTime, #{datePattern})
+		) tab1
+	</select>
+	
+	
+	<select id="queryOrgCostRange" parameterType="map" resultType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+			t1.orgName,
+			t1.orgNo,
+			t1.cityName,
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId 
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.orgId
+	</select>
+	
+	<select id="queryOrgCostRangeCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.orgId
+		) tab1
+	</select>
+	
+	
+	<!-- 渠道相关 -->
+	<select id="queryChannelCost" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT( t.createTime, #{datePattern}) as 'recordDate',
+			t1.channelName,
+			t1.channelCode,
+			CASE t1.type
+				WHEN 1 THEN '免费流量'
+				WHEN 2 THEN '信息流'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN 'v'
+				WHEN 5 THEN '贷超'
+				WHEN 6 THEN '测试数据'
+				ELSE '其他'
+			END as 'typeText',
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.channelCode,DATE_FORMAT( t.createTime, #{datePattern})
+	</select>
+	
+	<select id="queryChannelCostCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.channelCode,DATE_FORMAT(t.createTime, #{datePattern})
+		) tab1
+	</select>
+	
+	
+	<select id="queryChannelCostRange" parameterType="map" resultType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+			t1.channelName,
+			t1.channelCode,
+			CASE t1.type
+				WHEN 1 THEN '免费流量'
+				WHEN 2 THEN '信息流'
+				WHEN 3 THEN 'API接口'
+				WHEN 4 THEN 'v'
+				WHEN 5 THEN '贷超'
+				WHEN 6 THEN '测试数据'
+				ELSE '其他'
+			END as 'typeText',
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_borrow_channel t1 ON t.channelCode = t1.channelCode 
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.channelCode
+	</select>
+	
+	<select id="queryChannelCostRangeCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t.channelCode
+		) tab1
+	</select>
+	
+	
+	<!-- 门店人员相关 -->
+	<select id="queryStoreCost" parameterType="map" resultType="map">
+		SELECT
+			DATE_FORMAT( t.createTime, #{datePattern}) as 'recordDate',
+			t1.orgName,
+			t1.orgNo,
+			t2.realName,
+			t1.cityName,
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			JOIN t_busi_cust t2 ON t.customerId = t2.customerId 
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t2.customerId,DATE_FORMAT( t.createTime, #{datePattern})
+	</select>
+	
+	<select id="queryStoreCostCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t2.customerId,DATE_FORMAT(t.createTime, #{datePattern})
+		) tab1
+	</select>
+	
+	
+	<select id="queryStoreCostRange" parameterType="map" resultType="map">
+		SELECT
+			CONCAT_WS('至',#{startDateStr},#{endDateStr}) as 'recordDate',
+			t1.orgName,
+			t1.orgNo,
+			t2.realName,
+			t1.cityName,
+			COUNT(IF(t.dataType=1 and t.`status` =1,t.applyId,NULL)) as 'apiNeedCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =1,t.price,NULL), 0)) as 'apiNeedCost',
+			COUNT(IF(t.dataType=1 and t.`status` =0,t.applyId,NULL)) as 'apiNotCount',
+			SUM(IFNULL(IF(t.dataType=1 and t.`status` =0,t.price,NULL), 0)) as 'apiNotCost',
+			COUNT(IF(t.dataType=2 and t.`status` =1,t.applyId,NULL)) as 'flowNeedCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =1,t.price,NULL), 0)) as 'flowNeedCost',
+			COUNT(IF(t.dataType=2 and t.`status` =0,t.applyId,NULL)) as 'flowNotCount',
+			SUM(IFNULL(IF(t.dataType=2 and t.`status` =0,t.price,NULL), 0)) as 'flowNotCost',
+			COUNT(IF(t.dataType=3 and t.`status` =1,t.applyId,NULL)) as 'historyNeedCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =1,t.price,NULL), 0)) as 'historyNeedCost',
+			COUNT(IF(t.dataType=3 and t.`status` =0,t.applyId,NULL)) as 'historyNotCount',
+			SUM(IFNULL(IF(t.dataType=3 and t.`status` =0,t.price,NULL), 0)) as 'historyNotCost',
+			COUNT(IF(t.dataType=4 and t.`status` =1,t.applyId,NULL)) as 'otherNeedCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =1,t.price,NULL), 0)) as 'otherNeedCost',
+			COUNT(IF(t.dataType=4 and t.`status` =0,t.applyId,NULL)) as 'otherNotCount',
+			SUM(IFNULL(IF(t.dataType=4 and t.`status` =0,t.price,NULL), 0)) as 'otherNotCost'
+		FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t2.customerId
+	</select>
+	
+	<select id="queryStoreCostRangeCount" parameterType="map" resultType="int">
+		SELECT COUNT(1) FROM (
+			SELECT
+				COUNT(1)
+			FROM
+			t_org_cost_record t
+			JOIN t_org t1 ON t.orgId = t1.orgId
+			JOIN t_busi_cust t2 ON t.customerId = t2.customerId
+		<include refid="queryOrgCostSql"></include>
+		GROUP BY
+			t2.customerId
+		) tab1
+	</select>
 </mapper>
