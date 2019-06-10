@@ -528,12 +528,12 @@ public class UserAction {
 				
 				log.info(custInfo.get("userName") + "客户端Ip:" + clientIp);
 				
-				String OrgIdsByIpLimit = SysParamsUtil.getStringParamByKey("OrgIdsByIpLimit","245");
-				String orgIPAddress = SysParamsUtil.getStringParamByKey("orgIpAddresses","124.126.4.214");
+				String OrgIdsByIpLimit = SysParamsUtil.getStringParamByKey("OrgIdsByIpLimit","-1");
+				String orgIPAddress = SysParamsUtil.getStringParamByKey("orgIpAddresses","0.0.0.1");
 			
 				if(StringUtils.hasText(OrgIdsByIpLimit) 
 						&& StringUtils.hasText(orgIPAddress)) {
-					if(OrgIdsByIpLimit.indexOf(orgId) <0 || orgIPAddress.indexOf(clientIp) <0){
+					if(OrgIdsByIpLimit.indexOf(orgId) >=0 && orgIPAddress.indexOf(clientIp) <0){
 						throw new SysException("抱歉，您没有权限外网访问系统!");
 					}
 				}	
