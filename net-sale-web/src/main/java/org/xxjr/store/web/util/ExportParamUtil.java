@@ -1216,4 +1216,139 @@ public class ExportParamUtil {
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 	}
 	
+	/**
+	 * 门店成本统计
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void orgCost(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+			result.setSuccess(false);
+			result.setMessage("缺少必传参数!");
+			return ;
+		}
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		StoreUserUtil.dealUserAuthParam(params, customerId, "customerId");
+		
+		params.setService("orgCostRecordService");
+		params.setMethod("queryOrgCost");
+		params.addAttr(P_COUNT_METHOD, "queryOrgCostCount");
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+
+		}else if ("range".equals(dateType)) {
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.setMethod("queryOrgCostRange");
+			params.addAttr(P_COUNT_METHOD, "queryOrgCostRangeCount");
+		}else {//按月
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordDate+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate+"-01")+" 23:59:59");
+		}
+		
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+	}
+	
+	/**
+	 * 门店人员成本统计
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void storeCost(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+			result.setSuccess(false);
+			result.setMessage("缺少必传参数!");
+			return ;
+		}
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		StoreUserUtil.dealUserAuthParam(params, customerId, "customerId");
+		
+		params.setService("orgCostRecordService");
+		params.setMethod("queryStoreCost");
+		params.addAttr(P_COUNT_METHOD, "queryStoreCostCount");
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+
+		}else if ("range".equals(dateType)) {
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.setMethod("queryStoreCostRange");
+			params.addAttr(P_COUNT_METHOD, "queryStoreCostRangeCount");
+		}else {//按月
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordDate+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate+"-01")+" 23:59:59");
+		}
+		
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+	}
+	
+	
+	/**
+	 * 渠道数据成本统计
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void channelCost(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+			result.setSuccess(false);
+			result.setMessage("缺少必传参数!");
+			return ;
+		}
+		
+		String customerId = KfUserUtil.getCustomerId(request);
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		
+		params.setService("orgCostRecordService");
+		params.setMethod("queryChannelCost");
+		params.addAttr(P_COUNT_METHOD, "queryChannelCostCount");
+		if("day".equals(dateType)){
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+
+		}else if ("range".equals(dateType)) {
+			params.addAttr("endRecordDate", endRecordDate+" 23:59:59");
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+			params.addAttr("datePattern", "%Y-%m-%d");
+			params.setMethod("queryChannelCostRange");
+			params.addAttr(P_COUNT_METHOD, "queryChannelCostRangeCount");
+		}else {//按月
+				params.addAttr("datePattern", "%Y-%m");
+				params.addAttr("startRecordDate", startRecordDate+"-01");
+				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate+"-01")+" 23:59:59");
+		}
+		
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+	}
+	
 }

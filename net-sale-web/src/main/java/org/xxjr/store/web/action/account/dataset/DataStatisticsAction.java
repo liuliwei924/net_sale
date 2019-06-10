@@ -1945,4 +1945,75 @@ public class DataStatisticsAction {
 		}
 		return result;
 	}
+	
+	
+	/**
+	 * 门店成本统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("orgCost/query")
+	@ResponseBody
+	public AppResult orgCost(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().orgCost(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "门店成本统计！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	/**
+	 * 门店人员成本统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("storeCost/query")
+	@ResponseBody
+	public AppResult storeCost(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().storeCost(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "门店成本统计！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * 渠道数据成本统计
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("channelCost/query")
+	@ResponseBody
+	public AppResult channelCost(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam();
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().channelCost(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "渠道数据成本统计");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
 }
