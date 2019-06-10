@@ -13,6 +13,7 @@
 			t.merchId,
 			t.launchPlace, 
 			t.teamNo,
+			t.channelNick,
 			t1.teamName,
 			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 			t.allotGrade,
@@ -168,7 +169,8 @@
 			createTime,
 			teamNo,
 			allotGrade,
-			isCost
+			isCost,
+			channelNick
 		)
 		VALUES ( 
 			#{channelCode, jdbcType=VARCHAR},
@@ -206,6 +208,8 @@
 			<if test="isCost ==null ">
 			1
 			</if>
+			,
+			#{channelNick, jdbcType=VARCHAR}
 		)
 	</insert>
 	<delete id="delete" parameterType="map">
@@ -228,6 +232,9 @@
 			</if>
 			<if test="merchId != null">
 				merchId = #{merchId, jdbcType=VARCHAR},  
+			</if>
+			<if test="channelNick != null">
+				channelNick = #{channelNick, jdbcType=VARCHAR},
 			</if>
 			<if test="launchPlace != null">
 				launchPlace = #{launchPlace, jdbcType=INTEGER,typeHandler=NumberHandler},  
