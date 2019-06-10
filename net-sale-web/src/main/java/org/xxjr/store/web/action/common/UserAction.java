@@ -533,7 +533,7 @@ public class UserAction {
 			
 				if(StringUtils.hasText(OrgIdsByIpLimit) 
 						&& StringUtils.hasText(orgIPAddress)) {
-					if(OrgIdsByIpLimit.indexOf(orgId) <0 || orgIPAddress.indexOf(clientIp) <0){
+					if(OrgIdsByIpLimit.indexOf(orgId) >=0 && orgIPAddress.indexOf(clientIp) <0){
 						throw new SysException("抱歉，您没有权限外网访问系统!");
 					}
 				}	
