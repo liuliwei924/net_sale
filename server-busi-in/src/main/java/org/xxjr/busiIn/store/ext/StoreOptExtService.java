@@ -1343,9 +1343,26 @@ public class StoreOptExtService extends BaseService {
 		List<Map<String, Object>> orders = (List<Map<String, Object>>) params.getAttr("orders");
 		int sucSize = 0;
 		AppParam updateApplyParam = new AppParam();
+		
 		for (Map<String, Object> orderMap : orders) {
 			String applyId = StringUtil.objectToStr(orderMap.get("applyId"));
 			Map<String, Object> applyMap = StoreOptUtil.queryByApplyId(applyId);
+			String applyTime = StringUtil.getString(applyMap.get("applyTime"));
+			boolean costFlag = false;
+			if(!StringUtils.isEmpty(applyTime)) {
+				costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId,applyId,customerId);
+				
+				if(!costFlag) {
+					throw new SysException("门店余额不足，请尽量选少量单转");
+				}
+				
+				//去掉分配池中数据
+				AppParam tmpParam = new AppParam("netStorePoolService","delete"); 
+				tmpParam.addAttr("applyId", applyId);
+				tmpParam.addAttr("orderType", "1");
+				result = SoaManager.getInstance().invoke(tmpParam);
+			}
+			
 			//判断存在处理人
 			String lastStore = StringUtil.getString(applyMap.get("lastStore"));
 			if(StringUtils.isEmpty(lastStore)){
@@ -1370,20 +1387,7 @@ public class StoreOptExtService extends BaseService {
 					RedisUtils.getRedisService().del(StoreApplyUtils.STORE_APPLY_MAININFO + applyId);
 					RedisUtils.getRedisService().del(StoreApplyUtils.BORROW_APPLY_INFO + applyId);
 					
-					String applyTime = StringUtil.getString(applyMap.get("applyTime"));
-			
 					int isNew = 0; // 是否为新单
-					boolean costFlag = false;
-					if(!StringUtils.isEmpty(applyTime)){
-						//计算成本
-						costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId,applyId,customerId);
-				
-						//去掉分配池中数据
-						AppParam tmpParam = new AppParam("netStorePoolService","delete"); 
-						tmpParam.addAttr("applyId", applyId);
-						tmpParam.addAttr("orderType", "1");
-						result = SoaManager.getInstance().invoke(tmpParam);
-					}
 					//插入门店人员操作记录
 					StoreOptUtil.insertStoreRecord(applyId, customerId, BorrowConstant.STORE_OPER_0, 
 							"新单手工分单[CUSTID=]" + custId, 0, 1, 0, 1);
@@ -1451,13 +1455,16 @@ public class StoreOptExtService extends BaseService {
 		AppParam updateParam = new AppParam("netStorePoolService","update");
 		for (Map<String, Object> orderMap : orders) {
 			String applyId = StringUtil.getString(orderMap.get("applyId"));
+			// 计算成本
+			boolean costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId,null);
+			
+			if(!costFlag) throw new SysException("转门店时，余额不足，请尽量选少量单转");
+			
 			updateParam.addAttr("applyId", applyId);
 			updateParam.addAttr("orgId", orgId);//门店
 			AppResult updateResult = SoaManager.getInstance().invoke(updateParam);
 			int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
 			if(updateSize > 0){
-				// 计算成本
-				AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId,null);
 				//插入门店人员操作记录
 				StoreOptUtil.insertStoreRecord(applyId, custId, StoreConstant.STORE_OPER_34, 
 						"新单转门店[CUSTID=]" + custId, 0, 1, 0, 1);

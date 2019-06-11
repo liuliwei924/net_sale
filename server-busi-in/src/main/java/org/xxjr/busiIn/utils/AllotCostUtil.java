@@ -5,7 +5,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.logging.log4j.core.util.NameUtil;
 import org.ddq.active.mq.message.RmiServiceSend;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
@@ -228,6 +227,8 @@ public class AllotCostUtil {
 			
 			if(isCost == 1 && orderType == 1) {
 				return saveOrgAllotOrderCost(orgId,applyId,channelType,channelCode,customerId);
+			}else {// 不计成本需要返回true
+				return true;
 			}
 			
 		}
@@ -263,7 +264,11 @@ public class AllotCostUtil {
 					 dataType = 3;
 				}
 
-				double priceCost = NumberUtil.getDouble(dataCostMap.get(costStr), 0);
+				double priceCost = NumberUtil.getDouble(dataCostMap.get(costStr));
+				
+				if(priceCost <=0) {//不计成本需要返回true
+					return true;
+				}
 				
 				if(priceCost > 0) {
 					AppParam queryParam  = new AppParam("orgCostRecordService","queryCount");
@@ -274,7 +279,8 @@ public class AllotCostUtil {
 					int count = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE),1);
 					
 					if(count  == 0) {
-						AppParam costParams = new AppParam("orgCostRecordService","insert");
+						
+						AppParam costParams = new AppParam("orgCostRecordService","jsOrgCost");
 						costParams.addAttr("applyId", applyId);
 						costParams.addAttr("orgId", orgId);
 						costParams.addAttr("customerId", customerId);
@@ -285,6 +291,8 @@ public class AllotCostUtil {
 						AppResult costResult = ServiceKey.doCall(costParams, ServiceKey.Key_busi_in);
 						
 						if(costResult.isSuccess()) sucFlag = true;
+					}else {
+						sucFlag = true;
 					}
 				}
 			}

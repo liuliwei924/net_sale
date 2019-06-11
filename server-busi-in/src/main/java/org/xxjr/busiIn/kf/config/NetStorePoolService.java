@@ -675,27 +675,31 @@ public class NetStorePoolService extends BaseService {
 			int allotSucSize = 0;
 			if(allotApplyIdsR.getRows().size() > 0) {
 				for(Map<String,Object> allotApplyIdsMap : allotApplyIdsR.getRows()) {
-					Object applyId = allotApplyIdsMap.get("applyId");
-					int isCost = NumberUtil.getInt(allotApplyIdsMap.get("isCost"), 0);
-					
-					AppParam allotParam = new AppParam();
-					allotParam.addAttr("applyId", applyId);
-					allotParam.addAttr("orgId", orgId);
-					applyIdsParam.setDataBase(params.getDataBase());
-					AppResult updateResult = this.updateOrderOrgId(allotParam);
-					int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
-					
-					if(updateSize > 0 && isCost == 1 && orderType ==1) {
-						int channelType = NumberUtil.getInt(allotApplyIdsMap.get("channelType"));
-						Object channelCode = allotApplyIdsMap.get("channelCode");
-						
-						AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId, channelType, channelCode,null);
-						
-						allotSucSize = allotSucSize + updateSize;
-						
-					}
-					
-					
+					try {
+							Object applyId = allotApplyIdsMap.get("applyId");
+							int isCost = NumberUtil.getInt(allotApplyIdsMap.get("isCost"), 0);
+							boolean costFlag = true;
+							
+							if(isCost == 1 && orderType ==1) {// 先扣余额
+								int channelType = NumberUtil.getInt(allotApplyIdsMap.get("channelType"));
+								Object channelCode = allotApplyIdsMap.get("channelCode");
+								
+								costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId, channelType, channelCode,null);
+							}
+							
+							if(costFlag) {
+								AppParam allotParam = new AppParam();
+								allotParam.addAttr("applyId", applyId);
+								allotParam.addAttr("orgId", orgId);
+								applyIdsParam.setDataBase(params.getDataBase());
+								AppResult updateResult = this.updateOrderOrgId(allotParam);
+								int updateSize = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
+								allotSucSize = allotSucSize + updateSize;
+							}
+							
+					}catch (Exception e) {
+						log.error("门店分单失败", e);
+					}	
 				}
 
 			}
