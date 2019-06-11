@@ -11,6 +11,7 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.ExceptionUtil;
+import org.ddq.common.security.MD5Util;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.DuoduoSession;
@@ -559,6 +560,52 @@ public class StoreOperatorAction {
 		}
 		return result;
 		
+	}
+	
+	/**
+	 * 重置密码
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("resetPwd")
+	@ResponseBody
+	public AppResult resetPwd(HttpServletRequest request){
+		AppResult result = new AppResult();
+		String customerId = request.getParameter("customerId");
+		String password = request.getParameter("password");
+		if(StringUtils.isEmpty(password) || StringUtils.isEmpty(customerId) || org.ddq.common.util.NumberUtil.getInt(customerId, 0) <= 0){
+			result.setSuccess(false);
+			result.setMessage("缺少参数");
+			return result;
+		}
+		if (password.length() < 6 || password.length() > 12) {
+			return CustomerUtil.retErrorMsg("密码长度需要在6~12之间");
+		}
+		if (!ValidUtils.checkPwd(password)) {
+			return CustomerUtil.retErrorMsg("密码需要包含字符和数字喔~");
+		}
+		String loginCustId = StoreUserUtil.getCustomerId(request);//登陆用户ID
+		Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(loginCustId);
+		String adminRole = StringUtil.getString(custInfo.get("roleType"));
+		if(!CustConstant.CUST_ROLETYPE_1.equals(adminRole)) {
+			result.setSuccess(false);
+			result.setMessage("抱歉，你没有权限操作！");
+			return result;
+		}
+		try {
+			// update 已经被修改了
+			AppParam params = new AppParam("customerService", "newUpdate");
+			params.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START
+							+ ServiceKey.Key_cust));
+			params.addAttr("customerId", customerId);
+			params.addAttr("password",  MD5Util.getEncryptPassword(password));
+			result = RemoteInvoke.getInstance().call(params);
+		} catch(Exception e){
+			LogerUtil.error(this.getClass(), e, "resetPwd error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
 	}
 }
 			
