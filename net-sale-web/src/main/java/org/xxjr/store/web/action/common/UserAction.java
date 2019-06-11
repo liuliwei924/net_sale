@@ -78,7 +78,7 @@ public class UserAction {
 		try {
 			
 		//	判断是否超过3次密码错误
-			if(CustomerPwdUtil.getCustLoginErrorCount(telephone)>=3){
+			if(CustomerPwdUtil.getCustLoginErrorCount(telephone)>=20){
 				result.setMessage("用户名或密码错误超过3次,请用其他方式登录！");
 				result.setSuccess(false);
 				result.putAttr("errorMore", "1");
