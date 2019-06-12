@@ -499,12 +499,12 @@
 			t.orgNo,
 			t1.startAllotTime,
 			t1.endAllotTime,
-			IFNULL(t1.orgMaxCount,99999999) as 'orgMaxCount',
+			t1.orgMaxCount,
 			IFNULL(t2.applyCount,0) as 'allotedCount'
 		FROM t_org t
 		LEFT JOIN t_worktime_cfg  t1 ON t.orgId = t1.orgId
 		LEFT JOIN t_org_allot_record t2 ON t.orgId = t2.orgId AND t2.recordDate = #{todayDate}
-		WHERE t.isNet=1
+		WHERE t.isNet=1 and t1.orgMaxCount > 0
 		<if test="orgId != null and orgId != ''">
 			AND t.orgId = #{orgId}
 		</if>
