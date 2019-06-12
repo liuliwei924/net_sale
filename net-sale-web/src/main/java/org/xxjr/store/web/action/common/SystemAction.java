@@ -1,6 +1,9 @@
 package org.xxjr.store.web.action.common;
 
+import javax.imageio.ImageIO;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
@@ -10,13 +13,16 @@ import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.web.session.DuoduoSession;
+import org.llw.common.web.identify.ImageIdentify;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
+import org.xxjr.sys.util.ValidUtils;
 
 
 /***
@@ -71,5 +77,25 @@ public class SystemAction{
 		return result;
 	}
 
+	/**
+	 * 获取图形验证码
+	 */
+	@RequestMapping("/getImgCode/{imgCodeKey}")
+	public void getImgCode(@PathVariable(required=true) String imgCodeKey,
+			HttpServletRequest request,HttpServletResponse response){
+		AppResult result =  new AppResult();
+		try {
+			ServletOutputStream responseOutputStream = response.getOutputStream();
+			ImageIdentify identifyImg = ValidUtils.getImageCode(imgCodeKey, 4);
+			ImageIO.write(identifyImg.getImage(), "JPEG", responseOutputStream);
+			// 以下关闭输入流！
+			responseOutputStream.flush();
+			responseOutputStream.close();
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, "getImgCode error");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+	}
+	
 	
 }
