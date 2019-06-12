@@ -71,6 +71,7 @@ public class OrgAllotUtils {
 			    	AppParam orgAllotOrderCfgParam = new AppParam("netStorePoolService","queryNetOrgAllotOrderCfg");
 			    	orgAllotOrderCfgParam.addAttr("cityName", cityName);
 			    	orgAllotOrderCfgParam.addAttr("todayDate", todayDate);
+			    	orgAllotOrderCfgParam.addAttr("balanceAmtGt0", SysParamsUtil.getIntParamByKey("netOrgMinBalanceAmt", 10));
 			    	orgAllotOrderCfgParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 					AppResult queryResult = RemoteInvoke.getInstance().callNoTx(orgAllotOrderCfgParam);
 					
