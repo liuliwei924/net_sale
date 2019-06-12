@@ -1,26 +1,13 @@
 package org.xxjr.store.web.util;
 
-import org.ddq.common.security.MD5Util;
-
 public class Key_SMS {
 
 	/*** 交单跟进平台快捷登录  **/
 	public final static String Key_SMS_STORE_KJ_LOGIN = "StorekjLoginKey";
 
-	/**短信签名*/
-	public final static String SMS_TGW_SINGN_NAME = "天狗窝区块链";
+	/**短信发送次数后缀*/
+	public final static String SMS_COUNT_FIX = "_count";
 	
-	/**反馈通知 模板ID*/
-	public final static String TGW_FEED_BACK_TEMPID = "168064";
-
-	
-	public static void main(String[] args) {
-		String time = "20190521153000789";
-		String telephone = "13684962400";
-		String merchId = "test001";
-		
-		String sign = MD5Util.getEncryptByKey(telephone + "&" + time, merchId);
-		System.out.println(sign);
-	}
-		
+	/**图形验证码后缀*/
+	public final static String IMG_CODE_FIX = "_imgCode";
 }

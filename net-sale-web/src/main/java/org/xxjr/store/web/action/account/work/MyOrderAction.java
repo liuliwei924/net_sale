@@ -10,20 +10,18 @@ import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.LogerUtil;
-import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.DuoduoSession;
 import org.ddq.common.web.session.RequestUtil;
-import org.ddq.common.core.service.RemoteInvoke;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
-import org.xxjr.store.util.StoreApplyUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
@@ -202,13 +200,6 @@ public class MyOrderAction {
 					.getProperties(DuoduoConstant.RMI_SERVICE_START
 							+ ServiceKey.Key_busi_in));
 			result = RemoteInvoke.getInstance().callNoTx(param);
-			if(result.getRows().size() > 0){
-				for(Map<String,Object> map : result.getRows()){
-					boolean orgCFSFlag = StoreApplyUtils.isHaveAuthUpCFS(StringUtil.getString(map.get("orgId")));
-					map.put("orgCFSFlag", orgCFSFlag);
-				}
-			}
-			return result;
 		} catch (Exception e) {
 			LogerUtil.error(MyOrderAction.class, e, "querySigningList error");
 			ExceptionUtil.setExceptionMessage(e, result,
@@ -272,13 +263,6 @@ public class MyOrderAction {
 					.getProperties(DuoduoConstant.RMI_SERVICE_START
 							+ ServiceKey.Key_busi_in));
 			result = RemoteInvoke.getInstance().callNoTx(param);
-			if(result.getRows().size() > 0){
-				for(Map<String,Object> map : result.getRows()){
-					boolean orgCFSFlag = StoreApplyUtils.isHaveAuthUpCFS(StringUtil.getString(map.get("orgId")));
-					map.put("orgCFSFlag", orgCFSFlag);
-				}
-			}
-			return result;
 		} catch (Exception e) {
 			LogerUtil.error(MyOrderAction.class, e, "querySignEnd error");
 			ExceptionUtil.setExceptionMessage(e, result,
@@ -1091,60 +1075,6 @@ public class MyOrderAction {
 		}
 		return result;
 	}
-	
-	/**
-	 * 查询CFS签单列表
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("/cfsSign/queryCfsSignList")
-	@ResponseBody
-	public AppResult queryCfsSignList(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		try {
-			String customerId = StoreUserUtil.getCustomerId(request);
-			if (StringUtils.isEmpty(customerId)) {
-				return CustomerUtil.retErrorMsg("用户ID不能为空");
-			}
-			AppParam param = new AppParam("storeListOptExtService", "queryCfsSignList");			
-			RequestUtil.setAttr(param, request);
-			StoreUserUtil.dealUserAuthParam(param, customerId, "customerId");
-			String searchKey = request.getParameter("searchKey");
-			if(!StringUtils.isEmpty(searchKey)){
-				if(ValidUtils.validateTelephone(searchKey)){//加快查询效率
-					param.addAttr("telephone", searchKey);
-					param.removeAttr("searchKey");
-				}else{
-					param.addAttr("applyName", searchKey);
-					param.removeAttr("searchKey");
-				}
-			}
-			String storeSearchKey = request.getParameter("storeSearchKey");
-			if(!StringUtils.isEmpty(storeSearchKey)){
-				if(ValidUtils.validateTelephone(storeSearchKey)){//加快查询效率
-					param.addAttr("mobile", storeSearchKey);
-					param.removeAttr("storeSearchKey");
-				}else{
-					param.addAttr("customerName", storeSearchKey);
-					param.removeAttr("storeSearchKey");
-				}
-			}
-			param.setOrderBy("queryDate");
-			param.setOrderValue("desc");
-			param.addAttr("isNet", 1); // 1 网销
-			param.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START
-							+ ServiceKey.Key_busi_in));
-			result = RemoteInvoke.getInstance().callNoTx(param);
-		} catch (Exception e) {
-			LogerUtil.error(MyOrderAction.class, e, "queryCfsSignList error");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
-		return result;
-	}
-	
 	
 	/**
 	 * 转其他信贷经理

@@ -343,8 +343,6 @@ public class ApplyInfoAction {
 			// 专属单
 			Map<String,Object> execMap = StoreApplyUtils.getApplyExecOrder(applyId);
 			result.putAttr("execOders", StringUtils.isEmpty(execMap.get("applyId")) == true ? 0 : 1);
-			boolean orgCFSFlag = StoreApplyUtils.isHaveAuthUpCFS(StringUtil.getString(applyMap.get("orgId")));
-			result.putAttr("orgCFSFlag",orgCFSFlag);
 			return result;
 		} catch (Exception e) {
 			LogerUtil

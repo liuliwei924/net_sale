@@ -32,18 +32,13 @@
 		    <version>1.5.0-b01</version>
 		</dependency>  
 		
-		 <!-- <dependency>
-			  <groupId>org.xxjr.tenxun</groupId>
-			  <artifactId>smscode</artifactId>
-			  <version>1.7.0</version>
-			</dependency>
-          <dependency>
-			  <groupId>org.xxjr.tenxun</groupId>
-			  <artifactId>xxjr-txsms</artifactId>
-			  <version>1.8.0</version>
-			</dependency> -->
+		<dependency>
+		    <groupId>com.github.qcloudsms</groupId>
+		    <artifactId>qcloudsms</artifactId>
+		    <version>1.0.6</version>
+	   </dependency>
 			
-			<!-- lombok -->
+	<!-- lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>

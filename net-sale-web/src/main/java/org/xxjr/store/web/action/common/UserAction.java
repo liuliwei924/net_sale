@@ -9,7 +9,6 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.ddq.active.mq.store.StorePcSend;
 import org.ddq.active.mq.store.StoreTaskSend;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
@@ -34,7 +33,6 @@ import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.TeamConfigUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.CustConstant;
-import org.xxjr.cust.util.CustTokenConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.cust.util.info.CustomerPwdUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
@@ -188,6 +186,12 @@ public class UserAction {
 				result.setSuccess(false);
 				result.setMessage("短信验证码不正确");
 				return result;
+			}else {//验证成功，删除发送短信的计数key
+				String smsCountKey = SysParamsUtil.getParamByKey
+						(Key_SMS.Key_SMS_STORE_KJ_LOGIN, true)+telephone
+						+Key_SMS.SMS_COUNT_FIX;
+				
+				ValidUtils.removeCache(smsCountKey);
 			}
 			
 			AppParam loginParam = new AppParam();
@@ -242,141 +246,6 @@ public class UserAction {
 			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
 		}
 		return result;
-	}
-
-
-	/**
-	 * 微信登录
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("wxLogin")
-	@ResponseBody
-	public AppResult wxLogin(HttpServletRequest request, HttpServletResponse response){
-		AppResult loginResult = new AppResult();
-
-		try {
-			String signId = request.getParameter("signId");
-			String customerId =  (String) RedisUtils.getRedisService().get(signId);
-			if(customerId == null){
-				loginResult.setSuccess(false);
-				loginResult.setMessage("微信登录失败，未获取到登录用户信息，请重新登录！");
-				return loginResult;
-			}
-			Map<String,Object> custInfo = CustomerIdentify.refreshIdentifyById(customerId);
-			if (!validLogin(custInfo, loginResult)) {
-				return loginResult;
-			}
-			//限制门店人员登录时间
-			limitCustLogin(custInfo);
-			Map<String, Object> cust= new HashMap<String,Object>();
-			cust.put("userName", custInfo.get("realName"));
-			cust.put("userRole", custInfo.get("roleType"));
-			cust.put("authRole", custInfo.get("authType"));
-			cust.put("allOrgs", custInfo.get("userOrgs"));
-			cust.put("userOrgId", custInfo.get("orgId"));
-			loginResult.addRow(cust);
-			response.setHeader("signId", signId);
-			//设置的缓存
-			//设置用户的缓存
-			RedisUtils.getRedisService().set(signId, customerId, StoreUserUtil.user_cache_time);
-			RedisUtils.getRedisService().set(StoreUserUtil.USER_KEY +customerId, signId,StoreUserUtil.user_cache_time);
-			
-			//更新用户登陆状态 -
-			StoreUserUtil.updateUserLoginStatus(customerId, 1);
-			//添加登录记录
-			StoreUserUtil.addStoreOnlineRecord(customerId, 1, "微信登录");
-			//创建任务对象调用mq
-			StoreTaskSend storeSend = (StoreTaskSend)SpringAppContext.getBean(StoreTaskSend.class);
-			Map<String, Object> msgParam = new HashMap<String, Object>();
-			msgParam.put("recordDate", DateUtil.getSimpleFmt(new Date()));
-			storeSend.sendStoreMessage(customerId,"countDealType" , msgParam);
-		
-		} catch (Exception e) {
-			LogerUtil.error(this.getClass(), e, "wxlogin error");
-			ExceptionUtil.setExceptionMessage(e, loginResult, DuoduoSession.getShowLog());
-		}
-		return loginResult;
-	}
-
-
-	/**
-	 * 扫码登录
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("scanLogin")
-	@ResponseBody
-	public AppResult scanLogin(HttpServletRequest request, HttpServletResponse response){
-		AppResult loginResult = new AppResult();
-		try {
-			String pcSignId  = request.getParameter("sessionId");
-			String appSignId  = request.getParameter("appSignId");
-			//根据appSignId获取用户信息
-			Map<String, Object> tokenInfo = CustomerUtil.getTokenInfo(appSignId);
-			String customerId = "";
-			if(tokenInfo !=null && tokenInfo.size()>0){
-				customerId =  (String) tokenInfo.get(CustTokenConstant.CUST_ID);
-			}
-			if(StringUtils.isEmpty(customerId)){
-				//通知PC端扫码获取用户信息错误
-				StorePcSend  storePcSend = SpringAppContext.getBean(StorePcSend.class);//MQ处理对象
-				Map<String, Object> sendParam = new HashMap<String, Object>();	
-				sendParam.put("message", "扫码失败,未获取到用户信息");
-				sendParam.put("success", "false");
-				sendParam.put("cmdName","0003");//确认登录
-				storePcSend.sendPcMessage(pcSignId,"storeCmdType", sendParam);
-				
-				loginResult.setSuccess(false);
-				loginResult.setMessage("扫码登录失败，未获取到登录用户信息，请重新登录！");
-				return loginResult;
-			}
-			
-			Map<String,Object> custInfo = CustomerIdentify.refreshIdentifyById(customerId);
-			if (!validLogin(custInfo, loginResult)) {
-				return loginResult;
-			}
-			//限制门店人员登录时间
-			limitCustLogin(custInfo);
-			response.setHeader("signId", appSignId);
-			//设置PC端用户的缓存,用sessionId作为PC端signId
-			RedisUtils.getRedisService().set(pcSignId, customerId, StoreUserUtil.user_cache_time);
-			RedisUtils.getRedisService().set(StoreUserUtil.USER_KEY +customerId, pcSignId,StoreUserUtil.user_cache_time);
-			
-			//更新用户登陆状态 -
-			StoreUserUtil.updateUserLoginStatus(customerId, 1);
-			//添加登录记录
-			StoreUserUtil.addStoreOnlineRecord(customerId, 1, "扫码登录");
-			
-			//创建任务对象调用mq
-			StoreTaskSend storeSend = (StoreTaskSend)SpringAppContext.getBean(StoreTaskSend.class);
-			Map<String, Object> msgParam = new HashMap<String, Object>();
-			msgParam.put("recordDate", DateUtil.getSimpleFmt(new Date()));
-			storeSend.sendStoreMessage(customerId,"countDealType" , msgParam);
-			
-			
-			//通知PC端跳转登录
-			StorePcSend  storePcSend = SpringAppContext.getBean(StorePcSend.class);//MQ处理对象
-			Map<String, Object> sendParam = new HashMap<String, Object>();	
-			
-			sendParam.put("message", "扫码成功,请登录");
-			sendParam.put("signId", pcSignId);
-			sendParam.put("customerId", customerId);
-			sendParam.put("success", "true");
-			sendParam.put("cmdName","0003");//确认登录
-			sendParam.put("userName", custInfo.get("realName"));
-			sendParam.put("userRole", custInfo.get("roleType"));
-			sendParam.put("authRole", custInfo.get("authType"));
-			sendParam.put("allOrgs", custInfo.get("userOrgs"));
-			sendParam.put("userOrgId", custInfo.get("orgId"));
-			storePcSend.sendPcMessage(pcSignId, "storeCmdType", sendParam);
-		
-		} catch (Exception e) {
-			LogerUtil.error(this.getClass(), e, "scanlogin error");
-			ExceptionUtil.setExceptionMessage(e, loginResult, DuoduoSession.getShowLog());
-		}
-		return loginResult;
-	
 	}
 	
 	/**

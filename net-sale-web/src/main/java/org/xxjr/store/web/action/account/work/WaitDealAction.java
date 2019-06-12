@@ -3,7 +3,6 @@ package org.xxjr.store.web.action.account.work;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,8 +31,6 @@ import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.kf.BorrowApplyUtils;
 import org.xxjr.busi.util.store.ApplyInfoUtil;
-import org.xxjr.busi.util.store.CFSDealUtil;
-import org.xxjr.busi.util.store.CFSUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.IDCardValidate;
@@ -43,7 +40,6 @@ import org.xxjr.store.util.StoreApplyUtils;
 import org.xxjr.sys.util.FileGroupUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
-import org.xxjr.sys.util.SysParamsUtil;
 import org.xxjr.sys.util.ValidUtils;
 import org.xxjr.tools.util.QcloudUploader;
 
@@ -614,36 +610,6 @@ public class WaitDealAction {
 		return result;
 	}
 
-
-	/**
-	 * 上传CFS
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("uploadCFS")
-	@ResponseBody
-	public AppResult uploadCFS(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		try {
-			String applyId = request.getParameter("applyId");
-			String treatyNo = request.getParameter("treatyNo");
-			if (StringUtils.isEmpty(applyId)) {
-				return CustomerUtil.retErrorMsg("申请ID不能为空");
-			}
-			if (StringUtils.isEmpty(treatyNo)) {
-				return CustomerUtil.retErrorMsg("合同编号不能为空");
-			}
-			
-			result = CFSDealUtil.upLoadCFSDeal(treatyNo,applyId,null);
-			
-		} catch (Exception e) {
-			LogerUtil.error(WaitDealAction.class, e, "uploadCFS");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
-		return result;
-	}
 	
 	/***
 	 * 更新订单状态
@@ -871,68 +837,6 @@ public class WaitDealAction {
 	
 	
 	/**
-	 * 查询CFS的回款信息
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("queryCFSBackInfo")
-	@ResponseBody
-	public AppResult queryCFSBackInfo(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		try {
-			String applyId = request.getParameter("applyId");
-			if (StringUtils.isEmpty(applyId)) {
-				return CustomerUtil.retErrorMsg("申请ID不能为空");
-			}
-			AppParam queryParam = new AppParam();
-			queryParam.addAttr("applyId", applyId);
-			queryParam.setService("treatInfoService");
-			queryParam.setMethod("query");
-			queryParam.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START
-							+ ServiceKey.Key_busi_in));
-			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			Map<String, Object> queryMap = new HashMap<String, Object>();
-			if(queryResult.getRows().size() > 0 && !queryResult.getRow(0).isEmpty()){
-				queryMap = queryResult.getRow(0);
-			}else{
-				return CustomerUtil.retErrorMsg("不存在此订单信息!");
-			}
-			String reContractId = StringUtil.getString(queryMap.get("reContractId"));
-			if(StringUtils.isEmpty(reContractId)){
-				return CustomerUtil.retErrorMsg("不存在此合同编号的资料信息!");
-			}
-			String customerId = StringUtil.getString(queryMap.get("customerId"));
-			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
-			String orgId = StringUtil.getString(custInfo.get("orgId"));
-			AppParam param = new AppParam();
-			param.addAttr("reContractId", reContractId);
-			param.addAttr("applyId", applyId);
-			param.addAttr("orgId", orgId);
-			param.addAttr("customerId", customerId);
-			Map<String, Object> resultMap = CFSUtil.getBackLoanInfo(param);
-			String executeResult = StringUtil.getString(resultMap.get("ExecuteResult"));
-			String resturnMsg = StringUtil.getString(resultMap.get("ReturnMsg"));
-			String errorMsg = StringUtil.getString(resultMap.get("errorMsg"));
-			if("true".equals(executeResult)){
-				return result;
-			}else{
-				result.setMessage(errorMsg);
-				if(StringUtils.isEmpty(errorMsg)) {
-					result.setMessage(resturnMsg);
-				}
-				result.setSuccess(Boolean.FALSE);
-			}
-		} catch (Exception e) {
-			LogerUtil.error(WaitDealAction.class, e, "queryCFSBackInfo");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
-		return result;
-	}
-	
-	/**
 	 * 新增跟进记录
 	 * 
 	 * @param request
@@ -971,68 +875,6 @@ public class WaitDealAction {
 			result = RemoteInvoke.getInstance().call(applyParam);
 		} catch (Exception e) {
 			LogerUtil.error(WaitDealAction.class, e, "addFollowRecord");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
-		return result;
-	}
-
-	/**
-	 * 查询CFS的合同信息
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("queryCFSLoanInfo")
-	@ResponseBody
-	public AppResult queryCFSLoanInfo(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		try {
-			String applyId = request.getParameter("applyId");
-			if (StringUtils.isEmpty(applyId)) {
-				return CustomerUtil.retErrorMsg("申请ID不能为空");
-			}
-			AppParam queryParam = new AppParam();
-			queryParam.addAttr("applyId", applyId);
-			queryParam.setService("treatInfoService");
-			queryParam.setMethod("query");
-			queryParam.setRmiServiceName(AppProperties
-					.getProperties(DuoduoConstant.RMI_SERVICE_START
-							+ ServiceKey.Key_busi_in));
-			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			Map<String, Object> queryMap = new HashMap<String, Object>();
-			if(queryResult.getRows().size() > 0 && !StringUtils.isEmpty(queryResult.getRow(0))){
-				queryMap = queryResult.getRow(0);
-			}else{
-				return CustomerUtil.retErrorMsg("不存在此订单信息!");
-			}
-			String reContractId = StringUtil.getString(queryMap.get("reContractId"));
-			if(StringUtils.isEmpty(reContractId)){
-				return CustomerUtil.retErrorMsg("不存在此合同编号的资料信息!");
-			}
-			String customerId = StringUtil.getString(queryMap.get("customerId"));
-			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
-			String orgId = StringUtil.getString(custInfo.get("orgId"));
-			AppParam param = new AppParam();
-			param.addAttr("reContractId", reContractId);
-			param.addAttr("customerId", customerId);
-			param.addAttr("applyId", applyId);
-			param.addAttr("orgId", orgId);
-			Map<String, Object> resultMap = CFSUtil.getContractInfo(param);
-			String executeResult = StringUtil.getString(resultMap.get("ExecuteResult"));
-			String resturnMsg = StringUtil.getString(resultMap.get("ReturnMsg"));
-			String errorMsg = StringUtil.getString(resultMap.get("errorMsg"));
-			if("true".equals(executeResult)){
-				return result;
-			}else{
-				result.setMessage(errorMsg);
-				if(StringUtils.isEmpty(errorMsg)) {
-					result.setMessage(resturnMsg);
-				}
-				result.setSuccess(Boolean.FALSE);
-			}
-		} catch (Exception e) {
-			LogerUtil.error(WaitDealAction.class, e, "queryCFSLoanInfo");
 			ExceptionUtil.setExceptionMessage(e, result,
 					DuoduoSession.getShowLog());
 		}
@@ -1449,83 +1291,7 @@ public class WaitDealAction {
 		}
 		return result;
 	}
-	
-	/**
-	 * 上门记录上传CFS
-	 * 
-	 * @param request
-	 * @return
-	 */
-	@RequestMapping("visitUploadCFS")
-	@ResponseBody
-	public AppResult visitUploadCFS(HttpServletRequest request) {
-		AppResult result = new AppResult();
-		int autoAddVisitToCFSFlag = SysParamsUtil.getIntParamByKey("autoAddVisitToCFSFlag", 1);
-		if(autoAddVisitToCFSFlag == 0){
-			return CustomerUtil.retErrorMsg("添加访客记录上传到CFS暂未开启!");
-		}
-		try {
-			String detailId = request.getParameter("detailId");
-			if (StringUtils.isEmpty(detailId)) {
-				return CustomerUtil.retErrorMsg("记录ID不能为空");
-			}
-			String upStatus = request.getParameter("upStatus");
-			if (StringUtils.isEmpty(upStatus)) {
-				return CustomerUtil.retErrorMsg("上传状态不能为空");
-			}
-			if("2".equals(upStatus)){
-				return CustomerUtil.retErrorMsg("已上传成功的无需再次上传");
-			}
-			AppParam params = new AppParam();
-			params.setService("treatVisitDetailService");
-			params.setMethod("queryHandleVisit");
-			params.addAttr("detailId", detailId);
-			params.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START
-					+ ServiceKey.Key_busi_in));
-			result = RemoteInvoke.getInstance().callNoTx(params);
-			if(result.getRows().size() > 0 && !StringUtils.isEmpty(result.getRow(0))){
-				String orgNo = StringUtil.getString(result.getRow(0).get("orgNo"));
-				String applyName = StringUtil.getString(result.getRow(0).get("applyName"));
-				String telephone = StringUtil.getString(result.getRow(0).get("telephone"));
-				String receiverTel = StringUtil.getString(result.getRow(0).get("receiverTel"));
-				String realName = StringUtil.getString(result.getRow(0).get("realName"));
-				String visitTime = StringUtil.getString(result.getRow(0).get("visitTime"));
-				String employeeNo = StringUtil.getString(result.getRow(0).get("employeeNo"));
-				if(!StringUtils.isEmpty(orgNo)){
-					AppParam addparams = new AppParam();
-					addparams.addAttr("orgNo", orgNo);
-					addparams.addAttr("custName", applyName);
-					addparams.addAttr("custTel", telephone);
-					addparams.addAttr("receiverTel", receiverTel);
-					addparams.addAttr("realName", realName);
-					addparams.addAttr("loanType", "0");
-					addparams.addAttr("visitTime", visitTime);
-					addparams.addAttr("detailId", detailId);
-					addparams.addAttr("employeeNo", employeeNo);
-					Map<String, Object> resultMap = CFSUtil.addVisitToCFS(addparams);
-					String messageCode = StringUtil.getString(resultMap.get("MessageCode"));
-					String returnMsg = StringUtil.getString(resultMap.get("Message"));
-					if("200".equals(messageCode)){
-						return result;
-					}else{
-						result.setSuccess(false);
-						result.setMessage(returnMsg);
-						return result;
-					}
-				}else{
-					return CustomerUtil.retErrorMsg("门店编号不能为空");
-				}
-			}else{
-				return CustomerUtil.retErrorMsg("上传失败，暂时无相关数据");
-			}
-			
-		} catch (Exception e) {
-			LogerUtil.error(WaitDealAction.class, e, "visitUploadCFS");
-			ExceptionUtil.setExceptionMessage(e, result,
-					DuoduoSession.getShowLog());
-		}
-		return result;
-	}
+		
 	
 	/***
 	 * 删除签单信息
