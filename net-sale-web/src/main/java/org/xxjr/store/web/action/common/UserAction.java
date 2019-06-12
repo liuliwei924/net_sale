@@ -238,7 +238,7 @@ public class UserAction {
 				storeSend.sendStoreMessage(customerId,"countDealType" , msgParam);
 				
 			}else{
-				result.setMessage("用户名或密码不正确");
+				result.setMessage("用户名不存在！");
 				result.setSuccess(false);
 			}
 		} catch (Exception e) {
