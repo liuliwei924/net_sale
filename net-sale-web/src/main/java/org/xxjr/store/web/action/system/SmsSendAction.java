@@ -39,7 +39,10 @@ public class SmsSendAction {
 		AppResult context = new AppResult();
 		try{
 			String telephone = request.getParameter("telephone");
+			// 图形验证码 页面出现要填时（验证码出现错误次数过多），必传
 			String smsImgCode = request.getParameter("smsImgCode");
+			// 图形验证码的key 页面出现要填时（验证码出现错误次数过多），必传
+			String imageCodeKey = request.getParameter("imageCodeKey");
 			String key = null;
 			if(StringUtils.isEmpty(telephone)){
 				context.setSuccess(Boolean.FALSE);
@@ -71,7 +74,6 @@ public class SmsSendAction {
 					context.setMessage("请输入图形验证码!");
 					return context;
 				}else {//图形验证码不等于空
-					String imageCodeKey = key + Key_SMS.IMG_CODE_FIX;
 					boolean validFlag = ValidUtils.validImageCode(smsImgCode, imageCodeKey);
 					if(!validFlag) {
 						context.setSuccess(Boolean.FALSE);

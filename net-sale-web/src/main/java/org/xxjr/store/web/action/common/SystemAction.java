@@ -85,6 +85,9 @@ public class SystemAction{
 			HttpServletRequest request,HttpServletResponse response){
 		AppResult result =  new AppResult();
 		try {
+			if(imgCodeKey.length() >32) {
+				return ;
+			}
 			ServletOutputStream responseOutputStream = response.getOutputStream();
 			ImageIdentify identifyImg = ValidUtils.getImageCode(imgCodeKey, 4);
 			ImageIO.write(identifyImg.getImage(), "JPEG", responseOutputStream);
