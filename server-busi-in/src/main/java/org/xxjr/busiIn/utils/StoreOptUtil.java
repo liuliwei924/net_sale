@@ -23,8 +23,6 @@ import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
-import org.xxjr.store.util.StoreApplyUtils;
-import org.xxjr.store.util.StoreCFSDealUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.SysParamsUtil;
 
@@ -51,7 +49,7 @@ public class StoreOptUtil {
 		String lastStore = StringUtil.getString(applyInfo.get("lastStore"));
 		//角色类型
 		String authType = StringUtil.getString(params.getAttr("authType"));
-		//批量关联CFS标识
+		//批量关联
 		String flag = StringUtil.getString(params.getAttr("flag"));
 		//管理员可以执行签单
 		if((StringUtils.hasText(lastStore) && customerId.equals(lastStore)) 
@@ -209,8 +207,7 @@ public class StoreOptUtil {
 		String customerId = StringUtil.getString(param.getAttr("customerId"));
 		// 签单时间
 		String signTime = StringUtil.getString(param.getAttr("signTime"));
-		// 批量关联CFS标识
-		String flag = StringUtil.getString(param.getAttr("flag"));
+
 		// 申请编号
 		String applyId = StringUtil.getString(param.getAttr("applyId"));
 		//客户等级
@@ -231,15 +228,6 @@ public class StoreOptUtil {
 		if(!StringUtils.isEmpty(newTreatyNo)){
 			//同步基本信息
 			StoreOptUtil.dealStoreOrderByMq(customerId,"countDealType" , sendParam);
-			boolean orgFlag = StoreApplyUtils.isHaveAuthUpCFS(StringUtil.getString(param.getAttr("orgId")));
-			if(StringUtils.isEmpty(flag) && orgFlag){
-				try{
-					//新增签单后自动上传CFS
-					StoreCFSDealUtil.upLoadCFSDeal(newTreatyNo, applyId, null);
-				}catch(Exception e){
-					log.error("signDeal 新增签单后自动上传CFS error", e);
-				}
-			}
 			//签单后自动更改处理状态为已上门签约
 			String orderStatus = StoreConstant.STORE_ORDER_3;
 			AppParam updateParam = new AppParam("borrowStoreApplyService","update");

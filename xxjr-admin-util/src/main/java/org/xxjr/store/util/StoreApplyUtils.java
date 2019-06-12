@@ -8,11 +8,13 @@ import java.util.Map;
 
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppResult;
+import org.ddq.common.core.SpringAppContext;
+import org.ddq.common.core.service.RemoteInvoke;
+import org.ddq.common.core.service.SoaManager;
 import org.ddq.common.util.StringUtil;
 import org.llw.model.cache.RedisUtils;
 import org.springframework.util.StringUtils;
 import org.xxjr.sys.util.NumberUtil;
-import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
 
 /***
@@ -807,21 +809,33 @@ public class StoreApplyUtils {
 	}
 	
 	/**
-	 * 判断门店是否有权限上传CFS
-	 * @param customerId
+	 * 获取贷款进度中的机构
 	 * @return
 	 */
-	public static boolean isHaveAuthUpCFS(String orgId){
-		List<Map<String, Object>> listMap = OrgUtils.getOrgList();
-		for(Map<String, Object> map : listMap){
-			String orgTemp = StringUtil.getString(map.get("orgId"));
-			if(orgId.equals(orgTemp)){
-				String orgFlag = StringUtil.getString(map.get("orgFlag"));
-				if("1".equals(orgFlag)){
-					return false;
+	public static String getLoanOrg(String applyId,String loanNo){
+		String loanOrg = "";
+		AppParam queryParam = new AppParam("treatContractService","query");
+		queryParam.addAttr("applyId", applyId);
+		queryParam.addAttr("loanNo", loanNo);
+		AppResult queryResult = null;
+		if (SpringAppContext.getBean("treatContractService") == null) {
+			queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+		}else{
+			queryResult = SoaManager.getInstance().invoke(queryParam);
+		}
+		Map<String,Object> loanMap = null;
+		if(queryResult.getRows().size() > 0 && !StringUtils.isEmpty(queryResult.getRow(0))){
+			loanMap = queryResult.getRow(0);
+			String loanDesc = StringUtil.getString(loanMap.get("loanDesc"));
+			if(!StringUtils.isEmpty(loanDesc) && loanDesc.contains("】")){
+				String [] orgArray = StringUtils.split(loanDesc, "】");
+				String firstStr = orgArray[0];
+				if(firstStr.contains("【")){
+					String [] secondArray = StringUtils.split(firstStr, "【");
+					loanOrg = secondArray[1];
 				}
 			}
 		}
-		return true;
+		return loanOrg;
 	}
 }

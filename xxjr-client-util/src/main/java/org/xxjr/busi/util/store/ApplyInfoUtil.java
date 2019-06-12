@@ -465,7 +465,7 @@ public class ApplyInfoUtil {
 	}
 	
 	/**
-	 * 匹配CFS返回的签约经理
+	 * 匹配返回的签约经理
 	 * @param
 	 * @return
 	 */

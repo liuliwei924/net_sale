@@ -19,11 +19,6 @@
 			<version>${core.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.xxjr.ws.admin</groupId>
-			<artifactId>message-util</artifactId>
-			<version>${core.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>org.xxjr</groupId>
 			<artifactId>xxjr-acitvemq</artifactId>
 			<version>${core.version}</version>

@@ -29,7 +29,6 @@ import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.BorrowConstant;
 import org.xxjr.busiIn.utils.StoreOptUtil;
 import org.xxjr.store.util.StoreApplyUtils;
-import org.xxjr.store.util.StoreCFSDealUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 
@@ -233,7 +232,7 @@ public class TreatSuccessService extends BaseService {
 					}
 					AppParam updateParams  = new AppParam();
 					String loanNo = StringUtil.getString(map.get("LoanNo"));
-					String loanOrg = StoreCFSDealUtil.getLoanOrg(applyId, loanNo);
+					String loanOrg = StoreApplyUtils.getLoanOrg(applyId, loanNo);
 					if(!StringUtils.isEmpty(loanOrg)){
 						updateParams.addAttr("loanOrg",loanOrg);
 					}

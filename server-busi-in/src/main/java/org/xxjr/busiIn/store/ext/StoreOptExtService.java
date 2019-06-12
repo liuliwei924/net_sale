@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import lombok.extern.slf4j.Slf4j;
-
 import org.ddq.active.mq.store.StoreTaskSend;
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
@@ -38,6 +36,8 @@ import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sms.SendSmsByUrl;
 import org.xxjr.store.util.StoreApplyUtils;
 import org.xxjr.sys.util.NumberUtil;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * 信贷经理业务操作的逻辑

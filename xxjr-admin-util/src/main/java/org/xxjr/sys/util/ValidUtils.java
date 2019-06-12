@@ -104,6 +104,7 @@ public class ValidUtils {
 		}
 		String random = (String) RedisUtils.getRedisService().get(key);
 		if(random != null && random.equals(clientNum)){
+			removeCache(key);
 			return true;
 		}
 		return false;
@@ -157,10 +158,10 @@ public class ValidUtils {
 	 * @param height	图片高度
 	 * @return
 	 */
-	public static ImageIdentify getImageCode(String imageCodeKey,int size,int width,int height){
+	public static ImageIdentify getImageCode(String imageCodeKey,int size){
 		//获取image信息
 		ImageIdentify identify = IdentifyUtil.getIdentifyNum(size);
-		RedisUtils.getRedisService().set(imageCodeKey, identify.getRandCode(), 80);
+		RedisUtils.getRedisService().set(imageCodeKey, identify.getRandCode(), 300);
 		return identify;
 	}
 	
@@ -173,12 +174,13 @@ public class ValidUtils {
 	public static boolean validImageCode(String imageCode,String imageCodeKey){
 		//获取image信息
 		String code = (String)RedisUtils.getRedisService().get(imageCodeKey);
-		if (imageCode == null || !imageCode.equalsIgnoreCase(code)) {
-			//删除验证码
-			RedisUtils.getRedisService().del(imageCodeKey);
-			return Boolean.FALSE;
+		boolean flag = false;
+		if(org.springframework.util.StringUtils.hasText(imageCode) 
+				&& imageCode.equalsIgnoreCase(code)) {
+			flag = true;
 		}
-		return Boolean.TRUE;
+		removeCache(imageCodeKey);
+		return flag;
 	}
 	
 	/***
