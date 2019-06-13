@@ -24,6 +24,9 @@
 			<if test="telephone != null and telephone != ''">
 				and telephone = #{telephone}
 			</if>
+			<if test="unionId != null and telephone != ''">
+				and unionId = #{unionId}
+			</if>
 			<if test="referer != null and referer != ''">
 				and referer = #{referer}
 			</if>
@@ -856,7 +859,7 @@
 			 0
 			</if>
 			,
-			#{unionId, jdbcType=BIGINT,typeHandler=NumberHandler}
+			#{unionId, jdbcType=VARCHAR}
 		)
 	</insert>
 	<delete id="delete" parameterType="map">
@@ -914,7 +917,7 @@
 				kfStatus = #{kfStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  
 			</if>
 			<if test="unionId != null">
-				unionId = #{unionId, jdbcType=BIGINT,typeHandler=NumberHandler},
+				unionId = #{unionId, jdbcType=VARCHAR},
 			</if>
 			<if test="stageStatus != null">
 				stageStatus = #{stageStatus, jdbcType=INTEGER,typeHandler=NumberHandler},  

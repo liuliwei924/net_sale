@@ -11,6 +11,7 @@ import org.ddq.common.core.service.SoaManager;
 import org.ddq.common.exception.AppException;
 import org.ddq.common.exception.DuoduoError;
 import org.ddq.common.exception.SysException;
+import org.ddq.common.security.md5.Md5;
 import org.ddq.common.util.StringUtil;
 import org.llw.common.core.service.BaseService;
 import org.springframework.context.annotation.Lazy;
@@ -182,6 +183,9 @@ public class BorrowApplyService extends BaseService {
 			params.addAttr("applyType", BorrowConstant.apply_type_2);//普通单
 			params.addAttr("haveDetail", "0");
 		}
+		params.addAttr("unionId", Md5.getInstance().encrypt
+				(params.getAttr("telephone").toString()));
+		
 		AppResult result = super.insert(params, NAMESPACE);
 		result.putAttr("applyId", params.getAttr("applyId"));
 		return result;
