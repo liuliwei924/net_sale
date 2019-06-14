@@ -1,5 +1,6 @@
 package org.xxjr.job.listener.busi.store;
 
+import java.util.Date;
 import java.util.Map;
 
 import org.ddq.common.constant.DuoduoConstant;
@@ -10,6 +11,9 @@ import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
 import org.llw.job.util.JobUtil;
+import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.store.OrderRecyclingUtil;
+import org.xxjr.busi.util.store.StoreWorkTimeUtils;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
@@ -110,6 +114,9 @@ public class StoreAutoAllotUtils {
 		//待分配人员初始化，查询新单或再分单人员
 		AppParam  optParams = new AppParam("netStorePoolService", "storeAllotNewOrder");
 		optParams.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+		
+		String startAllotTime = null;
+		String endAllotTime = null;
 		//遍历城市
 		for(Map<String, Object> orgMap : result.getRows()){
 			try{
@@ -117,7 +124,24 @@ public class StoreAutoAllotUtils {
 				if(totalCount <= 0){
 					continue;
 				}
+				
 				String orgId = StringUtil.getString(orgMap.get("orgId"));
+				Map<String,Object> cityWorkMap = StoreWorkTimeUtils.getCityWorkTimeByOrgId(orgId);
+
+				if(cityWorkMap.size() > 0){
+					//当前时间
+					long nowTime = new Date().getTime();
+					startAllotTime = StringUtil.getString(cityWorkMap.get("startAllotTime"));
+					endAllotTime = StringUtil.getString(cityWorkMap.get("endAllotTime"));
+					if(!StringUtils.isEmpty(startAllotTime) && !StringUtils.isEmpty(endAllotTime)){
+						long longStartAllotTime = OrderRecyclingUtil.getLongTimes(startAllotTime); 
+						long longEndAllotTime = OrderRecyclingUtil.getLongTimes(endAllotTime);
+						if(nowTime < longStartAllotTime || nowTime > longEndAllotTime){
+							continue;
+						}
+					}
+				}
+				
 				String orgName = StringUtil.getString(orgMap.get("orgName"));
 				String isOverFlagDesc = "未满足基本单量,";
 				//获取每个门店的可分单的人数

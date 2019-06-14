@@ -229,9 +229,9 @@ public class ValidUtils {
 	
 	public static void main(String[] args){
 		
-		String filename ="F://kanbox//2014091-4.txt";
-		String newname = filename.replaceAll("([0-9])", "-9$1");
-		System.out.println(newname);//F:/kanbox/2014091-94.txt
+		String telephone="19967444625";
+		
+		System.out.println(validateTelephone(telephone));
 	}
 }
 

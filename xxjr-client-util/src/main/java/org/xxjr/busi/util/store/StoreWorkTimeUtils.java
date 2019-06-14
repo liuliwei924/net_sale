@@ -47,4 +47,15 @@ public class StoreWorkTimeUtils {
 		return workMap;
 	}
 
+	public static Map<String,Object> getCityWorkTimeByOrgId(String orgId){
+		Map<String,Object> workMap = new HashMap<String, Object>();
+		List<Map<String,Object>> cityList = getCityWorkTimeList();
+		for(Map<String,Object> map:cityList){
+			if(orgId.equals(map.get("orgId").toString())){
+				workMap.putAll(map);
+				break;
+			}
+		}
+		return workMap;
+	}
 }
