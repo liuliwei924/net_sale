@@ -13,13 +13,12 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.util.DateUtil;
-import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.NumberUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.RequestUtil;
 import org.springframework.util.StringUtils;
-import org.xxjr.busi.util.kf.KfUserUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
 
@@ -1026,11 +1025,6 @@ public class ExportParamUtil {
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 		
-		String customerId = KfUserUtil.getCustomerId(request);
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
-		params.addAttr("fixChannels", fixChannels);//固定渠道	
-		
 		String dateType = StringUtil.getString(params.getAttr("dateType"));
 		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
 		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
@@ -1074,12 +1068,7 @@ public class ExportParamUtil {
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
-		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
-		
-		String customerId = KfUserUtil.getCustomerId(request);
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
-		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));	
 		
 		if("day".equals(dateType)){
 			params.addAttr("datePattern", "%Y-%m-%d");
@@ -1123,11 +1112,6 @@ public class ExportParamUtil {
 		String dateType = StringUtil.getString(params.getAttr("dateType"));
 		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
 		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
-		
-		String customerId = KfUserUtil.getCustomerId(request);
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
-		params.addAttr("fixChannels", fixChannels);//固定渠道	
 		
 		if("day".equals(dateType)){
 			params.addAttr("datePattern", "%Y-%m-%d");
@@ -1176,11 +1160,6 @@ public class ExportParamUtil {
 		if (!StringUtils.isEmpty(configCitys)) {
 			params.addAttr("configCitys", configCitys.split(","));
 		}
-		
-		String customerId = KfUserUtil.getCustomerId(request);
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
-		params.addAttr("fixChannels", fixChannels);//固定渠道	
 		
 		params.setService("channelModifySumService");
 		params.setMethod("channelCityDate");
@@ -1233,7 +1212,7 @@ public class ExportParamUtil {
 			return ;
 		}
 		
-		String customerId = KfUserUtil.getCustomerId(request);
+		String customerId = StoreUserUtil.getCustomerId(request);
 		StoreUserUtil.dealUserAuthParam(params, customerId, "customerId");
 		
 		params.setService("orgCostRecordService");
@@ -1277,7 +1256,7 @@ public class ExportParamUtil {
 			return ;
 		}
 		
-		String customerId = KfUserUtil.getCustomerId(request);
+		String customerId = StoreUserUtil.getCustomerId(request);
 		StoreUserUtil.dealUserAuthParam(params, customerId, "customerId");
 		
 		params.setService("orgCostRecordService");
@@ -1322,10 +1301,8 @@ public class ExportParamUtil {
 			return ;
 		}
 		
-		String customerId = KfUserUtil.getCustomerId(request);
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
-		params.addAttr("fixChannels", fixChannels);//固定渠道	
+		String customerId = StoreUserUtil.getCustomerId(request);
+		StoreUserUtil.dealUserAuthParam(params, customerId, "customerId");
 		
 		params.setService("orgCostRecordService");
 		params.setMethod("queryChannelCost");
@@ -1383,9 +1360,10 @@ public class ExportParamUtil {
 			params.addAttr("startDateStr", startRecordDate);
 			params.addAttr("endDateStr", endRecordDate);
 		}
-		String customerId = KfUserUtil.getCustomerId(request); 
-		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
-		Object fixChannels = custRight.get("channels");
+		
+		String customerId = StoreUserUtil.getCustomerId(request); 
+		Map<String,Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
+		Object fixChannels = custInfo.get("sourceType");
 		params.addAttr("fixChannels", fixChannels);//固定渠道
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
