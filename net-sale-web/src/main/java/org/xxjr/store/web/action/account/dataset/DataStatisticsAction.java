@@ -2016,4 +2016,27 @@ public class DataStatisticsAction {
 		}
 		return result;
 	}
+	
+	/**
+	 * 第三方渠道数据查询(对外)
+	 * @param request
+	 * @return
+	 */
+	@RequestMapping("thirdChannel/query")
+	@ResponseBody
+	public AppResult thirdChannel(HttpServletRequest request){
+		AppResult result = new AppResult();
+		try {
+			AppParam params = new AppParam("channelDtlModifySumService", "thirdChannel");
+			RequestUtil.setAttr(params, request);
+			ExportParamUtil.getInstance().thirdChannel(params, result, request);
+			if(result.isSuccess()){
+				result = RemoteInvoke.getInstance().callNoTx(params);
+			}
+		} catch (Exception e) {
+			LogerUtil.error(this.getClass(), e, " 第三方渠道数据查询(对外)！");
+			ExceptionUtil.setExceptionMessage(e, result, DuoduoSession.getShowLog());
+		}
+		return result;
+	}
 }
