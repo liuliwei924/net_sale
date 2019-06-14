@@ -42,7 +42,7 @@ public class SmsSendAction {
 			// 图形验证码 页面出现要填时（验证码出现错误次数过多），必传
 			String smsImgCode = request.getParameter("smsImgCode");
 			// 图形验证码的key 页面出现要填时（验证码出现错误次数过多），必传
-			String imageCodeKey = request.getParameter("imageCodeKey");
+			String imgCodeKey = request.getParameter("imgCodeKey");
 			String key = null;
 			if(StringUtils.isEmpty(telephone)){
 				context.setSuccess(Boolean.FALSE);
@@ -74,7 +74,7 @@ public class SmsSendAction {
 					context.setMessage("请输入图形验证码!");
 					return context;
 				}else {//图形验证码不等于空
-					boolean validFlag = ValidUtils.validImageCode(smsImgCode, imageCodeKey);
+					boolean validFlag = ValidUtils.validImageCode(smsImgCode, imgCodeKey);
 					if(!validFlag) {
 						context.setSuccess(Boolean.FALSE);
 						context.setMessage("图形验证码不正确!");
