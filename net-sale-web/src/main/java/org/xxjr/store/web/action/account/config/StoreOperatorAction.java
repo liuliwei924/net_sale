@@ -47,7 +47,7 @@ public class StoreOperatorAction {
 	 */
 	@RequestMapping("queryUserList")
 	@ResponseBody
-	public AppResult getUserList(HttpServletRequest request) {
+	public AppResult queryUserList(HttpServletRequest request) {
 		AppResult result = new AppResult();
 		String customerId = StoreUserUtil.getCustomerId(request);
 		if (StringUtils.isEmpty(customerId)) {

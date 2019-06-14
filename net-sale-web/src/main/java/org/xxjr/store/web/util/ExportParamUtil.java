@@ -18,6 +18,7 @@ import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.RequestUtil;
 import org.springframework.util.StringUtils;
 import org.xxjr.busi.util.store.StoreUserUtil;
+import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
@@ -1363,8 +1364,12 @@ public class ExportParamUtil {
 		
 		String customerId = StoreUserUtil.getCustomerId(request); 
 		Map<String,Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
-		Object fixChannels = custInfo.get("sourceType");
-		params.addAttr("fixChannels", fixChannels);//固定渠道
+		String roleType =   StringUtil.getString(custInfo.get("roleType"));
+		
+		if(!CustConstant.CUST_ROLETYPE_1.equals(roleType)) {
+			Object fixChannels = custInfo.get("sourceType");
+			params.addAttr("fixChannels", fixChannels);//固定渠道
+		}
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 	}

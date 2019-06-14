@@ -37,6 +37,7 @@
 			t.userOrgs,
 			t.groupName,
 			t.teamName,
+			t.sourceType,
 			t4.orgId,
 			t4.orgNo,
 			t4.orgName,
