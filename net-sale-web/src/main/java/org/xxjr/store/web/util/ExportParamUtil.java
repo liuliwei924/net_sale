@@ -13,6 +13,7 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.NumberUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.RequestUtil;
@@ -1347,6 +1348,45 @@ public class ExportParamUtil {
 				params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate+"-01")+" 23:59:59");
 		}
 		
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+	}
+	
+	/**
+	 * 渠道统计（第三方）
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void thirdChannel(AppParam params, AppResult result, HttpServletRequest request){
+		String dateType = StringUtil.getString(params.getAttr("dateType"));
+		params.addAttr(P_COUNT_METHOD, "thirdChannelCount");
+		params.setService("channelDtlModifySumService");
+		params.setMethod("thirdChannel");
+		params.addAttr("datePattern", P_DAY_PATTERN);
+		String startRecordDate = StringUtil.getString(params.getAttr("startRecordDate"));
+		String endRecordDate = StringUtil.getString(params.getAttr("endRecordDate"));
+		if(StringUtils.isEmpty(startRecordDate) || StringUtils.isEmpty(endRecordDate)){
+			result.setSuccess(false);
+			result.setMessage("缺少必传参数!");
+			return ;
+		}
+		params.addAttr("endRecordDate", endRecordDate + " 23:59:59");
+		if("month".equals(dateType)){//按月
+			params.addAttr("datePattern", P_MONTH_PATTERN);
+			startRecordDate = startRecordDate + "-01";
+			params.addAttr("startRecordDate", startRecordDate);
+			params.addAttr("endRecordDate", PageUtil.getLastDay(endRecordDate + "-01") + " 23:59:59");
+		}else if ("range".equals(dateType)) {
+			params.setService("channelDtlMsSectionSumService");
+			params.setMethod("thirdChannelSect");
+			params.addAttr("startDateStr", startRecordDate);
+			params.addAttr("endDateStr", endRecordDate);
+		}
+		String customerId = KfUserUtil.getCustomerId(request); 
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
 	}
