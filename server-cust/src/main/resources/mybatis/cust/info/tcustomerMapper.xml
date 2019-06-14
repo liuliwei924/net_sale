@@ -605,6 +605,9 @@
 			<if test="password != null">
 				password = #{password, jdbcType=VARCHAR},  
 			</if>
+			<if test="sourceType != null">
+				sourceType = #{sourceType, jdbcType=VARCHAR},  
+			</if>
 			<if test="userType != null">
 				userType = #{userType, jdbcType=VARCHAR},  
 			</if>
