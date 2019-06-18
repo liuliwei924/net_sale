@@ -499,17 +499,25 @@
 			t.orgNo,
 			t1.startAllotTime,
 			t1.endAllotTime,
-			t1.orgMaxCount,
-			IFNULL(t2.applyCount,0) as 'allotedCount'
+			t1.hisMaxCount,
+			t1.realMaxCount,
+			IFNULL(t2.allotedHisCount,0) as 'allotedHisCount',
+			IFNULL(t2.allotedRealCount,0) as 'allotedRealCount'
 		FROM t_org t
 		LEFT JOIN t_worktime_cfg  t1 ON t.orgId = t1.orgId
 		LEFT JOIN t_org_allot_record t2 ON t.orgId = t2.orgId AND t2.recordDate = #{todayDate}
-		WHERE t.isNet=1 and t1.orgMaxCount > 0
+		WHERE t.isNet=1 
 		<if test="orgId != null and orgId != ''">
 			AND t.orgId = #{orgId}
 		</if>
 		<if test="balanceAmtGt0 != null and balanceAmtGt0 != ''">
 			AND t1.balanceAmt > #{balanceAmtGt0}
+		</if>
+		<if test="hisMaxCountGt0 != null and hisMaxCountGt0 != ''">
+			AND t1.hisMaxCount > 0
+		</if>
+		<if test="realMaxCountGt0 != null and realMaxCountGt0 != ''">
+			AND t1.realMaxCount > 0
 		</if>
 		<if test="orgNo != null and orgNo != ''">
 			AND t.orgNo = #{orgNo}
@@ -532,6 +540,12 @@
 		<if test="orderType != null and orderType != ''">
 			AND t.orderType = #{orderType}
 		</if>
+		<if test="channelTypeIN != null and channelTypeIN != ''">
+			AND ch.`type` IN (${channelTypeIN})
+		</if>
+		<if test="channelType != null and channelType != ''">
+			AND ch.`type`=#{channelType}
+		</if>
 		  ORDER BY t.applyTime DESC limit  #{limitSize}
 	</select>
 	
@@ -540,6 +554,7 @@
 	   	SELECT 
 	   		t.applyId, 
 	   		t.orderType,
+	   		t.cityName,
 		   	ch.channelCode,
 		   	ch.`type` as 'channelType',
 		   	ch.isCost

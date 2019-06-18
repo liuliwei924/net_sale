@@ -1,6 +1,5 @@
 package org.xxjr.busi.util;
 
-import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,7 +17,6 @@ import org.ddq.common.core.service.SoaManager;
 import org.ddq.common.util.DateTimeUtil;
 import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.StringUtil;
-import org.llw.model.cache.RedisUtils;
 import org.springframework.util.StringUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.IDCardValidate;
@@ -732,27 +730,18 @@ public class ApplyAllotUtil {
 		}
 		return false;
 	}
-	/**
-	 * 记录门店分配订单数量
-	 * @param recordDate 记录日期
-	 * @param orgId 门店Id
-	 * @param cityName 城市
-	 */
-	public static void saveOrgAllotRecord(String recordDate,String orgId,String cityName){
-		AppParam allotParam = new AppParam("orgAllotRecordService", "saveOrUpdate");
-		allotParam.addAttr("recordDate", recordDate);
-		allotParam.addAttr("orgId", orgId);
-		allotParam.addAttr("cityName", cityName);
-		allotParam.addAttr("addApplyCount", 1);
-		ServiceKey.doCall(allotParam, ServiceKey.Key_busi_in);
-	}
 	
-	public static void saveOrgAllotRecord(String recordDate,Object orgId,String cityName,int addApplyCount){
+	
+	public static void saveOrgAllotRecord(String recordDate,Object orgId,String cityName,int allotedOrderType,int addApplyCount){
 		AppParam allotParam = new AppParam("orgAllotRecordService", "saveOrUpdate");
 		allotParam.addAttr("recordDate", recordDate);
 		allotParam.addAttr("orgId", orgId);
 		allotParam.addAttr("cityName", cityName);
-		allotParam.addAttr("addApplyCount", addApplyCount);
+		if(allotedOrderType == 1) {
+			allotParam.addAttr("addAllotedRealCount", addApplyCount);
+		}else if(allotedOrderType == 2) {
+			allotParam.addAttr("addAllotedHisCount", addApplyCount);
+		}
 		ServiceKey.doCall(allotParam, ServiceKey.Key_busi_in);
 	}
 	/***
@@ -803,45 +792,6 @@ public class ApplyAllotUtil {
 					ServiceKey.doCall(allotParam, ServiceKey.Key_busi_in);
 				}
 				return StringUtil.getString(orglist.get(0).get("orgId"));
-			}
-		}
-		return "";
-	}
-	
-	/***
-	 * 上海市的直接分给上海同盛门店
-	 * 北京市的北京1门店分800，北京2门店分150
-	 * @return
-	 */
-	public static String getOrgIdByChannel(String cityName){
-		// 上海市的直接分给上海同盛门店
-		if("上海市".equals(cityName)){
-			return "239";
-		}else if("北京市".equals(cityName)){
-			//北京朝外1门店分单数量缓存
-			int bj1AllotCount = NumberUtil.getInt(RedisUtils.getRedisService().get("storeOrgAllotCount_207"), 0);
-			//北京朝外2门店分单数量缓存
-			int bj2AllotCount = NumberUtil.getInt(RedisUtils.getRedisService().get("storeOrgAllotCount_237"), 0);
-			Calendar cal = Calendar.getInstance();
-			// 当前小时数
-			int currentHours = cal.get(Calendar.HOUR_OF_DAY);
-			// 当天剩余小时数
-			int lastHours = 24 - currentHours + 1;
-			if(bj2AllotCount > bj1AllotCount){
-				bj1AllotCount ++;
-				RedisUtils.getRedisService().set("storeOrgAllotCount_207", (Serializable) bj1AllotCount, 60 * 60 * lastHours);
-				return "207";
-			}else{
-				//北京2最多分150单
-				if(bj2AllotCount > 150){
-					bj1AllotCount ++;
-					RedisUtils.getRedisService().set("storeOrgAllotCount_207", (Serializable) bj1AllotCount,60 * 60 * lastHours);
-					return "207";
-				}else{
-					bj2AllotCount ++;
-					RedisUtils.getRedisService().set("storeOrgAllotCount_237", (Serializable) bj2AllotCount,60 * 60 * lastHours);
-					return "237";
-				}
 			}
 		}
 		return "";

@@ -108,7 +108,8 @@ public class OrgAllotRecordService extends BaseService {
 		AppResult updateResult = super.update(params, NAMESPACE);
 		int count  = NumberUtil.getInt(updateResult.getAttr(DuoduoConstant.DAO_Update_SIZE),0);
 		if(count <= 0){
-			params.addAttr("applyCount", params.removeAttr("addApplyCount"));
+			params.addAttr("allotedRealCount", params.removeAttr("addAllotedRealCount"));
+			params.addAttr("allotedHisCount", params.removeAttr("addAllotedHisCount"));
 			updateResult = this.insert(params);
 		}
 		return updateResult;

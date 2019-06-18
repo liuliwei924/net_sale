@@ -662,6 +662,7 @@ public class NetStorePoolService extends BaseService {
 		AppResult result = new AppResult();
 		String orgId = StringUtil.getString(params.getAttr("orgId"));
 		int orderType = NumberUtil.getInt(params.getAttr("orderType"),2);
+		int allotOrderType = NumberUtil.getInt(params.getAttr("allotOrderType"),2);
 		long needAllotCount = NumberUtil.getLong(params.getAttr("needAllotCount"),0);
 		Object cityName = params.getAttr("cityName");
 		if(!StringUtils.isEmpty(orgId) && !StringUtils.isEmpty(cityName) && needAllotCount > 0) {
@@ -670,6 +671,12 @@ public class NetStorePoolService extends BaseService {
 			applyIdsParam.addAttr("orderType", orderType);
 			applyIdsParam.addAttr("limitSize", needAllotCount);
 			applyIdsParam.addAttr("cityName", cityName);
+			
+			if(allotOrderType == 1) {
+				applyIdsParam.addAttr("channelType", 3);// 实时数据
+			}else if(allotOrderType == 2){
+				applyIdsParam.addAttr("channelType", 4);//历史数据
+			}
 			
 			AppResult allotApplyIdsR = queryOrgAllotOrder(applyIdsParam);
 			int allotSucSize = 0;

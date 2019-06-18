@@ -32,9 +32,10 @@ public class OrgAllotUtils {
 	/***
 	 * 将新单分配池数据分配给门店
 	 * @param processId
+	 * @param allotOrderType 1-实时单  2- 历史单
 	 * @return
 	 */
-	public static AppResult allotOrgNewOrder(Object processId){
+	public static AppResult allotOrgNewOrder(Object processId, int allotOrderType){
 		AppResult result = new AppResult();
 		int autoAllotStatus = SysParamsUtil.getIntParamByKey("orgNewAllotStatus", 0);
 		if(autoAllotStatus == 0){
@@ -52,6 +53,7 @@ public class OrgAllotUtils {
 			result.setSuccess(false);
 			return result;
 		}
+		String orderStr = allotOrderType ==1 ? "实时单" : "历史单";
 		
 		String[] cityNameArr = cityNames.split(",");
 		String todayDate = DateTimeUtil.getCurTimeByParttern(DateTimeUtil.DATE_PATTERN_YYYY_MM_DD);
@@ -72,17 +74,30 @@ public class OrgAllotUtils {
 			    	orgAllotOrderCfgParam.addAttr("cityName", cityName);
 			    	orgAllotOrderCfgParam.addAttr("todayDate", todayDate);
 			    	orgAllotOrderCfgParam.addAttr("balanceAmtGt0", SysParamsUtil.getIntParamByKey("netOrgMinBalanceAmt", 10));
+			    	if(allotOrderType ==1) {
+			    		orgAllotOrderCfgParam.addAttr("realMaxCountGt0", 1);
+			    	}else if(allotOrderType ==2) {
+			    		orgAllotOrderCfgParam.addAttr("hisMaxCountGt0", 1);
+			    	}
 			    	orgAllotOrderCfgParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 					AppResult queryResult = RemoteInvoke.getInstance().callNoTx(orgAllotOrderCfgParam);
 					
 					if(queryResult.getRows().size() > 0) {
 						List<Map<String,Object>> canAllotList = new ArrayList<Map<String,Object>>();
-						
+						long allotedCount = 0;
+						long orgMaxCount = 0;
+						long needCount = 0;
 						for(Map<String,Object> cfgMap : queryResult.getRows()) {
 							
-							long allotedCount = NumberUtil.getInt(cfgMap.get("allotedCount"), 0);
-							long orgMaxCount = NumberUtil.getInt(cfgMap.get("orgMaxCount"), 0);
-							long needCount = orgMaxCount - allotedCount;
+							if(allotOrderType ==1) {
+								allotedCount = NumberUtil.getInt(cfgMap.get("allotedRealCount"), 0);
+								orgMaxCount = NumberUtil.getInt(cfgMap.get("realMaxCount"), 0);
+							}else if(allotOrderType ==2) {
+								allotedCount = NumberUtil.getInt(cfgMap.get("allotedHisCount"), 0);
+								orgMaxCount = NumberUtil.getInt(cfgMap.get("hisMaxCount"), 0);
+					    	}
+							
+							needCount = orgMaxCount - allotedCount;
 							if(needCount > 0) {
 								Map<String,Object> map1 = new HashMap<String,Object>();
 								map1.put("orgId", cfgMap.get("orgId"));
@@ -101,14 +116,14 @@ public class OrgAllotUtils {
 							long modCount = Math.floorMod(allotCityTotalCount,canAllotSize);//取模
 							AppParam allotOrgParam = null;
 							for(Map<String,Object> map2 : canAllotList) {
-								int needCount = NumberUtil.getInt(map2.get("needCount"));
+								int needCount2 = NumberUtil.getInt(map2.get("needCount"));
 								long needAllotCount = 0;
-								if(needCount > avgCount && modCount > 0) {
+								if(needCount2 > avgCount && modCount > 0) {
 									needAllotCount = avgCount +1;
 									modCount = modCount -1;
-								}else if(needCount < avgCount ) {
-									needAllotCount = needCount;
-									modCount = modCount + (avgCount - needCount);
+								}else if(needCount2 < avgCount ) {
+									needAllotCount = needCount2;
+									modCount = modCount + (avgCount - needCount2);
 								}else {
 									needAllotCount = avgCount;
 								}
@@ -119,13 +134,14 @@ public class OrgAllotUtils {
 									allotOrgParam.addAttr("cityName", cityName);
 									allotOrgParam.addAttr("needAllotCount", needAllotCount);
 									allotOrgParam.addAttr("orderType", "1");//新单
+									allotOrgParam.addAttr("allotOrderType", allotOrderType);//单子类型 1-实时 2-历史
 									allotOrgParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 									AppResult allotResult = RemoteInvoke.getInstance().call(allotOrgParam);
 									int updateSize = NumberUtil.getInt(allotResult.getAttr(DuoduoConstant.DAO_Update_SIZE), 0);
 									
 									if(updateSize > 0) {
 										realAllotedCount += updateSize;
-										ApplyAllotUtil.saveOrgAllotRecord(todayDate,map2.get("orgId"),cityName,updateSize);
+										ApplyAllotUtil.saveOrgAllotRecord(todayDate,map2.get("orgId"),cityName,allotOrderType,updateSize);
 										
 									}
 								}
@@ -139,11 +155,11 @@ public class OrgAllotUtils {
 				
 			}
 			
-			JobUtil.addProcessExecute(processId, "网销池中未分配的新单随机分给门店 ：成功笔数:"+ realAllotedCount +"，总共笔数：" + totalNetPoolCount);
-			LogerUtil.log("网销池中未分配的新单随机分给门店 msg：成功笔数:"+ realAllotedCount +"，总共笔数：" + totalNetPoolCount);
+			JobUtil.addProcessExecute(processId, "网销池中未分配的" + orderStr +"随机分给门店 ：成功笔数:"+ realAllotedCount +"，总共笔数：" + totalNetPoolCount);
+			LogerUtil.log("网销池中未分配的" + orderStr +"随机分给门店 msg：成功笔数:"+ realAllotedCount +"，总共笔数：" + totalNetPoolCount);
 		}catch (Exception e) {
 			LogerUtil.error(OrgAllotUtils.class, e, "allotOrgNewOrder >>>>>>>>>>>>>>>>>> error");
-			JobUtil.addProcessExecute(processId, "网销池中未分配的新单随机分给门店报错：" + e.getMessage() );
+			JobUtil.addProcessExecute(processId, "网销池中未分配的" + orderStr +"随机分给门店报错：" + e.getMessage() );
 		}
 		
 		return result;

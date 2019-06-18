@@ -12,6 +12,7 @@ import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.SpringAppContext;
 import org.ddq.common.core.service.SoaManager;
+import org.ddq.common.util.DateTimeUtil;
 import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.StringUtil;
@@ -214,7 +215,7 @@ public class AllotCostUtil {
 	 * @param orgId
 	 * @param applyId 
 	 */
-	public static boolean saveOrgAllotOrderCost(String orgId, Object applyId,Object customerId){
+	public static boolean saveOrgAllotOrderCost(String orgId, Object applyId,Object customerId, boolean isJsAllotOrder){
 		AppParam channelParam = new AppParam("netStorePoolService","queryOrgCostInfo");
 		channelParam.addAttr("applyId", applyId);
 		AppResult channelResult = ServiceKey.doCall(channelParam,ServiceKey.Key_busi_in);
@@ -226,6 +227,14 @@ public class AllotCostUtil {
 			Object channelCode = costMap.get("channelCode");
 			
 			if(isCost == 1 && orderType == 1) {
+				if(isJsAllotOrder) {// 是否记录分单记录
+					String todayDate = DateTimeUtil.getCurTimeByParttern(DateTimeUtil.DATE_PATTERN_YYYY_MM_DD);
+					String cityName = StringUtil.getString(costMap.get("cityName"));
+					int allotOrderType = 2;
+					if(channelType ==2 || channelType ==3)   allotOrderType =1;
+					
+					ApplyAllotUtil.saveOrgAllotRecord(todayDate,orgId,cityName,allotOrderType,1);
+				}
 				return saveOrgAllotOrderCost(orgId,applyId,channelType,channelCode,customerId);
 			}else {// 不计成本需要返回true
 				return true;

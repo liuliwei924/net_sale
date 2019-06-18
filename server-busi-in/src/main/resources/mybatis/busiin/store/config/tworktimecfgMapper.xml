@@ -27,9 +27,9 @@
 			startAllotTime,
 			endAllotTime,
 			DATE_FORMAT(createTime,'%Y-%m-%d %H:%i:%s') as createTime,
-			orgMaxCount,
-			balanceAmt,
-			monthMaxCost
+			hisMaxCount,
+			realMaxCount,
+			balanceAmt
 		FROM t_worktime_cfg
 		<where>
 			<include refid="queryWhereSql"/>
@@ -62,8 +62,8 @@
 			startAllotTime,
 			endAllotTime,
 			createTime,
-			orgMaxCount,
-			monthMaxCost
+			hisMaxCount,
+			realMaxCount
 		)
 		VALUES ( 
 			#{cityName, jdbcType=VARCHAR}, 
@@ -77,8 +77,8 @@
 			#{startAllotTime, jdbcType=VARCHAR}, 
 			#{endAllotTime, jdbcType=VARCHAR}, 
 			#{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
-			#{orgMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
-			#{monthMaxCost, jdbcType=INTEGER,typeHandler=NumberHandler}
+			#{hisMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			#{realMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler}
 		)
 	</insert>
 	<delete id="delete" parameterType="map">
@@ -123,11 +123,11 @@
 			<if test="createTime != null">
 				createTime = #{createTime, jdbcType=TIMESTAMP,typeHandler=DateHandler},
 			</if>
-			<if test="orgMaxCount != null">
-				orgMaxCount = #{orgMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
+			<if test="realMaxCount != null">
+				realMaxCount = #{realMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler},
 			</if>
-			<if test="monthMaxCost != null">
-				monthMaxCost = #{monthMaxCost, jdbcType=INTEGER,typeHandler=NumberHandler}
+			<if test="hisMaxCount != null">
+				hisMaxCount = #{hisMaxCount, jdbcType=INTEGER,typeHandler=NumberHandler}
 			</if>
 		</set>
 		<where>
@@ -151,8 +151,8 @@
 			t.endAllotTime, 
 			DATE_FORMAT(t.createTime,'%Y-%m-%d %H:%i:%s') as createTime,
 			t1.orgName,
-			t.orgMaxCount,
-			t.monthMaxCost
+			t.hisMaxCount,
+			t.realMaxCount
 		FROM t_worktime_cfg t
 		LEFT JOIN t_org t1
 		ON t.orgId = t1.orgId 

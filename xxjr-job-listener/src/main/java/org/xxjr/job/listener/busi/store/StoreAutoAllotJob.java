@@ -20,7 +20,10 @@ public class StoreAutoAllotJob  implements BaseExecteJob{
 		AppResult result = new AppResult();
 		Object processId = param.getAttr(JobConstant.KEY_processId);
 		
-		result = OrgAllotUtils.allotOrgNewOrder(processId);
+		result = OrgAllotUtils.allotOrgNewOrder(processId,1);// 分实时单
+		
+		result = OrgAllotUtils.allotOrgNewOrder(processId,2);// 分历史单
+		
 		//分配新单
 		result = StoreAutoAllotUtils.allotStoreNewOrder(processId);
 		

@@ -1350,7 +1350,7 @@ public class StoreOptExtService extends BaseService {
 			String applyTime = StringUtil.getString(applyMap.get("applyTime"));
 			boolean costFlag = false;
 			if(!StringUtils.isEmpty(applyTime)) {
-				costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId,applyId,customerId);
+				costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId,applyId,customerId,true);
 				
 				if(!costFlag) {
 					throw new SysException("门店余额不足，请尽量选少量单转");
@@ -1456,7 +1456,7 @@ public class StoreOptExtService extends BaseService {
 		for (Map<String, Object> orderMap : orders) {
 			String applyId = StringUtil.getString(orderMap.get("applyId"));
 			// 计算成本
-			boolean costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId,null);
+			boolean costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId,null,true);
 			
 			if(!costFlag) throw new SysException("转门店时，余额不足，请尽量选少量单转");
 			

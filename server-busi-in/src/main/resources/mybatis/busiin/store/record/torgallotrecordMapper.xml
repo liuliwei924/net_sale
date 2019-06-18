@@ -9,7 +9,8 @@
 			recordDate,
 			orgId,
 			cityName, 
-			applyCount
+			allotedHisCount,
+			allotedRealCount
 		FROM t_org_allot_record
 		<where>
 			<if test="recordDate != null and recordDate != ''">
@@ -20,9 +21,6 @@
 			 </if>
 			<if test="cityName != null and cityName != ''">
 				and cityName = #{cityName}
-			</if>
-			<if test="applyCount != null and applyCount != ''">
-				and applyCount = #{applyCount}
 			</if>
 		</where>
 		<if test="orderSql != null and orderSql!='' "> 
@@ -42,9 +40,6 @@
 		<if test="cityName != null and cityName != ''">
 			and cityName = #{cityName}
 		</if>
-		<if test="applyCount != null and applyCount != ''">
-			and applyCount = #{applyCount}
-		</if>
 		</where>
 	</select>
 
@@ -53,17 +48,24 @@
 			recordDate,
 			cityName,
 			orgId,
-			applyCount
+			allotedHisCount,
+			allotedRealCount
 		)
 		VALUES ( 
 			#{recordDate, jdbcType=DATE,typeHandler=DateHandler},
 			#{cityName, jdbcType=VARCHAR}, 
 			#{orgId, jdbcType=INTEGER,typeHandler=NumberHandler}, 
-			<if test="applyCount !=null ">
-			#{applyCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			<if test="allotedHisCount !=null ">
+			#{allotedHisCount, jdbcType=INTEGER,typeHandler=NumberHandler},
 			</if>
-			<if test="applyCount ==null ">
-			0 
+			<if test="allotedHisCount ==null ">
+			0,
+			</if>
+			<if test="allotedRealCount !=null ">
+			#{allotedRealCount, jdbcType=INTEGER,typeHandler=NumberHandler}
+			</if>
+			<if test="allotedRealCount ==null ">
+			0
 			</if>
 		)
 	</insert>
@@ -80,8 +82,11 @@
 			<if test="cityName != null">
 				cityName = #{cityName, jdbcType=VARCHAR},
 			</if>
-			<if test="addApplyCount != null">
-				applyCount = applyCount + #{addApplyCount}
+			<if test="addAllotedRealCount != null">
+				allotedRealCount = allotedRealCount + #{addAllotedRealCount}
+			</if>
+			<if test="addAllotedHisCount != null">
+				allotedHisCount = allotedHisCount + #{addAllotedHisCount}
 			</if>
 		</set>
 		<where>
@@ -94,11 +99,16 @@
 	<select id="queryOrgGroupByCity" resultType="map" parameterType="map">
 		SELECT
 			tab.applyCount,
+			tab.allotedRealCount,
+			tab.allotedHisCount,
+			tab.totalAllotedCount,
 			tab.orgId
 		FROM
 			(
 				SELECT
-					t.applyCount,
+					t.allotedRealCount,
+					t.allotedHisCount,
+					(t.allotedRealCount+t.allotedHisCount) as 'totalAllotedCount',
 					t.orgId
 				FROM
 					t_org_allot_record t
@@ -107,6 +117,6 @@
 				AND t.recordDate >= CURDATE()
 				GROUP BY t.orgId
 			) tab
-		ORDER BY tab.applyCount ASC
+		ORDER BY tab.totalAllotedCount ASC
 	</select>
 </mapper>
