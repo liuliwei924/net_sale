@@ -53,7 +53,12 @@ public class OrgAllotUtils {
 			result.setSuccess(false);
 			return result;
 		}
-		String orderStr = allotOrderType ==1 ? "实时单" : "历史单";
+		String orderStr = "历史单";
+		String channelType = "4";
+		if(allotOrderType ==1) {
+			channelType = "3";
+			orderStr = "实时单";
+		}
 		
 		String[] cityNameArr = cityNames.split(",");
 		String todayDate = DateTimeUtil.getCurTimeByParttern(DateTimeUtil.DATE_PATTERN_YYYY_MM_DD);
@@ -63,10 +68,11 @@ public class OrgAllotUtils {
 			for(int i = 0 ; i<cityNameArr.length; i++) {
 				String cityName = cityNameArr[i];
 				AppParam countParams = new AppParam();
-				countParams.addAttr("orderType", 1);//再分配
+				countParams.addAttr("orderType", 1);//新单
 				countParams.addAttr("cityName", cityName);
+				countParams.addAttr("channelType", channelType);
 				countParams.addAttr("orgNull", "1");
-				int allotCityTotalCount = queryStoreAllotCount(countParams);
+				int allotCityTotalCount = queryNetCount(countParams);
 				totalNetPoolCount += allotCityTotalCount;
 
 			    if(allotCityTotalCount > 0) {
@@ -171,9 +177,9 @@ public class OrgAllotUtils {
 	 * @param params
 	 * @return
 	 */
-	private static int queryStoreAllotCount(AppParam params){
+	private static int queryNetCount(AppParam params){
 		params.setService("netStorePoolService");
-		params.setMethod("queryCount");
+		params.setMethod("queryNetCount");
 		params.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
 		AppResult queryResult = RemoteInvoke.getInstance().callNoTx(params);
 		int size = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE), 0);

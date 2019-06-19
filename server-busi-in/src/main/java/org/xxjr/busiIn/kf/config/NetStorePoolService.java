@@ -105,6 +105,17 @@ public class NetStorePoolService extends BaseService {
 		return result;
 	}
 	
+	/**
+	 * queryNetCount
+	 * @param params
+	 * @return
+	 */
+	public AppResult queryNetCount(AppParam params) {
+		int size = getDao().count(NAMESPACE, "queryNetCount",params.getAttr(),params.getDataBase());
+		AppResult result = new AppResult();
+		result.putAttr(DuoduoConstant.TOTAL_SIZE, size);
+		return result;
+	}
 	
 	/**
 	 * insert
@@ -673,9 +684,9 @@ public class NetStorePoolService extends BaseService {
 			applyIdsParam.addAttr("cityName", cityName);
 			
 			if(allotOrderType == 1) {
-				applyIdsParam.addAttr("channelType", 3);// 实时数据
+				applyIdsParam.addAttr("channelTypeIN", "2,3");// 实时数据
 			}else if(allotOrderType == 2){
-				applyIdsParam.addAttr("channelType", 4);//历史数据
+				applyIdsParam.addAttr("channelType", "4");//历史数据
 			}
 			
 			AppResult allotApplyIdsR = queryOrgAllotOrder(applyIdsParam);

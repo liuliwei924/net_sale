@@ -214,6 +214,7 @@
 		<include refid="queryOrgCostSql"></include>
 		GROUP BY
 			t.orgId,DATE_FORMAT( t.createTime, #{datePattern})
+		ORDER BY DATE_FORMAT( t.createTime, #{datePattern}) DESC
 	</select>
 	
 	<select id="queryOrgCostCount" parameterType="map" resultType="int">
@@ -312,6 +313,7 @@
 		<include refid="queryOrgCostSql"></include>
 		GROUP BY
 			t.channelCode,DATE_FORMAT( t.createTime, #{datePattern})
+		ORDER BY DATE_FORMAT( t.createTime, #{datePattern}) DESC
 	</select>
 	
 	<select id="queryChannelCostCount" parameterType="map" resultType="int">

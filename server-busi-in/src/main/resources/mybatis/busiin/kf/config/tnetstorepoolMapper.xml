@@ -102,6 +102,33 @@
 		</where>
 	</select>
 	
+	<select id="queryNetCount" resultType="int" parameterType="map">
+		SELECT COUNT(t.applyId) FROM t_net_store_pool t 
+		JOIN t_borrow_store_apply t1 ON t.applyId = t1.applyId
+		JOIN t_borrow_channel t2 ON t1.channelCode = t2.channelCode
+		<where>
+		<if test="applyId != null and applyId != ''">
+		    and t.applyId = #{applyId}
+		 </if>
+		<if test="cityName != null and cityName != ''">
+			and t.cityName = #{cityName}
+		</if>
+		<if test="orgNull != null and orgNull != ''">
+			and (t.orgId IS NULL or t.orgId ='')
+		</if>
+		<if test="orderType != null and orderType != ''">
+			and t.orderType = #{orderType}
+		</if>
+		<if test="channelType != null and channelType != ''">
+			and t2.`type` = #{channelType}
+		</if>
+		<if test="channelTypeIN != null and channelTypeIN != ''">
+			and t2.`type` in (${channelTypeIN})
+		</if>
+		</where>
+	</select>
+	
+	
 	<!-- 3 天没分配出去的去挂卖 -->
 	<select id="queryOverTimeToSale" resultType="map" parameterType="map">
 		SELECT
