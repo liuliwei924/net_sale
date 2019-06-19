@@ -1,6 +1,5 @@
 package org.xxjr.job.listener.busi;
 
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -9,7 +8,6 @@ import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
 import org.ddq.common.core.service.RemoteInvoke;
-import org.ddq.common.util.DateUtil;
 import org.ddq.common.util.LogerUtil;
 import org.llw.job.core.BaseExecteJob;
 import org.llw.job.util.JobConstant;
@@ -18,7 +16,6 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.xxjr.job.listener.busi.store.StoreDepartureUtils;
 import org.xxjr.sys.util.ServiceKey;
-import org.xxjr.sys.util.SysParamsUtil;
 /***
  * 申请数据批量插入
  *
@@ -31,26 +28,26 @@ public class AutoApplyInsertJob implements BaseExecteJob {
 		AppResult result = new AppResult();
 		
 		Object processId = param.getAttr(JobConstant.KEY_processId);
-		
-		try {
-			int allotApplyDataCount = SysParamsUtil.getIntParamByKey("allotApplyDataCount", 500);
-			int currentPage = 1;
-			AppParam queryParam = new AppParam("applyService", "queryByPage");
-			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
-			queryParam.setOrderBy("applyTime");
-			queryParam.setOrderValue("DESC");
-			queryParam.addAttr("status", "0");
-			queryParam.addAttr("endApplyTime", DateUtil.toStringByParttern(DateUtil.getNextMinutes(new Date(), -5), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
-			queryParam.addAttr("startApplyTime", DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(), -3), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
-			queryParam.addAttr("notLikeName", "测试");
-			queryParam.setCurrentPage(currentPage);
-			queryParam.setEveryPage(allotApplyDataCount);
-			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
-			transfer(queryResult.getRows(), processId);//开始转移第一页的
-		} catch (Exception e) {
-			LogerUtil.error(AutoApplyInsertJob.class, e, "AutoApplyInsertJob >>>>>>>>>>>>>>>>>>error");
-			JobUtil.addProcessExecute(processId, "申请数据批量插入 报错：" + e.getMessage() );
-		}
+//		
+//		try {
+//			int allotApplyDataCount = SysParamsUtil.getIntParamByKey("allotApplyDataCount", 500);
+//			int currentPage = 1;
+//			AppParam queryParam = new AppParam("applyService", "queryByPage");
+//			queryParam.setRmiServiceName(AppProperties.getProperties(DuoduoConstant.RMI_SERVICE_START+ServiceKey.Key_busi_in));
+//			queryParam.setOrderBy("applyTime");
+//			queryParam.setOrderValue("DESC");
+//			queryParam.addAttr("status", "0");
+//			queryParam.addAttr("endApplyTime", DateUtil.toStringByParttern(DateUtil.getNextMinutes(new Date(), -5), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
+//			queryParam.addAttr("startApplyTime", DateUtil.toStringByParttern(DateUtil.getNextDay(new Date(), -3), DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
+//			queryParam.addAttr("notLikeName", "测试");
+//			queryParam.setCurrentPage(currentPage);
+//			queryParam.setEveryPage(allotApplyDataCount);
+//			AppResult queryResult = RemoteInvoke.getInstance().callNoTx(queryParam);
+//			transfer(queryResult.getRows(), processId);//开始转移第一页的
+//		} catch (Exception e) {
+//			LogerUtil.error(AutoApplyInsertJob.class, e, "AutoApplyInsertJob >>>>>>>>>>>>>>>>>>error");
+//			JobUtil.addProcessExecute(processId, "申请数据批量插入 报错：" + e.getMessage() );
+//		}
 		
 	   // 判断业务员下线
 		try {

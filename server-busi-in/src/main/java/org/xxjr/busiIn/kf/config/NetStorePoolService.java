@@ -702,7 +702,7 @@ public class NetStorePoolService extends BaseService {
 								int channelType = NumberUtil.getInt(allotApplyIdsMap.get("channelType"));
 								Object channelCode = allotApplyIdsMap.get("channelCode");
 								
-								costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId, channelType, channelCode,null);
+								costFlag = AllotCostUtil.saveOrgAllotOrderCost(orgId, applyId, channelType, channelCode,null).isSuccess();
 							}
 							
 							if(costFlag) {

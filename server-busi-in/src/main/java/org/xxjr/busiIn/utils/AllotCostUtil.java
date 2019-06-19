@@ -227,7 +227,9 @@ public class AllotCostUtil {
 			Object channelCode = costMap.get("channelCode");
 			
 			if(isCost == 1 && orderType == 1) {
-				if(isJsAllotOrder) {// 是否记录分单记录
+				AppResult res =  saveOrgAllotOrderCost(orgId,applyId,channelType,channelCode,customerId);
+				int sucCount = NumberUtil.getInt(res.getAttr("sucCount"),0);
+				if(isJsAllotOrder && sucCount ==1) {// 是否记录分单记录
 					String todayDate = DateTimeUtil.getCurTimeByParttern(DateTimeUtil.DATE_PATTERN_YYYY_MM_DD);
 					String cityName = StringUtil.getString(costMap.get("cityName"));
 					int allotOrderType = 2;
@@ -235,7 +237,8 @@ public class AllotCostUtil {
 					
 					ApplyAllotUtil.saveOrgAllotRecord(todayDate,orgId,cityName,allotOrderType,1);
 				}
-				return saveOrgAllotOrderCost(orgId,applyId,channelType,channelCode,customerId);
+				
+				return res.isSuccess();
 			}else {// 不计成本需要返回true
 				return true;
 			}
@@ -250,9 +253,11 @@ public class AllotCostUtil {
 	 * 渠道类型（1-免费流量 2-信息流 3-API接口 4-历史数据 5-贷超 6-测试数据)
 	 */
 	@SuppressWarnings("unchecked")
-	public static boolean saveOrgAllotOrderCost(String orgId,Object applyId,int channelType,Object channelCode,Object customerId){
+	public static AppResult saveOrgAllotOrderCost(String orgId,Object applyId,int channelType,Object channelCode,Object customerId){
 		Map<String,Object> orgMap = OrgUtils.getOrgByOrgId(orgId);
-		boolean sucFlag = false;
+		AppResult result = new AppResult();
+		result.setSuccess(false);
+		
 		if(orgMap != null && !orgMap.isEmpty()) {
 			String dataJson = StringUtil.getString(orgMap.get("dataCost"));
 			Map<String,Object> dataCostMap = JsonUtil.getInstance().json2Object(dataJson, Map.class);
@@ -276,7 +281,8 @@ public class AllotCostUtil {
 				double priceCost = NumberUtil.getDouble(dataCostMap.get(costStr));
 				
 				if(priceCost <=0) {//不计成本需要返回true
-					return true;
+					result.setSuccess(true);
+					return result;
 				}
 				
 				if(priceCost > 0) {
@@ -299,16 +305,21 @@ public class AllotCostUtil {
 						costParams.addAttr("status", "1");
 						AppResult costResult = ServiceKey.doCall(costParams, ServiceKey.Key_busi_in);
 						
-						if(costResult.isSuccess()) sucFlag = true;
+						if(costResult.isSuccess()) {
+							result.setSuccess(true);
+							result.putAttr("sucCount", 1);
+							return result;
+						}
 					}else {
-						sucFlag = true;
+						result.setSuccess(true);
+						return result;
 					}
 				}
 			}
 		
 		}
 		
-		return sucFlag;
+		return result;
 	}
 	
 	/**
