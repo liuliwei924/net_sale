@@ -324,6 +324,13 @@ public class CooperOrgAction {
 			return result;
 		}
 		AppResult resultTmp = ThirdDataUtil.isCheckChannel(channelCode);
+		
+		if(result.getRows().size() == 0) {
+			result.setSuccess(false);
+			result.setMessage("没有此渠道信息！");
+			return result;
+		}
+		
 		if (resultTmp.isSuccess()) {
 			AppParam queryParams = new AppParam();
 			queryParams.addAttr("unionId", unionId);
