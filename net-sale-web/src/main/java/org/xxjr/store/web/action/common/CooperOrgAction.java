@@ -325,7 +325,7 @@ public class CooperOrgAction {
 		}
 		AppResult resultTmp = ThirdDataUtil.isCheckChannel(channelCode);
 		
-		if(result.getRows().size() == 0) {
+		if(resultTmp.getRows().size() == 0) {
 			result.setSuccess(false);
 			result.setMessage("没有此渠道信息！");
 			return result;
