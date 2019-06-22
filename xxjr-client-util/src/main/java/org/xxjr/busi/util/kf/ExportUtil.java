@@ -314,6 +314,26 @@ public class ExportUtil {
 		return list;
 	}
 	
+	public static List<Map<String,Object>> readExcel(String[] keys,MultipartFile fileR) throws Exception {
+		InputStream inputS = fileR.getInputStream();
+		String fileType = getFileType(fileR.getOriginalFilename());
+		if(inputS==null || fileType == null){
+			throw new SysException("导入文件失败");
+		}
+		List<Map<String,Object>> list = null;
+		if (".XLS".equals(fileType.toUpperCase())) {
+			list = ImportExcleUtil.xlsParse(keys,inputS);
+		} else if(".XLSX".equals(fileType.toUpperCase())){
+			list = ImportExcleUtil.xlsxParse(keys,inputS);
+		} else {
+			throw new SysException("不支持的文件类型");
+		}
+		if(list.size() == 0){
+			throw new AppException(ErrorCode.FILE_UPLOAD_FAILD_FILE_EMPTY);
+		}
+		return list;
+	}
+	
 	private static InputStream  getInputStream(Map<String, MultipartFile> fileMaps) 
 			throws IOException{
 		for (String fileName:fileMaps.keySet()) {
@@ -330,16 +350,19 @@ public class ExportUtil {
 		for (String fileName:fileMaps.keySet()) {
 			MultipartFile file = fileMaps.get(fileName);
 			if (file.getSize() != 0) {
-				String originaFileName = file.getOriginalFilename();
-				String fileType="";
-				if(originaFileName.lastIndexOf(".")>0){
-					fileType = originaFileName.substring(originaFileName
-							.lastIndexOf("."));
-				}
-				return fileType;
+				return getFileType(file.getOriginalFilename());
 			}
 		}
 		return null;
+	}
+	
+	private static String  getFileType(String originaFileName) throws IOException{
+		String fileType="";
+		if(originaFileName.lastIndexOf(".")>0){
+			fileType = originaFileName.substring(originaFileName
+					.lastIndexOf("."));
+		}
+		return fileType;
 	}
 	
 	/**

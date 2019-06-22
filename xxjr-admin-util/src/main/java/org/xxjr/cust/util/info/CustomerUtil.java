@@ -370,7 +370,7 @@ public class CustomerUtil {
 		queryCust.setService("customerService");
 		queryCust.setMethod("queryCustName");
 		queryCust.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 		AppResult result = RemoteInvoke.getInstance().callNoTx(queryCust);
 		if(result.getRows().size()>0){
 			return result.getRow(0).get("customerId").toString();
@@ -391,7 +391,7 @@ public class CustomerUtil {
 		queryParam.addAttr("gzhId", gzhId);
 		queryParam.addAttr("openid", openid ==null ?"0000":openid);
 		queryParam.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 		AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
 		if(queryResult.getRows().size()>0){
 			return queryResult.getRow(0).get("customerId");
@@ -410,7 +410,7 @@ public class CustomerUtil {
 		queryParam.setMethod("query");
 		queryParam.addAttr("customerId", customerId);
 		queryParam.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 		AppResult queryResult = RemoteInvoke.getInstance().call(queryParam);
 		if(queryResult.getRows().size()>0){
 			return queryResult.getRow(0).get("openid");
@@ -432,7 +432,7 @@ public class CustomerUtil {
 		queryCust.setService("customerService");
 		queryCust.setMethod("queryCustPwd");
 		queryCust.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 		AppResult result = RemoteInvoke.getInstance().callNoTx(queryCust);
 		if(result.getRows().size() > 0){
 			return result.getRow(0).get("password");
@@ -471,7 +471,7 @@ public class CustomerUtil {
 		params.setService("customerService");
 		params.setMethod("query");
 		params.setRmiServiceName(AppProperties
-				.getProperties(DuoduoConstant.RMI_SERVICE_START + "cust"));
+				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_cust));
 		AppResult result = null;
 		if (SpringAppContext.getBean("customerService") == null) {
 			result = RemoteInvoke.getInstance().callNoTx(params);

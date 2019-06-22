@@ -18,6 +18,8 @@ import org.llw.model.cache.RedisUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.ApplyAllotUtil;
+import org.xxjr.busi.util.CountGradeUtil;
 import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busiIn.utils.StoreOptUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
@@ -444,45 +446,65 @@ public class StoreHandleExtService extends BaseService{
 		StringBuilder serIdSb = new StringBuilder();
 		int errCount = 0;
 		int sucCount = 0;
+		Object orgId = params.getAttr("orgId");
+		Object lastStore = params.getAttr("lastStore");
+		
 		for(Map<String, Object> dataMap : dataList){
 			String id = StringUtil.getString(dataMap.get("id"));
 			String applyName = StringUtil.getString(dataMap.get("applyName"));
 			String telephone = StringUtil.getString(dataMap.get("telephone"));
-			String desc = StringUtil.getString(dataMap.get("desc"));
+			String cityName = StringUtil.getString(dataMap.get("cityName"));
+			double loanAmount = NumberUtil.getDouble(dataMap.get("loanAmount"), 0);
 
 			if(StringUtils.isEmpty(id)){//忽略计算
 				continue;
 			}
 
-			if(StringUtils.isEmpty(applyName) || 
+			if(StringUtils.isEmpty(applyName) || StringUtils.isEmpty(cityName)||
 					!ValidUtils.validateTelephone(telephone)){
-				serIdSb.append(id).append("号码或名字有误").append(",");
+				serIdSb.append(id).append("手机号码，城市，名字三者其一有误").append(",");
 				errCount++;
 				continue;
 			}
 
+			if(loanAmount<=0 || loanAmount >=1000){
+				serIdSb.append(id).append("金额格式有误【注意：单位为万】").append(",");
+				errCount++;
+				continue;
+			}
+			
 			// 效验手机号 存在借款记录给出提示
 			AppParam queryParam = new AppParam();
 			queryParam.addAttr("telephone", telephone);
 			queryParam.setService("borrowApplyService");
-			queryParam.setMethod("querySimpleInfo");
+			queryParam.setMethod("queryCount");
 			AppResult queryResult = SoaManager.getInstance().invoke(queryParam);
-			if (queryResult.getRows().size() > 0) {
+			int count = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE), 0);
+			
+			if (count > 0) {
 				serIdSb.append(id).append("记录已存在").append(",");
 				errCount++;
 				continue;
 			}
-
+			
+			if(!cityName.endsWith("市")){
+				cityName = cityName + "市";
+			}
+			ApplyAllotUtil.conversionType(dataMap);
+			String grade = CountGradeUtil.getGrade(dataMap) ;
 
 			//保存第三方数据
 			AppParam applyParam = new AppParam();
 			applyParam.setService("borrowApplyService");
 			applyParam.setMethod("insert");
-			applyParam.addAttr("applyName", applyName);
+			applyParam.addAttrs(dataMap);
+			applyParam.addAttr("grade", grade);
+			applyParam.addAttr("orgId", orgId);
+			applyParam.addAttr("lastStore", lastStore);
 			applyParam.addAttr("applyType", 1);
-			applyParam.addAttr("orgId", params.getAttr("orgId"));
-			applyParam.addAttr("telephone", telephone);
+			applyParam.addAttr("orderStatus", -1);
 			applyParam.addAttr("storeStatus", 1);
+			applyParam.addAttr("allotFlag", 1);
 			applyParam.addAttr("status", 2);
 			applyParam.addAttr("haveDetail", 1);
 			applyParam.addAttr("orderType", 2);//再分配
@@ -492,62 +514,66 @@ public class StoreHandleExtService extends BaseService{
 			applyParam.addAttr("applyTime", new Date());
 			AppResult result = SoaManager.getInstance().invoke(applyParam);
 			int applyId = NumberUtil.getInt(result.getAttr("applyId"));
-			//保存第三方数据
-			AppParam newApplyParam = new AppParam();
-			newApplyParam.setService("borrowStoreApplyService");
-			newApplyParam.setMethod("insertStoreApply");
-			newApplyParam.addAttr("applyId", applyId);
-			newApplyParam.addAttr("applyName", applyName);
-			newApplyParam.addAttr("applyType", 1);
-			newApplyParam.addAttr("orgId", params.getAttr("orgId"));
-			newApplyParam.addAttr("telephone", telephone);
-			newApplyParam.addAttr("status", 2);
-			newApplyParam.addAttr("haveDetail", 1);
-			newApplyParam.addAttr("orderType", 2);//再分配
-			newApplyParam.addAttr("channelDetail", "netSale");
-			newApplyParam.addAttr("channelCode", "netSale");
-			newApplyParam.addAttr("applyTime", new Date());
-			SoaManager.getInstance().invoke(newApplyParam);
+			
+			//保存网销数据
+			applyParam.setService("borrowStoreApplyService");
+			applyParam.setMethod("insertStoreApply");
+			SoaManager.getInstance().invoke(applyParam);
 
 			AppParam reParams = new AppParam();
 			// 增加贷款基本信息
 			if (result.isSuccess()) {
+				reParams.addAttrs(dataMap);
 				reParams.addAttr("applyId", applyId);
-				reParams.addAttr("cityName", params.getAttr("cityName"));
-				reParams.addAttr("desc", desc);
 				reParams.setService("borrowBaseService");
-				reParams.setMethod("update");
+				reParams.setMethod("insert");
 				sucResult = SoaManager.getInstance().invoke(reParams);
 				if(sucResult.isSuccess()){
-					//查询分配池中是否存在记录
-					AppParam alltoParam = new AppParam("netStorePoolService","queryCount");
-					alltoParam.addAttr("applyId", applyId);
-					AppResult quertAllotResult = SoaManager.getInstance().invoke(alltoParam);
-					if (quertAllotResult.getRows().size() > 0) {
-						serIdSb.append(id).append(",");
-						errCount++;
-						continue;
+					sucCount ++ ;
+					double income = NumberUtil.getDouble(dataMap.get("income"),0);
+					if(income > 0 && income < 100000000){
+						AppParam inParams = new AppParam("borrowIncomeService","insert");
+						inParams.addAttr("applyId", applyId);
+						inParams.addAttr("income", income);
+						inParams.addAttr("wagesType", dataMap.get("wagesType"));
+						SoaManager.getInstance().invoke(inParams);
+					}
+					
+					//保存房产信息
+					int housePlace = NumberUtil.getInt(dataMap.get("housePlace"), 1);
+					AppParam houseParams = new AppParam("borrowHouseService","insert");
+					houseParams.addAttrs(dataMap);
+					houseParams.addAttr("applyId",applyId);
+					houseParams.addAttr("housePlace",housePlace);
+					SoaManager.getInstance().invoke(houseParams);
+					
+					//保存车产信息
+					AppParam carParams = new AppParam("borrowCarService","insert");
+					carParams.addAttrs(dataMap);
+					carParams.addAttr("applyId", applyId);
+					SoaManager.getInstance().invoke(carParams);
+					
+					Object insurType = params.getAttr("insurType");
+					if (!StringUtils.isEmpty(insurType) && !"0".equals(insurType.toString())){
+						AppParam insureParams = new AppParam("borrowInsureService","insert");
+						insureParams.addAttr("applyId", applyId);
+						insureParams.addAttr("insurType", insurType);
+						SoaManager.getInstance().invoke(insureParams);
+					}
+		
+					if(StringUtils.isEmpty(lastStore)) {
+						//增加分配池信息
+						AppParam netPoolParam = new AppParam("netStorePoolService","insert");
+						netPoolParam.addAttr("applyId", applyId);
+						netPoolParam.addAttr("cityName", params.getAttr("cityName"));
+						netPoolParam.addAttr("orderType", 2);
+						netPoolParam.addAttr("recordDate", DateUtil.getSimpleFmt(new Date()));
+						netPoolParam.addAttr("applyTime", new Date());
+						netPoolParam.addAttr("orgId", orgId);
+						netPoolParam.addAttr("nextRecordDate", DateUtil.getSimpleFmt(new Date()));
+						SoaManager.getInstance().invoke(netPoolParam);
 					}
 
-					//增加分配池信息
-					AppParam alltoParam2 = new AppParam("netStorePoolService","insert");
-					alltoParam2.addAttr("applyId", applyId);
-					alltoParam2.addAttr("cityName", params.getAttr("cityName"));
-					alltoParam2.addAttr("orderType", 2);
-					alltoParam2.addAttr("recordDate", DateUtil.getSimpleFmt(new Date()));
-					alltoParam2.addAttr("applyTime", new Date());
-					alltoParam2.addAttr("orgId", params.getAttr("orgId"));
-					alltoParam2.addAttr("lastStore", params.getAttr("customerId"));
-					alltoParam2.addAttr("nextRecordDate", DateUtil.getSimpleFmt(new Date()));
-					AppResult allotResult =  SoaManager.getInstance().invoke(alltoParam2);
-					if (allotResult.isSuccess()) {
-						// 插入操作记录
-						AppResult sucRes = StoreOptUtil.insertStoreRecord(applyId,params.getAttr("customerId"),
-								StoreConstant.STORE_OPER_31,"手动导入门店历史数据", 0,2,0,1);
-						if(sucRes.isSuccess()){
-							sucCount ++ ;
-						}
-					}
 				}
 			}
 		}

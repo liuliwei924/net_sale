@@ -4,21 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.ddq.common.constant.DuoduoConstant;
 import org.ddq.common.context.AppParam;
 import org.ddq.common.context.AppProperties;
 import org.ddq.common.context.AppResult;
+import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.exception.ExceptionUtil;
 import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.DuoduoSession;
 import org.ddq.common.web.session.RequestUtil;
-import org.ddq.common.core.service.RemoteInvoke;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.MultipartFile;
 import org.xxjr.busi.util.kf.ExportUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.CustConstant;
@@ -95,9 +98,12 @@ public class AllotPandAction extends BaseController{
 	 * @return
 	 */
 	@RequestMapping("importInfo")
-	public AppResult importInfo(MultipartHttpServletRequest multRequest){
+	public AppResult importInfo(HttpServletRequest request,@RequestParam(name="file") MultipartFile fileR){
 		AppResult result = new AppResult();
-		String[] keys = {"id", "applyName", "telephone", "desc"};// 每列的key
+		String[] keys = {"id", "applyName", "sex","telephone","cityName",
+						  "loanAmount","workType","houseType","carType",
+						   "socialType","fundType","haveWeiLi","creditType",
+						   "insurType", "wagesType","income", "desc"};// 每列的key
 		try{
 			String customerId = StoreUserUtil.getCustomerId(request);
 			if (StringUtils.isEmpty(customerId)) {
@@ -105,10 +111,29 @@ public class AllotPandAction extends BaseController{
 				result.setMessage("用户ID不能为空");
 				return result;
 			}
+			
 			Map<String, Object> custInfo = CustomerIdentify.getCustIdentify(customerId);
-			int orgId = NumberUtil.getInt(custInfo.get("orgId"));
-			String cityName = StringUtil.getString(custInfo.get("cityName"));
-			List<Map<String, Object>> dataList = ExportUtil.readExcel(keys,multRequest);
+			String authType =   StringUtil.getString(custInfo.get("roleType"));
+			//门店负责人和系统管理员才可以导数据
+			if(!(CustConstant.CUST_ROLETYPE_6.equals(authType)
+					||CustConstant.CUST_ROLETYPE_1.equals(authType))){
+				
+				result.setSuccess(false);
+				result.setMessage("没导数据的权限");
+				return result;
+			}
+			
+			Object orgId = null;
+			if(CustConstant.CUST_ROLETYPE_6.equals(authType)) 
+				orgId = custInfo.get("orgId");
+			
+			List<Map<String, Object>> dataList = ExportUtil.readExcel(keys,fileR);
+			String fileName = fileR.getOriginalFilename();
+			String lastStore = null;
+			if(StringUtils.hasText(fileName) && fileName.indexOf("_") == 11) {
+				String storeTel = fileName.substring(0, fileName.indexOf("_"));
+				lastStore = CustomerUtil.queryCustId(storeTel, null);
+			}
 			int errCount = 0;
 			int sucCount = 0;
 			StringBuilder errSb = new StringBuilder();
@@ -129,8 +154,7 @@ public class AllotPandAction extends BaseController{
 					List<Map<String,Object>> subDataList = new ArrayList<Map<String, Object>>(dataList.subList(formIndex, toIndex));
 					AppParam addParam = new AppParam();
 					addParam.addAttr("orgId", orgId);
-					addParam.addAttr("cityName", cityName);
-					addParam.addAttr("customerId", customerId);
+					addParam.addAttr("lastStore", lastStore);
 					addParam.addAttr("dataList", subDataList);
 					addParam.setService("storeHandleExtService");
 					addParam.setMethod("batchImportData");
