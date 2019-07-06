@@ -254,10 +254,37 @@ public class AllotCostUtil {
 	 */
 	@SuppressWarnings("unchecked")
 	public static AppResult saveOrgAllotOrderCost(String orgId,Object applyId,int channelType,Object channelCode,Object customerId){
-		Map<String,Object> orgMap = OrgUtils.getOrgByOrgId(orgId);
+		
 		AppResult result = new AppResult();
 		result.setSuccess(false);
 		
+		AppParam queryParam  = new AppParam("orgCostRecordService","query");
+		queryParam.addAttr("applyId", applyId);
+		queryParam.addAttr("orgId", orgId);
+		
+		AppResult queryResult = ServiceKey.doCallNoTx(queryParam, ServiceKey.Key_busi_in);
+		String oldCustId = null;
+		int count = queryResult.getRows().size();
+		if(count > 0) {
+			oldCustId = StringUtil.getString(queryResult.getRow(0).get("customerId"));
+		}
+
+		if(count > 0 && StringUtils.isEmpty(oldCustId)) {
+			AppParam updateCostParam = new AppParam("orgCostRecordService","update");
+			updateCostParam.addAttr("orgId", orgId);
+			updateCostParam.addAttr("applyId", applyId);
+			updateCostParam.addAttr("customerId", customerId);
+			result = ServiceKey.doCall(updateCostParam, ServiceKey.Key_busi_in);
+			return result;
+			
+		}
+		
+		if(count > 0) {
+			result.setSuccess(true);
+			return result;
+		}
+		
+		Map<String,Object> orgMap = OrgUtils.getOrgByOrgId(orgId);
 		if(orgMap != null && !orgMap.isEmpty()) {
 			String dataJson = StringUtil.getString(orgMap.get("dataCost"));
 			Map<String,Object> dataCostMap = JsonUtil.getInstance().json2Object(dataJson, Map.class);
@@ -285,33 +312,21 @@ public class AllotCostUtil {
 					return result;
 				}
 				
-				if(priceCost > 0) {
-					AppParam queryParam  = new AppParam("orgCostRecordService","queryCount");
-					queryParam.addAttr("applyId", applyId);
-					queryParam.addAttr("orgId", orgId);
-					
-					AppResult queryResult = ServiceKey.doCallNoTx(queryParam, ServiceKey.Key_busi_in);
-					int count = NumberUtil.getInt(queryResult.getAttr(DuoduoConstant.TOTAL_SIZE),1);
-					
-					if(count  == 0) {
+				if(priceCost > 0 && count  == 0) {
 						
-						AppParam costParams = new AppParam("orgCostRecordService","jsOrgCost");
-						costParams.addAttr("applyId", applyId);
-						costParams.addAttr("orgId", orgId);
-						costParams.addAttr("customerId", customerId);
-						costParams.addAttr("channelCode", channelCode);
-						costParams.addAttr("dataType", dataType);
-						costParams.addAttr("price", priceCost);
-						costParams.addAttr("status", "1");
-						AppResult costResult = ServiceKey.doCall(costParams, ServiceKey.Key_busi_in);
-						
-						if(costResult.isSuccess()) {
-							result.setSuccess(true);
-							result.putAttr("sucCount", 1);
-							return result;
-						}
-					}else {
+					AppParam costParams = new AppParam("orgCostRecordService","jsOrgCost");
+					costParams.addAttr("applyId", applyId);
+					costParams.addAttr("orgId", orgId);
+					costParams.addAttr("customerId", customerId);
+					costParams.addAttr("channelCode", channelCode);
+					costParams.addAttr("dataType", dataType);
+					costParams.addAttr("price", priceCost);
+					costParams.addAttr("status", "1");
+					AppResult costResult = ServiceKey.doCall(costParams, ServiceKey.Key_busi_in);
+					
+					if(costResult.isSuccess()) {
 						result.setSuccess(true);
+						result.putAttr("sucCount", 1);
 						return result;
 					}
 				}

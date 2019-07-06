@@ -38,6 +38,14 @@
 			t.groupName,
 			t.teamName,
 			t.sourceType,
+			(CASE t.`status` 
+			WHEN 1 THEN '正常'
+			WHEN 2 THEN '锁定'
+			WHEN 3 THEN '失效'
+			WHEN 4 THEN '永久锁定'
+			ELSE '未知'
+			END
+			) statusDesc,
 			t4.orgId,
 			t4.orgNo,
 			t4.orgName,

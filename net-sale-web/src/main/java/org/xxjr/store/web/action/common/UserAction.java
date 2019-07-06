@@ -38,6 +38,7 @@ import org.xxjr.cust.util.info.CustomerPwdUtil;
 import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.store.web.util.Key_SMS;
 import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SysParamsUtil;
 import org.xxjr.sys.util.ValidUtils;
@@ -368,6 +369,13 @@ public class UserAction {
 		if(custInfo != null){
 			String authType = StringUtil.getString(custInfo.get("roleType"));
 			String orgId = StringUtil.getString(custInfo.get("orgId"));
+			Map<String,Object> orgInfo = OrgUtils.getOrgByOrgId(orgId);
+			int isNet = NumberUtil.getInt(orgInfo.get("isNet"),-1);
+			String orgNo = StringUtil.getString(orgInfo.get("orgNo"));
+			
+			if(isNet != 1 && !"999".equals(orgNo) && !"000".equals(orgNo) ) {
+				throw new SysException("你所属门店已被禁止登陆");
+			}
 			//门店业务员、门店主管、副主管限制登录
 			if(CustConstant.CUST_ROLETYPE_3.equals(authType)
 					||CustConstant.CUST_ROLETYPE_8.equals(authType)

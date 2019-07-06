@@ -20,5 +20,6 @@ public class StoreWebApplication {
 //		ZkClientBean clientBean = SpringAppContext.getBean(ZkClientBean.class);
 //		clientBean.contextInitialized();
 		log.info("=============store client web is run success=============");
+		
 	}
 }

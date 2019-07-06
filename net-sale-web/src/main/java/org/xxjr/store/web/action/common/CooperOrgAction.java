@@ -53,6 +53,7 @@ public class CooperOrgAction {
 				responseParam.put("errorMessage", checkChannel.getMessage());
 				return responseParam;
 			}
+
 			AppParam appParam = new AppParam();
 			RequestUtil.setAttr(appParam, request);
 			Map<String,Object> params = appParam.getAttr();
@@ -75,14 +76,7 @@ public class CooperOrgAction {
 				responseParam.put("errorMessage", "手机号格式不正确!");
 				return responseParam;
 			}
-			
-			boolean gzSpecial = false;
-			// 判断广州渠道
-			if(!StringUtils.isEmpty(params.get("gzSpecial")) 
-					&& "1".equals(params.get("gzSpecial").toString())){
-				gzSpecial = true;
-			}
-			
+
 			Double loanAmount = Double.valueOf(params.get("loanAmount").toString());
 			int maxLoanAmount = SysParamsUtil.getIntParamByKey("thirdMaxLoanAmount", 1000);
 			int defaultLoanAmount = SysParamsUtil.getIntParamByKey("thirdDefaultLoanAmount", 1000);
@@ -91,25 +85,9 @@ public class CooperOrgAction {
 				//loanAmount = loanAmount / 10000;
 				params.put("loanAmount", defaultLoanAmount);
 			}
-			
-			if(gzSpecial && (Double.valueOf(params.get("loanAmount").toString()) < 3 
-							|| !params.get("cityName").toString().contains("广州"))){
-				responseParam.put("returnCode", "007");
-				responseParam.put("errorMessage", "非广州数据或金额小于3W");
-				return responseParam;
-			}
-			String merchId = null;
-			if("yksq".equals(corp)){
-				merchId = SysParamsUtil.getStringParamByKey("yksqMerchId", "yksq10180");
-			}else if("suyi".equals(corp)){
-				merchId = SysParamsUtil.getStringParamByKey("suyiMerchId", "suyi10180");
-			}else if("najia".equals(corp)){
-				merchId = SysParamsUtil.getStringParamByKey("najiaMerchId", "najia10180");
-			}
-			if(StringUtils.isEmpty(merchId)){
-				Map<String,Object> channel = BorrowChannelUtil.getChannelByCode(corp);
-				merchId = org.ddq.common.util.StringUtil.getString(channel.get("merchId"));
-			}
+			Map<String,Object> channel = BorrowChannelUtil.getChannelByCode(corp);
+			String merchId  = org.ddq.common.util.StringUtil.getString(channel.get("merchId"));
+
 			String time = params.remove("time").toString();
 			String telephone = params.get("telephone").toString();
 			String fromSign = params.remove("sign").toString();
@@ -117,99 +95,78 @@ public class CooperOrgAction {
 			if(!fromSign.equalsIgnoreCase(xxSign) && !corp.equals("testApi")){
 				responseParam.put("returnCode", "002");
 				responseParam.put("errorMessage", "签名有误");
-			}else{
-				
-				// 效验suyi城市名称
-				if("suyi".equals(corp) || "sy".equals(corp)){
-					Object cityName = queryCityName(params.get("cityName"));
-					if(StringUtils.isEmpty(cityName)){
-						responseParam.put("returnCode", "008");
-						responseParam.put("errorMessage", "城市code：" + params.get("cityName") + "未找到对应的城市");
-						return responseParam;
-					}
-					params.put("cityName", cityName);
-				}else{
-					// 查找 深圳
-					//判断城市是否查找，存在传入数据库的参数，不存在
-					Object cityCode = this.queryCityCode(params.get("cityName"));
-					if (cityCode == null) {
-						responseParam.put("returnCode", "008");
-						responseParam.put("errorMessage", "城市：" + params.get("cityName") + "未找到对应的城市");
-						return responseParam;
-					}
-				}
-				boolean isRepeat = false;
-				boolean isHandling = false;// 是否正在处理中
+				return responseParam;
+			}
 			
-				//渠道去重处理
-				isRepeat = isThirdRepeat(telephone, corp);
-				
-				
-				if("yksq".equals(corp)){
-					ThirdDataUtil.transParams(params);
-					LogerUtil.log("after trans:" + params.toString());
-				}
-				
-				// 插入数据到中间表
-				AppParam applyParam = new AppParam();
-				applyParam.setService("thirdDataService");
-				applyParam.setMethod("save");
+			Object cityCode = this.queryCityCode(params.get("cityName"));
+			if (cityCode == null) {
+				responseParam.put("returnCode", "008");
+				responseParam.put("errorMessage", "城市：" + params.get("cityName") + "未找到对应的城市");
+				return responseParam;
+			}
+			
+			boolean isRepeat = isThirdRepeat(telephone, corp);
+			ThirdDataUtil.getAge(StringUtil.getString(params.get("birthday")), params);
+			
+			// 插入数据到中间表
+			AppParam applyParam = new AppParam("thirdDataService","save");
+			applyParam.addAttrs(params);
+			
+			if (StringUtils.isEmpty(applyParam.getAttr("channelDetail"))) {
 				applyParam.addAttr("channelDetail", corp);
-				applyParam.addAttr("params", thirdData);
-				if(gzSpecial){
-					applyParam.addAttr("channelDetail", corp+"Gz");
-				}
+			}
+			
+			applyParam.addAttr("params", thirdData);
 
-				ThirdDataUtil.getAge(StringUtil.getString(params.get("birthday")), params);
-                applyParam.addAttr("applyIp", params.get("applyIp"));
-				applyParam.addAttr("isRepeat", isRepeat ? "1" : "0" );
-				applyParam.addAttr("isHandling", isHandling ? "1" : "0");
-				applyParam.addAttr("pageReferer", corp);
-				applyParam.addAttr("sourceChannel", corp);
-				applyParam.addAttr("mediaSource", params.get("mediaSource"));
-				applyParam.addAttrs(params);
-				if (StringUtils.isEmpty(applyParam.getAttr("channelDetail"))) {
-					applyParam.addAttr("channelDetail", corp);
-				}
-				applyParam.setRmiServiceName(AppProperties
-						.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
-				if (!StringUtils.isEmpty(applyParam.getAttr("carType"))) {
-					int carType = Integer.valueOf(params.get("carType").toString());
-					if (carType == 0) {
-						applyParam.addAttr("carType", "2");
-					}
-				}
-				boolean randomRepeat = false;
-				int deduction = NumberUtil.getInt(checkChannel.getAttr("deduction"));
-				if (deduction > 0 && !isRepeat) {
-					randomRepeat = ThirdDataUtil.randomRepeat(deduction, corp, StringUtil.objectToStr(checkChannel.getAttr("randoms")));
-				}
-				if (randomRepeat) {
-					//再保存改变了渠道的数据
-					applyParam.addAttr("channelDetail", applyParam.getAttr("channelDetail") + "_sale");
-				}
-				AppResult saveResult = RemoteInvoke.getInstance().call(applyParam);
-				if(saveResult.isSuccess()){
-					if(isRepeat || randomRepeat){
-						responseParam.put("returnCode", "003");
-						responseParam.put("errorMessage", "申请重复");
-						responseParam.put("telephone", telephone);
-					}else{
-						responseParam.put("unionId", saveResult.getAttr("unionId"));
-						responseParam.put("returnCode", "000");
-						responseParam.put("errorMessage", "接收成功");
-					}
-				}else{
-					if (!StringUtils.isEmpty(saveResult.getErrorCode()) && "003".equals(saveResult.getErrorCode())) {
-						responseParam.put("returnCode", "003");
-						responseParam.put("errorMessage", "申请重复");
-						responseParam.put("telephone", telephone);
-					}else {
-						responseParam.put("returnCode", "004");
-						responseParam.put("errorMessage", "接收异常");
-					}
+            applyParam.addAttr("applyIp", params.get("applyIp"));
+			applyParam.addAttr("isRepeat", isRepeat ? "1" : "0" );
+			applyParam.addAttr("isHandling","0");
+			applyParam.addAttr("pageReferer", corp);
+			applyParam.addAttr("sourceChannel", corp);
+			applyParam.addAttr("mediaSource", params.get("mediaSource"));
+			
+			if (StringUtils.isEmpty(applyParam.getAttr("channelDetail"))) {
+				applyParam.addAttr("channelDetail", corp);
+			}
+			applyParam.setRmiServiceName(AppProperties
+					.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+			if (!StringUtils.isEmpty(applyParam.getAttr("carType"))) {
+				int carType = Integer.valueOf(params.get("carType").toString());
+				if (carType == 0) {
+					applyParam.addAttr("carType", "2");
 				}
 			}
+			boolean randomRepeat = false;
+			int deduction = NumberUtil.getInt(checkChannel.getAttr("deduction"));
+			if (deduction > 0 && !isRepeat) {
+				randomRepeat = ThirdDataUtil.randomRepeat(deduction, corp, StringUtil.objectToStr(checkChannel.getAttr("randoms")));
+			}
+			if (randomRepeat) {
+				//再保存改变了渠道的数据
+				applyParam.addAttr("channelDetail", applyParam.getAttr("channelDetail") + "_sale");
+			}
+			AppResult saveResult = RemoteInvoke.getInstance().call(applyParam);
+			if(saveResult.isSuccess()){
+				if(isRepeat || randomRepeat){
+					responseParam.put("returnCode", "003");
+					responseParam.put("errorMessage", "申请重复");
+					responseParam.put("telephone", telephone);
+				}else{
+					responseParam.put("unionId", saveResult.getAttr("unionId"));
+					responseParam.put("returnCode", "000");
+					responseParam.put("errorMessage", "接收成功");
+				}
+			}else{
+				if (!StringUtils.isEmpty(saveResult.getErrorCode()) && "003".equals(saveResult.getErrorCode())) {
+					responseParam.put("returnCode", "003");
+					responseParam.put("errorMessage", "申请重复");
+					responseParam.put("telephone", telephone);
+				}else {
+					responseParam.put("returnCode", "004");
+					responseParam.put("errorMessage", "接收异常");
+				}
+			}
+			
 		}catch(Exception e){
 			LogerUtil.error(this.getClass(), e, "thirdData error！");
 			responseParam.put("returnCode", "005");
@@ -219,24 +176,6 @@ public class CooperOrgAction {
 			LogerUtil.log("response:" + responseParam.toString());
 		}
 		return responseParam;
-	}
-	
-	/**
-	 * 根据code查询城市名称
-	 * @param cityCode
-	 * @return
-	 */
-	private Object queryCityName(Object cityCode){
-		List<Map<String,Object>> listAll = AreaUtils.getAllInfo();
-		if(StringUtils.isEmpty(cityCode)){
-			return null;
-		}
-		for(Map<String,Object> map:listAll){
-			if(cityCode.toString().equals(map.get("cityCode"))){
-				return map.get("cityName");
-			}
-		}
-		return null;
 	}
 	
 	/**

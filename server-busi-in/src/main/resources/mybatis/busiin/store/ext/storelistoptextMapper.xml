@@ -1488,7 +1488,7 @@
 			t.orderStatus,
 			(CASE 
 				WHEN t.orderStatus =-1 THEN '待跟进'
-				WHEN t.orderStatus =0 THEN '跟进中'
+				WHEN t.orderStatus =0 THEN '跟进过，为了解过客户'
 				WHEN t.orderStatus =1 THEN '未上门待签约'
 				WHEN t.orderStatus =2 THEN '已上门待签约'
 				WHEN t.orderStatus =3 THEN '已上门签约'

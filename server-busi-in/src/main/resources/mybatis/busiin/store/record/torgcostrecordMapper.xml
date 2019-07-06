@@ -286,7 +286,7 @@
 				WHEN 1 THEN '免费流量'
 				WHEN 2 THEN '信息流'
 				WHEN 3 THEN 'API接口'
-				WHEN 4 THEN 'v'
+				WHEN 4 THEN '历史数据'
 				WHEN 5 THEN '贷超'
 				WHEN 6 THEN '测试数据'
 				ELSE '其他'
@@ -338,7 +338,7 @@
 				WHEN 1 THEN '免费流量'
 				WHEN 2 THEN '信息流'
 				WHEN 3 THEN 'API接口'
-				WHEN 4 THEN 'v'
+				WHEN 4 THEN '历史数据'
 				WHEN 5 THEN '贷超'
 				WHEN 6 THEN '测试数据'
 				ELSE '其他'
@@ -411,6 +411,7 @@
 		<include refid="queryOrgCostSql"></include>
 		GROUP BY
 			t2.customerId,DATE_FORMAT( t.createTime, #{datePattern})
+		ORDER BY DATE_FORMAT( t.createTime, #{datePattern}) DESC
 	</select>
 	
 	<select id="queryStoreCostCount" parameterType="map" resultType="int">
