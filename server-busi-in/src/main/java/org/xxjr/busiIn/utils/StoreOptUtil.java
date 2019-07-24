@@ -23,7 +23,9 @@ import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.sms.SendSmsByUrl;
 import org.xxjr.sys.util.NumberUtil;
+import org.xxjr.sys.util.SmsConfigUtil;
 import org.xxjr.sys.util.SysParamsUtil;
 
 import lombok.extern.slf4j.Slf4j;
@@ -568,13 +570,11 @@ public class StoreOptUtil {
 	public static void sendAllotMeaasge(AppParam param){
 		//发送分单消息通知
 		try{
-			StoreAppSend  storeAppSend = SpringAppContext.getBean(StoreAppSend.class);//发送app消息通知
-			StorePcSend  storePcSend = SpringAppContext.getBean(StorePcSend.class);	//发送PC消息通知
+			
 			String customerId = StringUtil.getString(param.getAttr("customerId"));
 			String applyName = StringUtil.getString(param.getAttr("applyName"));
 			int orderType = NumberUtil.getInt(param.getAttr("orderType"),1);
-			Map<String, Object> sendParam = new HashMap<String, Object>();	
-			sendParam.put("customerId", customerId);
+		
 			StringBuffer buffer = new StringBuffer();
 			if( 1 == orderType){
 				buffer.append("您刚刚分配了一笔新申请订单，订单的客户姓名是：");
@@ -585,6 +585,13 @@ public class StoreOptUtil {
 			buffer.append("，分单时间：");
 			buffer.append(DateUtil.toStringByParttern(new Date(),DateUtil.DATE_PATTERN_YYYY_MM_DD_HHMMSS));
 			buffer.append("，请及时处理！");
+			
+			/*
+			StoreAppSend  storeAppSend = SpringAppContext.getBean(StoreAppSend.class);//发送app消息通知
+			StorePcSend  storePcSend = SpringAppContext.getBean(StorePcSend.class);	//发送PC消息通知
+			Map<String, Object> sendParam = new HashMap<String, Object>();	
+			
+			sendParam.put("customerId", customerId);
 			sendParam.put("message", buffer.toString());
 			sendParam.put("notifyType", "1");
 			sendParam.put("cmdName", "0006"); // 个人消息
@@ -605,7 +612,8 @@ public class StoreOptUtil {
 			if(!StringUtils.isEmpty(sessionId)){
 				storePcSend.sendPcMessage(sessionId, "storeCmdType", sendPCParam);
 			}
-
+			*/
+			
 			//加入mq保存分单消息通知
 			StoreTaskSend storeSend = (StoreTaskSend)SpringAppContext.getBean(StoreTaskSend.class);
 			Map<String, Object> msgParam = new HashMap<String, Object>();
@@ -614,8 +622,10 @@ public class StoreOptUtil {
 			msgParam.put("notifyDate", DateUtil.toStringByParttern(new Date(),DateUtil.DATE_PATTERN_YYYY_MM_DD));
 			msgParam.put("customerId", customerId);
 			msgParam.put("orgId", orgId);
+			msgParam.put("custTelephone", param.getAttr("custTelephone"));
 			msgParam.put("messNotifyType", "2"); //2 个人通知消息
 			storeSend.sendStoreMessage(customerId,"orderNotifyType" , msgParam);
+			
 		}catch(Exception e){
 			log.error("StoreOptUtil 发送分单消息通知 error", e);
 		}

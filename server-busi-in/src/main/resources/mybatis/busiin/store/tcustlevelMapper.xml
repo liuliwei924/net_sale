@@ -116,6 +116,7 @@
 			t.backAmount,
 			t.allotDesc,
 			t1.loginStatus,
+			t1.custTelephone,
 			t2.allotSeniorCount
 		FROM t_cust_level t
 		JOIN t_busi_cust t1 ON t.customerId = t1.customerId

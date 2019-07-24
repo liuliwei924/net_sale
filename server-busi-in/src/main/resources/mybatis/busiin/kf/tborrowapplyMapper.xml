@@ -385,6 +385,7 @@
 					END
 			 ) as 'status',  
 			t.channelDetail, 
+			t.channelCode,
 		    (CASE t.`backStatus`
 					WHEN 0 THEN '退单待审'
 					WHEN 1 THEN '退单审核通过'
@@ -513,9 +514,6 @@
 		LEFT JOIN t_borrow_channel ch ON t.channelCode = ch.channelCode 
 		</if>
 		<include refid="showWhereSql"></include>
-		<if test="orderSql != null and orderSql!='' "> 
-			ORDER by ${orderSql}
-		</if>
 	</select>
 
 	<sql id="showWhereSql">
@@ -606,6 +604,9 @@
 			</if>
 			<if test="channelDetail != null and channelDetail != ''">
 				and t.channelDetail like CONCAT(#{channelDetail},'%')
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and t.channelCode=#{channelCode}
 			</if>
 			<if test="fixChannels != null and fixChannels != ''">
 				and FIND_IN_SET(t.channelCode,#{fixChannels})

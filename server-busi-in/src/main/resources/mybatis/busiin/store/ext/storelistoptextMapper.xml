@@ -843,7 +843,7 @@
 		DATE_FORMAT(t4.lastTime,'%Y-%m-%d %H:%i:%s') as  'handleTime',
 		CONCAT('成功',t6.sucCallTimes,'次，总时长',FORMAT(t6.totalDuration/60,1),'分钟') AS callInfo,
 		CONCAT(FORMAT(t6.curDuration/60,1), '分钟') AS curDuration,
-		(case when #{roleType}=1 then CONCAT(t.channelDetail,'-',t7.channelName)  else null end ) as channelText,
+		(case when #{roleType}=1 then CONCAT(t.channelCode,'-',t7.channelName)  else null end ) as channelText,
 		t1.`desc`,
 		t.allotBy,
 	    DATE_FORMAT(t.allotTime,'%Y-%m-%d %H:%i:%s') as allotTime,
@@ -894,6 +894,9 @@
 			</if>
 			<if test="applyName != null and applyName != ''">
 				and t.applyName like CONCAT(#{applyName},'%')
+			</if>
+			<if test="channelCode != null and channelCode != ''">
+				and t.channelCode =#{channelCode}
 			</if>
 			<if test="realName != null and realName != ''">
 				and t2.realName like CONCAT(#{realName},'%') 

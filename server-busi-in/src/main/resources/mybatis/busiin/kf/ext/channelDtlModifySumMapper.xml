@@ -21,8 +21,11 @@
 	 	<!-- 共用的时间处理sql -->
 	<sql id="thirdCommonTimeSql">
 		<![CDATA[n.applyTime>= #{startRecordDate} AND n.applyTime<=#{endRecordDate}]]>
-		  <if test="channelCode != null and channelCode != ''">
-	  		 and n.channelDetail like CONCAT(#{channelCode},'%')
+		  <if test="channelDetail != null and channelDetail != ''">
+	  		 and n.channelDetail like CONCAT(#{channelDetail},'%')
+	      </if>
+	      <if test="channelCode != null and channelCode != ''">
+	  		 and n.channelCode=#{channelCode}
 	      </if>
 	      <if test="fixChannels != null and fixChannels != ''">
 			and FIND_IN_SET(n.channelCode,#{fixChannels})

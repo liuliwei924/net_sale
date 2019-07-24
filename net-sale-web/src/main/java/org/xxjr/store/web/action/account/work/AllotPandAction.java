@@ -132,7 +132,13 @@ public class AllotPandAction extends BaseController{
 			String lastStore = null;
 			if(StringUtils.hasText(fileName) && fileName.indexOf("_") == 11) {
 				String storeTel = fileName.substring(0, fileName.indexOf("_"));
-				lastStore = CustomerUtil.queryCustId(storeTel, null);
+				AppParam storeParam = new AppParam();
+				storeParam.addAttr("telephone", storeTel);
+				Map<String,Object> storeMap = CustomerUtil.queryCustInfo(storeParam);
+				if(storeMap != null && !storeMap.isEmpty()) {
+					lastStore = StringUtil.getString(storeMap.get("customerId"));
+					if(orgId == null) orgId = StringUtil.getString(storeMap.get("orgId"));
+				}
 			}
 			int errCount = 0;
 			int sucCount = 0;

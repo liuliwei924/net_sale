@@ -17,9 +17,11 @@ import org.ddq.common.util.NumberUtil;
 import org.ddq.common.util.StringUtil;
 import org.ddq.common.web.session.RequestUtil;
 import org.springframework.util.StringUtils;
+import org.xxjr.busi.util.kf.KfUserUtil;
 import org.xxjr.busi.util.store.StoreUserUtil;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.ValidUtils;
 
@@ -97,6 +99,56 @@ public class ExportParamUtil {
 		params.setOrderValue("desc");
 		params.setRmiServiceName(AppProperties
 				.getProperties(DuoduoConstant.RMI_SERVICE_START + ServiceKey.Key_busi_in));
+	}
+	
+	/**
+	 * 查询所有列表
+	 * @param params
+	 * @param result
+	 * @param request
+	 */
+	public void allList(AppParam params, AppResult result, HttpServletRequest request){
+		String customerId = KfUserUtil.getCustomerId(request);
+		String applyName = StringUtil.getString(params.getAttr("applyName"));
+		String roleType = CustomerUtil.getRoleType(customerId);
+		String searchType = StringUtil.getString(params.getAttr("searchType"));
+		Map<String,Object> custRight = KfUserUtil.getUserRight(customerId);
+		Object fixChannels = custRight.get("channels");
+		params.addAttr("fixChannels", fixChannels);//固定渠道
+		// 是否查客服处理的
+		if("1".equals(searchType)){// 我录入的
+			params.addAttr("lastKf", customerId);
+		}else if ("4".equals(searchType)) {
+			params.addAttr("grade", "A");
+		}else if ("5".equals(searchType)) {
+			params.addAttr("grade", "B");
+		}else if ("6".equals(searchType)) {
+			params.addAttr("grade", "C");
+		}else if ("7".equals(searchType)) {
+			params.addAttr("grade", "D");
+		}else if ("8".equals(searchType)) {
+			params.addAttr("grade", "E");
+		}else if ("9".equals(searchType)) {
+			params.addAttr("grade", "F");
+		}
+		
+		if(ValidUtils.validateTelephone(applyName)){//加快查询效率
+			params.addAttr("telephone", applyName);
+			params.removeAttr("applyName");
+		}
+		
+		PageUtil.packageQueryParam(request, params);
+		
+		params.addAttr("roleType", roleType);
+		params.addAttr("loginKf", customerId);
+		params.addAttr(P_COUNT_METHOD,"queryShowCount");
+		params.setService("borrowApplyService");
+		params.setMethod("queryShowByPage");
+		params.setOrderBy("applyTime");
+		params.setOrderValue("desc");
+		params.setRmiServiceName(AppProperties
+				.getProperties(DuoduoConstant.RMI_SERVICE_START
+						+ ServiceKey.Key_busi_in));
 	}
 	/***
 	 * 所有订单导出查询

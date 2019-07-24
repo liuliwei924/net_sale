@@ -270,10 +270,12 @@ public class NetStorePoolService extends BaseService {
 				if(queryAloteResult.getRows().size()>0){
 					allotCount = NumberUtil.getInt(queryAloteResult.getRow(0).get("allotNotFillCount"));
 				}
+				Object custTelephone = null;
 				if(custResult.isSuccess() && custResult.getRows().size() > 0){
 					custMap = custResult.getRow(0);
 					custMap.put("agAllotCount", allotCount);
 					custMap.put("orderType", orderType);
+					custTelephone = custMap.get("custTelephone");
 				}
 				
 				if((gradeMap == null || gradeMap.size() <=0) && custMap != null ){
@@ -369,6 +371,7 @@ public class NetStorePoolService extends BaseService {
 					//发送分单消息通知
 					AppParam allotParam = new AppParam();
 					allotParam.addAttr("customerId", customerId);
+					allotParam.addAttr("custTelephone", custTelephone);
 					allotParam.addAttr("applyId", applyId);
 					allotParam.addAttr("orderType", orderType);
 					allotParam.addAttr("applyName", applyName);

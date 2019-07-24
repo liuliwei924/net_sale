@@ -40,7 +40,8 @@ public class  SendSmsByUrl{
 			sb.append(smsUrl);
 			//判断是否测试环境，测试环境使用默认的电话
 			if (AppProperties.isDebug()) {
-				phone = testPhone == null ? "13817862400" : testPhone;
+				return appresult;
+			//	phone = testPhone == null ? "18670787211" : testPhone;
 			}
 			sb.append("&phones=" + phone);
 			sb.append("&msg=" + URLEncoder.encode(StringUtil.encodeBase64(content), "utf-8"));
