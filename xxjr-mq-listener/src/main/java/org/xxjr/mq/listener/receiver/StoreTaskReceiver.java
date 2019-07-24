@@ -18,6 +18,7 @@ import org.ddq.common.context.AppResult;
 import org.ddq.common.core.SpringAppContext;
 import org.ddq.common.core.service.RemoteInvoke;
 import org.ddq.common.util.DateUtil;
+import org.ddq.common.util.JsonUtil;
 import org.ddq.common.util.LogerUtil;
 import org.ddq.common.util.StringUtil;
 import org.llw.model.cache.RedisUtils;
@@ -32,10 +33,13 @@ import org.xxjr.cust.util.info.CustomerIdentify;
 import org.xxjr.mq.listener.consumer.RabbitMqConsumer;
 import org.xxjr.mq.listener.util.XxjrInitAnnotation;
 import org.xxjr.sms.SendSmsByUrl;
+import org.xxjr.sms.SmsConfig;
+import org.xxjr.sms.SmsLMobileUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.OrgUtils;
 import org.xxjr.sys.util.ServiceKey;
 import org.xxjr.sys.util.SmsConfigUtil;
+import org.xxjr.sys.util.SysParamsUtil;
 
 @Component
 @XxjrInitAnnotation(beanName="storeTaskReceiver",initMethod="init")
@@ -1038,6 +1042,32 @@ public class StoreTaskReceiver extends RabbitMqConsumer{
 				.getProperties(DuoduoConstant.RMI_SERVICE_START
 						+ ServiceKey.Key_busi_in));
 		RemoteInvoke.getInstance().call(insertParam);
+		
+		try {
+			//给门店需要短信提醒业务员发通知，提醒跟单
+			String custTelephone = StringUtil.getString(dealMap.get("custTelephone"));
+			String message = StringUtil.getString(dealMap.get("notifyText"));
+			String orgId = StringUtil.getString(dealMap.get("orgId"));
+			if(!StringUtils.isBlank(custTelephone) && 
+					!StringUtils.isBlank(message) && !StringUtils.isBlank(orgId)) {
+				String orgIds = SysParamsUtil.getStringParamByKey("ORG_SEND_SMS_NOTIFY","");
+				
+		 		String smsConfigStr = SysParamsUtil.getStringParamByKey("LMobile_STYLE_SMS_CONFIG","");
+		 		if(StringUtils.isEmpty(smsConfigStr) || StringUtils.isEmpty(orgIds)) {
+		 			return;
+		 		}
+		 		
+		 		if(orgIds.indexOf(orgId + ",") > -1) {
+		 			
+			 		SmsConfig smsConfig = JsonUtil.getInstance().json2Object(smsConfigStr, SmsConfig.class);
+			 		message = message +"【" + smsConfig.getSignName() + "】";
+			 	  
+			 	    SmsLMobileUtil.sendJson(custTelephone, message, smsConfig);
+		 		}
+			}
+		}catch (Exception e) {
+		
+		}
 	}
 	
 	/**
