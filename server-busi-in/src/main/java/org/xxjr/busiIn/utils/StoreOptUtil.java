@@ -628,7 +628,7 @@ public class StoreOptUtil {
 			msgParam.put("notifyDate", DateUtil.toStringByParttern(new Date(),DateUtil.DATE_PATTERN_YYYY_MM_DD));
 			msgParam.put("customerId", customerId);
 			msgParam.put("orgId", orgId);
-			msgParam.put("custTelephone", param.getAttr("custTelephone"));
+			msgParam.put("custTelephone", custTelephone);
 			msgParam.put("messNotifyType", "2"); //2 个人通知消息
 			storeSend.sendStoreMessage(customerId,"orderNotifyType" , msgParam);
 			
