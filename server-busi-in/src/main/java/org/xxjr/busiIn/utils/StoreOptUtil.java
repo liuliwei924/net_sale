@@ -23,9 +23,7 @@ import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
-import org.xxjr.sms.SendSmsByUrl;
 import org.xxjr.sys.util.NumberUtil;
-import org.xxjr.sys.util.SmsConfigUtil;
 import org.xxjr.sys.util.SysParamsUtil;
 
 import lombok.extern.slf4j.Slf4j;
