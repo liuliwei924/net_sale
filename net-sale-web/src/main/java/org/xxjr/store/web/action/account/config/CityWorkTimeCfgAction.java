@@ -49,7 +49,6 @@ public class CityWorkTimeCfgAction {
 			RequestUtil.setAttr(params, request);
 			params.setService("worktimeCfgService");
 			params.setMethod("queryWorkTime");
-			params.setEveryPage(20);
 			params.setOrderBy("createTime");
 			params.setOrderValue("desc");
 			params.setRmiServiceName(AppProperties
