@@ -60,4 +60,16 @@ public class SmsLMobileUtil {
 		
 		return result;
 	}
+	
+	public static void main(String[] args) {
+		SmsConfig smsConfig = new SmsConfig();
+		smsConfig.setAppid("dlszxxy1");
+		smsConfig.setAppkey("lxt19910924");
+		smsConfig.setSignName("欣鑫源科技");
+		smsConfig.setTempId(1012818);
+		
+		
+		System.out.println(JsonUtil.getInstance().object2JSON(smsConfig));
+		
+	}
 }
