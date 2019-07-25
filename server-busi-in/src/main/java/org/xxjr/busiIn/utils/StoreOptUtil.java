@@ -23,6 +23,7 @@ import org.xxjr.busi.util.StoreConstant;
 import org.xxjr.busi.util.StoreSeparateUtils;
 import org.xxjr.cust.util.CustConstant;
 import org.xxjr.cust.util.info.CustomerIdentify;
+import org.xxjr.cust.util.info.CustomerUtil;
 import org.xxjr.sys.util.NumberUtil;
 import org.xxjr.sys.util.SysParamsUtil;
 
@@ -611,6 +612,13 @@ public class StoreOptUtil {
 				storePcSend.sendPcMessage(sessionId, "storeCmdType", sendPCParam);
 			}
 			*/
+			
+			Object custTelephone = param.getAttr("custTelephone");
+		    if(StringUtils.isEmpty(custTelephone)) {
+		    	AppParam custParam = new AppParam();
+				custParam.addAttr("customerId", customerId);
+				custTelephone = CustomerUtil.queryCustInfo(custParam).get("telephone");
+		    }
 			
 			//加入mq保存分单消息通知
 			StoreTaskSend storeSend = (StoreTaskSend)SpringAppContext.getBean(StoreTaskSend.class);
