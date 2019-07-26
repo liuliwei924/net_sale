@@ -613,12 +613,9 @@ public class StoreOptUtil {
 			}
 			*/
 			
-			Object custTelephone = param.getAttr("custTelephone");
-		    if(StringUtils.isEmpty(custTelephone)) {
-		    	AppParam custParam = new AppParam();
-				custParam.addAttr("customerId", customerId);
-				custTelephone = CustomerUtil.queryCustInfo(custParam).get("telephone");
-		    }
+			AppParam custParam = new AppParam();
+			custParam.addAttr("customerId", customerId);
+			Object custTelephone = CustomerUtil.queryCustInfo(custParam).get("telephone");
 			
 			//加入mq保存分单消息通知
 			StoreTaskSend storeSend = (StoreTaskSend)SpringAppContext.getBean(StoreTaskSend.class);
