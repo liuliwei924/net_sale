@@ -25,10 +25,10 @@ public class JobListenerApplication {
 		ScheduleManager.getInstance().initSchedule();
 		log.info("=============initSchedule is run success===============");
 		
-		log.info("=============initSchedule is run start===============");
+		log.info("=============init MQ  JOB is run start===============");
 		JobMqReceiver jobm = SpringAppContext.getBean(JobMqReceiver.class);
 		jobm.init();
-		log.info("=============initSchedule is run success===============");
+		log.info("=============init MQ  JOB  is run success===============");
 		
 		log.info("=============xxjr-job-listener is run success===============");
 	}
