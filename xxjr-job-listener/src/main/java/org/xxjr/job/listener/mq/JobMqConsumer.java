@@ -8,7 +8,6 @@ import org.llw.mq.rabbitmq.RabbitMqConfig;
 import org.springframework.util.SerializationUtils;
 
 import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.BuiltinExchangeType;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Consumer;
@@ -85,11 +84,9 @@ public abstract  class JobMqConsumer implements Consumer {
 		this.rabbitMqConfig = rabbitMqConfig;
 		try{
 			channel = getConn().createChannel();
-			channel.exchangeDeclare(queueName,BuiltinExchangeType.FANOUT, true);
-			String newQueueName = channel.queueDeclare().getQueue();
-			channel.basicQos(prefetchCount); //server push消息时的队列长度
-			channel.queueBind(newQueueName, queueName, "");
-			channel.basicConsume(newQueueName, false, this);
+			channel.queueDeclare(queueName, true, false, false, null);
+			channel.basicQos(prefetchCount);//设置同一时间最大服务转发消息数量
+			channel.basicConsume(queueName, false, this);
 		}catch(Exception e){
 			log.error("JobMqConsumer start error:queueName :" + queueName,e);
 		}
