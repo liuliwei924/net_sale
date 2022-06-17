@@ -33,7 +33,7 @@
         <zxing.version>2.2</zxing.version>
 		<servlet-api.versioin>3.1.0</servlet-api.versioin>
 		<commons-lang.version>2.6</commons-lang.version>
-		<alibaba-fastjson.version>1.2.58</alibaba-fastjson.version>
+		<alibaba-fastjson.version>1.2.83</alibaba-fastjson.version>
 		<guava.version>20.0</guava.version>
 		<httpclient.version>4.5.9</httpclient.version>
 		<httpcore.verson>4.4.11</httpcore.verson>
